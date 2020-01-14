@@ -6,15 +6,13 @@ ifeq ("$(ELMLIVE)", "")
 	ELMLIVE=elm-live
 endif
 
-STATIC_FILES=client/static/*
 BUILD_DIR=./server/dist
 
 all: client-dev client-static server-dev
 
-client-static: client/static/*
+client-static:
 	@/bin/echo -e "\033[32;1m     Copying\033[0m client static files"
 	@mkdir -p $(BUILD_DIR)
-	@cp $(STATIC_FILES) $(BUILD_DIR)
 	@/bin/echo -e "\033[32;1m      Copied\033[0m client static files"
 
 client-dev: client/src/** client-static

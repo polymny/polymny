@@ -61,7 +61,7 @@ pub struct NewUser {
 
 impl User {
     /// Creates a new user.
-    pub fn create(username: &str, email: &str, password: &str, mailer: Option<&Mailer>) -> Result<NewUser> {
+    pub fn create(username: &str, email: &str, password: &str, mailer: &Option<Mailer>) -> Result<NewUser> {
 
         // Hash the password
         let hashed_password = hash(&password, DEFAULT_COST)?;

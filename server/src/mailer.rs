@@ -39,7 +39,6 @@ pub struct Mailer {
 
 impl Mailer {
 
-
     /// Creates a new mailer.
     pub fn new(require_email_validation: bool, root: String, server: String, username: String, password: String) -> Mailer {
         Mailer {
@@ -52,14 +51,20 @@ impl Mailer {
     }
 
     /// Creates a mailer from the rocket config.
-    pub fn from_config(config: &Config) -> Mailer {
-        Mailer::new(
-            config.get_bool("mailer_enabled").unwrap_or(true),
-            config.get_string("root").unwrap(),
-            config.get_string("mailer_host").unwrap(),
-            config.get_string("mailer_user").unwrap(),
-            config.get_string("mailer_password").unwrap(),
-        )
+    pub fn from_config(config: &Config) -> Option<Mailer> {
+        let enabled = config.get_bool("mailer_enabled").unwrap_or(true);
+        let root = config.get_string("root").ok()?;
+        let host = config.get_string("mailer_host").ok()?;
+        let user = config.get_string("mailer_user").ok()?;
+        let password = config.get_string("mailer_password").ok()?;
+
+        Some(Mailer::new(
+            enabled,
+            root,
+            host,
+            user,
+            password
+        ))
     }
 
     /// Uses a mailer to send an email.
