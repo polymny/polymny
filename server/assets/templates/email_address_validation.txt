@@ -1,0 +1,4 @@
+Welcome!
+
+To activate your account, please go to the following link:
+{{ activation_url | safe }}
