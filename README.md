@@ -106,6 +106,21 @@ running:
 diesel migration run --database-url <database-url>
 ```
 
+#### Mailer configuration
+
+If you want, you can also configure the mailer in the `server/Rocket.toml` file.
+Doing so allows the server to send email, and thus, to verify users email.
+Here is a template of mailer configuration:
+
+```
+[global]
+mailer_enabled = true
+mailer_host = "<smtp-server-url>"
+mailer_user = "<user-for-smtp-auth>"
+mailer_password = "<password-for-smtp-auth>"
+mailer_from = "<from-header-of-email>"
+```
+
 ## Running
 
 Once you've built and configured everything, you just go to the server
