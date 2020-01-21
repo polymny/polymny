@@ -126,12 +126,8 @@ impl User {
             .filter(username.eq(auth_username))
             .filter(activated.eq(true))
             .select((id, username, email, hashed_password, activated, activation_key))
-            .first::<User>(db);
-
-        let user = match user {
-            Ok(user) => user,
-            Err(_) => return Err(Error::AuthenticationFailed),
-        };
+            .first::<User>(db)
+            .map_err(|_| Error::AuthenticationFailed)?;
 
         match bcrypt::verify(&auth_password, &user.hashed_password) {
             Ok(true) => Ok(user),
