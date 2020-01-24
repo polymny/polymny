@@ -72,44 +72,52 @@ pub struct NewCapsuleProject {
 
 
 impl Capsule {
-    /// act like a concstructor for new
-    pub fn new (database: &PgConnection, name: &str , title: &str, slides: &str, description: &str,
-                project: &Option<Project>) -> Result<Capsule> {
+    /// acts like a concstructor for new capsule
+    pub fn new (database: &PgConnection,
+        name: &str ,
+        title:  Option<&str>,
+        slides:  Option<&str>,
+        description:  Option<&str>,
+        project: &Option<Project>) -> Result<Capsule> {
 
-        let new_capsule = NewCapsule {
+        let capsule = NewCapsule {
             name: String::from(name),
-            title: Some(String::from(title)),
-            slides: Some(String::from(slides)),
-            description: Some(String::from(description)),
-            };
-
-        let capsule = new_capsule.save(&database)?;
+            title: title.map(String::from),
+            slides:  slides.map(String::from),
+            description: description.map(String::from),
+            }.save(&database)?;
 
         if let Some(project) = project {
-           NewCapsuleProject {
+            NewCapsuleProject {
                 capsule_id: capsule.id,
                 project_id: project.id
             }.save(&database)?;
         }
-            
         Ok(capsule)
-    } 
-   
+    }
     /// Creates a new capsule
-    pub fn create(name: &str , title: &str, slides: &str, description: &str) -> Result<NewCapsule> {
+    pub fn create(
+        name: &str,
+        title:  Option<&str>,
+        slides:  Option<&str>,
+        description:  Option<&str>,
+        ) -> Result<NewCapsule> {
+
        Ok(NewCapsule {
             name: String::from(name),
-            title: Some(String::from(title)),
-            slides: Some(String::from(slides)),
-            description: Some(String::from(description)),
+            title: title.map(String::from),
+            slides:  slides.map(String::from),
+            description: description.map(String::from),
             })
     }
 
+    /// get capsule
     pub fn get(id: i32, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
         let capsule = dsl::capsules
             .filter(dsl::id.eq(id))
             .first::<Capsule>(db);
+        // TODO: is "?" needed
         Ok(capsule?)
    }
 

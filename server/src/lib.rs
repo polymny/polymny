@@ -4,7 +4,6 @@
 #[macro_use] extern crate rocket_contrib;
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate lazy_static;
-#[macro_use] extern crate chrono;
 
 pub mod db;
 pub mod schema;
@@ -149,6 +148,9 @@ pub fn main() {
             routes::project::new_project,
             routes::project::get_project,
             routes::project::projects,
+            routes::capsule::new_capsule,
+            routes::capsule::get_capsule,
+            routes::capsule::capsules,
        ])
        .launch();
 }
