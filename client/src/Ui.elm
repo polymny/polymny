@@ -53,6 +53,18 @@ buttonAttributes =
     ]
 
 
+textButton : Maybe msg -> String -> Element msg
+textButton onPress content =
+    Input.button
+        [ Font.color whiteColor
+        , Element.centerX
+        , Element.padding 10
+        ]
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
 simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
     Input.button

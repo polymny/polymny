@@ -107,6 +107,7 @@ init flags =
 
 type Msg
     = Noop
+    | HomeClicked
     | LoginClicked
     | SignUpClicked
     | LogOutClicked
@@ -138,6 +139,12 @@ update msg model =
     case ( msg, model ) of
         ( Noop, m ) ->
             ( m, Cmd.none )
+
+        ( HomeClicked, LoggedIn { session, page } ) ->
+            ( LoggedIn { session = session, page = LoggedInHome }, Cmd.none )
+
+        ( HomeClicked, _ ) ->
+            ( Home, Cmd.none )
 
         ( LoginClicked, _ ) ->
             ( Login emptyLoginContent, Cmd.none )
@@ -354,7 +361,8 @@ topBar model =
         , Element.width Element.fill
         , Element.spacing 30
         ]
-        [ titleButton
+        [ Element.row [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            [ homeButton ]
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ logOutButton ]
@@ -365,13 +373,9 @@ topBar model =
         ]
 
 
-titleButton : Element Msg
-titleButton =
-    Element.el
-        (Font.color (Element.rgb255 255 255 255)
-            :: defaultAttributes
-        )
-        (Element.text "Home")
+homeButton : Element Msg
+homeButton =
+    Ui.textButton (Just HomeClicked) "Preparation"
 
 
 loginButton : Element Msg
