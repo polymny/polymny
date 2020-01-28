@@ -171,7 +171,9 @@ updateLogin loginMsg content =
             ( Login { content | password = newPassword }, Cmd.none )
 
         LoginSubmitted ->
-            ( Login content, Api.login resultToMsg decodeSession content )
+            ( Login { content | status = Status.Sent }
+            , Api.login resultToMsg decodeSession content
+            )
 
         LoginSuccess s ->
             ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
@@ -190,7 +192,9 @@ updateSignUp msg content =
             ( { content | email = newEmail }, Cmd.none )
 
         SignUpSubmitted ->
-            ( content, Api.signUp (\x -> Noop) content )
+            ( { content | status = Status.Sent }
+            , Api.signUp (\x -> Noop) content
+            )
 
 
 
@@ -249,13 +253,13 @@ homeView =
 loginView : LoginContent -> Element Msg
 loginView { username, password, status } =
     let
-        onSubmit =
+        submitButton =
             case status of
                 Status.Sent ->
-                    Nothing
+                    Ui.primaryButtonDisabled "Logging in..."
 
                 _ ->
-                    Just LoginSubmitted
+                    Ui.primaryButton (Just LoginSubmitted) "Login"
     in
     Element.map LoginMsg <|
         Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
@@ -273,20 +277,20 @@ loginView { username, password, status } =
                 , text = password
                 , show = False
                 }
-            , Ui.primaryButton onSubmit "Submit"
+            , submitButton
             ]
 
 
 signUpView : SignUpContent -> Element Msg
 signUpView { username, password, email, status } =
     let
-        onSubmit =
+        submitButton =
             case status of
                 Status.Sent ->
-                    Nothing
+                    Ui.primaryButtonDisabled "Submit"
 
                 _ ->
-                    Just SignUpSubmitted
+                    Ui.primaryButton (Just SignUpSubmitted) "Submit"
     in
     Element.map SignUpMsg <|
         Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
@@ -310,7 +314,7 @@ signUpView { username, password, email, status } =
                 , text = password
                 , show = False
                 }
-            , Ui.primaryButton onSubmit "Submit"
+            , submitButton
             ]
 
 

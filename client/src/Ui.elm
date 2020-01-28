@@ -7,8 +7,12 @@ import Element.Font as Font
 import Element.Input as Input
 
 
-greyColor =
+greyValue =
     175
+
+
+greyColor =
+    Element.rgb255 greyValue greyValue greyValue
 
 
 whiteColor =
@@ -16,7 +20,7 @@ whiteColor =
 
 
 borderColor =
-    Element.rgb255 greyColor greyColor greyColor
+    greyColor
 
 
 primaryColor =
@@ -35,6 +39,10 @@ dangerColor =
     Element.rgb255 241 70 104
 
 
+primaryLightColor =
+    Element.rgb255 93 145 227
+
+
 buttonAttributes : List (Element.Attribute msg)
 buttonAttributes =
     [ Element.centerX
@@ -50,6 +58,18 @@ simpleButton onPress content =
     Input.button
         (Background.color whiteColor :: buttonAttributes)
         { onPress = onPress
+        , label = Element.text content
+        }
+
+
+simpleButtonDisabled : String -> Element msg
+simpleButtonDisabled content =
+    Input.button
+        (Background.color whiteColor
+            :: Font.color greyColor
+            :: buttonAttributes
+        )
+        { onPress = Nothing
         , label = Element.text content
         }
 
@@ -74,5 +94,17 @@ primaryButton onPress content =
             :: buttonAttributes
         )
         { onPress = onPress
+        , label = Element.text content
+        }
+
+
+primaryButtonDisabled : String -> Element msg
+primaryButtonDisabled content =
+    Input.button
+        (Background.color primaryLightColor
+            :: Font.color greyColor
+            :: buttonAttributes
+        )
+        { onPress = Nothing
         , label = Element.text content
         }
