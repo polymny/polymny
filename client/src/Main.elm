@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Api
 import Browser
 import Colors
 import Element exposing (Element)
@@ -11,6 +12,8 @@ import Element.Input as Input
 import Html
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Status exposing (Status)
+import Ui
 
 
 main =
@@ -26,13 +29,9 @@ main =
 -- MODEL
 
 
-urlEncode : List ( String, String ) -> String
-urlEncode strings =
-    String.join "&" (List.map (\( x, y ) -> x ++ "=" ++ y) strings)
-
-
 type alias SignUpContent =
-    { username : String
+    { status : Status () ()
+    , username : String
     , password : String
     , email : String
     }
@@ -40,34 +39,19 @@ type alias SignUpContent =
 
 emptySignUpContent : SignUpContent
 emptySignUpContent =
-    SignUpContent "" "" ""
-
-
-urlEncodeSignUpContent : SignUpContent -> String
-urlEncodeSignUpContent { username, password, email } =
-    urlEncode
-        [ ( "username", username )
-        , ( "password", password )
-        , ( "email", email )
-        ]
+    SignUpContent Status.NotSent "" "" ""
 
 
 type alias LoginContent =
-    { username : String
+    { status : Status () ()
+    , username : String
     , password : String
     }
 
 
 emptyLoginContent : LoginContent
 emptyLoginContent =
-    LoginContent "" ""
-
-
-urlEncodeLoginContent { username, password } =
-    urlEncode
-        [ ( "username", username )
-        , ( "password", password )
-        ]
+    LoginContent Status.NotSent "" ""
 
 
 type alias Session =
@@ -159,7 +143,7 @@ update msg model =
             ( Login emptyLoginContent, Cmd.none )
 
         ( LogOutClicked, _ ) ->
-            ( model, logOutCommand )
+            ( model, Api.logOut (\x -> LogOutSuccess) )
 
         ( LogOutSuccess, _ ) ->
             ( Home, Cmd.none )
@@ -187,7 +171,7 @@ updateLogin loginMsg content =
             ( Login { content | password = newPassword }, Cmd.none )
 
         LoginSubmitted ->
-            ( Login content, loginCommand content )
+            ( Login content, Api.login resultToMsg decodeSession content )
 
         LoginSuccess s ->
             ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
@@ -206,23 +190,11 @@ updateSignUp msg content =
             ( { content | email = newEmail }, Cmd.none )
 
         SignUpSubmitted ->
-            ( content, signUpCommand content )
+            ( content, Api.signUp (\x -> Noop) content )
 
 
 
 -- COMMANDS
-
-
-signUpCommand : SignUpContent -> Cmd Msg
-signUpCommand content =
-    Http.post
-        { url = "/api/new-user/"
-        , expect = Http.expectWhatever (\x -> Noop)
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (urlEncodeSignUpContent content)
-        }
 
 
 resultToMsg result =
@@ -232,27 +204,6 @@ resultToMsg result =
 
         Ok a ->
             LoginMsg (LoginSuccess a)
-
-
-loginCommand : LoginContent -> Cmd Msg
-loginCommand content =
-    Http.post
-        { url = "/api/login"
-        , expect = Http.expectJson resultToMsg decodeSession
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (urlEncodeLoginContent content)
-        }
-
-
-logOutCommand : Cmd Msg
-logOutCommand =
-    Http.post
-        { url = "/api/logout"
-        , expect = Http.expectWhatever (\x -> LogOutSuccess)
-        , body = Http.emptyBody
-        }
 
 
 
@@ -296,7 +247,16 @@ homeView =
 
 
 loginView : LoginContent -> Element Msg
-loginView { username, password } =
+loginView { username, password, status } =
+    let
+        onSubmit =
+            case status of
+                Status.Sent ->
+                    Nothing
+
+                _ ->
+                    Just LoginSubmitted
+    in
     Element.map LoginMsg <|
         Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
             [ Element.row [ Element.centerX ] [ Element.text "Login" ]
@@ -313,20 +273,21 @@ loginView { username, password } =
                 , text = password
                 , show = False
                 }
-            , Input.button
-                [ Element.centerX
-                , Element.padding 10
-                , Background.color Colors.royalBlue
-                , Border.rounded 3
-                ]
-                { onPress = Just LoginSubmitted
-                , label = Element.text "Submit"
-                }
+            , Ui.primaryButton onSubmit "Submit"
             ]
 
 
 signUpView : SignUpContent -> Element Msg
-signUpView { username, password, email } =
+signUpView { username, password, email, status } =
+    let
+        onSubmit =
+            case status of
+                Status.Sent ->
+                    Nothing
+
+                _ ->
+                    Just SignUpSubmitted
+    in
     Element.map SignUpMsg <|
         Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
             [ Element.row [ Element.centerX ] [ Element.text "Sign up" ]
@@ -349,15 +310,7 @@ signUpView { username, password, email } =
                 , text = password
                 , show = False
                 }
-            , Input.button
-                [ Element.centerX
-                , Element.padding 10
-                , Background.color Colors.royalBlue
-                , Border.rounded 3
-                ]
-                { onPress = Just SignUpSubmitted
-                , label = Element.text "Submit"
-                }
+            , Ui.primaryButton onSubmit "Submit"
             ]
 
 
@@ -419,29 +372,14 @@ titleButton =
 
 loginButton : Element Msg
 loginButton =
-    Input.button
-        (Background.color (Element.rgb255 255 255 255)
-            :: Font.color (Element.rgb255 0 0 0)
-            :: defaultAttributes
-        )
-        { onPress = Just LoginClicked, label = Element.text "Log in" }
+    Ui.simpleButton (Just LoginClicked) "Log in"
 
 
 logOutButton : Element Msg
 logOutButton =
-    Input.button
-        (Background.color (Element.rgb255 255 255 255)
-            :: Font.color (Element.rgb255 0 0 0)
-            :: defaultAttributes
-        )
-        { onPress = Just LogOutClicked, label = Element.text "Log out" }
+    Ui.simpleButton (Just LogOutClicked) "Log out"
 
 
 signUpButton : Element Msg
 signUpButton =
-    Input.button
-        (Font.color (Element.rgb255 255 255 255)
-            :: Background.color Colors.limeGreen
-            :: defaultAttributes
-        )
-        { onPress = Just SignUpClicked, label = Element.text "Sign up" }
+    Ui.successButton (Just SignUpClicked) "Sign up"
