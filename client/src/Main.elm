@@ -84,7 +84,17 @@ type Model
     = Home
     | Login LoginContent
     | SignUp SignUpContent
-    | LoggedIn Session
+    | LoggedIn LoggedInModel
+
+
+type alias LoggedInModel =
+    { session : Session
+    , page : LoggedInPage
+    }
+
+
+type LoggedInPage
+    = LoggedInHome
 
 
 isLoggedIn : Model -> Bool
@@ -104,7 +114,7 @@ init flags =
             ( Home, Cmd.none )
 
         Ok s ->
-            ( LoggedIn s, Cmd.none )
+            ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
 
 
 
@@ -114,14 +124,22 @@ init flags =
 type Msg
     = Noop
     | LoginClicked
-    | LoginContentUsernameChanged String
+    | SignUpClicked
+    | LogOutClicked
+    | LogOutSuccess
+    | LoginMsg LoginMsg
+    | SignUpMsg SignUpMsg
+
+
+type LoginMsg
+    = LoginContentUsernameChanged String
     | LoginContentPasswordChanged String
     | LoginSubmitted
     | LoginSuccess Session
-    | LogOutClicked
-    | LogOutSuccess
-    | SignUpClicked
-    | SignUpContentUsernameChanged String
+
+
+type SignUpMsg
+    = SignUpContentUsernameChanged String
     | SignUpContentPasswordChanged String
     | SignUpContentEmailChanged String
     | SignUpSubmitted
@@ -149,35 +167,46 @@ update msg model =
         ( SignUpClicked, _ ) ->
             ( SignUp emptySignUpContent, Cmd.none )
 
-        ( LoginContentUsernameChanged newUsername, Login content ) ->
-            ( Login { content | username = newUsername }, Cmd.none )
+        ( LoginMsg loginMsg, Login content ) ->
+            updateLogin loginMsg content
 
-        ( LoginContentPasswordChanged newPassword, Login content ) ->
-            ( Login { content | password = newPassword }, Cmd.none )
-
-        ( LoginSubmitted, Login content ) ->
-            ( model, loginCommand content )
-
-        ( LoginSuccess s, Home ) ->
-            ( LoggedIn s, Cmd.none )
-
-        ( LoginSuccess s, Login _ ) ->
-            ( LoggedIn s, Cmd.none )
-
-        ( SignUpContentUsernameChanged newUsername, SignUp content ) ->
-            ( SignUp { content | username = newUsername }, Cmd.none )
-
-        ( SignUpContentPasswordChanged newPassword, SignUp content ) ->
-            ( SignUp { content | password = newPassword }, Cmd.none )
-
-        ( SignUpContentEmailChanged newEmail, SignUp content ) ->
-            ( SignUp { content | email = newEmail }, Cmd.none )
-
-        ( SignUpSubmitted, SignUp content ) ->
-            ( model, signUpCommand content )
+        ( SignUpMsg signUpMsg, SignUp content ) ->
+            updateSignUp signUpMsg content |> Tuple.mapFirst SignUp
 
         _ ->
             ( model, Cmd.none )
+
+
+updateLogin : LoginMsg -> LoginContent -> ( Model, Cmd Msg )
+updateLogin loginMsg content =
+    case loginMsg of
+        LoginContentUsernameChanged newUsername ->
+            ( Login { content | username = newUsername }, Cmd.none )
+
+        LoginContentPasswordChanged newPassword ->
+            ( Login { content | password = newPassword }, Cmd.none )
+
+        LoginSubmitted ->
+            ( Login content, loginCommand content )
+
+        LoginSuccess s ->
+            ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
+
+
+updateSignUp : SignUpMsg -> SignUpContent -> ( SignUpContent, Cmd Msg )
+updateSignUp msg content =
+    case msg of
+        SignUpContentUsernameChanged newUsername ->
+            ( { content | username = newUsername }, Cmd.none )
+
+        SignUpContentPasswordChanged newPassword ->
+            ( { content | password = newPassword }, Cmd.none )
+
+        SignUpContentEmailChanged newEmail ->
+            ( { content | email = newEmail }, Cmd.none )
+
+        SignUpSubmitted ->
+            ( content, signUpCommand content )
 
 
 
@@ -202,7 +231,7 @@ resultToMsg result =
             Noop
 
         Ok a ->
-            LoginSuccess a
+            LoginMsg (LoginSuccess a)
 
 
 loginCommand : LoginContent -> Cmd Msg
@@ -258,10 +287,7 @@ viewContent model =
                 LoggedIn s ->
                     loggedInView s
     in
-    Element.column
-        [ Element.width Element.fill
-        ]
-        [ topBar model, content ]
+    Element.column [ Element.width Element.fill ] [ topBar model, content ]
 
 
 homeView : Element Msg
@@ -271,79 +297,104 @@ homeView =
 
 loginView : LoginContent -> Element Msg
 loginView { username, password } =
-    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-        [ Element.row [ Element.centerX ] [ Element.text "Login" ]
-        , Input.text []
-            { label = Input.labelAbove [] (Element.text "Username")
-            , onChange = LoginContentUsernameChanged
-            , placeholder = Nothing
-            , text = username
-            }
-        , Input.newPassword []
-            { label = Input.labelAbove [] (Element.text "Password")
-            , onChange = LoginContentPasswordChanged
-            , placeholder = Nothing
-            , text = password
-            , show = False
-            }
-        , Input.button
-            [ Element.centerX
-            , Element.padding 10
-            , Background.color Colors.royalBlue
-            , Border.rounded 3
+    Element.map LoginMsg <|
+        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            [ Element.row [ Element.centerX ] [ Element.text "Login" ]
+            , Input.text []
+                { label = Input.labelAbove [] (Element.text "Username")
+                , onChange = LoginContentUsernameChanged
+                , placeholder = Nothing
+                , text = username
+                }
+            , Input.newPassword []
+                { label = Input.labelAbove [] (Element.text "Password")
+                , onChange = LoginContentPasswordChanged
+                , placeholder = Nothing
+                , text = password
+                , show = False
+                }
+            , Input.button
+                [ Element.centerX
+                , Element.padding 10
+                , Background.color Colors.royalBlue
+                , Border.rounded 3
+                ]
+                { onPress = Just LoginSubmitted
+                , label = Element.text "Submit"
+                }
             ]
-            { onPress = Just LoginSubmitted
-            , label = Element.text "Submit"
-            }
-        ]
 
 
 signUpView : SignUpContent -> Element Msg
 signUpView { username, password, email } =
-    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-        [ Element.row [ Element.centerX ] [ Element.text "Sign up" ]
-        , Input.text []
-            { label = Input.labelAbove [] (Element.text "Username")
-            , onChange = SignUpContentUsernameChanged
-            , placeholder = Nothing
-            , text = username
-            }
-        , Input.email []
-            { label = Input.labelAbove [] (Element.text "Email")
-            , onChange = SignUpContentEmailChanged
-            , placeholder = Nothing
-            , text = email
-            }
-        , Input.newPassword []
-            { label = Input.labelAbove [] (Element.text "Password")
-            , onChange = SignUpContentPasswordChanged
-            , placeholder = Nothing
-            , text = password
-            , show = False
-            }
-        , Input.button
-            [ Element.centerX
-            , Element.padding 10
-            , Background.color Colors.royalBlue
-            , Border.rounded 3
+    Element.map SignUpMsg <|
+        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            [ Element.row [ Element.centerX ] [ Element.text "Sign up" ]
+            , Input.text []
+                { label = Input.labelAbove [] (Element.text "Username")
+                , onChange = SignUpContentUsernameChanged
+                , placeholder = Nothing
+                , text = username
+                }
+            , Input.email []
+                { label = Input.labelAbove [] (Element.text "Email")
+                , onChange = SignUpContentEmailChanged
+                , placeholder = Nothing
+                , text = email
+                }
+            , Input.newPassword []
+                { label = Input.labelAbove [] (Element.text "Password")
+                , onChange = SignUpContentPasswordChanged
+                , placeholder = Nothing
+                , text = password
+                , show = False
+                }
+            , Input.button
+                [ Element.centerX
+                , Element.padding 10
+                , Background.color Colors.royalBlue
+                , Border.rounded 3
+                ]
+                { onPress = Just SignUpSubmitted
+                , label = Element.text "Submit"
+                }
             ]
-            { onPress = Just SignUpSubmitted
-            , label = Element.text "Submit"
-            }
+
+
+loggedInView : LoggedInModel -> Element Msg
+loggedInView { session, page } =
+    let
+        mainPage =
+            case page of
+                LoggedInHome ->
+                    loggedInHomeView session
+
+        element =
+            Element.column
+                [ Element.alignTop
+                , Element.padding 10
+                , Element.width Element.fill
+                ]
+                [ mainPage ]
+    in
+    Element.row
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        , Element.spacing 20
         ]
+        [ element ]
 
 
-loggedInView : Session -> Element Msg
-loggedInView session =
-    Element.text ("Welcome " ++ session.username)
+loggedInHomeView : Session -> Element Msg
+loggedInHomeView session =
+    Element.text ("Welcome " ++ session.username ++ "!")
 
 
 topBar : Model -> Element Msg
 topBar model =
     Element.row
         [ Background.color Colors.royalBlue
-        , Element.width
-            Element.fill
+        , Element.width Element.fill
         , Element.spacing 30
         ]
         [ titleButton
