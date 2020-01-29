@@ -145,6 +145,12 @@ pub fn main() {
             routes::auth::activate,
             routes::auth::login,
             routes::auth::logout,
+            routes::project::new_project,
+            routes::project::get_project,
+            routes::project::projects,
+            routes::capsule::new_capsule,
+            routes::capsule::get_capsule,
+            routes::capsule::capsules,
        ])
        .launch();
 }
