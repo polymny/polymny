@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Api
 import Browser
+import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -120,6 +121,7 @@ type LoginMsg
     | LoginContentPasswordChanged String
     | LoginSubmitted
     | LoginSuccess Session
+    | LoginFailed
 
 
 type SignUpMsg
@@ -185,6 +187,9 @@ updateLogin loginMsg content =
         LoginSuccess s ->
             ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
 
+        LoginFailed ->
+            ( Login { content | status = Status.Error () }, Cmd.none )
+
 
 updateSignUp : SignUpMsg -> SignUpContent -> ( SignUpContent, Cmd Msg )
 updateSignUp msg content =
@@ -214,7 +219,7 @@ updateSignUp msg content =
 resultToMsg result =
     case result of
         Err e ->
-            Noop
+            LoginMsg LoginFailed
 
         Ok a ->
             LoginMsg (LoginSuccess a)
@@ -275,11 +280,20 @@ loginView { username, password, status } =
 
                 _ ->
                     Ui.primaryButton (Just LoginSubmitted) "Login"
-    in
-    Element.map LoginMsg <|
-        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-            [ Element.row [ Element.centerX ] [ Element.text "Login" ]
-            , Input.text []
+
+        errorMessage =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Login failed")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Login" ]
+
+        fields =
+            [ Input.text []
                 { label = Input.labelAbove [] (Element.text "Username")
                 , onChange = LoginContentUsernameChanged
                 , placeholder = Nothing
@@ -295,6 +309,18 @@ loginView { username, password, status } =
             , submitButton
             ]
 
+        form =
+            case errorMessage of
+                Just message ->
+                    header :: message :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map LoginMsg <|
+        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            form
+
 
 signUpView : SignUpContent -> Element Msg
 signUpView { username, password, email, status } =
@@ -305,15 +331,27 @@ signUpView { username, password, email, status } =
                     Ui.primaryButtonDisabled "Submitting ..."
 
                 Status.Success () ->
-                    Element.text "An email with a verification link has been sent!"
+                    Ui.primaryButtonDisabled "Submitted!"
 
                 _ ->
                     Ui.primaryButton (Just SignUpSubmitted) "Submit"
-    in
-    Element.map SignUpMsg <|
-        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-            [ Element.row [ Element.centerX ] [ Element.text "Sign up" ]
-            , Input.text []
+
+        message =
+            case status of
+                Status.Success () ->
+                    Just (Ui.successModal "An email has been sent to your address!")
+
+                Status.Error () ->
+                    Just (Ui.errorModal "Sign up failed")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Sign up" ]
+
+        fields =
+            [ Input.text []
                 { label = Input.labelAbove [] (Element.text "Username")
                 , onChange = SignUpContentUsernameChanged
                 , placeholder = Nothing
@@ -334,6 +372,19 @@ signUpView { username, password, email, status } =
                 }
             , submitButton
             ]
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map SignUpMsg <|
+        Element.column
+            [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            form
 
 
 loggedInView : LoggedInModel -> Element Msg
@@ -368,7 +419,7 @@ loggedInHomeView session =
 topBar : Model -> Element Msg
 topBar model =
     Element.row
-        [ Background.color Ui.primaryColor
+        [ Background.color Colors.primary
         , Element.width Element.fill
         , Element.spacing 30
         ]
