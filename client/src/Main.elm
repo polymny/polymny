@@ -127,6 +127,7 @@ type SignUpMsg
     | SignUpContentPasswordChanged String
     | SignUpContentEmailChanged String
     | SignUpSubmitted
+    | SignUpSuccess
 
 
 
@@ -199,8 +200,11 @@ updateSignUp msg content =
 
         SignUpSubmitted ->
             ( { content | status = Status.Sent }
-            , Api.signUp (\x -> Noop) content
+            , Api.signUp (\x -> SignUpMsg SignUpSuccess) content
             )
+
+        SignUpSuccess ->
+            ( { content | status = Status.Success () }, Cmd.none )
 
 
 
@@ -298,7 +302,10 @@ signUpView { username, password, email, status } =
         submitButton =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Submit"
+                    Ui.primaryButtonDisabled "Submitting ..."
+
+                Status.Success () ->
+                    Element.text "An email with a verification link has been sent!"
 
                 _ ->
                     Ui.primaryButton (Just SignUpSubmitted) "Submit"
