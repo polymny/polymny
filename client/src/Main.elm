@@ -153,6 +153,7 @@ type LoggedInMsg
 type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
+    | NewProjectSuccess
 
 
 
@@ -270,7 +271,10 @@ updateNewProjectMsg msg content =
             ( { content | name = newProjectName }, Cmd.none )
 
         NewProjectSubmitted ->
-            ( content, Cmd.none )
+            ( { content | status = Status.Sent }, Api.newProject resultToMsg2 content )
+
+        NewProjectSuccess ->
+            ( { content | status = Status.Success () }, Cmd.none )
 
 
 
@@ -284,6 +288,15 @@ resultToMsg result =
 
         Ok a ->
             LoginMsg (LoginSuccess a)
+
+
+resultToMsg2 result =
+    case result of
+        Err _ ->
+            Noop
+
+        Ok _ ->
+            LoggedInMsg (NewProjectMsg NewProjectSuccess)
 
 
 
@@ -488,13 +501,19 @@ loggedInNewProjectView session { status, name } =
                 Status.Sent ->
                     Ui.primaryButtonDisabled "Creating project..."
 
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Project created!"
+
                 _ ->
                     Ui.primaryButton (Just NewProjectSubmitted) "Create project"
 
-        errorMessage =
+        message =
             case status of
                 Status.Error () ->
                     Just (Ui.errorModal "Project creation failed")
+
+                Status.Success () ->
+                    Just (Ui.successModal "Project created!")
 
                 _ ->
                     Nothing
@@ -513,9 +532,9 @@ loggedInNewProjectView session { status, name } =
             ]
 
         form =
-            case errorMessage of
-                Just message ->
-                    header :: message :: fields
+            case message of
+                Just m ->
+                    header :: m :: fields
 
                 Nothing ->
                     header :: fields
@@ -556,7 +575,7 @@ topBar model =
 
 homeButton : Element Msg
 homeButton =
-    Ui.textButton (Just HomeClicked) "Preparation"
+    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just HomeClicked) "Preparation")
 
 
 newProjectButton : Element Msg
