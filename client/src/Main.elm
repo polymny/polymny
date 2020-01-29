@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Api
 import Browser
 import Colors
 import Element exposing (Element)
@@ -11,6 +12,8 @@ import Element.Input as Input
 import Html
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Status exposing (Status)
+import Ui
 
 
 main =
@@ -26,13 +29,9 @@ main =
 -- MODEL
 
 
-urlEncode : List ( String, String ) -> String
-urlEncode strings =
-    String.join "&" (List.map (\( x, y ) -> x ++ "=" ++ y) strings)
-
-
 type alias SignUpContent =
-    { username : String
+    { status : Status () ()
+    , username : String
     , password : String
     , email : String
     }
@@ -40,34 +39,19 @@ type alias SignUpContent =
 
 emptySignUpContent : SignUpContent
 emptySignUpContent =
-    SignUpContent "" "" ""
-
-
-urlEncodeSignUpContent : SignUpContent -> String
-urlEncodeSignUpContent { username, password, email } =
-    urlEncode
-        [ ( "username", username )
-        , ( "password", password )
-        , ( "email", email )
-        ]
+    SignUpContent Status.NotSent "" "" ""
 
 
 type alias LoginContent =
-    { username : String
+    { status : Status () ()
+    , username : String
     , password : String
     }
 
 
 emptyLoginContent : LoginContent
 emptyLoginContent =
-    LoginContent "" ""
-
-
-urlEncodeLoginContent { username, password } =
-    urlEncode
-        [ ( "username", username )
-        , ( "password", password )
-        ]
+    LoginContent Status.NotSent "" ""
 
 
 type alias Session =
@@ -84,7 +68,17 @@ type Model
     = Home
     | Login LoginContent
     | SignUp SignUpContent
-    | LoggedIn Session
+    | LoggedIn LoggedInModel
+
+
+type alias LoggedInModel =
+    { session : Session
+    , page : LoggedInPage
+    }
+
+
+type LoggedInPage
+    = LoggedInHome
 
 
 isLoggedIn : Model -> Bool
@@ -104,7 +98,7 @@ init flags =
             ( Home, Cmd.none )
 
         Ok s ->
-            ( LoggedIn s, Cmd.none )
+            ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
 
 
 
@@ -113,18 +107,29 @@ init flags =
 
 type Msg
     = Noop
+    | HomeClicked
     | LoginClicked
-    | LoginContentUsernameChanged String
+    | SignUpClicked
+    | LogOutClicked
+    | LogOutSuccess
+    | LoginMsg LoginMsg
+    | SignUpMsg SignUpMsg
+
+
+type LoginMsg
+    = LoginContentUsernameChanged String
     | LoginContentPasswordChanged String
     | LoginSubmitted
     | LoginSuccess Session
-    | LogOutClicked
-    | LogOutSuccess
-    | SignUpClicked
-    | SignUpContentUsernameChanged String
+    | LoginFailed
+
+
+type SignUpMsg
+    = SignUpContentUsernameChanged String
     | SignUpContentPasswordChanged String
     | SignUpContentEmailChanged String
     | SignUpSubmitted
+    | SignUpSuccess
 
 
 
@@ -137,11 +142,17 @@ update msg model =
         ( Noop, m ) ->
             ( m, Cmd.none )
 
+        ( HomeClicked, LoggedIn { session, page } ) ->
+            ( LoggedIn { session = session, page = LoggedInHome }, Cmd.none )
+
+        ( HomeClicked, _ ) ->
+            ( Home, Cmd.none )
+
         ( LoginClicked, _ ) ->
             ( Login emptyLoginContent, Cmd.none )
 
         ( LogOutClicked, _ ) ->
-            ( model, logOutCommand )
+            ( model, Api.logOut (\x -> LogOutSuccess) )
 
         ( LogOutSuccess, _ ) ->
             ( Home, Cmd.none )
@@ -149,81 +160,69 @@ update msg model =
         ( SignUpClicked, _ ) ->
             ( SignUp emptySignUpContent, Cmd.none )
 
-        ( LoginContentUsernameChanged newUsername, Login content ) ->
-            ( Login { content | username = newUsername }, Cmd.none )
+        ( LoginMsg loginMsg, Login content ) ->
+            updateLogin loginMsg content
 
-        ( LoginContentPasswordChanged newPassword, Login content ) ->
-            ( Login { content | password = newPassword }, Cmd.none )
-
-        ( LoginSubmitted, Login content ) ->
-            ( model, loginCommand content )
-
-        ( LoginSuccess s, Home ) ->
-            ( LoggedIn s, Cmd.none )
-
-        ( LoginSuccess s, Login _ ) ->
-            ( LoggedIn s, Cmd.none )
-
-        ( SignUpContentUsernameChanged newUsername, SignUp content ) ->
-            ( SignUp { content | username = newUsername }, Cmd.none )
-
-        ( SignUpContentPasswordChanged newPassword, SignUp content ) ->
-            ( SignUp { content | password = newPassword }, Cmd.none )
-
-        ( SignUpContentEmailChanged newEmail, SignUp content ) ->
-            ( SignUp { content | email = newEmail }, Cmd.none )
-
-        ( SignUpSubmitted, SignUp content ) ->
-            ( model, signUpCommand content )
+        ( SignUpMsg signUpMsg, SignUp content ) ->
+            updateSignUp signUpMsg content |> Tuple.mapFirst SignUp
 
         _ ->
             ( model, Cmd.none )
+
+
+updateLogin : LoginMsg -> LoginContent -> ( Model, Cmd Msg )
+updateLogin loginMsg content =
+    case loginMsg of
+        LoginContentUsernameChanged newUsername ->
+            ( Login { content | username = newUsername }, Cmd.none )
+
+        LoginContentPasswordChanged newPassword ->
+            ( Login { content | password = newPassword }, Cmd.none )
+
+        LoginSubmitted ->
+            ( Login { content | status = Status.Sent }
+            , Api.login resultToMsg decodeSession content
+            )
+
+        LoginSuccess s ->
+            ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
+
+        LoginFailed ->
+            ( Login { content | status = Status.Error () }, Cmd.none )
+
+
+updateSignUp : SignUpMsg -> SignUpContent -> ( SignUpContent, Cmd Msg )
+updateSignUp msg content =
+    case msg of
+        SignUpContentUsernameChanged newUsername ->
+            ( { content | username = newUsername }, Cmd.none )
+
+        SignUpContentPasswordChanged newPassword ->
+            ( { content | password = newPassword }, Cmd.none )
+
+        SignUpContentEmailChanged newEmail ->
+            ( { content | email = newEmail }, Cmd.none )
+
+        SignUpSubmitted ->
+            ( { content | status = Status.Sent }
+            , Api.signUp (\x -> SignUpMsg SignUpSuccess) content
+            )
+
+        SignUpSuccess ->
+            ( { content | status = Status.Success () }, Cmd.none )
 
 
 
 -- COMMANDS
 
 
-signUpCommand : SignUpContent -> Cmd Msg
-signUpCommand content =
-    Http.post
-        { url = "/api/new-user/"
-        , expect = Http.expectWhatever (\x -> Noop)
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (urlEncodeSignUpContent content)
-        }
-
-
 resultToMsg result =
     case result of
         Err e ->
-            Noop
+            LoginMsg LoginFailed
 
         Ok a ->
-            LoginSuccess a
-
-
-loginCommand : LoginContent -> Cmd Msg
-loginCommand content =
-    Http.post
-        { url = "/api/login"
-        , expect = Http.expectJson resultToMsg decodeSession
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (urlEncodeLoginContent content)
-        }
-
-
-logOutCommand : Cmd Msg
-logOutCommand =
-    Http.post
-        { url = "/api/logout"
-        , expect = Http.expectWhatever (\x -> LogOutSuccess)
-        , body = Http.emptyBody
-        }
+            LoginMsg (LoginSuccess a)
 
 
 
@@ -238,7 +237,7 @@ defaultAttributes =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layout [] (viewContent model)
+    Element.layout [ Font.size 15 ] (viewContent model)
 
 
 viewContent : Model -> Element Msg
@@ -258,95 +257,174 @@ viewContent model =
                 LoggedIn s ->
                     loggedInView s
     in
-    Element.column
-        [ Element.width Element.fill
-        ]
-        [ topBar model, content ]
+    Element.column [ Element.width Element.fill ] [ topBar model, content ]
 
 
 homeView : Element Msg
 homeView =
-    Element.text "Home"
+    Element.column
+        [ Element.alignTop
+        , Element.padding 10
+        , Element.width Element.fill
+        ]
+        [ Element.text "Home" ]
 
 
 loginView : LoginContent -> Element Msg
-loginView { username, password } =
-    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-        [ Element.row [ Element.centerX ] [ Element.text "Login" ]
-        , Input.text []
-            { label = Input.labelAbove [] (Element.text "Username")
-            , onChange = LoginContentUsernameChanged
-            , placeholder = Nothing
-            , text = username
-            }
-        , Input.newPassword []
-            { label = Input.labelAbove [] (Element.text "Password")
-            , onChange = LoginContentPasswordChanged
-            , placeholder = Nothing
-            , text = password
-            , show = False
-            }
-        , Input.button
-            [ Element.centerX
-            , Element.padding 10
-            , Background.color Colors.royalBlue
-            , Border.rounded 3
+loginView { username, password, status } =
+    let
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Logging in..."
+
+                _ ->
+                    Ui.primaryButton (Just LoginSubmitted) "Login"
+
+        errorMessage =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Login failed")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Login" ]
+
+        fields =
+            [ Input.text []
+                { label = Input.labelAbove [] (Element.text "Username")
+                , onChange = LoginContentUsernameChanged
+                , placeholder = Nothing
+                , text = username
+                }
+            , Input.newPassword []
+                { label = Input.labelAbove [] (Element.text "Password")
+                , onChange = LoginContentPasswordChanged
+                , placeholder = Nothing
+                , text = password
+                , show = False
+                }
+            , submitButton
             ]
-            { onPress = Just LoginSubmitted
-            , label = Element.text "Submit"
-            }
-        ]
+
+        form =
+            case errorMessage of
+                Just message ->
+                    header :: message :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map LoginMsg <|
+        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            form
 
 
 signUpView : SignUpContent -> Element Msg
-signUpView { username, password, email } =
-    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-        [ Element.row [ Element.centerX ] [ Element.text "Sign up" ]
-        , Input.text []
-            { label = Input.labelAbove [] (Element.text "Username")
-            , onChange = SignUpContentUsernameChanged
-            , placeholder = Nothing
-            , text = username
-            }
-        , Input.email []
-            { label = Input.labelAbove [] (Element.text "Email")
-            , onChange = SignUpContentEmailChanged
-            , placeholder = Nothing
-            , text = email
-            }
-        , Input.newPassword []
-            { label = Input.labelAbove [] (Element.text "Password")
-            , onChange = SignUpContentPasswordChanged
-            , placeholder = Nothing
-            , text = password
-            , show = False
-            }
-        , Input.button
-            [ Element.centerX
-            , Element.padding 10
-            , Background.color Colors.royalBlue
-            , Border.rounded 3
+signUpView { username, password, email, status } =
+    let
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Submitting ..."
+
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Submitted!"
+
+                _ ->
+                    Ui.primaryButton (Just SignUpSubmitted) "Submit"
+
+        message =
+            case status of
+                Status.Success () ->
+                    Just (Ui.successModal "An email has been sent to your address!")
+
+                Status.Error () ->
+                    Just (Ui.errorModal "Sign up failed")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Sign up" ]
+
+        fields =
+            [ Input.text []
+                { label = Input.labelAbove [] (Element.text "Username")
+                , onChange = SignUpContentUsernameChanged
+                , placeholder = Nothing
+                , text = username
+                }
+            , Input.email []
+                { label = Input.labelAbove [] (Element.text "Email")
+                , onChange = SignUpContentEmailChanged
+                , placeholder = Nothing
+                , text = email
+                }
+            , Input.newPassword []
+                { label = Input.labelAbove [] (Element.text "Password")
+                , onChange = SignUpContentPasswordChanged
+                , placeholder = Nothing
+                , text = password
+                , show = False
+                }
+            , submitButton
             ]
-            { onPress = Just SignUpSubmitted
-            , label = Element.text "Submit"
-            }
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map SignUpMsg <|
+        Element.column
+            [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            form
+
+
+loggedInView : LoggedInModel -> Element Msg
+loggedInView { session, page } =
+    let
+        mainPage =
+            case page of
+                LoggedInHome ->
+                    loggedInHomeView session
+
+        element =
+            Element.column
+                [ Element.alignTop
+                , Element.padding 10
+                , Element.width Element.fill
+                ]
+                [ mainPage ]
+    in
+    Element.row
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        , Element.spacing 20
         ]
+        [ element ]
 
 
-loggedInView : Session -> Element Msg
-loggedInView session =
-    Element.text ("Welcome " ++ session.username)
+loggedInHomeView : Session -> Element Msg
+loggedInHomeView session =
+    Element.text ("Welcome " ++ session.username ++ "!")
 
 
 topBar : Model -> Element Msg
 topBar model =
     Element.row
-        [ Background.color Colors.royalBlue
-        , Element.width
-            Element.fill
+        [ Background.color Colors.primary
+        , Element.width Element.fill
         , Element.spacing 30
         ]
-        [ titleButton
+        [ Element.row [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            [ homeButton ]
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ logOutButton ]
@@ -357,40 +435,21 @@ topBar model =
         ]
 
 
-titleButton : Element Msg
-titleButton =
-    Element.el
-        (Font.color (Element.rgb255 255 255 255)
-            :: defaultAttributes
-        )
-        (Element.text "Home")
+homeButton : Element Msg
+homeButton =
+    Ui.textButton (Just HomeClicked) "Preparation"
 
 
 loginButton : Element Msg
 loginButton =
-    Input.button
-        (Background.color (Element.rgb255 255 255 255)
-            :: Font.color (Element.rgb255 0 0 0)
-            :: defaultAttributes
-        )
-        { onPress = Just LoginClicked, label = Element.text "Log in" }
+    Ui.simpleButton (Just LoginClicked) "Log in"
 
 
 logOutButton : Element Msg
 logOutButton =
-    Input.button
-        (Background.color (Element.rgb255 255 255 255)
-            :: Font.color (Element.rgb255 0 0 0)
-            :: defaultAttributes
-        )
-        { onPress = Just LogOutClicked, label = Element.text "Log out" }
+    Ui.simpleButton (Just LogOutClicked) "Log out"
 
 
 signUpButton : Element Msg
 signUpButton =
-    Input.button
-        (Font.color (Element.rgb255 255 255 255)
-            :: Background.color Colors.limeGreen
-            :: defaultAttributes
-        )
-        { onPress = Just SignUpClicked, label = Element.text "Sign up" }
+    Ui.successButton (Just SignUpClicked) "Sign up"
