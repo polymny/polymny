@@ -237,7 +237,7 @@ defaultAttributes =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layout [] (viewContent model)
+    Element.layout [ Font.size 15 ] (viewContent model)
 
 
 viewContent : Model -> Element Msg
