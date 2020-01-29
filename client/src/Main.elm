@@ -54,6 +54,17 @@ emptyLoginContent =
     LoginContent Status.NotSent "" ""
 
 
+type alias NewProjectContent =
+    { status : Status () ()
+    , name : String
+    }
+
+
+emptyNewProjectContent : NewProjectContent
+emptyNewProjectContent =
+    NewProjectContent Status.NotSent ""
+
+
 type alias Session =
     { username : String
     }
@@ -79,6 +90,7 @@ type alias LoggedInModel =
 
 type LoggedInPage
     = LoggedInHome
+    | LoggedInNewProject NewProjectContent
 
 
 isLoggedIn : Model -> Bool
@@ -114,6 +126,7 @@ type Msg
     | LogOutSuccess
     | LoginMsg LoginMsg
     | SignUpMsg SignUpMsg
+    | LoggedInMsg LoggedInMsg
 
 
 type LoginMsg
@@ -130,6 +143,16 @@ type SignUpMsg
     | SignUpContentEmailChanged String
     | SignUpSubmitted
     | SignUpSuccess
+
+
+type LoggedInMsg
+    = NewProjectClicked
+    | NewProjectMsg NewProjectMsg
+
+
+type NewProjectMsg
+    = NewProjectNameChanged String
+    | NewProjectSubmitted
 
 
 
@@ -165,6 +188,13 @@ update msg model =
 
         ( SignUpMsg signUpMsg, SignUp content ) ->
             updateSignUp signUpMsg content |> Tuple.mapFirst SignUp
+
+        ( LoggedInMsg loggedInMsg, LoggedIn loggedInModel ) ->
+            let
+                ( newModel, cmd ) =
+                    updateLoggedIn loggedInMsg loggedInModel
+            in
+            ( LoggedIn newModel, cmd )
 
         _ ->
             ( model, Cmd.none )
@@ -210,6 +240,37 @@ updateSignUp msg content =
 
         SignUpSuccess ->
             ( { content | status = Status.Success () }, Cmd.none )
+
+
+updateLoggedIn : LoggedInMsg -> LoggedInModel -> ( LoggedInModel, Cmd Msg )
+updateLoggedIn msg { session, page } =
+    case ( msg, page ) of
+        ( NewProjectClicked, _ ) ->
+            ( { session = session
+              , page = LoggedInNewProject emptyNewProjectContent
+              }
+            , Cmd.none
+            )
+
+        ( NewProjectMsg newProjectMsg, LoggedInNewProject content ) ->
+            let
+                ( newModel, newCmd ) =
+                    updateNewProjectMsg newProjectMsg content
+            in
+            ( { session = session, page = LoggedInNewProject newModel }, newCmd )
+
+        ( _, _ ) ->
+            ( { session = session, page = page }, Cmd.none )
+
+
+updateNewProjectMsg : NewProjectMsg -> NewProjectContent -> ( NewProjectContent, Cmd Msg )
+updateNewProjectMsg msg content =
+    case msg of
+        NewProjectNameChanged newProjectName ->
+            ( { content | name = newProjectName }, Cmd.none )
+
+        NewProjectSubmitted ->
+            ( content, Cmd.none )
 
 
 
@@ -395,6 +456,9 @@ loggedInView { session, page } =
                 LoggedInHome ->
                     loggedInHomeView session
 
+                LoggedInNewProject content ->
+                    loggedInNewProjectView session content
+
         element =
             Element.column
                 [ Element.alignTop
@@ -416,6 +480,52 @@ loggedInHomeView session =
     Element.text ("Welcome " ++ session.username ++ "!")
 
 
+loggedInNewProjectView : Session -> NewProjectContent -> Element Msg
+loggedInNewProjectView session { status, name } =
+    let
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Creating project..."
+
+                _ ->
+                    Ui.primaryButton (Just NewProjectSubmitted) "Create project"
+
+        errorMessage =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Project creation failed")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "New project" ]
+
+        fields =
+            [ Input.text []
+                { label = Input.labelAbove [] (Element.text "Project name")
+                , onChange = NewProjectNameChanged
+                , placeholder = Nothing
+                , text = name
+                }
+            , submitButton
+            ]
+
+        form =
+            case errorMessage of
+                Just message ->
+                    header :: message :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map LoggedInMsg <|
+        Element.map NewProjectMsg <|
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+                form
+
+
 topBar : Model -> Element Msg
 topBar model =
     Element.row
@@ -423,8 +533,17 @@ topBar model =
         , Element.width Element.fill
         , Element.spacing 30
         ]
-        [ Element.row [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+        [ Element.row
+            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             [ homeButton ]
+        , Element.row
+            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            (if isLoggedIn model then
+                [ newProjectButton ]
+
+             else
+                []
+            )
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ logOutButton ]
@@ -438,6 +557,11 @@ topBar model =
 homeButton : Element Msg
 homeButton =
     Ui.textButton (Just HomeClicked) "Preparation"
+
+
+newProjectButton : Element Msg
+newProjectButton =
+    Ui.textButton (Just (LoggedInMsg NewProjectClicked)) "New project"
 
 
 loginButton : Element Msg

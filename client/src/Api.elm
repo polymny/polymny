@@ -9,6 +9,17 @@ encode strings =
     String.join "&" (List.map (\( x, y ) -> x ++ "=" ++ y) strings)
 
 
+stringBody : String -> Http.Body
+stringBody string =
+    Http.stringBody
+        "application/x-www-form-urlencoded"
+        string
+
+
+
+-- Sign up form
+
+
 type alias SignUpContent a =
     { a
         | username : String
@@ -31,11 +42,12 @@ signUp responseToMsg content =
     Http.post
         { url = "/api/new-user/"
         , expect = Http.expectWhatever responseToMsg
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (encodeSignUpContent content)
+        , body = stringBody (encodeSignUpContent content)
         }
+
+
+
+-- Log in form
 
 
 type alias LoginContent a =
@@ -45,6 +57,7 @@ type alias LoginContent a =
     }
 
 
+encodeLoginContent : LoginContent a -> String
 encodeLoginContent { username, password } =
     encode
         [ ( "username", username )
@@ -57,10 +70,7 @@ login resultToMsg decoder content =
     Http.post
         { url = "/api/login"
         , expect = Http.expectJson resultToMsg decoder
-        , body =
-            Http.stringBody
-                "application/x-www-form-urlencoded"
-                (encodeLoginContent content)
+        , body = stringBody (encodeLoginContent content)
         }
 
 
@@ -70,4 +80,30 @@ logOut resultToMsg =
         { url = "/api/logout"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.emptyBody
+        }
+
+
+
+-- New project form
+
+
+type alias NewProjectContent a =
+    { a
+        | name : String
+    }
+
+
+encodeNewProjectContent : NewProjectContent a -> String
+encodeNewProjectContent { name } =
+    encode
+        [ ( "project_name", name )
+        ]
+
+
+newProject : (Result Http.Error () -> msg) -> NewProjectContent a -> Cmd msg
+newProject resultToMsg content =
+    Http.post
+        { url = "/api/new-project"
+        , expect = Http.expectWhatever resultToMsg
+        , body = stringBody (encodeNewProjectContent content)
         }
