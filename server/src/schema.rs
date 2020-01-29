@@ -20,7 +20,7 @@ table! {
     projects (id) {
         id -> Int4,
         user_id -> Int4,
-        projectname -> Varchar,
+        project_name -> Varchar,
     }
 }
 

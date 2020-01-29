@@ -20,8 +20,8 @@ pub struct Project {
     /// The owner of the project.
     pub user_id: i32,
 
-    /// The projectname of the project.
-    pub projectname: String,
+    /// The project_name of the project.
+    pub project_name: String,
 
 }
 
@@ -32,17 +32,17 @@ pub struct NewProject {
     /// The owner of the project.
     pub user_id: i32,
 
-    /// The projectname of the project.
-    pub projectname: String,
+    /// The project_name of the project.
+    pub project_name: String,
 
 }
 
 impl Project {
     /// Creates a new project.
-    pub fn create(projectname: &str , user_id: i32) -> Result<NewProject> {
+    pub fn create(project_name: &str , user_id: i32) -> Result<NewProject> {
         Ok(NewProject {
             user_id: user_id,
-            projectname: String::from(projectname),
+            project_name: String::from(project_name),
             })
 
     }

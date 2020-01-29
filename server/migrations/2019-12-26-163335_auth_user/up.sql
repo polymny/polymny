@@ -18,7 +18,7 @@ CREATE TABLE sessions (
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users (id),
-    projectname VARCHAR NOT NULL UNIQUE
+    project_name VARCHAR NOT NULL UNIQUE
 );
 
 CREATE TABLE capsules (

@@ -16,7 +16,7 @@ use crate::{Database, Result};
 #[derive(FromForm)]
 pub struct NewProjectForm {
     /// The username of the form.
-    projectname: String,
+    project_name: String,
 
 }
 
@@ -29,7 +29,7 @@ pub fn new_project<'a>( db: Database, mut cookies: Cookies, project: Form<NewPro
     let user = User::from_session(cookie.unwrap().value(), &db)?;
     //Ok(json!({"username": user.username}));
 
-    let project = Project::create(&project.projectname, user.id)?;
+    let project = Project::create(&project.project_name, user.id)?;
     project.save(&db)?;
 
     Ok(Response::build()
@@ -42,7 +42,7 @@ pub fn new_project<'a>( db: Database, mut cookies: Cookies, project: Form<NewPro
 pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
 
     let project = Project::get(id, &db)?;
-    Ok(json!({"projectname": project.projectname}))
+    Ok(json!({"project_name": project.project_name}))
 
 }
 
