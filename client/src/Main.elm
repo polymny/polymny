@@ -254,7 +254,12 @@ viewContent model =
 
 homeView : Element Msg
 homeView =
-    Element.text "Home"
+    Element.column
+        [ Element.alignTop
+        , Element.padding 10
+        , Element.width Element.fill
+        ]
+        [ Element.text "Home" ]
 
 
 loginView : LoginContent -> Element Msg
