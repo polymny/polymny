@@ -28,7 +28,7 @@ primaryColor =
 
 
 successColor =
-    Element.rgb255 72 199 116
+    Element.rgb255 40 167 69
 
 
 warningColor =
@@ -48,8 +48,6 @@ buttonAttributes =
     [ Element.centerX
     , Element.padding 10
     , Border.rounded 5
-    , Border.width 1
-    , Border.color borderColor
     ]
 
 

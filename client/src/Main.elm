@@ -2,7 +2,6 @@ module Main exposing (..)
 
 import Api
 import Browser
-import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -362,7 +361,7 @@ loggedInHomeView session =
 topBar : Model -> Element Msg
 topBar model =
     Element.row
-        [ Background.color Colors.royalBlue
+        [ Background.color Ui.primaryColor
         , Element.width Element.fill
         , Element.spacing 30
         ]
