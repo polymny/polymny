@@ -48,6 +48,8 @@ pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
 
 /// Get all the projects .
 #[get("/projects")]
-pub fn projects() -> &'static str {
- "Hello projects"
- }
+pub fn projects(db: Database, mut cookies : Cookies) -> Result<JsonValue> {
+    let cookie = cookies.get_private("EXAUTH");
+    let user = User::from_session(cookie.unwrap().value(), &db)?;
+    Ok(json!({"projects": user.projects(&db)?}))
+}
