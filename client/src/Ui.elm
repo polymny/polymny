@@ -1,4 +1,14 @@
-module Ui exposing (..)
+module Ui exposing
+    ( errorModal
+    , linkButton
+    , primaryButton
+    , primaryButtonDisabled
+    , simpleButton
+    , simpleButtonDisabled
+    , successButton
+    , successModal
+    , textButton
+    )
 
 import Colors
 import Element exposing (Element)
@@ -22,6 +32,17 @@ textButton onPress content =
         [ Font.color Colors.white
         , Element.centerX
         , Element.padding 10
+        ]
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
+linkButton : Maybe msg -> String -> Element msg
+linkButton onPress content =
+    Input.button
+        [ Font.color Colors.link
+        , Font.underline
         ]
         { onPress = onPress
         , label = Element.text content

@@ -1,7 +1,7 @@
-module Api exposing (..)
+module Api exposing (logOut, login, newProject, signUp)
 
 import Http
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode exposing (Decoder)
 
 
 encode : List ( String, String ) -> String

@@ -114,7 +114,7 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
         "".to_string()
     } else {
         match User::from_session(cookie.unwrap().value(), &db) {
-            Ok(user) => format!("flags: {{\"username\": \"{}\"}},", user.username),
+            Ok(user) => format!("flags: {{\"username\": \"{}\", \"projects\": {:?}}},", user.username, user.projects(&db)?),
             Err(_) => "".to_string(),
         }
     };

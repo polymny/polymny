@@ -105,17 +105,15 @@ impl User {
 
     }
 
-    /// Activates a user from its activation key.
-    pub fn activate(key: &str, db: &PgConnection) -> Result<()> {
+    /// Activates a user from its activation key and returns the user.
+    pub fn activate(key: &str, db: &PgConnection) -> Result<User> {
         use crate::schema::users::dsl::*;
 
         let none: Option<String> = None;
 
-        diesel::update(users.filter(activation_key.eq(key)))
+        Ok(diesel::update(users.filter(activation_key.eq(key)))
             .set((activation_key.eq(none), activated.eq(true)))
-            .get_result::<User>(db)?;
-
-        Ok(())
+            .get_result::<User>(db)?)
     }
 
     /// Authenticates a user from its username and password.
@@ -169,6 +167,20 @@ impl User {
             .first::<User>(db)?;
 
         Ok(user)
+    }
+
+    /// Returns the list of the user's projects names.
+    pub fn projects(&self, db: &PgConnection) -> Result<Vec<String>> {
+        use crate::db::project::Project;
+        use crate::schema::projects::dsl::*;
+
+        Ok(projects
+            .filter(user_id.eq(self.id))
+            .load::<Project>(db)?
+            .into_iter()
+            .map(|x| x.project_name)
+            .collect())
+
     }
 
 }

@@ -1,27 +1,25 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Api
 import Browser
 import Colors
 import Element exposing (Element)
 import Element.Background as Background
-import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Status exposing (Status)
 import Ui
 
 
+main : Program Decode.Value Model Msg
 main =
     Browser.element
         { init = init
         , update = update
         , view = view
-        , subscriptions = \x -> Sub.none
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -67,12 +65,15 @@ emptyNewProjectContent =
 
 type alias Session =
     { username : String
+    , projects : List String
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map Session (Decode.field "username" Decode.string)
+    Decode.map2 Session
+        (Decode.field "username" Decode.string)
+        (Decode.field "projects" (Decode.list Decode.string))
 
 
 type Model
@@ -106,7 +107,7 @@ isLoggedIn model =
 init : Decode.Value -> ( Model, Cmd Msg )
 init flags =
     case Decode.decodeValue decodeSession flags of
-        Err e ->
+        Err _ ->
             ( Home, Cmd.none )
 
         Ok s ->
@@ -166,7 +167,7 @@ update msg model =
         ( Noop, m ) ->
             ( m, Cmd.none )
 
-        ( HomeClicked, LoggedIn { session, page } ) ->
+        ( HomeClicked, LoggedIn { session } ) ->
             ( LoggedIn { session = session, page = LoggedInHome }, Cmd.none )
 
         ( HomeClicked, _ ) ->
@@ -176,7 +177,7 @@ update msg model =
             ( Login emptyLoginContent, Cmd.none )
 
         ( LogOutClicked, _ ) ->
-            ( model, Api.logOut (\x -> LogOutSuccess) )
+            ( model, Api.logOut (\_ -> LogOutSuccess) )
 
         ( LogOutSuccess, _ ) ->
             ( Home, Cmd.none )
@@ -236,7 +237,7 @@ updateSignUp msg content =
 
         SignUpSubmitted ->
             ( { content | status = Status.Sent }
-            , Api.signUp (\x -> SignUpMsg SignUpSuccess) content
+            , Api.signUp (\_ -> SignUpMsg SignUpSuccess) content
             )
 
         SignUpSuccess ->
@@ -255,41 +256,46 @@ updateLoggedIn msg { session, page } =
 
         ( NewProjectMsg newProjectMsg, LoggedInNewProject content ) ->
             let
-                ( newModel, newCmd ) =
-                    updateNewProjectMsg newProjectMsg content
+                ( newSession, newModel, newCmd ) =
+                    updateNewProjectMsg newProjectMsg session content
             in
-            ( { session = session, page = LoggedInNewProject newModel }, newCmd )
+            ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
 
 
-updateNewProjectMsg : NewProjectMsg -> NewProjectContent -> ( NewProjectContent, Cmd Msg )
-updateNewProjectMsg msg content =
+updateNewProjectMsg : NewProjectMsg -> Session -> NewProjectContent -> ( Session, NewProjectContent, Cmd Msg )
+updateNewProjectMsg msg session content =
     case msg of
         NewProjectNameChanged newProjectName ->
-            ( { content | name = newProjectName }, Cmd.none )
+            ( session, { content | name = newProjectName }, Cmd.none )
 
         NewProjectSubmitted ->
-            ( { content | status = Status.Sent }, Api.newProject resultToMsg2 content )
+            ( session, { content | status = Status.Sent }, Api.newProject resultToMsg2 content )
 
         NewProjectSuccess ->
-            ( { content | status = Status.Success () }, Cmd.none )
+            ( { session | projects = content.name :: session.projects }
+            , { content | status = Status.Success () }
+            , Cmd.none
+            )
 
 
 
 -- COMMANDS
 
 
+resultToMsg : Result e Session -> Msg
 resultToMsg result =
     case result of
-        Err e ->
+        Err _ ->
             LoginMsg LoginFailed
 
         Ok a ->
             LoginMsg (LoginSuccess a)
 
 
+resultToMsg2 : Result e t -> Msg
 resultToMsg2 result =
     case result of
         Err _ ->
@@ -301,12 +307,6 @@ resultToMsg2 result =
 
 
 -- VIEW
-
-
-defaultAttributes =
-    [ Border.rounded 3
-    , Element.padding 10
-    ]
 
 
 view : Model -> Html.Html Msg
@@ -490,11 +490,19 @@ loggedInView { session, page } =
 
 loggedInHomeView : Session -> Element Msg
 loggedInHomeView session =
-    Element.text ("Welcome " ++ session.username ++ "!")
+    Element.column []
+        [ welcomeHeading session.username
+        , projectsView session.projects
+        ]
+
+
+welcomeHeading : String -> Element Msg
+welcomeHeading name =
+    Element.el [ Font.size 20, Element.padding 10 ] (Element.text ("Welcome " ++ name ++ "!"))
 
 
 loggedInNewProjectView : Session -> NewProjectContent -> Element Msg
-loggedInNewProjectView session { status, name } =
+loggedInNewProjectView _ { status, name } =
     let
         submitButton =
             case status of
@@ -543,6 +551,30 @@ loggedInNewProjectView session { status, name } =
         Element.map NewProjectMsg <|
             Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
                 form
+
+
+projectsView : List String -> Element Msg
+projectsView names =
+    case names of
+        [] ->
+            Element.paragraph [ Element.padding 10, Font.size 18 ]
+                [ Element.text "You have no projects yet. "
+                , Ui.linkButton
+                    (Just (LoggedInMsg NewProjectClicked))
+                    "Click here to create a new project!"
+                ]
+
+        _ ->
+            Element.column [ Element.padding 10 ]
+                [ Element.el [ Font.size 18 ] (Element.text "Your projects:")
+                , Element.column [ Element.padding 10, Element.spacing 10 ]
+                    (List.map projectView names)
+                ]
+
+
+projectView : String -> Element msg
+projectView name =
+    Element.text name
 
 
 topBar : Model -> Element Msg

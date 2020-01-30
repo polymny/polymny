@@ -1,6 +1,4 @@
-module Status exposing (..)
-
-import Http
+module Status exposing (Status(..))
 
 
 type Status t e

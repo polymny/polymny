@@ -41,9 +41,11 @@ pub fn new_user<'a>(db: Database, mailer: State<Option<Mailer>>, user: Form<NewU
 
 /// The route to active a user.
 #[get("/activate/<key>")]
-pub fn activate(db: Database, key: String) -> Result<Redirect> {
+pub fn activate(db: Database, key: String, mut cookies: Cookies) -> Result<Redirect> {
 
-    User::activate(&key, &db)?;
+    let user = User::activate(&key, &db)?;
+    let session = user.save_session(&db)?;
+    cookies.add_private(Cookie::new("EXAUTH", session.secret));
     Ok(Redirect::to("/"))
 
 }
@@ -67,7 +69,7 @@ pub fn login(db: Database, mut cookies: Cookies, login: Form<LoginForm>) -> Resu
 
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
 
-    Ok(json!({"username": user.username}))
+    Ok(json!({"username": user.username, "projects": user.projects(&db)?}))
 }
 
 /// Returns the username.
@@ -75,7 +77,7 @@ pub fn login(db: Database, mut cookies: Cookies, login: Form<LoginForm>) -> Resu
 pub fn session(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    Ok(json!({"username": user.username}))
+    Ok(json!({"username": user.username, "projects": user.projects(&db)?}))
 }
 
 /// The logout page.
