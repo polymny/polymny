@@ -2,6 +2,7 @@ module Api exposing (logOut, login, newProject, signUp)
 
 import Http
 import Json.Decode exposing (Decoder)
+import Task exposing (Task)
 
 
 encode : List ( String, String ) -> String
@@ -100,10 +101,23 @@ encodeNewProjectContent { name } =
         ]
 
 
-newProject : (Result Http.Error () -> msg) -> NewProjectContent a -> Cmd msg
-newProject resultToMsg content =
-    Http.post
-        { url = "/api/new-project"
-        , expect = Http.expectWhatever resultToMsg
+resolverCallback : Http.Response String -> Result String Int
+resolverCallback response =
+    case response of
+        Http.GoodStatus_ _ body ->
+            Result.fromMaybe "" (String.toInt body)
+
+        _ ->
+            Err "toto"
+
+
+newProject : NewProjectContent a -> Task String Int
+newProject content =
+    Http.task
+        { method = "POST"
+        , headers = []
+        , url = "/api/new-project"
         , body = stringBody (encodeNewProjectContent content)
+        , resolver = Http.stringResolver resolverCallback
+        , timeout = Nothing
         }

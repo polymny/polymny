@@ -1,5 +1,6 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
+#[macro_use] extern crate serde;
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate rocket_contrib;
 #[macro_use] extern crate diesel;
@@ -114,7 +115,10 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
         "".to_string()
     } else {
         match User::from_session(cookie.unwrap().value(), &db) {
-            Ok(user) => format!("flags: {{\"username\": \"{}\", \"projects\": {:?}}},", user.username, user.projects(&db)?),
+            Ok(user) => {
+                let json = json!({"username": user.username, "projects": user.projects(&db)?});
+                format!("flags: {},", json.0)
+            },
             Err(_) => "".to_string(),
         }
     };

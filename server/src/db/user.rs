@@ -15,6 +15,7 @@ use bcrypt::{DEFAULT_COST, hash};
 use crate::{Error, Result, TEMPLATES};
 use crate::schema::{users, sessions};
 use crate::db::session::{Session, NewSession};
+use crate::db::project::Project;
 use crate::mailer::Mailer;
 
 /// A user of chouette.
@@ -170,16 +171,12 @@ impl User {
     }
 
     /// Returns the list of the user's projects names.
-    pub fn projects(&self, db: &PgConnection) -> Result<Vec<String>> {
-        use crate::db::project::Project;
+    pub fn projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
         use crate::schema::projects::dsl::*;
 
         Ok(projects
             .filter(user_id.eq(self.id))
-            .load::<Project>(db)?
-            .into_iter()
-            .map(|x| x.project_name)
-            .collect())
+            .load::<Project>(db)?)
 
     }
 

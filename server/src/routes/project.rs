@@ -22,7 +22,7 @@ pub struct NewProjectForm {
 
 /// The route to register new project.
 #[post("/new-project", data = "<project>")]
-pub fn new_project<'a>( db: Database, mut cookies: Cookies, project: Form<NewProjectForm>) -> Result<Response<'a>> {
+pub fn new_project<'a>( db: Database, mut cookies: Cookies, project: Form<NewProjectForm>) -> Result<String> {
 
     // get user
     let cookie = cookies.get_private("EXAUTH");
@@ -32,9 +32,8 @@ pub fn new_project<'a>( db: Database, mut cookies: Cookies, project: Form<NewPro
     let project = Project::create(&project.project_name, user.id)?;
     project.save(&db)?;
 
-    Ok(Response::build()
-        .sized_body(Cursor::new(""))
-        .finalize())
+    Ok(format!("{}", project.last_visited.timestamp()))
+
 }
 
 /// The route to get a project.

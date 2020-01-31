@@ -21,6 +21,7 @@ table! {
         id -> Int4,
         user_id -> Int4,
         project_name -> Varchar,
+        last_visited -> Timestamp,
     }
 }
 

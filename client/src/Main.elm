@@ -10,6 +10,7 @@ import Element.Input as Input
 import Html
 import Json.Decode as Decode exposing (Decoder)
 import Status exposing (Status)
+import Task
 import Ui
 
 
@@ -65,15 +66,28 @@ emptyNewProjectContent =
 
 type alias Session =
     { username : String
-    , projects : List String
+    , projects : List Project
     }
+
+
+type alias Project =
+    { name : String
+    , lastVisited : Int
+    }
+
+
+decodeProject : Decoder Project
+decodeProject =
+    Decode.map2 Project
+        (Decode.field "project_name" Decode.string)
+        (Decode.field "last_visited" Decode.int)
 
 
 decodeSession : Decoder Session
 decodeSession =
     Decode.map2 Session
         (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list Decode.string))
+        (Decode.field "projects" (Decode.list decodeProject))
 
 
 type Model
@@ -154,7 +168,7 @@ type LoggedInMsg
 type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
-    | NewProjectSuccess
+    | NewProjectSuccess Int
 
 
 
@@ -272,10 +286,13 @@ updateNewProjectMsg msg session content =
             ( session, { content | name = newProjectName }, Cmd.none )
 
         NewProjectSubmitted ->
-            ( session, { content | status = Status.Sent }, Api.newProject resultToMsg2 content )
+            ( session
+            , { content | status = Status.Sent }
+            , Task.attempt resultToMsg2 (Api.newProject content)
+            )
 
-        NewProjectSuccess ->
-            ( { session | projects = content.name :: session.projects }
+        NewProjectSuccess value ->
+            ( { session | projects = { name = content.name, lastVisited = value } :: session.projects }
             , { content | status = Status.Success () }
             , Cmd.none
             )
@@ -295,14 +312,14 @@ resultToMsg result =
             LoginMsg (LoginSuccess a)
 
 
-resultToMsg2 : Result e t -> Msg
+resultToMsg2 : Result e Int -> Msg
 resultToMsg2 result =
     case result of
         Err _ ->
             Noop
 
-        Ok _ ->
-            LoggedInMsg (NewProjectMsg NewProjectSuccess)
+        Ok time ->
+            LoggedInMsg (NewProjectMsg (NewProjectSuccess time))
 
 
 
@@ -553,9 +570,9 @@ loggedInNewProjectView _ { status, name } =
                 form
 
 
-projectsView : List String -> Element Msg
-projectsView names =
-    case names of
+projectsView : List Project -> Element Msg
+projectsView projects =
+    case projects of
         [] ->
             Element.paragraph [ Element.padding 10, Font.size 18 ]
                 [ Element.text "You have no projects yet. "
@@ -568,7 +585,12 @@ projectsView names =
             Element.column [ Element.padding 10 ]
                 [ Element.el [ Font.size 18 ] (Element.text "Your projects:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
-                    (List.map projectView names)
+                    (List.map projectView
+                        (List.map
+                            (\x -> x.name ++ " " ++ String.fromInt x.lastVisited)
+                            projects
+                        )
+                    )
                 ]
 
 

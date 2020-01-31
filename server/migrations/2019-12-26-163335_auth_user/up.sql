@@ -18,7 +18,8 @@ CREATE TABLE sessions (
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users (id),
-    project_name VARCHAR NOT NULL UNIQUE
+    project_name VARCHAR NOT NULL UNIQUE,
+    last_visited TIMESTAMP NOT NULL
 );
 
 CREATE TABLE capsules (
