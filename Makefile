@@ -22,7 +22,7 @@ client-dev: client/src/** client-static
 
 client-watch:
 	@/bin/echo -e "\033[32;1m    Watching\033[0m client"
-	@cd client && $(ELMLIVE) src/Main.elm -p 7000 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/main.js --debug
+	@cd client && $(ELMLIVE) src/Main.elm -p 7000 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/main.js
 
 server-dev:
 	@cd server && cargo +nightly build

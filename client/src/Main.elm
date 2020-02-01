@@ -10,7 +10,7 @@ import Element.Input as Input
 import Html
 import Json.Decode as Decode exposing (Decoder)
 import Status exposing (Status)
-import Task
+import TimeUtils
 import Ui
 
 
@@ -288,7 +288,7 @@ updateNewProjectMsg msg session content =
         NewProjectSubmitted ->
             ( session
             , { content | status = Status.Sent }
-            , Task.attempt resultToMsg2 (Api.newProject content)
+            , Api.newProject resultToMsg2 content
             )
 
         NewProjectSuccess value ->
@@ -312,14 +312,14 @@ resultToMsg result =
             LoginMsg (LoginSuccess a)
 
 
-resultToMsg2 : Result e Int -> Msg
+resultToMsg2 : Result e String -> Msg
 resultToMsg2 result =
-    case result of
-        Err _ ->
-            Noop
-
-        Ok time ->
+    case Result.map String.toInt result of
+        Ok (Just time) ->
             LoggedInMsg (NewProjectMsg (NewProjectSuccess time))
+
+        _ ->
+            Noop
 
 
 
@@ -582,21 +582,23 @@ projectsView projects =
                 ]
 
         _ ->
+            let
+                sortedProjects =
+                    List.sortBy (\x -> -x.lastVisited) projects
+            in
             Element.column [ Element.padding 10 ]
                 [ Element.el [ Font.size 18 ] (Element.text "Your projects:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
-                    (List.map projectView
-                        (List.map
-                            (\x -> x.name ++ " " ++ String.fromInt x.lastVisited)
-                            projects
-                        )
-                    )
+                    (List.map projectView sortedProjects)
                 ]
 
 
-projectView : String -> Element msg
-projectView name =
-    Element.text name
+projectView : Project -> Element msg
+projectView { name, lastVisited } =
+    Element.row [ Element.spacing 10 ]
+        [ Element.text name
+        , Element.text (TimeUtils.timeToString lastVisited)
+        ]
 
 
 topBar : Model -> Element Msg
