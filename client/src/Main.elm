@@ -10,11 +10,13 @@ import Element.Input as Input
 import Html
 import Json.Decode as Decode exposing (Decoder)
 import Status exposing (Status)
+import Task
+import Time
 import TimeUtils
 import Ui
 
 
-main : Program Decode.Value Model Msg
+main : Program Decode.Value FullModel Msg
 main =
     Browser.element
         { init = init
@@ -90,6 +92,17 @@ decodeSession =
         (Decode.field "projects" (Decode.list decodeProject))
 
 
+type alias Global =
+    { zone : Time.Zone
+    }
+
+
+type alias FullModel =
+    { global : Global
+    , model : Model
+    }
+
+
 type Model
     = Home
     | Login LoginContent
@@ -118,14 +131,21 @@ isLoggedIn model =
             False
 
 
-init : Decode.Value -> ( Model, Cmd Msg )
+init : Decode.Value -> ( FullModel, Cmd Msg )
 init flags =
+    let
+        global =
+            { zone = Time.utc }
+
+        initialCommand =
+            Task.perform TimeZoneChange Time.here
+    in
     case Decode.decodeValue decodeSession flags of
         Err _ ->
-            ( Home, Cmd.none )
+            ( FullModel global Home, initialCommand )
 
         Ok s ->
-            ( LoggedIn (LoggedInModel s LoggedInHome), Cmd.none )
+            ( FullModel global (LoggedIn (LoggedInModel s LoggedInHome)), initialCommand )
 
 
 
@@ -134,6 +154,7 @@ init flags =
 
 type Msg
     = Noop
+    | TimeZoneChange Time.Zone
     | HomeClicked
     | LoginClicked
     | SignUpClicked
@@ -175,45 +196,56 @@ type NewProjectMsg
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> FullModel -> ( FullModel, Cmd Msg )
+update msg { global, model } =
     case ( msg, model ) of
-        ( Noop, m ) ->
-            ( m, Cmd.none )
+        ( Noop, _ ) ->
+            ( FullModel global model, Cmd.none )
+
+        ( TimeZoneChange newTimeZone, _ ) ->
+            ( { global = { global | zone = newTimeZone }, model = model }, Cmd.none )
 
         ( HomeClicked, LoggedIn { session } ) ->
-            ( LoggedIn { session = session, page = LoggedInHome }, Cmd.none )
+            ( FullModel global (LoggedIn { session = session, page = LoggedInHome }), Cmd.none )
 
         ( HomeClicked, _ ) ->
-            ( Home, Cmd.none )
+            ( FullModel global Home, Cmd.none )
 
         ( LoginClicked, _ ) ->
-            ( Login emptyLoginContent, Cmd.none )
+            ( FullModel global (Login emptyLoginContent), Cmd.none )
 
         ( LogOutClicked, _ ) ->
-            ( model, Api.logOut (\_ -> LogOutSuccess) )
+            ( FullModel global model, Api.logOut (\_ -> LogOutSuccess) )
 
         ( LogOutSuccess, _ ) ->
-            ( Home, Cmd.none )
+            ( FullModel global Home, Cmd.none )
 
         ( SignUpClicked, _ ) ->
-            ( SignUp emptySignUpContent, Cmd.none )
+            ( FullModel global (SignUp emptySignUpContent), Cmd.none )
 
         ( LoginMsg loginMsg, Login content ) ->
-            updateLogin loginMsg content
+            let
+                ( m, cmd ) =
+                    updateLogin loginMsg content
+            in
+            ( FullModel global m, cmd )
 
         ( SignUpMsg signUpMsg, SignUp content ) ->
-            updateSignUp signUpMsg content |> Tuple.mapFirst SignUp
+            let
+                ( m, cmd ) =
+                    updateSignUp signUpMsg content |> Tuple.mapFirst SignUp
+            in
+            ( FullModel global m, cmd )
 
         ( LoggedInMsg loggedInMsg, LoggedIn loggedInModel ) ->
             let
                 ( newModel, cmd ) =
                     updateLoggedIn loggedInMsg loggedInModel
             in
-            ( LoggedIn newModel, cmd )
+            ( FullModel global (LoggedIn newModel), cmd )
 
         _ ->
-            ( model, Cmd.none )
+            ( FullModel global model, Cmd.none )
 
 
 updateLogin : LoginMsg -> LoginContent -> ( Model, Cmd Msg )
@@ -326,13 +358,13 @@ resultToMsg2 result =
 -- VIEW
 
 
-view : Model -> Html.Html Msg
-view model =
-    Element.layout [ Font.size 15 ] (viewContent model)
+view : FullModel -> Html.Html Msg
+view fullModel =
+    Element.layout [ Font.size 15 ] (viewContent fullModel)
 
 
-viewContent : Model -> Element Msg
-viewContent model =
+viewContent : FullModel -> Element Msg
+viewContent { global, model } =
     let
         content =
             case model of
@@ -346,7 +378,7 @@ viewContent model =
                     signUpView c
 
                 LoggedIn s ->
-                    loggedInView s
+                    loggedInView global s
     in
     Element.column [ Element.width Element.fill ] [ topBar model, content ]
 
@@ -478,13 +510,13 @@ signUpView { username, password, email, status } =
             form
 
 
-loggedInView : LoggedInModel -> Element Msg
-loggedInView { session, page } =
+loggedInView : Global -> LoggedInModel -> Element Msg
+loggedInView global { session, page } =
     let
         mainPage =
             case page of
                 LoggedInHome ->
-                    loggedInHomeView session
+                    loggedInHomeView global session
 
                 LoggedInNewProject content ->
                     loggedInNewProjectView session content
@@ -505,11 +537,11 @@ loggedInView { session, page } =
         [ element ]
 
 
-loggedInHomeView : Session -> Element Msg
-loggedInHomeView session =
+loggedInHomeView : Global -> Session -> Element Msg
+loggedInHomeView global session =
     Element.column []
         [ welcomeHeading session.username
-        , projectsView session.projects
+        , projectsView global session.projects
         ]
 
 
@@ -570,8 +602,8 @@ loggedInNewProjectView _ { status, name } =
                 form
 
 
-projectsView : List Project -> Element Msg
-projectsView projects =
+projectsView : Global -> List Project -> Element Msg
+projectsView global projects =
     case projects of
         [] ->
             Element.paragraph [ Element.padding 10, Font.size 18 ]
@@ -589,15 +621,15 @@ projectsView projects =
             Element.column [ Element.padding 10 ]
                 [ Element.el [ Font.size 18 ] (Element.text "Your projects:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
-                    (List.map projectView sortedProjects)
+                    (List.map (projectView global) sortedProjects)
                 ]
 
 
-projectView : Project -> Element msg
-projectView { name, lastVisited } =
+projectView : Global -> Project -> Element msg
+projectView global { name, lastVisited } =
     Element.row [ Element.spacing 10 ]
         [ Element.text name
-        , Element.text (TimeUtils.timeToString lastVisited)
+        , Element.text (TimeUtils.timeToString global.zone lastVisited)
         ]
 
 

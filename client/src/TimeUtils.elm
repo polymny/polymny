@@ -1,4 +1,4 @@
-module TimeUtils exposing (..)
+module TimeUtils exposing (timeToString)
 
 import Time
 
@@ -43,19 +43,40 @@ monthToString month =
             "december"
 
 
-timeToString : Int -> String
-timeToString t =
+dateToString : Time.Zone -> Int -> String
+dateToString z t =
     let
         time =
             Time.millisToPosix (1000 * t)
 
         year =
-            String.fromInt (Time.toYear Time.utc time)
+            String.fromInt (Time.toYear z time)
 
         month =
-            monthToString (Time.toMonth Time.utc time)
+            monthToString (Time.toMonth z time)
 
         day =
-            String.fromInt (Time.toDay Time.utc time)
+            String.fromInt (Time.toDay z time)
     in
     month ++ " " ++ day ++ " " ++ year
+
+
+timeToString : Time.Zone -> Int -> String
+timeToString z t =
+    let
+        time =
+            Time.millisToPosix (1000 * t)
+
+        date =
+            dateToString z t
+
+        hours =
+            String.pad 2 '0' (String.fromInt (Time.toHour z time))
+
+        minutes =
+            String.pad 2 '0' (String.fromInt (Time.toMinute z time))
+
+        seconds =
+            String.pad 2 '0' (String.fromInt (Time.toSecond z time))
+    in
+    date ++ " " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds
