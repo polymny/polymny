@@ -12,6 +12,8 @@ use rand::distributions::Alphanumeric;
 
 use bcrypt::{DEFAULT_COST, hash};
 
+use serde::Deserialize;
+
 use crate::{Error, Result, TEMPLATES};
 use crate::schema::{users, sessions};
 use crate::db::session::{Session, NewSession};
@@ -41,7 +43,7 @@ pub struct User {
 }
 
 /// A user that is stored into the database yet.
-#[derive(Debug, Insertable)]
+#[derive(Debug, Insertable, Deserialize)]
 #[table_name = "users"]
 pub struct NewUser {
     /// The username of the user.

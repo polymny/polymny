@@ -1,0 +1,58 @@
+---
+users:
+    - username: Graydon
+      email: gh@dummy.net
+      password: hashed
+      activated: true
+      projects:
+        - project_name: rust
+          capsules:
+            - gpIntroduction
+            - rustIntroduction
+            - rustTypes
+            - rustOwnership
+    - username: Evan
+      email: ec@dummy.net
+      password: hashed
+      activated: true
+      projects:
+        - project_name: elm
+          capsules:
+            - gpIntroduction
+            - elmIntroduction
+            - elmTypes
+            - elmImmutability
+    - username: Benoit
+      email: benoit@dummy.net
+      password: hashed
+      activated: true
+
+capsules:
+   - title: General purpose intriduction
+     name: gpIntroduction
+     description: A tour of Rust
+     slides: introduction.pdf
+   - title: Introduction
+     name: rustIntroduction
+     description: A tour of Rust
+     slides: introduction.pdf
+   - title: Rust types
+     name: rustTypes
+     description: Basic types
+     slides: types.pdf
+   - title: Rust Ownership
+     name: rustOwnership
+     description: Ownership in rust
+     slides: ownership.pdf
+   - title: Introduction
+     name: elmIntroduction
+     description: A tour of elm
+     slides: introduction.pdf
+   - title: Immutability
+     name: elmImmutability
+     description: All values ine Elm are immutable
+     slides: immutabilty.pdf
+   - title: Static types
+     name: elmTypes
+     description: Elm is statically typed
+     slides: types.pdf
