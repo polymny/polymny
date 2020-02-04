@@ -11,7 +11,7 @@ pub mod schema;
 pub mod mailer;
 pub mod routes;
 
-use std::{io, result};
+use std::{io, result, fmt, error};
 use std::process::exit;
 use bcrypt::BcryptError;
 use rocket::fairing::AdHoc;
@@ -84,6 +84,44 @@ impl_from_error!(Error, Error::IoError, io::Error);
 impl_from_error!(Error, Error::MailError, lettre_email::error::Error);
 impl_from_error!(Error, Error::SendMailError, lettre::smtp::error::Error);
 impl_from_error!(Error, Error::TeraError, tera::Error);
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::DatabaseConnectionError(e) =>
+                write!(fmt, "failed to connect to the database: {}", e),
+
+            Error::DatabaseRequestError(e) =>
+                write!(fmt, "request to database failed: {}", e),
+
+            Error::SessionDoesNotExist =>
+                write!(fmt, "there is not such session"),
+
+            Error::AuthenticationFailed =>
+                write!(fmt, "authentication failed"),
+
+            Error::MissingArgumentInForm(e) =>
+                write!(fmt, "missing argument \"{}\" in form", e),
+
+            Error::BcryptError(e) =>
+                write!(fmt, "error in password hashing: {}", e),
+
+            Error::IoError(e) =>
+                write!(fmt, "io error: {}", e),
+
+            Error::MailError(e) =>
+                write!(fmt, "error sending mail: {}", e),
+
+            Error::SendMailError(e) =>
+                write!(fmt, "error sending mail: {}", e),
+
+            Error::TeraError(e) =>
+                write!(fmt, "error rendering template: {}", e),
+        }
+    }
+}
+
+impl error::Error for Error {}
 
 /// The result type of this library.
 pub type Result<T> = result::Result<T, Error>;
