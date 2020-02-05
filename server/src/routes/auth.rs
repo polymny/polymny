@@ -2,10 +2,10 @@
 
 use std::io::Cursor;
 
-use rocket::State;
-use rocket::response::{Response, Redirect};
-use rocket::request::Form;
 use rocket::http::{Cookie, Cookies};
+use rocket::request::Form;
+use rocket::response::{Redirect, Response};
+use rocket::State;
 
 use rocket_contrib::json::JsonValue;
 
@@ -29,25 +29,24 @@ pub struct NewUserForm {
 
 /// The route to register new users.
 #[post("/new-user", data = "<user>")]
-pub fn new_user<'a>(db: Database, mailer: State<Option<Mailer>>, user: Form<NewUserForm>) -> Result<Response<'a>> {
-
+pub fn new_user<'a>(
+    db: Database,
+    mailer: State<Option<Mailer>>,
+    user: Form<NewUserForm>,
+) -> Result<Response<'a>> {
     let user = User::create(&user.username, &user.email, &user.password, mailer.inner())?;
     user.save(&db)?;
 
-    Ok(Response::build()
-        .sized_body(Cursor::new(""))
-        .finalize())
+    Ok(Response::build().sized_body(Cursor::new("")).finalize())
 }
 
 /// The route to active a user.
 #[get("/activate/<key>")]
 pub fn activate(db: Database, key: String, mut cookies: Cookies) -> Result<Redirect> {
-
     let user = User::activate(&key, &db)?;
     let session = user.save_session(&db)?;
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
     Ok(Redirect::to("/"))
-
 }
 
 /// A struct that serves for form veryfing.
@@ -63,7 +62,6 @@ pub struct LoginForm {
 /// The login page.
 #[post("/login", data = "<login>")]
 pub fn login(db: Database, mut cookies: Cookies, login: Form<LoginForm>) -> Result<JsonValue> {
-
     let user = User::authenticate(&login.username, &login.password, &db)?;
     let session = user.save_session(&db)?;
 

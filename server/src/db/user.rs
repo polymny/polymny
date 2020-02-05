@@ -2,23 +2,23 @@
 
 use tera::Context;
 
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
-use diesel::pg::PgConnection;
 
-use rand::Rng;
-use rand::rngs::OsRng;
 use rand::distributions::Alphanumeric;
+use rand::rngs::OsRng;
+use rand::Rng;
 
-use bcrypt::{DEFAULT_COST, hash};
+use bcrypt::{hash, DEFAULT_COST};
 
 use serde::Deserialize;
 
-use crate::{Error, Result, TEMPLATES};
-use crate::schema::{users, sessions};
-use crate::db::session::{Session, NewSession};
 use crate::db::project::Project;
+use crate::db::session::{NewSession, Session};
 use crate::mailer::Mailer;
+use crate::schema::{sessions, users};
+use crate::{Error, Result, TEMPLATES};
 
 /// A user of chouette.
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
@@ -64,19 +64,19 @@ pub struct NewUser {
 
 impl User {
     /// Creates a new user.
-    pub fn create(username: &str, email: &str, password: &str, mailer: &Option<Mailer>) -> Result<NewUser> {
-
+    pub fn create(
+        username: &str,
+        email: &str,
+        password: &str,
+        mailer: &Option<Mailer>,
+    ) -> Result<NewUser> {
         // Hash the password
         let hashed_password = hash(&password, DEFAULT_COST)?;
 
         if let Some(mailer) = mailer {
-
             // Generate the activation key
             let rng = OsRng {};
-            let activation_key = rng
-                .sample_iter(&Alphanumeric)
-                .take(40)
-                .collect::<String>();
+            let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
 
             let mut context = Context::new();
 
@@ -91,21 +91,19 @@ impl User {
             Ok(NewUser {
                 username: String::from(username),
                 email: String::from(email),
-                hashed_password: hashed_password,
+                hashed_password,
                 activated: false,
                 activation_key: Some(activation_key),
             })
-
         } else {
             Ok(NewUser {
                 username: String::from(username),
                 email: String::from(email),
-                hashed_password: hashed_password,
+                hashed_password,
                 activated: true,
                 activation_key: None,
             })
         }
-
     }
 
     /// Activates a user from its activation key and returns the user.
@@ -120,13 +118,24 @@ impl User {
     }
 
     /// Authenticates a user from its username and password.
-    pub fn authenticate(auth_username: &str, auth_password: &str, db: &PgConnection) -> Result<User> {
+    pub fn authenticate(
+        auth_username: &str,
+        auth_password: &str,
+        db: &PgConnection,
+    ) -> Result<User> {
         use crate::schema::users::dsl::*;
 
         let user = users
             .filter(username.eq(auth_username))
             .filter(activated.eq(true))
-            .select((id, username, email, hashed_password, activated, activation_key))
+            .select((
+                id,
+                username,
+                email,
+                hashed_password,
+                activated,
+                activation_key,
+            ))
             .first::<User>(db)
             .map_err(|_| Error::AuthenticationFailed)?;
 
@@ -141,10 +150,7 @@ impl User {
     pub fn save_session(&self, db: &PgConnection) -> Result<Session> {
         // Generate the secret
         let rng = OsRng {};
-        let secret = rng
-            .sample_iter(&Alphanumeric)
-            .take(40)
-            .collect::<String>();
+        let secret = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
 
         let session = NewSession {
             user_id: self.id,
@@ -158,8 +164,8 @@ impl User {
 
     /// Returns the user from its session secret.
     pub fn from_session(secret: &str, db: &PgConnection) -> Result<User> {
-        use crate::schema::users::dsl as users;
         use crate::schema::sessions::dsl as sessions;
+        use crate::schema::users::dsl as users;
 
         let session = sessions::sessions
             .filter(sessions::secret.eq(secret))
@@ -176,12 +182,8 @@ impl User {
     pub fn projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
         use crate::schema::projects::dsl::*;
 
-        Ok(projects
-            .filter(user_id.eq(self.id))
-            .load::<Project>(db)?)
-
+        Ok(projects.filter(user_id.eq(self.id)).load::<Project>(db)?)
     }
-
 }
 
 impl NewUser {
@@ -190,9 +192,5 @@ impl NewUser {
         Ok(diesel::insert_into(users::table)
             .values(self)
             .get_result(database)?)
-
     }
 }
-
-
-

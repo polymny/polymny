@@ -2,8 +2,8 @@
 
 use std::io::Cursor;
 
-use rocket::response::{Response};
 use rocket::request::Form;
+use rocket::response::Response;
 
 use rocket_contrib::json::JsonValue;
 
@@ -25,35 +25,32 @@ pub struct NewCapsuleForm {
 
     /// The description of the capsule.
     pub description: Option<String>,
-
 }
 
 /// The route to register new capsule.
 #[post("/new-capsule", data = "<capsule>")]
-pub fn new_capsule<'a>( db: Database, capsule: Form<NewCapsuleForm>) -> Result<Response<'a>> {
-
-    Capsule::new(&db, &capsule.name,
+pub fn new_capsule<'a>(db: Database, capsule: Form<NewCapsuleForm>) -> Result<Response<'a>> {
+    Capsule::new(
+        &db,
+        &capsule.name,
         capsule.title.as_deref(),
         capsule.slides.as_deref(),
         capsule.description.as_deref(),
-        &None)?;
+        &None,
+    )?;
 
-    Ok(Response::build()
-        .sized_body(Cursor::new(""))
-        .finalize())
+    Ok(Response::build().sized_body(Cursor::new("")).finalize())
 }
 
 /// The route to get a capsule.
 #[get("/capsule/<id>")]
 pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
-
     let capsule = Capsule::get(id, &db)?;
     Ok(json!({"capsulename": capsule.name}))
-
 }
 
 /// Get all the capsules .
 #[get("/capsules")]
 pub fn capsules() -> &'static str {
- "Hello capsules"
- }
+    "Hello capsules"
+}

@@ -1,11 +1,11 @@
 //! This module contains the structures needed to manipulate sessions.
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 
-use crate::{Error, Result};
-use crate::schema::sessions;
 use crate::db::user::User;
+use crate::schema::sessions;
+use crate::{Error, Result};
 
 /// A session that belongs to a user.
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
@@ -37,8 +37,7 @@ impl Session {
     /// Removes a session in the database from its secret key.
     pub fn delete_from_secret(key: &str, db: &PgConnection) -> Result<()> {
         use crate::schema::sessions::dsl::*;
-        diesel::delete(sessions.filter(secret.eq(key)))
-            .execute(db)?;
+        diesel::delete(sessions.filter(secret.eq(key))).execute(db)?;
         Ok(())
     }
 }
@@ -53,4 +52,3 @@ pub struct NewSession {
     /// The secret id of the session.
     pub secret: String,
 }
-

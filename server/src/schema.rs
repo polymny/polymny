@@ -49,10 +49,4 @@ joinable!(capsules_projects -> projects (project_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    capsules,
-    capsules_projects,
-    projects,
-    sessions,
-    users,
-);
+allow_tables_to_appear_in_same_query!(capsules, capsules_projects, projects, sessions, users,);

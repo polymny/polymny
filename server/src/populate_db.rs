@@ -1,17 +1,17 @@
 use std::error::Error;
 use std::fmt;
 
-use rocket::Rocket;
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
+use rocket::Rocket;
 
 impl Error for NotFoundError {}
 
 use serde::Deserialize;
 
-use server::db::user::User;
-use server::db::project::Project;
 use server::db::capsule::{Capsule, CapsuleProject};
+use server::db::project::Project;
+use server::db::user::User;
 
 const SAMPLE: &str = include_str!("../../tests/samples.yml");
 
@@ -24,7 +24,6 @@ impl fmt::Display for NotFoundError {
     }
 }
 
-
 #[derive(Deserialize, Debug)]
 struct SampleCapsule {
     name: String,
@@ -36,16 +35,15 @@ struct SampleCapsule {
 #[derive(Deserialize, Debug)]
 struct SampleProject {
     project_name: String,
-    capsules: Option<Vec<String>>
+    capsules: Option<Vec<String>>,
 }
-
 
 #[derive(Deserialize, Debug)]
 struct SampleUser {
     username: String,
     email: String,
     password: String,
-    projects: Option<Vec<SampleProject>>
+    projects: Option<Vec<SampleProject>>,
 }
 #[derive(Deserialize, Debug)]
 struct Sample<T> {
@@ -54,9 +52,7 @@ struct Sample<T> {
     capsules: Vec<SampleCapsule>,
 }
 
-
-
-fn parse_sample() -> Result<Sample::<SampleUser>, Box<dyn Error>> {
+fn parse_sample() -> Result<Sample<SampleUser>, Box<dyn Error>> {
     // Read the JSON contents of the file as an instance of `User`.
     let u = serde_yaml::from_str(SAMPLE)?;
     // Return the `User`.
@@ -64,7 +60,6 @@ fn parse_sample() -> Result<Sample::<SampleUser>, Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-
     let rocket = Rocket::ignite();
     let config = rocket.config();
 
@@ -86,24 +81,33 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let sample = parse_sample()?;
 
-    for sample_capsule in sample.capsules{
-        Capsule::new(&db, &sample_capsule.name,
-        sample_capsule.title.as_deref(),
-        sample_capsule.slides.as_deref(),
-        sample_capsule.description.as_deref(),
-        &None)?;
-        }
+    for sample_capsule in sample.capsules {
+        Capsule::new(
+            &db,
+            &sample_capsule.name,
+            sample_capsule.title.as_deref(),
+            sample_capsule.slides.as_deref(),
+            sample_capsule.description.as_deref(),
+            &None,
+        )?;
+    }
 
     for sample_user in sample.users {
-        let user = User::create(&sample_user.username, &sample_user.email,
-            &sample_user.password, &None)?
-                .save(&db)?;
+        let user = User::create(
+            &sample_user.username,
+            &sample_user.email,
+            &sample_user.password,
+            &None,
+        )?
+        .save(&db)?;
 
         if let Some(projects) = sample_user.projects {
-            println!("found projects : {:#?} for user {}", projects, sample_user.username);
-            for sample_project in projects{
-                let project = Project::create(&sample_project.project_name, user.id)?
-                    .save(&db)?;
+            println!(
+                "found projects : {:#?} for user {}",
+                projects, sample_user.username
+            );
+            for sample_project in projects {
+                let project = Project::create(&sample_project.project_name, user.id)?.save(&db)?;
 
                 if let Some(capsules) = sample_project.capsules {
                     //println!("found capsule : {:#?} for project {:#?}", capsules, &sample_project.capsules);
@@ -111,13 +115,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                         let db_capsule = Capsule::get_by_name(&capsule_ref, &db)?;
                         println!("found capsule : {:#?}", db_capsule);
                         CapsuleProject::new(&db, db_capsule.id, project.id)?;
-
                     }
                 }
             }
-
         }
-
     }
 
     Ok(())
