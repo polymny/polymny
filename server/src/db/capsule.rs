@@ -120,8 +120,31 @@ impl Capsule {
         // TODO: is "?" needed
         Ok(capsule?)
    }
+    /// get capsule by name
+    pub fn get_by_name(name: &str , db: &PgConnection) -> Result<Capsule> {
+        use crate::schema::capsules::dsl;
+        let capsule = dsl::capsules
+            .filter(dsl::name.eq(name))
+            .first::<Capsule>(db);
+        // TODO: is "?" needed
+        Ok(capsule?)
+   }
 
 
+
+}
+
+impl CapsuleProject {
+    /// acts like a concstructor for new CapsuleProject association table
+    pub fn new (database: &PgConnection,
+        capsule_id: i32,
+        project_id: i32) -> Result<CapsuleProject> {
+
+        Ok(NewCapsuleProject {
+            capsule_id: capsule_id,
+            project_id: project_id
+            }.save(&database)?)
+    }
 }
 
 impl NewCapsule {
