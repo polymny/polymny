@@ -5,6 +5,16 @@ use rocket::Rocket;
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
+impl Error for NotFoundError {}
+
+use serde::Deserialize;
+
+use server::db::user::User;
+use server::db::project::Project;
+use server::db::capsule::{Capsule, CapsuleProject};
+
+const SAMPLE: &str = include_str!("../../tests/samples.yml");
+
 #[derive(Debug)]
 pub struct NotFoundError {}
 
@@ -14,19 +24,6 @@ impl fmt::Display for NotFoundError {
     }
 }
 
-impl Error for NotFoundError {}
-
-use serde::Deserialize;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::Path;
-
-use server::db::user::User;
-use server::db::project::Project;
-use server::db::capsule::{Capsule, CapsuleProject};
-
-
-static SAMPLE_PATH: &str ="/home/nicolas/dev/n7/preparation/tests/samples.yml";
 
 #[derive(Deserialize, Debug)]
 struct SampleCapsule {
@@ -59,14 +56,9 @@ struct Sample<T> {
 
 
 
-fn read_user_from_file<P: AsRef<Path>>(path: P) -> Result<Sample::<SampleUser>, Box<dyn Error>> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-
+fn parse_sample() -> Result<Sample::<SampleUser>, Box<dyn Error>> {
     // Read the JSON contents of the file as an instance of `User`.
-    let u = serde_yaml::from_reader(reader)?;
-    println!("{:#?}", u);
+    let u = serde_yaml::from_str(SAMPLE)?;
     // Return the `User`.
     Ok(u)
 }
@@ -89,13 +81,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .as_str()
         .ok_or(NotFoundError {})?;
 
-    println!("{:?}", database_url);
-
     let db = PgConnection::establish(&database_url)
         .expect(&format!("Error connecting to {}", database_url));
 
-    let sample= read_user_from_file(SAMPLE_PATH)?;
-    //println!("{:#?}", u);
+    let sample = parse_sample()?;
 
     for sample_capsule in sample.capsules{
         Capsule::new(&db, &sample_capsule.name,
