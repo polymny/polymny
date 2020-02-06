@@ -1,4 +1,23 @@
 table! {
+    assets (id) {
+        id -> Int4,
+        name -> Varchar,
+        asset_path -> Varchar,
+        asset_type -> Varchar,
+        upload_date -> Timestamp,
+    }
+}
+
+table! {
+    assets_objects (id) {
+        id -> Int4,
+        asset_id -> Int4,
+        object_id -> Int4,
+        object -> Varchar,
+    }
+}
+
+table! {
     capsules (id) {
         id -> Int4,
         name -> Varchar,
@@ -44,9 +63,18 @@ table! {
     }
 }
 
+joinable!(assets_objects -> assets (asset_id));
 joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(capsules, capsules_projects, projects, sessions, users,);
+allow_tables_to_appear_in_same_query!(
+    assets,
+    assets_objects,
+    capsules,
+    capsules_projects,
+    projects,
+    sessions,
+    users,
+);

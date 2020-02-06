@@ -32,6 +32,22 @@ CREATE TABLE capsules (
 
 CREATE TABLE capsules_projects (
   id SERIAL PRIMARY KEY,
-  capsule_id SERIAL references capsules(id),
-  project_id SERIAL references projects(id)
-)
+  capsule_id INT NOT NULL references capsules(id),
+  project_id INT NOT NULL references projects(id)
+);
+
+CREATE TABLE assets (
+    id SERIAL PRIMARY KEY,
+    name  VARCHAR NOT NULL UNIQUE,
+    asset_path  VARCHAR NOT NULL UNIQUE,
+    asset_type  VARCHAR NOT NULL,
+    upload_date TIMESTAMP NOT NULL
+);
+
+
+CREATE TABLE assets_objects (
+    id SERIAL PRIMARY KEY,
+    asset_id INT NOT NULL references assets(id),
+    object_id INT NOT NULL,
+    object VARCHAR NOT NULL
+);
