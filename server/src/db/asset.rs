@@ -142,6 +142,25 @@ impl Asset {
 }
 
 impl AssetObject {
+    /// Creates a new asset and stores it in the database.
+    pub fn new(
+        database: &PgConnection,
+        asset_id: i32,
+        object_id: i32,
+        object: &str,
+    ) -> Result<AssetObject> {
+
+        match object {
+             "project"
+             | "capsule"
+             | "gos"
+             | "slide" => Ok(NewAssetObject{
+                asset_id: asset_id,
+                object_id: object_id,
+                object: String::from(object)}.save(&database)?),
+            _ => panic!("Invalid object : {}", object)
+        }
+    }
 }
 
 impl NewAsset {
