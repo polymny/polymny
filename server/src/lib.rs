@@ -132,6 +132,7 @@ impl error::Error for Error {}
 /// The result type of this library.
 pub type Result<T> = result::Result<T, Error>;
 
+use std::fs::File;
 use std::io::Cursor;
 
 use rocket::http::{ContentType, Cookies};
@@ -177,6 +178,12 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
     Ok(response)
 }
 
+/// The route for the setup page, available only when Rocket.toml does not exist yet.
+#[get("/")]
+pub fn setup() -> Result<File> {
+    Ok(File::open("assets/templates/setup.html")?)
+}
+
 /// Starts the server.
 pub fn main() {
     rocket::ignite()
@@ -202,5 +209,18 @@ pub fn main() {
                 routes::capsule::capsules,
             ],
         )
-        .launch();
+        .launch()
+        // This .kind() is here to prevent the server from panicking in case the config file is not
+        // available. launch() returns an Error that when dropped, panics if it has not been
+        // handled. Using .kind() here marks the error as handled.
+        .kind();
+
+    // If we arrive here, it means that the server failed to start.
+    // Unless it's due to a programming mistake, this means that the configuration is broken.
+    // In this case, we will spawn another server that asks for the configuration.
+    rocket::ignite()
+        .mount("/", routes![setup])
+        .mount("/", StaticFiles::from("dist"))
+        .launch()
+        .kind();
 }
