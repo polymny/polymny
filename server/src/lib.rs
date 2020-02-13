@@ -221,6 +221,7 @@ pub fn main() {
     rocket::ignite()
         .mount("/", routes![setup])
         .mount("/", StaticFiles::from("dist"))
+        .mount("/api/", routes![routes::setup::test_database])
         .launch()
         .kind();
 }

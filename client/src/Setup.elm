@@ -8,6 +8,7 @@ import Element.Background as Background
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Http
 import Status exposing (Status)
 import Ui
 
@@ -33,7 +34,7 @@ type alias Model =
 
 type alias DatabaseForm =
     { status : Status () ()
-    , url : String
+    , hostname : String
     , username : String
     , password : String
     , name : String
@@ -64,6 +65,9 @@ type DatabaseMsg
     | DatabaseUsernameChanged String
     | DatabasePasswordChanged String
     | DatabaseNameChanged String
+    | DatabaseSubmit
+    | DatabaseTestError
+    | DatabaseTestSuccess
 
 
 
@@ -87,8 +91,8 @@ update msg model =
 updateDatabase : DatabaseMsg -> DatabaseForm -> ( DatabaseForm, Cmd DatabaseMsg )
 updateDatabase msg form =
     case msg of
-        DatabaseUrlChanged newUrl ->
-            ( { form | url = newUrl }, Cmd.none )
+        DatabaseUrlChanged newHostname ->
+            ( { form | hostname = newHostname }, Cmd.none )
 
         DatabasePasswordChanged newPassword ->
             ( { form | password = newPassword }, Cmd.none )
@@ -98,6 +102,25 @@ updateDatabase msg form =
 
         DatabaseNameChanged newName ->
             ( { form | name = newName }, Cmd.none )
+
+        DatabaseSubmit ->
+            ( { form | status = Status.Sent }, Api.testDatabase databaseResultToMsg form )
+
+        DatabaseTestSuccess ->
+            ( { form | status = Status.Success () }, Cmd.none )
+
+        DatabaseTestError ->
+            ( { form | status = Status.Error () }, Cmd.none )
+
+
+databaseResultToMsg : Result Http.Error () -> DatabaseMsg
+databaseResultToMsg result =
+    case result of
+        Err _ ->
+            DatabaseTestError
+
+        Ok _ ->
+            DatabaseTestSuccess
 
 
 
@@ -122,33 +145,52 @@ content { database } =
 
 
 databaseView : DatabaseForm -> List (Element Msg)
-databaseView database =
+databaseView { status, hostname, username, password, name } =
+    let
+        msg =
+            Just (DatabaseMsg DatabaseSubmit)
+
+        button =
+            case status of
+                Status.NotSent ->
+                    Ui.primaryButton msg "Test database connection"
+
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Testing database connection..."
+
+                Status.Success _ ->
+                    Ui.primaryButton msg "Connection successful!"
+
+                Status.Error _ ->
+                    Ui.primaryButton msg "Connection failed!"
+    in
     [ Element.el [ Element.centerX, Font.bold ] (Element.text "Database configuration")
     , Input.text []
         { label = Input.labelAbove [] (Element.text "Database URL")
         , onChange = \a -> DatabaseMsg (DatabaseUrlChanged a)
         , placeholder = Nothing
-        , text = database.url
+        , text = hostname
         }
     , Input.text []
         { label = Input.labelAbove [] (Element.text "Username")
         , onChange = \a -> DatabaseMsg (DatabaseUsernameChanged a)
         , placeholder = Nothing
-        , text = database.username
+        , text = username
         }
     , Input.currentPassword []
         { label = Input.labelAbove [] (Element.text "Password")
         , onChange = \a -> DatabaseMsg (DatabasePasswordChanged a)
         , placeholder = Nothing
-        , text = database.password
+        , text = password
         , show = False
         }
     , Input.text []
         { label = Input.labelAbove [] (Element.text "Database name")
         , onChange = \a -> DatabaseMsg (DatabaseNameChanged a)
         , placeholder = Nothing
-        , text = database.name
+        , text = name
         }
+    , button
     ]
 
 
