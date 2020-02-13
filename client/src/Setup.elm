@@ -148,43 +148,51 @@ databaseView : DatabaseForm -> List (Element Msg)
 databaseView { status, hostname, username, password, name } =
     let
         msg =
-            Just (DatabaseMsg DatabaseSubmit)
+            DatabaseMsg DatabaseSubmit
+
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter msg ]
 
         button =
             case status of
                 Status.NotSent ->
-                    Ui.primaryButton msg "Test database connection"
+                    Ui.primaryButton (Just msg) "Test database connection"
 
                 Status.Sent ->
                     Ui.primaryButtonDisabled "Testing database connection..."
 
                 Status.Success _ ->
-                    Ui.primaryButton msg "Connection successful!"
+                    Ui.primaryButton (Just msg) "Connection successful!"
 
                 Status.Error _ ->
-                    Ui.primaryButton msg "Connection failed!"
+                    Ui.primaryButton (Just msg) "Connection failed!"
     in
     [ Element.el [ Element.centerX, Font.bold ] (Element.text "Database configuration")
-    , Input.text []
+    , Input.text submitOnEnter
         { label = Input.labelAbove [] (Element.text "Database URL")
         , onChange = \a -> DatabaseMsg (DatabaseUrlChanged a)
         , placeholder = Nothing
         , text = hostname
         }
-    , Input.text []
+    , Input.text submitOnEnter
         { label = Input.labelAbove [] (Element.text "Username")
         , onChange = \a -> DatabaseMsg (DatabaseUsernameChanged a)
         , placeholder = Nothing
         , text = username
         }
-    , Input.currentPassword []
+    , Input.currentPassword submitOnEnter
         { label = Input.labelAbove [] (Element.text "Password")
         , onChange = \a -> DatabaseMsg (DatabasePasswordChanged a)
         , placeholder = Nothing
         , text = password
         , show = False
         }
-    , Input.text []
+    , Input.text submitOnEnter
         { label = Input.labelAbove [] (Element.text "Database name")
         , onChange = \a -> DatabaseMsg (DatabaseNameChanged a)
         , placeholder = Nothing

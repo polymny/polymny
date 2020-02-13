@@ -396,6 +396,17 @@ homeView =
 loginView : LoginContent -> Element Msg
 loginView { username, password, status } =
     let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter LoginSubmitted ]
+
         submitButton =
             case status of
                 Status.Sent ->
@@ -416,13 +427,13 @@ loginView { username, password, status } =
             Element.row [ Element.centerX ] [ Element.text "Login" ]
 
         fields =
-            [ Input.text []
+            [ Input.username submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Username")
                 , onChange = LoginContentUsernameChanged
                 , placeholder = Nothing
                 , text = username
                 }
-            , Input.newPassword []
+            , Input.currentPassword submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Password")
                 , onChange = LoginContentPasswordChanged
                 , placeholder = Nothing
@@ -448,6 +459,17 @@ loginView { username, password, status } =
 signUpView : SignUpContent -> Element Msg
 signUpView { username, password, email, status } =
     let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter SignUpSubmitted ]
+
         submitButton =
             case status of
                 Status.Sent ->
@@ -474,19 +496,19 @@ signUpView { username, password, email, status } =
             Element.row [ Element.centerX ] [ Element.text "Sign up" ]
 
         fields =
-            [ Input.text []
+            [ Input.username submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Username")
                 , onChange = SignUpContentUsernameChanged
                 , placeholder = Nothing
                 , text = username
                 }
-            , Input.email []
+            , Input.email submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Email")
                 , onChange = SignUpContentEmailChanged
                 , placeholder = Nothing
                 , text = email
                 }
-            , Input.newPassword []
+            , Input.currentPassword submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Password")
                 , onChange = SignUpContentPasswordChanged
                 , placeholder = Nothing
@@ -553,6 +575,17 @@ welcomeHeading name =
 loggedInNewProjectView : Session -> NewProjectContent -> Element Msg
 loggedInNewProjectView _ { status, name } =
     let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter NewProjectSubmitted ]
+
         submitButton =
             case status of
                 Status.Sent ->
@@ -579,7 +612,7 @@ loggedInNewProjectView _ { status, name } =
             Element.row [ Element.centerX ] [ Element.text "New project" ]
 
         fields =
-            [ Input.text []
+            [ Input.text submitOnEnter
                 { label = Input.labelAbove [] (Element.text "Project name")
                 , onChange = NewProjectNameChanged
                 , placeholder = Nothing
