@@ -197,6 +197,7 @@ pub fn main() {
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::projects,
+                routes::project::project_upload,
                 routes::capsule::new_capsule,
                 routes::capsule::get_capsule,
                 routes::capsule::capsules,
