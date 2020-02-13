@@ -3,6 +3,8 @@ use std::result;
 
 use serde::Serializer;
 
+use uuid::Uuid;
+
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
@@ -22,12 +24,14 @@ where
     s.serialize_i64(t.timestamp())
 }
 
-
 /// A asset of preparation
 #[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
 pub struct Asset {
     /// The id of the asset.
     pub id: i32,
+
+    /// The uuid of the asset.
+    pub uuid: Uuid,
 
     /// The (unique) name of the asset.
     pub name: String,
@@ -41,13 +45,15 @@ pub struct Asset {
     /// Asset upload date
     #[serde(serialize_with = "serialize_naive_date_time")]
     pub upload_date: NaiveDateTime,
-
 }
 
 /// A asset that isn't stored into the database yet.
 #[derive(Debug, Insertable)]
 #[table_name = "assets"]
 pub struct NewAsset {
+    /// The uuid of the asset.
+    pub uuid: Uuid,
+
     /// The (unique) name of the asset.
     pub name: String,
 
@@ -59,7 +65,6 @@ pub struct NewAsset {
 
     /// Asset upload date
     pub upload_date: NaiveDateTime,
-
 }
 
 /// A link between a asset and an object.
@@ -96,12 +101,9 @@ pub struct NewAssetObject {
 
 impl Asset {
     /// Creates a new asset and stores it in the database.
-    pub fn new(
-        database: &PgConnection,
-        name: &str,
-        asset_path: &str,
-    ) -> Result<Asset> {
+    pub fn new(database: &PgConnection, uuid: Uuid, name: &str, asset_path: &str) -> Result<Asset> {
         let asset = NewAsset {
+            uuid: uuid,
             name: String::from(name),
             asset_path: String::from(asset_path),
             asset_type: "file".to_string(), //TODO: extact asse type from asset_path extension
@@ -112,11 +114,9 @@ impl Asset {
         Ok(asset)
     }
     /// Creates a new asset.
-    pub fn create(
-        name: &str,
-        asset_path: &str,
-    ) -> Result<NewAsset> {
+    pub fn create(uuid: Uuid, name: &str, asset_path: &str) -> Result<NewAsset> {
         Ok(NewAsset {
+            uuid: uuid,
             name: String::from(name),
             asset_path: String::from(asset_path),
             asset_type: "file".to_string(), //TODO: extact asse type from asset_path extension
@@ -133,9 +133,7 @@ impl Asset {
     /// Gets a asset from its name.
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Asset> {
         use crate::schema::assets::dsl;
-        let asset = dsl::assets
-            .filter(dsl::name.eq(name))
-            .first::<Asset>(db);
+        let asset = dsl::assets.filter(dsl::name.eq(name)).first::<Asset>(db);
         // TODO: is "?" needed
         Ok(asset?)
     }
@@ -149,16 +147,14 @@ impl AssetObject {
         object_id: i32,
         object: &str,
     ) -> Result<AssetObject> {
-
         match object {
-             "project"
-             | "capsule"
-             | "gos"
-             | "slide" => Ok(NewAssetObject{
+            "project" | "capsule" | "gos" | "slide" => Ok(NewAssetObject {
                 asset_id: asset_id,
                 object_id: object_id,
-                object: String::from(object)}.save(&database)?),
-            _ => panic!("Invalid object : {}", object)
+                object: String::from(object),
+            }
+            .save(&database)?),
+            _ => panic!("Invalid object : {}", object),
         }
     }
 }

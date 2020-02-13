@@ -3,22 +3,22 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rocket::http::Cookies;
+use rocket::http::{ContentType, Cookies};
 use rocket::request::Form;
+use rocket::Data;
 
 use rocket_contrib::json::JsonValue;
-
-use crate::db::asset::{Asset, AssetObject};
-use crate::db::project::Project;
-use crate::db::user::User;
-use crate::{Database, Result};
 
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 
-use rocket::http::ContentType;
-use rocket::Data;
+use uuid::Uuid;
+
+use crate::db::asset::{Asset, AssetObject};
+use crate::db::project::Project;
+use crate::db::user::User;
+use crate::{Database, Result};
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(FromForm)]
@@ -29,7 +29,7 @@ pub struct NewProjectForm {
 
 /// The route to register new project.
 #[post("/new-project", data = "<project>")]
-pub fn new_project(
+pub fn new_project<'a>(
     db: Database,
     mut cookies: Cookies,
     project: Form<NewProjectForm>,
@@ -70,23 +70,19 @@ pub fn project_upload(
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
     let project = Project::get(id, &db)?;
+
     let mut options = MultipartFormDataOptions::new();
-    options.allowed_fields.push(
-        MultipartFormDataField::raw("image")
-            .size_limit(32 * 1024 * 1024)
-            .content_type_by_string(Some(mime::IMAGE_STAR))
-            .unwrap(),
-    );
     options
         .allowed_fields
-        .push(MultipartFormDataField::file("pdf").size_limit(32 * 1024 * 1024));
+        .push(MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024));
     let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
+    //TODO: handle errors from multipart form dat ?
+    // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
 
-    let pdf = multipart_form_data.files.get("pdf");
+    let file = multipart_form_data.files.get("file");
 
-    if let Some(pdf) = pdf {
-        println!("{:#?}", pdf);
-        match pdf {
+    if let Some(file) = file {
+        match file {
             FileField::Single(file) => {
                 let file_name = &file.file_name;
                 let path = &file.path;
@@ -94,11 +90,11 @@ pub fn project_upload(
                 if let Some(file_name) = file_name {
                     let mut output_path = PathBuf::from("dist");
                     output_path.push(&user.username);
-                    output_path.push(file_name);
+                    let uuid = Uuid::new_v4();
+                    output_path.push(format!("{}_{}", uuid, file_name));
                     fs::rename(path, &output_path)?;
-                    let asset = Asset::new(&db, file_name, &output_path.to_str().unwrap())?;
-                    let _asset_object =
-                        AssetObject::new(&db, asset.id, project.id, &"project".to_string())?;
+                    let asset = Asset::new(&db, uuid, file_name, &output_path.to_str().unwrap())?;
+                    AssetObject::new(&db, asset.id, project.id, &"project".to_string())?;
                     return Ok(json!({ "file_name": file_name, "project": user.projects(&db)? }));
                 }
             }

@@ -1,6 +1,7 @@
 table! {
     assets (id) {
         id -> Int4,
+        uuid -> Uuid,
         name -> Varchar,
         asset_path -> Varchar,
         asset_type -> Varchar,

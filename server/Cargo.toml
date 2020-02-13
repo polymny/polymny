@@ -10,7 +10,7 @@ default-run = "server"
 rocket = "0.4.2"
 mime = "0.3.12"
 multipart = {version = "0.16.1", default-features = false, features = ["server"]}
-diesel = { version = "1.4.3", features = ["chrono"] }
+diesel = { version = "1.4.3", features = ["chrono","uuid"] }
 rand = "0.7.2"
 bcrypt = "0.6.1"
 tera = "1.0.1"
@@ -23,7 +23,7 @@ serde = { version = "1.0.44", features = ["derive"] }
 serde_yaml = "0.8"
 rocket-include-static-resources = "0.8.3"
 rocket-multipart-form-data = "0.7.2"
-
+uuid = { version = "0.6.5", features = ["serde", "v4"] }
 
 [dependencies.rocket_contrib]
 version = "0.4.2"
