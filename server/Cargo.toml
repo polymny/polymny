@@ -11,6 +11,7 @@ rocket = "0.4.2"
 mime = "0.3.12"
 multipart = {version = "0.16.1", default-features = false, features = ["server"]}
 diesel = { version = "1.4.3", features = ["chrono","uuid"] }
+diesel-derive-enum = { version = "0.4", features = ["postgres"] }
 rand = "0.7.2"
 bcrypt = "0.6.1"
 tera = "1.0.1"

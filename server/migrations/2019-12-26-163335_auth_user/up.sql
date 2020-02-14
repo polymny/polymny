@@ -45,10 +45,11 @@ CREATE TABLE assets (
     upload_date TIMESTAMP NOT NULL
 );
 
+CREATE TYPE asset_type AS ENUM ('project', 'capsule', 'gos', 'slide');
 
 CREATE TABLE assets_objects (
     id SERIAL PRIMARY KEY,
     asset_id INT NOT NULL references assets(id),
     object_id INT NOT NULL,
-    object VARCHAR NOT NULL
+    asset_type asset_type NOT NULL
 );

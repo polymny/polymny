@@ -67,6 +67,29 @@ pub struct NewAsset {
     pub upload_date: NaiveDateTime,
 }
 
+// This module is only here to allow missing docs on the generated type AssetTypeMapping.
+#[allow(missing_docs)]
+mod asset_type {
+    /// The different possible types of assets.
+    #[derive(Debug, PartialEq, Eq, DbEnum)]
+    pub enum AssetType {
+        /// A project.
+        Project,
+
+        /// A capsule.
+        Capsule,
+
+        /// A group of slides.
+        Gos,
+
+        /// A slide.
+        Slide,
+    }
+}
+
+pub use asset_type::AssetTypeMapping as Asset_type;
+pub use asset_type::{AssetType, AssetTypeMapping};
+
 /// A link between a asset and an object.
 #[derive(Identifiable, Queryable, Associations, Debug)]
 #[table_name = "assets_objects"]
@@ -82,7 +105,7 @@ pub struct AssetObject {
     pub object_id: i32,
 
     /// type of object (ie project, capsule, slide, etc ...)
-    pub object: String,
+    pub object: AssetType,
 }
 
 /// New link between an asset and an onhect.
@@ -96,7 +119,7 @@ pub struct NewAssetObject {
     pub object_id: i32,
 
     /// type of object (ie project, capsule, slide, etc ...)
-    pub object: String,
+    pub asset_type: AssetType,
 }
 
 impl Asset {
@@ -145,17 +168,14 @@ impl AssetObject {
         database: &PgConnection,
         asset_id: i32,
         object_id: i32,
-        object: &str,
+        asset_type: AssetType,
     ) -> Result<AssetObject> {
-        match object {
-            "project" | "capsule" | "gos" | "slide" => Ok(NewAssetObject {
-                asset_id: asset_id,
-                object_id: object_id,
-                object: String::from(object),
-            }
-            .save(&database)?),
-            _ => panic!("Invalid object : {}", object),
+        Ok(NewAssetObject {
+            asset_id,
+            object_id,
+            asset_type,
         }
+        .save(&database)?)
     }
 }
 

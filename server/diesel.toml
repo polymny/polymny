@@ -2,4 +2,5 @@
 # see diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "src/schema.rs"
+file = "src/generated_schema.rs"
+filter = { except_tables = [ "assets_objects" ] }
