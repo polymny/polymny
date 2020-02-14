@@ -38,7 +38,8 @@ CREATE TABLE capsules_projects (
 
 CREATE TABLE assets (
     id SERIAL PRIMARY KEY,
-    name  VARCHAR NOT NULL UNIQUE,
+    uuid UUID NOT NULL UNIQUE,
+    name  VARCHAR NOT NULL,
     asset_path  VARCHAR NOT NULL UNIQUE,
     asset_type  VARCHAR NOT NULL,
     upload_date TIMESTAMP NOT NULL

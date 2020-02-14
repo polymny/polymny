@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ok_or(NotFoundError {})?;
 
     let db = PgConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url));
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     let sample = parse_sample()?;
 

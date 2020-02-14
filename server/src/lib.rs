@@ -155,16 +155,16 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
     let cookie = cookies.get_private("EXAUTH");
     let mut context = Context::new();
 
-    let flags = if cookie.is_none() {
-        "".to_string()
-    } else {
-        match User::from_session(cookie.unwrap().value(), &db) {
+    let flags = if let Some(cookie) = cookie {
+        match User::from_session(cookie.value(), &db) {
             Ok(user) => {
                 let json = json!({"username": user.username, "projects": user.projects(&db)?});
                 format!("flags: {},", json.0)
             }
             Err(_) => "".to_string(),
         }
+    } else {
+        "".to_string()
     };
 
     context.insert("flags", &flags);
@@ -197,6 +197,7 @@ pub fn main() {
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::projects,
+                routes::project::project_upload,
                 routes::capsule::new_capsule,
                 routes::capsule::get_capsule,
                 routes::capsule::capsules,
