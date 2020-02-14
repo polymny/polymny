@@ -24,24 +24,24 @@ CREATE TABLE projects (
 
 CREATE TABLE capsules (
     id SERIAL PRIMARY KEY,
-    name  VARCHAR NOT NULL UNIQUE,
+    name VARCHAR NOT NULL UNIQUE,
     title VARCHAR,
     slides VARCHAR,
     description TEXT
 );
 
 CREATE TABLE capsules_projects (
-  id SERIAL PRIMARY KEY,
-  capsule_id INT NOT NULL references capsules(id),
-  project_id INT NOT NULL references projects(id)
+    id SERIAL PRIMARY KEY,
+    capsule_id INT NOT NULL references capsules(id),
+    project_id INT NOT NULL references projects(id)
 );
 
 CREATE TABLE assets (
     id SERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
-    name  VARCHAR NOT NULL,
-    asset_path  VARCHAR NOT NULL UNIQUE,
-    asset_type  VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    asset_path VARCHAR NOT NULL UNIQUE,
+    asset_type VARCHAR NOT NULL,
     upload_date TIMESTAMP NOT NULL
 );
 
