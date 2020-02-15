@@ -33,29 +33,51 @@ pub fn new_project<'a>(
     db: Database,
     mut cookies: Cookies,
     project: Form<NewProjectForm>,
-) -> Result<String> {
+) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-
     let project = Project::create(&project.project_name, user.id)?;
-    project.save(&db)?;
 
-    Ok(format!("{}", project.last_visited.timestamp()))
+    Ok(json!({ "project": project.save(&db)? }))
 }
 
 /// The route to get a project.
 #[get("/project/<id>")]
 pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
     let project = Project::get(id, &db)?;
-    Ok(json!({"project_name": project.project_name}))
+    Ok(json!({ "project": project }))
 }
 
 /// Get all the projects .
 #[get("/projects")]
-pub fn projects(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
+pub fn all_projects(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
+    let cookie = cookies.get_private("EXAUTH");
+    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+    Ok(json!({ "projects": Project::all(&db)?}))
+}
+
+/// Update a project
+#[put("/project/<id>", data = "<project_form>")]
+pub fn update_project(
+    db: Database,
+    mut cookies: Cookies,
+    id: i32,
+    project_form: Form<NewProjectForm>,
+) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    Ok(json!({"projects": user.projects(&db)?}))
+    let project = Project::get(id, &db)?;
+    Ok(json!({ "project":
+        project.update(&db, &project_form.project_name, user.id)? }))
+}
+/// Delete a project
+#[delete("/project/<id>")]
+pub fn delete_project(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
+    let cookie = cookies.get_private("EXAUTH");
+    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+    let project = Project::get(id, &db)?;
+    Ok(json!({ "nb projects deleted":
+        project.delete(&db)?}))
 }
 
 /// Upload an asset in the project
