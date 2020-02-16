@@ -208,7 +208,9 @@ pub fn main() {
                 routes::project::project_upload,
                 routes::capsule::new_capsule,
                 routes::capsule::get_capsule,
-                routes::capsule::capsules,
+                routes::capsule::all_capsules,
+                routes::capsule::update_capsule,
+                routes::capsule::delete_capsule,
             ],
         )
         .launch();
