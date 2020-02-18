@@ -27,9 +27,9 @@ impl fmt::Display for NotFoundError {
 #[derive(Deserialize, Debug)]
 struct SampleCapsule {
     name: String,
-    title: Option<String>,
-    description: Option<String>,
-    slides: Option<String>,
+    title: String,
+    description: String,
+    slides: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -85,10 +85,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         Capsule::new(
             &db,
             &sample_capsule.name,
-            sample_capsule.title.as_deref(),
-            sample_capsule.slides.as_deref(),
-            sample_capsule.description.as_deref(),
-            &None,
+            &sample_capsule.title,
+            &sample_capsule.slides,
+            &sample_capsule.description,
+            None,
         )?;
     }
 

@@ -18,14 +18,14 @@ pub struct Capsule {
     pub name: String,
 
     /// The title the capsule.
-    pub title: Option<String>,
+    pub title: String,
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: Option<String>,
+    pub slides: String,
 
     /// The description of the capsule.
-    pub description: Option<String>,
+    pub description: String,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -36,32 +36,14 @@ pub struct NewCapsule {
     pub name: String,
 
     /// The title the capsule.
-    pub title: Option<String>,
+    pub title: String,
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: Option<String>,
+    pub slides: String,
 
     /// The description of the capsule.
-    pub description: Option<String>,
-}
-
-/// A capsule that isn't stored into the database yet.
-#[derive(Debug, Insertable, AsChangeset)]
-#[table_name = "capsules"]
-pub struct UpdateCapsule {
-    /// The (unique) name of the capsule.
-    pub name: Option<String>,
-
-    /// The title the capsule.
-    pub title: Option<String>,
-
-    /// Reference to pdf file of caspusle
-    // TODO: add reference to asset table
-    pub slides: Option<String>,
-
-    /// The description of the capsule.
-    pub description: Option<String>,
+    pub description: String,
 }
 
 /// A link between a capsule and a project.
@@ -96,16 +78,16 @@ impl Capsule {
     pub fn new(
         database: &PgConnection,
         name: &str,
-        title: Option<&str>,
-        slides: Option<&str>,
-        description: Option<&str>,
-        project: &Option<Project>,
+        title: &str,
+        slides: &str,
+        description: &str,
+        project: Option<Project>,
     ) -> Result<Capsule> {
         let capsule = NewCapsule {
             name: String::from(name),
-            title: title.map(String::from),
-            slides: slides.map(String::from),
-            description: description.map(String::from),
+            title: String::from(title),
+            slides: String::from(slides),
+            description: String::from(description),
         }
         .save(&database)?;
 
@@ -119,17 +101,12 @@ impl Capsule {
         Ok(capsule)
     }
     /// Creates a new capsule.
-    pub fn create(
-        name: &str,
-        title: Option<&str>,
-        slides: Option<&str>,
-        description: Option<&str>,
-    ) -> Result<NewCapsule> {
+    pub fn create(name: &str, title: &str, slides: &str, description: &str) -> Result<NewCapsule> {
         Ok(NewCapsule {
             name: String::from(name),
-            title: title.map(String::from),
-            slides: slides.map(String::from),
-            description: description.map(String::from),
+            title: String::from(title),
+            slides: String::from(slides),
+            description: String::from(description),
         })
     }
 
@@ -145,71 +122,14 @@ impl Capsule {
         let capsule = dsl::capsules
             .filter(dsl::name.eq(name))
             .first::<Capsule>(db);
-        // TODO: is "?" needed
         Ok(capsule?)
     }
 
     /// Retrieves all capsules
     pub fn all(db: &PgConnection) -> Result<Vec<Capsule>> {
         use crate::schema::capsules::dsl;
-
         let capsules = dsl::capsules.load::<Capsule>(db);
-
         Ok(capsules?)
-    }
-
-    /// Creates a new capsule.
-    pub fn update(
-        &self,
-        db: &PgConnection,
-        name: Option<&str>,
-        title: Option<&str>,
-        slides: Option<&str>,
-        description: Option<&str>,
-    ) -> Result<Capsule> {
-        use crate::schema::capsules::dsl;
-
-        /*
-        let mut d_name = &self.name;
-        let mut d_title;
-        let mut d_slides = &self.slides;
-        let mut d_description = &self.description;
-
-        match name {
-            Some(p) => d_name = &String::from(p),
-            None => (),
-        }
-        match title {
-            Some(p) => d_title = &String::from(p),
-            None => match self.title {
-            }
-        }
-            ,
-        }
-        match slides {
-            Some(p) => d_slides = &String::from(p),
-            None => (),
-        }
-        match description {
-            Some(p) => d_description = &String::from(p),
-            None => (),
-        }
-        */
-        /*
-                        dsl::name.eq(d_name),
-                        dsl::title.eq(d_title),
-                        dsl::slides.eq(d_slides),
-                        dsl::description.eq(d_description),
-        */
-        Ok(diesel::update(capsules::table)
-            .set(&UpdateCapsule {
-                name: name.map(String::from),
-                title: title.map(String::from),
-                slides: slides.map(String::from),
-                description: description.map(String::from),
-            })
-            .filter(dsl::id.eq(self.id))
-            .get_result::<Capsule>(db)?)
     }
 
     /// delete a capsule.

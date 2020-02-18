@@ -13,9 +13,9 @@ table! {
     capsules (id) {
         id -> Int4,
         name -> Varchar,
-        title -> Nullable<Varchar>,
-        slides -> Nullable<Varchar>,
-        description -> Nullable<Text>,
+        title -> Varchar,
+        slides -> Varchar,
+        description -> Text,
     }
 }
 
