@@ -2,7 +2,6 @@
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-use diesel::RunQueryDsl;
 
 use crate::db::project::Project;
 use crate::schema::{capsules, capsules_projects};
@@ -47,11 +46,10 @@ pub struct NewCapsule {
 }
 
 /// A link between a capsule and a project.
-#[derive(Identifiable, Queryable, Associations, Debug)]
-#[table_name = "capsules_projects"]
+#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize, Associations)]
 #[belongs_to(Capsule)]
 #[belongs_to(Project)]
-pub struct CapsuleProject {
+pub struct CapsulesProject {
     /// Id of the association.
     pub id: i32,
 
@@ -111,11 +109,21 @@ impl Capsule {
     }
 
     /// Gets a capsule from its id.
-    pub fn get(id: i32, db: &PgConnection) -> Result<Capsule> {
+    pub fn get(id: i32, db: &PgConnection) -> Result<(Capsule, Vec<Project>)> {
         use crate::schema::capsules::dsl;
-        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db);
-        Ok(capsule?)
+        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
+
+        let cap_p = CapsulesProject::belonging_to(&capsule)
+            .load::<CapsulesProject>(db)?;
+
+        let projects = cap_p
+            .into_iter()
+            .map(|x| Project::get(x.project_id, &db))
+            .collect::<Result<Vec<Project>>>()?;
+
+        Ok((capsule, projects))
     }
+
     /// Gets a capsule from its name.
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
@@ -142,13 +150,13 @@ impl Capsule {
     }
 }
 
-impl CapsuleProject {
+impl CapsulesProject {
     /// Creates a new capsule project and saves it into the database.
     pub fn new(
         database: &PgConnection,
         capsule_id: i32,
         project_id: i32,
-    ) -> Result<CapsuleProject> {
+    ) -> Result<CapsulesProject> {
         Ok(NewCapsuleProject {
             capsule_id,
             project_id,
@@ -168,7 +176,7 @@ impl NewCapsule {
 
 impl NewCapsuleProject {
     /// Saves a new capsule project into the database.
-    pub fn save(&self, database: &PgConnection) -> Result<CapsuleProject> {
+    pub fn save(&self, database: &PgConnection) -> Result<CapsulesProject> {
         Ok(diesel::insert_into(capsules_projects::table)
             .values(self)
             .get_result(database)?)

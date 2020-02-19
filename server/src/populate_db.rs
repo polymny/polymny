@@ -9,7 +9,7 @@ impl Error for NotFoundError {}
 
 use serde::Deserialize;
 
-use server::db::capsule::{Capsule, CapsuleProject};
+use server::db::capsule::{Capsule, CapsulesProject};
 use server::db::project::Project;
 use server::db::user::User;
 
@@ -114,7 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     for capsule_ref in capsules {
                         let db_capsule = Capsule::get_by_name(&capsule_ref, &db)?;
                         println!("found capsule : {:#?}", db_capsule);
-                        CapsuleProject::new(&db, db_capsule.id, project.id)?;
+                        CapsulesProject::new(&db, db_capsule.id, project.id)?;
                     }
                 }
             }

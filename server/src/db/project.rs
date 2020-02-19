@@ -10,6 +10,7 @@ use diesel::RunQueryDsl;
 
 use chrono::{NaiveDateTime, Utc};
 
+use crate::db::user::User;
 use crate::schema::projects;
 use crate::Result;
 
@@ -24,7 +25,8 @@ where
 }
 
 /// A project of preparation
-#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
+#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize, Associations)]
+#[belongs_to(User)]
 pub struct Project {
     /// The id of the project.
     pub id: i32,
