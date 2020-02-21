@@ -10,7 +10,9 @@ impl Error for NotFoundError {}
 use serde::Deserialize;
 
 use server::db::capsule::{Capsule, CapsulesProject};
+use server::db::gos::Gos;
 use server::db::project::Project;
+use server::db::slide::Slide;
 use server::db::user::User;
 
 const SAMPLE: &str = include_str!("../../tests/samples.yml");
@@ -25,11 +27,23 @@ impl fmt::Display for NotFoundError {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct SampleSlide {
+    pub position_in_gos: i32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SampleGos {
+    pub position: i32,
+    slides: Option<Vec<SampleSlide>>,
+}
+
+#[derive(Deserialize, Debug)]
 struct SampleCapsule {
     name: String,
     title: String,
     description: String,
     slides: String,
+    goss: Option<Vec<SampleGos>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -82,7 +96,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sample = parse_sample()?;
 
     for sample_capsule in sample.capsules {
-        Capsule::new(
+        let capsule = Capsule::new(
             &db,
             &sample_capsule.name,
             &sample_capsule.title,
@@ -90,6 +104,20 @@ fn main() -> Result<(), Box<dyn Error>> {
             &sample_capsule.description,
             None,
         )?;
+        if let Some(goss) = sample_capsule.goss {
+            println!(
+                "found GOS : {:#?} for capsule {}",
+                goss, sample_capsule.name
+            );
+            for sample_gos in goss {
+                let gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
+                if let Some(slides) = sample_gos.slides {
+                    for sample_slide in slides {
+                        Slide::create(sample_slide.position_in_gos, gos.id)?.save(&db)?;
+                    }
+                }
+            }
+        }
     }
 
     for sample_user in sample.users {

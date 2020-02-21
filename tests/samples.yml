@@ -32,14 +32,43 @@ capsules:
      name: gpIntroduction
      description: A tour of Rust
      slides: introduction.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
    - title: Introduction
      name: rustIntroduction
      description: A tour of Rust
      slides: introduction.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+         - position: 2
+           slides:
+            - position_in_gos: 1
    - title: Rust types
      name: rustTypes
      description: Basic types
      slides: types.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+         - position: 2
+           slides:
+            - position_in_gos: 1
+         - position: 3
+           slides:
+            - position_in_gos: 1
+         - position: 4
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+            - position_in_gos: 3
+            - position_in_gos: 4
    - title: Rust Ownership
      name: rustOwnership
      description: Ownership in rust
