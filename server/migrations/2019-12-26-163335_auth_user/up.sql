@@ -53,3 +53,14 @@ CREATE TABLE assets_objects (
     object_id INT NOT NULL,
     asset_type asset_type NOT NULL
 );
+
+CREATE TABLE goss (
+    id SERIAL PRIMARY KEY,
+    position INT NOT NULL,
+    capsule_id INT NOT NULL references capsules(id)
+);
+CREATE TABLE slides (
+    id SERIAL PRIMARY KEY,
+    position_in_gos INT NOT NULL,
+    gos_id INT NOT NULL references goss(id)
+);
