@@ -113,8 +113,7 @@ impl Capsule {
         use crate::schema::capsules::dsl;
         let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
 
-        let cap_p = CapsulesProject::belonging_to(&capsule)
-            .load::<CapsulesProject>(db)?;
+        let cap_p = CapsulesProject::belonging_to(&capsule).load::<CapsulesProject>(db)?;
 
         let projects = cap_p
             .into_iter()
@@ -145,8 +144,7 @@ impl Capsule {
         use crate::schema::capsules::dsl;
         Ok(diesel::delete(capsules::table)
             .filter(dsl::id.eq(self.id))
-            .execute(db)
-            .expect("Error deleting capsule")) //TODO: expect it the good way to handle error?
+            .execute(db)?)
     }
 }
 

@@ -102,8 +102,7 @@ impl Project {
         use crate::schema::projects::dsl;
         Ok(diesel::delete(projects::table)
             .filter(dsl::id.eq(self.id))
-            .execute(db)
-            .expect("Error deleting project")) //TODO: expect it the good way to handle error?
+            .execute(db)?)
     }
 }
 
