@@ -29,7 +29,7 @@ pub struct NewProjectForm {
 
 /// The route to register new project.
 #[post("/new-project", data = "<project>")]
-pub fn new_project<'a>(
+pub fn new_project(
     db: Database,
     mut cookies: Cookies,
     project: Form<NewProjectForm>,

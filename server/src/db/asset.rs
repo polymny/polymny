@@ -126,7 +126,7 @@ impl Asset {
     /// Creates a new asset and stores it in the database.
     pub fn new(database: &PgConnection, uuid: Uuid, name: &str, asset_path: &str) -> Result<Asset> {
         let asset = NewAsset {
-            uuid: uuid,
+            uuid,
             name: String::from(name),
             asset_path: String::from(asset_path),
             asset_type: "file".to_string(), //TODO: extact asse type from asset_path extension
@@ -139,7 +139,7 @@ impl Asset {
     /// Creates a new asset.
     pub fn create(uuid: Uuid, name: &str, asset_path: &str) -> Result<NewAsset> {
         Ok(NewAsset {
-            uuid: uuid,
+            uuid,
             name: String::from(name),
             asset_path: String::from(asset_path),
             asset_type: "file".to_string(), //TODO: extact asse type from asset_path extension
