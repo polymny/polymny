@@ -3,7 +3,9 @@
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
+use crate::db::gos::Gos;
 use crate::db::project::Project;
+use crate::db::slide::Slide;
 use crate::schema::{capsules, capsules_projects};
 use crate::Result;
 
@@ -130,6 +132,40 @@ impl Capsule {
             .filter(dsl::name.eq(name))
             .first::<Capsule>(db);
         Ok(capsule?)
+    }
+
+    /// Gets a capsule from its id.
+    pub fn get_by_id(
+        id: i32,
+        db: &PgConnection,
+    ) -> Result<(Capsule, Vec<Project>, Vec<(Gos, Vec<Slide>)>)> {
+        use crate::schema::capsules::dsl;
+        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
+
+        let cap_p = CapsulesProject::belonging_to(&capsule).load::<CapsulesProject>(db)?;
+
+        let projects = cap_p
+            .into_iter()
+            .map(|x| Project::get(x.project_id, &db))
+            .collect::<Result<Vec<Project>>>()?;
+
+        use crate::schema::goss::dsl as dsl_gos;
+        let goss = Gos::belonging_to(&capsule)
+            .order(dsl_gos::position.asc())
+            .load::<Gos>(db)?;
+
+        use crate::schema::slides::dsl as dsl_slides;
+        let slides = Slide::belonging_to(&goss)
+            .order(dsl_slides::position_in_gos.asc())
+            .load::<Slide>(db)?;
+        let grouped_slides: Vec<Vec<Slide>> = slides.grouped_by(&goss);
+        let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
+            goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
+
+        println!("{:#?}", goss_and_slides);
+
+        //let data = capsule.zip(goss).collect::<Vec<_>>();
+        Ok((capsule, projects, goss_and_slides))
     }
 
     /// Retrieves all capsules

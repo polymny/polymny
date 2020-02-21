@@ -66,8 +66,10 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
 /// The route to get a capsule.
 #[get("/capsule/<id>")]
 pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
-    let (capsule, projects) = Capsule::get(id, &db)?;
-    Ok(json!({ "capsule": capsule, "projects": projects } ))
+    // let (capsule, projects) = Capsule::get(id, &db)?;
+    // Ok(json!({ "capsule": capsule, "projects": projects } ))
+    let (capsule, projects, goss) = Capsule::get_by_id(id, &db)?;
+    Ok(json!({ "capsule": capsule, "projects": projects, "goss": goss } ))
 }
 
 /// Get all the capsules .
@@ -102,7 +104,7 @@ pub fn update_capsule(
 pub fn delete_capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let (capsule, _) = Capsule::get(id, &db)?;
+    let (capsule, _, _) = Capsule::get_by_id(id, &db)?;
     Ok(json!({ "nb capsules deleted":
         capsule.delete(&db)?}))
 }
