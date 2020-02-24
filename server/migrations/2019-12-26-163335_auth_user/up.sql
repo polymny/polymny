@@ -22,11 +22,19 @@ CREATE TABLE projects (
     last_visited TIMESTAMP NOT NULL
 );
 
+CREATE TABLE assets (
+    id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL UNIQUE,
+    name VARCHAR NOT NULL,
+    asset_path VARCHAR NOT NULL UNIQUE,
+    asset_type VARCHAR NOT NULL,
+    upload_date TIMESTAMP NOT NULL
+);
 CREATE TABLE capsules (
     id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL UNIQUE,
     title VARCHAR NOT NULL ,
-    slides VARCHAR NOT NULL,
+    slide_asset_id INT REFERENCES assets(id),
     description TEXT NOT NULL
 );
 
@@ -36,14 +44,7 @@ CREATE TABLE capsules_projects (
     project_id INT NOT NULL references projects(id)
 );
 
-CREATE TABLE assets (
-    id SERIAL PRIMARY KEY,
-    uuid UUID NOT NULL UNIQUE,
-    name VARCHAR NOT NULL,
-    asset_path VARCHAR NOT NULL UNIQUE,
-    asset_type VARCHAR NOT NULL,
-    upload_date TIMESTAMP NOT NULL
-);
+
 
 CREATE TYPE asset_type AS ENUM ('project', 'capsule', 'gos', 'slide');
 

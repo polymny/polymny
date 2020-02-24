@@ -14,7 +14,7 @@ table! {
         id -> Int4,
         name -> Varchar,
         title -> Varchar,
-        slides -> Varchar,
+        slide_asset_id -> Nullable<Int4>,
         description -> Text,
     }
 }
@@ -71,6 +71,7 @@ table! {
     }
 }
 
+joinable!(capsules -> assets (slide_asset_id));
 joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
 joinable!(goss -> capsules (capsule_id));

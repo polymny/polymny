@@ -157,7 +157,6 @@ impl Asset {
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Asset> {
         use crate::schema::assets::dsl;
         let asset = dsl::assets.filter(dsl::name.eq(name)).first::<Asset>(db);
-        // TODO: is "?" needed
         Ok(asset?)
     }
 }

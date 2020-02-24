@@ -10,7 +10,8 @@ use crate::schema::{capsules, capsules_projects};
 use crate::Result;
 
 /// A capsule of preparation
-#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
+#[belongs_to(Asset, foreign_key=slide_asset_id)]
 pub struct Capsule {
     /// The id of the capsule.
     pub id: i32,
@@ -23,7 +24,7 @@ pub struct Capsule {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: String,
+    pub slide_asset_id: Option<i32>,
 
     /// The description of the capsule.
     pub description: String,
@@ -41,7 +42,7 @@ pub struct NewCapsule {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: String,
+    pub slide_asset_id: Option<Option<i32>>,
 
     /// The description of the capsule.
     pub description: String,
@@ -79,14 +80,14 @@ impl Capsule {
         database: &PgConnection,
         name: &str,
         title: &str,
-        slides: &str,
+        slide_asset_id: Option<i32>,
         description: &str,
         project: Option<Project>,
     ) -> Result<Capsule> {
         let capsule = NewCapsule {
             name: String::from(name),
             title: String::from(title),
-            slides: String::from(slides),
+            slide_asset_id: Some(slide_asset_id),
             description: String::from(description),
         }
         .save(&database)?;
@@ -101,11 +102,16 @@ impl Capsule {
         Ok(capsule)
     }
     /// Creates a new capsule.
-    pub fn create(name: &str, title: &str, slides: &str, description: &str) -> Result<NewCapsule> {
+    pub fn create(
+        name: &str,
+        title: &str,
+        slide_asset_id: Option<i32>,
+        description: &str,
+    ) -> Result<NewCapsule> {
         Ok(NewCapsule {
             name: String::from(name),
             title: String::from(title),
-            slides: String::from(slides),
+            slide_asset_id: Some(slide_asset_id),
             description: String::from(description),
         })
     }

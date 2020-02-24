@@ -24,7 +24,7 @@ pub struct NewCapsuleForm {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: String,
+    pub slide_asset_id: Option<i32>,
 
     /// The description of the capsule.
     pub description: String,
@@ -42,7 +42,7 @@ pub struct UpdateCapsuleForm {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slides: Option<String>,
+    pub slide_asset_id: Option<Option<i32>>,
 
     /// The description of the capsule.
     pub description: Option<String>,
@@ -57,7 +57,7 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
             &db,
             &capsule.name,
             &capsule.title,
-            &capsule.slides,
+            capsule.slide_asset_id,
             &capsule.description,
             None,
         )?}))
