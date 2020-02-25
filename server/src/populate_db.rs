@@ -110,6 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for sample_asset in sample.assets {
         let uuid = Uuid::new_v4();
         let mut output_path = PathBuf::from("dist");
+        //TODO add user name
         output_path.push("Graydon".to_string());
         output_path.push(format!("{}_{}", uuid, sample_asset.name));
         Asset::new(
