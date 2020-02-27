@@ -22,6 +22,7 @@ serde = { version = "1.0.44", features = ["derive"] }
 serde_yaml = "0.8"
 rocket-multipart-form-data = "0.7.2"
 uuid = { version = "0.6.5", features = ["serde", "v4"] }
+tempfile = "3.1.0"
 
 [dependencies.rocket_contrib]
 version = "0.4.2"
