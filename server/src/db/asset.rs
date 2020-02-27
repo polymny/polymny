@@ -25,7 +25,7 @@ where
 }
 
 /// A asset of preparation
-#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
 pub struct Asset {
     /// The id of the asset.
     pub id: i32,
@@ -71,7 +71,7 @@ pub struct NewAsset {
 #[allow(missing_docs)]
 mod asset_type {
     /// The different possible types of assets.
-    #[derive(Debug, PartialEq, Eq, DbEnum)]
+    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize)]
     pub enum AssetType {
         /// A project.
         Project,
@@ -91,10 +91,10 @@ pub use asset_type::AssetTypeMapping as Asset_type;
 pub use asset_type::{AssetType, AssetTypeMapping};
 
 /// A link between a asset and an object.
-#[derive(Identifiable, Queryable, Associations, Debug)]
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
 #[table_name = "assets_objects"]
-#[belongs_to(Asset)]
-pub struct AssetObject {
+#[belongs_to(Asset, foreign_key = "asset_id")]
+pub struct AssetsObject {
     /// Id of the association.
     pub id: i32,
 
@@ -105,13 +105,13 @@ pub struct AssetObject {
     pub object_id: i32,
 
     /// type of object (ie project, capsule, slide, etc ...)
-    pub object: AssetType,
+    pub object_type: AssetType,
 }
 
 /// New link between an asset and an onhect.
 #[derive(Insertable, Debug)]
 #[table_name = "assets_objects"]
-pub struct NewAssetObject {
+pub struct NewAssetsObject {
     /// Id of the associated asset.
     pub asset_id: i32,
 
@@ -119,7 +119,7 @@ pub struct NewAssetObject {
     pub object_id: i32,
 
     /// type of object (ie project, capsule, slide, etc ...)
-    pub asset_type: AssetType,
+    pub object_type: AssetType,
 }
 
 impl Asset {
@@ -148,31 +148,48 @@ impl Asset {
     }
 
     /// Gets a asset from its id.
-    pub fn get(id: i32, db: &PgConnection) -> Result<Asset> {
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<(Asset, Vec<AssetsObject>)> {
         use crate::schema::assets::dsl;
-        let asset = dsl::assets.filter(dsl::id.eq(id)).first::<Asset>(db);
-        Ok(asset?)
+        let asset = dsl::assets.filter(dsl::id.eq(id)).first::<Asset>(db)?;
+        let refs = AssetsObject::belonging_to(&asset).load::<AssetsObject>(db)?;
+        Ok((asset, refs))
     }
+
     /// Gets a asset from its name.
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Asset> {
         use crate::schema::assets::dsl;
-        let asset = dsl::assets.filter(dsl::name.eq(name)).first::<Asset>(db);
-        Ok(asset?)
+        let asset = dsl::assets.filter(dsl::name.eq(name)).first::<Asset>(db)?;
+
+        Ok(asset)
+    }
+    /// Retrieves all assets
+    pub fn all(db: &PgConnection) -> Result<Vec<Asset>> {
+        use crate::schema::assets::dsl;
+        let assets = dsl::assets.load::<Asset>(db);
+        Ok(assets?)
+    }
+    /// delete an asset.
+    pub fn delete(&self, db: &PgConnection) -> Result<usize> {
+        use crate::schema::assets::dsl;
+        Ok(diesel::delete(assets::table)
+            .filter(dsl::id.eq(self.id))
+            .execute(db)?)
+        // TODO: suppress asset reference in  assets_objects_ table
     }
 }
 
-impl AssetObject {
+impl AssetsObject {
     /// Creates a new asset and stores it in the database.
     pub fn new(
         database: &PgConnection,
         asset_id: i32,
         object_id: i32,
-        asset_type: AssetType,
-    ) -> Result<AssetObject> {
-        Ok(NewAssetObject {
+        object_type: AssetType,
+    ) -> Result<AssetsObject> {
+        Ok(NewAssetsObject {
             asset_id,
             object_id,
-            asset_type,
+            object_type,
         }
         .save(&database)?)
     }
@@ -187,9 +204,9 @@ impl NewAsset {
     }
 }
 
-impl NewAssetObject {
+impl NewAssetsObject {
     /// Saves a new asset object into the database.
-    pub fn save(&self, database: &PgConnection) -> Result<AssetObject> {
+    pub fn save(&self, database: &PgConnection) -> Result<AssetsObject> {
         Ok(diesel::insert_into(assets_objects::table)
             .values(self)
             .get_result(database)?)

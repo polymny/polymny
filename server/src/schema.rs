@@ -7,6 +7,6 @@ table! {
         id -> Int4,
         asset_id -> Int4,
         object_id -> Int4,
-        asset_type -> AssetTypeMapping,
+        object_type -> AssetTypeMapping,
     }
 }

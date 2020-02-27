@@ -211,6 +211,9 @@ pub fn main() {
                 routes::capsule::all_capsules,
                 routes::capsule::update_capsule,
                 routes::capsule::delete_capsule,
+                routes::asset::get_asset,
+                routes::asset::all_assets,
+                routes::asset::delete_asset,
             ],
         )
         .launch();

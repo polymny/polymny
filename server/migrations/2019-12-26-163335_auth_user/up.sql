@@ -52,7 +52,7 @@ CREATE TABLE assets_objects (
     id SERIAL PRIMARY KEY,
     asset_id INT NOT NULL references assets(id),
     object_id INT NOT NULL,
-    asset_type asset_type NOT NULL
+    object_type asset_type NOT NULL
 );
 
 CREATE TABLE goss (
