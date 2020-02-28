@@ -34,6 +34,15 @@ pub struct NewGos {
 }
 
 impl Gos {
+    /// Creates a new gos and store it in database.
+    pub fn new(db: &PgConnection, position: i32, capsule_id: i32) -> Result<Gos> {
+        Ok(NewGos {
+            position,
+            capsule_id,
+        }
+        .save(&db)?)
+    }
+
     /// Creates a new gos.
     pub fn create(position: i32, capsule_id: i32) -> Result<NewGos> {
         Ok(NewGos {

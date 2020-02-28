@@ -1,8 +1,7 @@
 //! This module contains all the routes related to capsules.
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::str;
-use std::{fs, io};
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
@@ -23,9 +22,11 @@ use tempfile::tempdir;
 
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
+use crate::db::gos::Gos;
+use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::schema::capsules;
-use crate::{Database, Error, Result};
+use crate::{Database, Result};
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(FromForm, Debug)]
@@ -124,8 +125,8 @@ pub fn delete_capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<Jso
 }
 
 /// Upload a presentation (slides)
-#[post("/project/<id>/upload_slides", data = "<data>")]
-pub fn project_upload(
+#[post("/capsule/<id>/upload_slides", data = "<data>")]
+pub fn upload_slides(
     db: Database,
     mut cookies: Cookies,
     content_type: &ContentType,
@@ -134,7 +135,7 @@ pub fn project_upload(
 ) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let (capsule, _, _) = Capsule::get_by_id(id, &db)?;
+    let (capsule, _, goss_and_slides) = Capsule::get_by_id(id, &db)?;
 
     let mut options = MultipartFormDataOptions::new();
     options
@@ -162,17 +163,37 @@ pub fn project_upload(
                     let asset = Asset::new(&db, uuid, file_name, &output_path.to_str().unwrap())?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
+                    //update capsule with the ref to the uploaded pdf
+                    use crate::schema::capsules::dsl;
+                    diesel::update(capsules::table)
+                        .filter(dsl::id.eq(capsule.id))
+                        .set(dsl::slide_asset_id.eq(asset.id))
+                        .execute(&db.0)?;
+
+                    // if exists remove all prevouis generatd goss and slides
+                    // TODO: Brutal way add an option to upload pdf without supression of
+                    // all goss and slides
+                    for item in goss_and_slides {
+                        let (gos, slides) = item;
+                        for slide in slides {
+                            AssetsObject::delete_by_object(&db, slide.id, AssetType::Slide)?;
+                            slide.delete(&db)?;
+                            //TODO: supress file on disk
+                        }
+                        gos.delete(&db)?;
+                    }
+
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
                     let command = format!(
-                        "convert -verbose -density 300 {pdf} -resize 1920x1080! {temp}/'%02d'.png",
+                        "convert -density 300 {pdf} -resize 1920x1080! {temp}/'%02d'.png",
                         pdf = &output_path.to_str().unwrap(),
                         temp = dir.path().display()
                     );
                     println!("command = {:#?}", command);
 
-                    let child = Command::new("sh")
+                    let mut child = Command::new("sh")
                         .arg("-c")
                         .arg(command)
                         .stdout(Stdio::piped())
@@ -180,22 +201,32 @@ pub fn project_upload(
                         .spawn()
                         .expect("failed to execute child");
 
-                    println!("child = {:#?}", child);
-                    let output = child.wait_with_output().expect("failed to wait on child");
-                    let out: Vec<&str> = str::from_utf8(&output.stderr)
-                        .unwrap()
-                        .split("\n")
-                        .collect();
-                    println!("output = {:#?}", str::from_utf8(&output.stderr));
-                    println!("out = {:#?}", &out);
+                    child.wait().expect("failed to wait on child");
 
-                    let mut entries = fs::read_dir(&dir)?
-                        .map(|res| res.map(|e| e.path()))
-                        .collect::<Result<Vec<_>, Error>>()?;
+                    let mut entries: Vec<_> =
+                        fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
                     entries.sort();
 
+                    let mut idx = 1;
                     for e in entries {
-                        println!("{:#?}", e);
+                        // Create one GOS and associated per image
+                        // one slide per GOS
+                        let gos = Gos::new(&db, idx, capsule.id)?;
+                        let slide = Slide::new(&db, 1, gos.id)?;
+                        let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
+                        let mut output_path = PathBuf::from("dist");
+                        let uuid = Uuid::new_v4();
+                        let slide_name = format!("{}__{}.png", stem, idx);
+                        output_path.push(&user.username);
+                        output_path.push("extract");
+                        output_path.push(format!("{}_{}", uuid, slide_name));
+                        fs::rename(e, &output_path)?;
+                        idx += 1;
+
+                        let asset =
+                            Asset::new(&db, uuid, &slide_name, &output_path.to_str().unwrap())?;
+
+                        AssetsObject::new(&db, asset.id, slide.id, AssetType::Slide)?;
                     }
                     dir.close()?;
                     return Ok(json!({ "file_name": file_name, "project": user.projects(&db)? }));

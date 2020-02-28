@@ -34,6 +34,15 @@ pub struct NewSlide {
 }
 
 impl Slide {
+    /// Creates a new slide and store i tin database
+    pub fn new(db: &PgConnection, position_in_gos: i32, gos_id: i32) -> Result<Slide> {
+        Ok(NewSlide {
+            position_in_gos,
+            gos_id,
+        }
+        .save(&db)?)
+    }
+
     /// Creates a new slide.
     pub fn create(position_in_gos: i32, gos_id: i32) -> Result<NewSlide> {
         Ok(NewSlide {

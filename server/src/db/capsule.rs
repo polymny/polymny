@@ -168,9 +168,6 @@ impl Capsule {
         let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
             goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
 
-        println!("{:#?}", goss_and_slides);
-
-        //let data = capsule.zip(goss).collect::<Vec<_>>();
         Ok((capsule, projects, goss_and_slides))
     }
 

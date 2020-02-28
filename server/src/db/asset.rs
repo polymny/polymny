@@ -155,6 +155,13 @@ impl Asset {
         Ok((asset, refs))
     }
 
+    /// Gets a asset from its id.
+    pub fn get(id: i32, db: &PgConnection) -> Result<Asset> {
+        use crate::schema::assets::dsl;
+        let asset = dsl::assets.filter(dsl::id.eq(id)).first::<Asset>(db)?;
+        Ok(asset)
+    }
+
     /// Gets a asset from its name.
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Asset> {
         use crate::schema::assets::dsl;
@@ -192,6 +199,64 @@ impl AssetsObject {
             object_type,
         }
         .save(&database)?)
+    }
+
+    /// Get asset with the object.
+    pub fn get(db: &PgConnection, id: i32) -> Result<AssetsObject> {
+        use crate::schema::assets_objects::dsl;
+        Ok(dsl::assets_objects
+            .filter(dsl::id.eq(id))
+            .first::<AssetsObject>(db)?)
+    }
+
+    /// Get asset with the object.
+    pub fn get_by_object(
+        db: &PgConnection,
+        object_id: i32,
+        object_type: AssetType,
+    ) -> Result<Vec<Asset>> {
+        let assets_ref = {
+            use crate::schema::assets_objects::dsl;
+            dsl::assets_objects
+                .filter(dsl::object_id.eq(object_id))
+                .filter(dsl::object_type.eq(object_type))
+                .load::<AssetsObject>(db)?
+        };
+        println!("assets_ref = {:#?}", assets_ref);
+        assets_ref
+            .into_iter()
+            .map(|x| Asset::get(x.asset_id, &db))
+            .collect::<Result<Vec<Asset>>>()
+    }
+    /// delete an asset.
+    pub fn delete(&self, db: &PgConnection) -> Result<usize> {
+        use crate::schema::assets_objects::dsl;
+        Ok(diesel::delete(assets_objects::table)
+            .filter(dsl::id.eq(self.id))
+            .execute(db)?)
+        // TODO: suppress asset reference in  assets_objects_ table
+    }
+    /// Get asset with the object.
+    pub fn delete_by_object(
+        db: &PgConnection,
+        object_id: i32,
+        object_type: AssetType,
+    ) -> Result<usize> {
+        let assets_ref = {
+            use crate::schema::assets_objects::dsl;
+            dsl::assets_objects
+                .filter(dsl::object_id.eq(object_id))
+                .filter(dsl::object_type.eq(object_type))
+                .load::<AssetsObject>(db)?
+        };
+
+        for aref in assets_ref {
+            let asset = Asset::get(aref.asset_id, &db)?;
+            aref.delete(&db)?;
+            asset.delete(&db)?;
+        }
+        // TODO: return what ?
+        Ok(0)
     }
 }
 
