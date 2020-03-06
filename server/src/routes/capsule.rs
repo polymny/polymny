@@ -84,7 +84,8 @@ pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
     // let (capsule, projects) = Capsule::get(id, &db)?;
     // Ok(json!({ "capsule": capsule, "projects": projects } ))
     let (capsule, projects, goss) = Capsule::get_by_id(id, &db)?;
-    Ok(json!({ "capsule": capsule, "projects": projects, "goss": goss } ))
+    let asset = Capsule::get_slide_show(id, &db)?;
+    Ok(json!({ "capsule": capsule,  "slide_show": asset, "projects": projects, "goss": goss } ))
 }
 
 /// Get all the capsules .

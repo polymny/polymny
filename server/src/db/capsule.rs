@@ -5,10 +5,11 @@ use diesel::prelude::*;
 
 use crate::db::gos::Gos;
 
+use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::schema::{capsules, capsules_projects};
-use crate::Result;
+use crate::{Error, Result};
 
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
@@ -169,6 +170,20 @@ impl Capsule {
             goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
 
         Ok((capsule, projects, goss_and_slides))
+    }
+
+    /// get the slide show associated to capsule
+    pub fn get_slide_show(id: i32, db: &PgConnection) -> Result<Asset> {
+        use crate::schema::capsules::dsl;
+        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
+
+        match capsule.slide_show_id {
+            Some(asset_id) => Ok(Asset::get(asset_id, &db)?),
+            None => Err(Error::DatabaseRequestEmptyError(format!(
+                "No slide show ref in capsule {}",
+                id,
+            ))),
+        }
     }
 
     /// Retrieves all capsules

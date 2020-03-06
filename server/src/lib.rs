@@ -91,6 +91,9 @@ pub enum Error {
 
     /// An error occured while rendering a template.
     TeraError(tera::Error),
+
+    /// Empty Database request
+    DatabaseRequestEmptyError(String),
 }
 
 impl_from_error!(
@@ -129,6 +132,8 @@ impl fmt::Display for Error {
             Error::SendMailError(e) => write!(fmt, "error sending mail: {}", e),
 
             Error::TeraError(e) => write!(fmt, "error rendering template: {}", e),
+
+            Error::DatabaseRequestEmptyError(e) => write!(fmt, "No database entry for: {}", e),
         }
     }
 }
