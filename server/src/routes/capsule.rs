@@ -83,9 +83,11 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
 pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
     // let (capsule, projects) = Capsule::get(id, &db)?;
     // Ok(json!({ "capsule": capsule, "projects": projects } ))
-    let (capsule, projects, goss) = Capsule::get_by_id(id, &db)?;
-    let asset = Capsule::get_slide_show(id, &db)?;
-    Ok(json!({ "capsule": capsule,  "slide_show": asset, "projects": projects, "goss": goss } ))
+    let capsule = Capsule::get_by_id(id, &db)?;
+    Ok(json!({ "capsule": capsule,
+               "slide_show":  capsule.get_slide_show(&db)?,
+               "projects": capsule.get_projects(&db)?,
+               "goss": capsule.get_goss(&db)? } ))
 }
 
 /// Get all the capsules .
@@ -113,14 +115,14 @@ pub fn update_capsule(
         .set(&capsule_form.into_inner())
         .execute(&db.0)?;
 
-    Ok(json!({ "capsule": Capsule::get(capsule_id, &db)? }))
+    Ok(json!({ "capsule": Capsule::get_by_id(capsule_id, &db)? }))
 }
 /// Delete a capsule
 #[delete("/capsule/<id>")]
 pub fn delete_capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let (capsule, _, _) = Capsule::get_by_id(id, &db)?;
+    let capsule = Capsule::get_by_id(id, &db)?;
     Ok(json!({ "nb capsules deleted":
         capsule.delete(&db)?}))
 }
@@ -136,7 +138,7 @@ pub fn upload_slides(
 ) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let (capsule, _, goss_and_slides) = Capsule::get_by_id(id, &db)?;
+    let capsule = Capsule::get_by_id(id, &db)?;
 
     let mut options = MultipartFormDataOptions::new();
     options
@@ -174,7 +176,7 @@ pub fn upload_slides(
                     // if exists remove all prevouis generatd goss and slides
                     // TODO: Brutal way add an option to upload pdf without supression of
                     // all goss and slides
-                    for item in goss_and_slides {
+                    for item in capsule.get_goss(&db)? {
                         let (gos, slides) = item;
                         for slide in slides {
                             AssetsObject::delete_by_object(&db, slide.id, AssetType::Slide)?;

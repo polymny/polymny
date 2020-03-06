@@ -116,48 +116,44 @@ impl Capsule {
             description: String::from(description),
         })
     }
-
     /// Gets a capsule from its id.
-    pub fn get(id: i32, db: &PgConnection) -> Result<(Capsule, Vec<Project>)> {
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
-        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
-
-        let cap_p = CapsulesProject::belonging_to(&capsule).load::<CapsulesProject>(db)?;
-
-        let projects = cap_p
-            .into_iter()
-            .map(|x| Project::get(x.project_id, &db))
-            .collect::<Result<Vec<Project>>>()?;
-
-        Ok((capsule, projects))
+        Ok(dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?)
     }
 
     /// Gets a capsule from its name.
     pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
-        let capsule = dsl::capsules
+        Ok(dsl::capsules
             .filter(dsl::name.eq(name))
-            .first::<Capsule>(db);
-        Ok(capsule?)
+            .first::<Capsule>(db)?)
     }
 
-    /// Gets a capsule from its id.
-    pub fn get_by_id(
-        id: i32,
-        db: &PgConnection,
-    ) -> Result<(Capsule, Vec<Project>, Vec<(Gos, Vec<Slide>)>)> {
-        use crate::schema::capsules::dsl;
-        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
-
-        let cap_p = CapsulesProject::belonging_to(&capsule).load::<CapsulesProject>(db)?;
-
-        let projects = cap_p
+    /// get the projects associated to a user
+    pub fn get_projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
+        let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
+        Ok(cap_p
             .into_iter()
             .map(|x| Project::get(x.project_id, &db))
-            .collect::<Result<Vec<Project>>>()?;
+            .collect::<Result<Vec<Project>>>()?)
+    }
 
+    /// get the slide show associated to capsule
+    pub fn get_slide_show(&self, db: &PgConnection) -> Result<Asset> {
+        match self.slide_show_id {
+            Some(asset_id) => Ok(Asset::get(asset_id, &db)?),
+            None => Err(Error::DatabaseRequestEmptyError(format!(
+                "No slide show ref in capsule {}",
+                self.id,
+            ))),
+        }
+    }
+
+    /// get the slide show associated to capsule
+    pub fn get_goss(&self, db: &PgConnection) -> Result<Vec<(Gos, Vec<Slide>)>> {
         use crate::schema::goss::dsl as dsl_gos;
-        let goss = Gos::belonging_to(&capsule)
+        let goss = Gos::belonging_to(self)
             .order(dsl_gos::position.asc())
             .load::<Gos>(db)?;
 
@@ -168,22 +164,7 @@ impl Capsule {
         let grouped_slides: Vec<Vec<Slide>> = slides.grouped_by(&goss);
         let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
             goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
-
-        Ok((capsule, projects, goss_and_slides))
-    }
-
-    /// get the slide show associated to capsule
-    pub fn get_slide_show(id: i32, db: &PgConnection) -> Result<Asset> {
-        use crate::schema::capsules::dsl;
-        let capsule = dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?;
-
-        match capsule.slide_show_id {
-            Some(asset_id) => Ok(Asset::get(asset_id, &db)?),
-            None => Err(Error::DatabaseRequestEmptyError(format!(
-                "No slide show ref in capsule {}",
-                id,
-            ))),
-        }
+        Ok(goss_and_slides)
     }
 
     /// Retrieves all capsules
