@@ -34,7 +34,7 @@ CREATE TABLE capsules (
     id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL UNIQUE,
     title VARCHAR NOT NULL ,
-    slide_asset_id INT REFERENCES assets(id),
+    slide_show_id INT REFERENCES assets(id),
     description TEXT NOT NULL
 );
 

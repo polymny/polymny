@@ -4,6 +4,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 use crate::db::gos::Gos;
+
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::schema::{capsules, capsules_projects};
@@ -11,7 +12,7 @@ use crate::Result;
 
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
-#[belongs_to(Asset, foreign_key=slide_asset_id)]
+#[belongs_to(Asset, foreign_key=slide_show_id)]
 pub struct Capsule {
     /// The id of the capsule.
     pub id: i32,
@@ -22,9 +23,8 @@ pub struct Capsule {
     /// The title the capsule.
     pub title: String,
 
-    /// Reference to pdf file of caspusle
-    // TODO: add reference to asset table
-    pub slide_asset_id: Option<i32>,
+    /// Reference to slide show in asset table
+    pub slide_show_id: Option<i32>,
 
     /// The description of the capsule.
     pub description: String,
@@ -42,7 +42,7 @@ pub struct NewCapsule {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slide_asset_id: Option<Option<i32>>,
+    pub slide_show_id: Option<Option<i32>>,
 
     /// The description of the capsule.
     pub description: String,
@@ -80,14 +80,14 @@ impl Capsule {
         database: &PgConnection,
         name: &str,
         title: &str,
-        slide_asset_id: Option<i32>,
+        slide_show_id: Option<i32>,
         description: &str,
         project: Option<Project>,
     ) -> Result<Capsule> {
         let capsule = NewCapsule {
             name: String::from(name),
             title: String::from(title),
-            slide_asset_id: Some(slide_asset_id),
+            slide_show_id: Some(slide_show_id),
             description: String::from(description),
         }
         .save(&database)?;
@@ -105,13 +105,13 @@ impl Capsule {
     pub fn create(
         name: &str,
         title: &str,
-        slide_asset_id: Option<i32>,
+        slide_show_id: Option<i32>,
         description: &str,
     ) -> Result<NewCapsule> {
         Ok(NewCapsule {
             name: String::from(name),
             title: String::from(title),
-            slide_asset_id: Some(slide_asset_id),
+            slide_show_id: Some(slide_show_id),
             description: String::from(description),
         })
     }

@@ -39,7 +39,7 @@ pub struct NewCapsuleForm {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slide_asset_id: Option<i32>,
+    pub slide_show_id: Option<i32>,
 
     /// The description of the capsule.
     pub description: String,
@@ -57,7 +57,7 @@ pub struct UpdateCapsuleForm {
 
     /// Reference to pdf file of caspusle
     // TODO: add reference to asset table
-    pub slide_asset_id: Option<Option<i32>>,
+    pub slide_show_id: Option<Option<i32>>,
 
     /// The description of the capsule.
     pub description: Option<String>,
@@ -72,7 +72,7 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
             &db,
             &capsule.name,
             &capsule.title,
-            capsule.slide_asset_id,
+            capsule.slide_show_id,
             &capsule.description,
             None,
         )?}))
@@ -167,7 +167,7 @@ pub fn upload_slides(
                     use crate::schema::capsules::dsl;
                     diesel::update(capsules::table)
                         .filter(dsl::id.eq(capsule.id))
-                        .set(dsl::slide_asset_id.eq(asset.id))
+                        .set(dsl::slide_show_id.eq(asset.id))
                         .execute(&db.0)?;
 
                     // if exists remove all prevouis generatd goss and slides
