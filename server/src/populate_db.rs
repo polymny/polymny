@@ -147,13 +147,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "found GOS : {:#?} for capsule {}",
                 goss, sample_capsule.name
             );
+
             for sample_gos in goss {
                 let gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
+                /*
                 if let Some(slides) = sample_gos.slides {
                     for sample_slide in slides {
                         Slide::create(sample_slide.position_in_gos, gos.id)?.save(&db)?;
                     }
                 }
+                */
             }
         }
     }

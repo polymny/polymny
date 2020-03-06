@@ -63,5 +63,6 @@ CREATE TABLE goss (
 CREATE TABLE slides (
     id SERIAL PRIMARY KEY,
     position_in_gos INT NOT NULL,
-    gos_id INT NOT NULL references goss(id)
+    gos_id INT NOT NULL references goss(id),
+    asset_id INT NOT NULL references assets(id)
 );

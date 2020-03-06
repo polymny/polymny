@@ -57,6 +57,7 @@ table! {
         id -> Int4,
         position_in_gos -> Int4,
         gos_id -> Int4,
+        asset_id -> Int4,
     }
 }
 
@@ -77,6 +78,7 @@ joinable!(capsules_projects -> projects (project_id));
 joinable!(goss -> capsules (capsule_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
+joinable!(slides -> assets (asset_id));
 joinable!(slides -> goss (gos_id));
 
 allow_tables_to_appear_in_same_query!(

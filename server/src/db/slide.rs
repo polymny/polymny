@@ -20,6 +20,9 @@ pub struct Slide {
 
     /// The GOS associated to slide.
     pub gos_id: i32,
+
+    /// The asset associated to slide.
+    pub asset_id: i32,
 }
 
 /// A slide that isn't stored into the database yet.
@@ -31,23 +34,33 @@ pub struct NewSlide {
 
     /// The GOS associated to slide.
     pub gos_id: i32,
+
+    /// The asset associated to slide.
+    pub asset_id: i32,
 }
 
 impl Slide {
     /// Creates a new slide and store i tin database
-    pub fn new(db: &PgConnection, position_in_gos: i32, gos_id: i32) -> Result<Slide> {
+    pub fn new(
+        db: &PgConnection,
+        position_in_gos: i32,
+        gos_id: i32,
+        asset_id: i32,
+    ) -> Result<Slide> {
         Ok(NewSlide {
             position_in_gos,
             gos_id,
+            asset_id,
         }
         .save(&db)?)
     }
 
     /// Creates a new slide.
-    pub fn create(position_in_gos: i32, gos_id: i32) -> Result<NewSlide> {
+    pub fn create(position_in_gos: i32, gos_id: i32, asset_id: i32) -> Result<NewSlide> {
         Ok(NewSlide {
             position_in_gos,
             gos_id,
+            asset_id,
         })
     }
 
@@ -70,12 +83,19 @@ impl Slide {
     }
 
     /// Creates a new slide.
-    pub fn update(&self, db: &PgConnection, position_in_gos: i32, gos_id: i32) -> Result<Slide> {
+    pub fn update(
+        &self,
+        db: &PgConnection,
+        position_in_gos: i32,
+        gos_id: i32,
+        asset_id: i32,
+    ) -> Result<Slide> {
         use crate::schema::slides::dsl;
         Ok(diesel::update(slides::table)
             .set((
                 dsl::position_in_gos.eq(position_in_gos),
                 dsl::gos_id.eq(gos_id),
+                dsl::asset_id.eq(asset_id),
             ))
             .filter(dsl::id.eq(self.id))
             .get_result::<Slide>(db)?)

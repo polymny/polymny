@@ -215,7 +215,6 @@ pub fn upload_slides(
                         // Create one GOS and associated per image
                         // one slide per GOS
                         let gos = Gos::new(&db, idx, capsule.id)?;
-                        let slide = Slide::new(&db, 1, gos.id)?;
                         let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
                         let mut output_path = PathBuf::from("dist");
                         let uuid = Uuid::new_v4();
@@ -229,10 +228,13 @@ pub fn upload_slides(
                         let asset =
                             Asset::new(&db, uuid, &slide_name, &output_path.to_str().unwrap())?;
 
-                        AssetsObject::new(&db, asset.id, slide.id, AssetType::Slide)?;
+                        Slide::new(&db, 1, gos.id, asset.id)?;
                     }
                     dir.close()?;
-                    return Ok(json!({ "file_name": file_name, "project": user.projects(&db)? }));
+                    return Ok(json!({ "file_name": file_name,
+                                       "capsule": capsule,
+                                       "goss": capsule.get_goss(&db)?
+                    }));
                 }
             }
             FileField::Multiple(_files) => {
