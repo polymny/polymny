@@ -38,14 +38,14 @@ pub fn new_project(
     let user = User::from_session(cookie.unwrap().value(), &db)?;
     let project = Project::create(&project.project_name, user.id)?;
 
-    Ok(json!({ "project": project.save(&db)? }))
+    Ok(json!(project.save(&db)?))
 }
 
 /// The route to get a project.
 #[get("/project/<id>")]
 pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
     let project = Project::get(id, &db)?;
-    Ok(json!({ "project": project }))
+    Ok(json!(project))
 }
 
 /// Get all the projects .
@@ -67,8 +67,11 @@ pub fn update_project(
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
     let project = Project::get(id, &db)?;
-    Ok(json!({ "project":
-        project.update(&db, &project_form.project_name, user.id)? }))
+    Ok(json!(project.update(
+        &db,
+        &project_form.project_name,
+        user.id
+    )?))
 }
 /// Delete a project
 #[delete("/project/<id>")]

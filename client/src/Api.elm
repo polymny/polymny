@@ -1,4 +1,4 @@
-module Api exposing (logOut, login, newProject, signUp)
+module Api exposing (logOut, login, newProject, signUp, testDatabase)
 
 import Http
 import Json.Decode exposing (Decoder)
@@ -106,4 +106,36 @@ newProject resultToMsg content =
         { url = "/api/new-project"
         , expect = Http.expectString resultToMsg
         , body = stringBody (encodeNewProjectContent content)
+        }
+
+
+
+-- Setup forms
+
+
+type alias DatabaseTestContent a =
+    { a
+        | hostname : String
+        , username : String
+        , password : String
+        , name : String
+    }
+
+
+encodeDatabaseTestContent : DatabaseTestContent a -> String
+encodeDatabaseTestContent { hostname, username, password, name } =
+    encode
+        [ ( "hostname", hostname )
+        , ( "username", username )
+        , ( "password", password )
+        , ( "name", name )
+        ]
+
+
+testDatabase : (Result Http.Error () -> msg) -> DatabaseTestContent a -> Cmd msg
+testDatabase resultToMsg content =
+    Http.post
+        { url = "/api/test-database"
+        , expect = Http.expectWhatever resultToMsg
+        , body = stringBody (encodeDatabaseTestContent content)
         }

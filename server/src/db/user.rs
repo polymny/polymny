@@ -1,7 +1,5 @@
 //! This module contains the structures to manipulate users.
 
-use tera::Context;
-
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
@@ -18,7 +16,8 @@ use crate::db::project::Project;
 use crate::db::session::{NewSession, Session};
 use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
-use crate::{Error, Result, TEMPLATES};
+use crate::templates::{validation_email_html, validation_email_plain_text};
+use crate::{Error, Result};
 
 /// A user of chouette.
 #[derive(Identifiable, Queryable, PartialEq, Debug)]
@@ -78,13 +77,9 @@ impl User {
             let rng = OsRng {};
             let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
 
-            let mut context = Context::new();
-
             let activation_url = format!("{}/api/activate/{}", mailer.root, activation_key);
-            context.insert("activation_url", &activation_url);
-
-            let text = TEMPLATES.render("email_address_validation.txt", &context)?;
-            let html = TEMPLATES.render("email_address_validation.html", &context)?;
+            let text = validation_email_plain_text(&activation_url);
+            let html = validation_email_html(&activation_url);
 
             mailer.send_mail(email, String::from("Welcome"), text, html)?;
 
