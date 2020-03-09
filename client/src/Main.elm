@@ -189,7 +189,7 @@ type LoggedInMsg
 type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
-    | NewProjectSuccess Int
+    | NewProjectSuccess Project
 
 
 
@@ -323,8 +323,8 @@ updateNewProjectMsg msg session content =
             , Api.newProject resultToMsg2 content
             )
 
-        NewProjectSuccess value ->
-            ( { session | projects = { name = content.name, lastVisited = value } :: session.projects }
+        NewProjectSuccess project ->
+            ( { session | projects = project :: session.projects }
             , { content | status = Status.Success () }
             , Cmd.none
             )
@@ -346,9 +346,9 @@ resultToMsg result =
 
 resultToMsg2 : Result e String -> Msg
 resultToMsg2 result =
-    case Result.map String.toInt result of
-        Ok (Just time) ->
-            LoggedInMsg (NewProjectMsg (NewProjectSuccess time))
+    case Result.map (Decode.decodeString decodeProject) result of
+        Ok (Ok project) ->
+            LoggedInMsg (NewProjectMsg (NewProjectSuccess project))
 
         _ ->
             Noop
