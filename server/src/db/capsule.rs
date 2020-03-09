@@ -7,7 +7,7 @@ use crate::db::gos::Gos;
 
 use crate::db::asset::Asset;
 use crate::db::project::Project;
-use crate::db::slide::Slide;
+use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
 use crate::{Error, Result};
 
@@ -165,6 +165,23 @@ impl Capsule {
         let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
             goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
         Ok(goss_and_slides)
+    }
+
+    /// get the slide show associated to capsule
+    pub fn get_slides(&self, db: &PgConnection) -> Result<Vec<SlideWithAsset>> {
+        use crate::schema::goss::dsl as dsl_gos;
+        let goss = Gos::belonging_to(self)
+            .order(dsl_gos::position.asc())
+            .load::<Gos>(db)?;
+
+        use crate::schema::slides::dsl as dsl_slides;
+        let slides = Slide::belonging_to(&goss)
+            .order(dsl_slides::position_in_gos.asc())
+            .load::<Slide>(db)?;
+        Ok(slides
+            .iter()
+            .map(|x| SlideWithAsset::new(&x, db))
+            .collect::<Result<Vec<SlideWithAsset>>>()?)
     }
 
     /// Retrieves all capsules

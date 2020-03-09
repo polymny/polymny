@@ -81,13 +81,12 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
 /// The route to get a capsule.
 #[get("/capsule/<id>")]
 pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
-    // let (capsule, projects) = Capsule::get(id, &db)?;
-    // Ok(json!({ "capsule": capsule, "projects": projects } ))
     let capsule = Capsule::get_by_id(id, &db)?;
-    Ok(json!({ "capsule": capsule,
+    Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
-               "projects": capsule.get_projects(&db)?,
-               "goss": capsule.get_goss(&db)? } ))
+               "projects":    capsule.get_projects(&db)?,
+               "goss":        capsule.get_goss(&db)? ,
+               "slides":      capsule.get_slides(&db)?} ))
 }
 
 /// Get all the capsules .

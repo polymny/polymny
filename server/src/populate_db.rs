@@ -16,7 +16,6 @@ use server::db::asset::Asset;
 use server::db::capsule::{Capsule, CapsulesProject};
 use server::db::gos::Gos;
 use server::db::project::Project;
-use server::db::slide::Slide;
 use server::db::user::User;
 
 const SAMPLE: &str = include_str!("../../tests/samples.yml");
@@ -149,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
 
             for sample_gos in goss {
-                let gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
+                let _gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
                 /*
                 if let Some(slides) = sample_gos.slides {
                     for sample_slide in slides {

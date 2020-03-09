@@ -4,6 +4,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
 
+use crate::db::asset::Asset;
 use crate::db::gos::Gos;
 use crate::schema::slides;
 use crate::Result;
@@ -117,5 +118,33 @@ impl NewSlide {
         Ok(diesel::insert_into(slides::table)
             .values(self)
             .get_result(database)?)
+    }
+}
+
+/// Slide respresantation with asset as struture (not asset_id)
+#[derive(Debug, Serialize)]
+pub struct SlideWithAsset {
+    /// The id of the slide.
+    pub id: i32,
+
+    /// The position of the slide in the GOS.
+    pub position_in_gos: i32,
+
+    /// The GOS associated to slide.
+    pub gos_id: i32,
+
+    /// The asset associated to slide.
+    pub asset: Asset,
+}
+
+impl SlideWithAsset {
+    /// new Slide with associated asset
+    pub fn new(slide: &Slide, db: &PgConnection) -> Result<SlideWithAsset> {
+        Ok(SlideWithAsset {
+            id: slide.id,
+            position_in_gos: slide.position_in_gos,
+            gos_id: slide.gos_id,
+            asset: Asset::get(slide.asset_id, &db)?,
+        })
     }
 }
