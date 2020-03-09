@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt;
+use std::path::PathBuf;
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -9,7 +10,11 @@ impl Error for NotFoundError {}
 
 use serde::Deserialize;
 
-use server::db::capsule::{Capsule, CapsuleProject};
+use uuid::Uuid;
+
+use server::db::asset::Asset;
+use server::db::capsule::{Capsule, CapsulesProject};
+use server::db::gos::Gos;
 use server::db::project::Project;
 use server::db::user::User;
 
@@ -25,11 +30,30 @@ impl fmt::Display for NotFoundError {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct SampleSlide {
+    pub position_in_gos: i32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SampleGos {
+    pub position: i32,
+    slides: Option<Vec<SampleSlide>>,
+}
+
+#[derive(Deserialize, Debug)]
 struct SampleCapsule {
     name: String,
-    title: Option<String>,
-    description: Option<String>,
-    slides: Option<String>,
+    title: String,
+    description: String,
+    slide_ref: Option<String>,
+    goss: Option<Vec<SampleGos>>,
+}
+
+#[derive(Deserialize, Debug)]
+struct SampleAsset {
+    name: String,
+    asset_path: String,
+    asset_type: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -50,6 +74,7 @@ struct Sample<T> {
     //users: HashMap<String, User>,
     users: Vec<T>,
     capsules: Vec<SampleCapsule>,
+    assets: Vec<SampleAsset>,
 }
 
 fn parse_sample() -> Result<Sample<SampleUser>, Box<dyn Error>> {
@@ -77,19 +102,62 @@ fn main() -> Result<(), Box<dyn Error>> {
         .ok_or(NotFoundError {})?;
 
     let db = PgConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url));
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     let sample = parse_sample()?;
 
+    for sample_asset in sample.assets {
+        let uuid = Uuid::new_v4();
+        let mut output_path = PathBuf::from("dist");
+        //TODO add user name
+        output_path.push("Graydon".to_string());
+        output_path.push(format!("{}_{}", uuid, sample_asset.name));
+        Asset::new(
+            &db,
+            uuid,
+            &sample_asset.name,
+            &output_path.to_str().unwrap(),
+        )?;
+    }
+
     for sample_capsule in sample.capsules {
-        Capsule::new(
+        let asset_id = if let Some(slide_ref) = sample_capsule.slide_ref {
+            let asset = Asset::get_by_name(&slide_ref, &db);
+            match asset {
+                Ok(val) => Some(val.id),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        println!("Capsule : {:#?}", &sample_capsule.name);
+        let capsule = Capsule::new(
             &db,
             &sample_capsule.name,
-            sample_capsule.title.as_deref(),
-            sample_capsule.slides.as_deref(),
-            sample_capsule.description.as_deref(),
-            &None,
+            &sample_capsule.title,
+            asset_id,
+            &sample_capsule.description,
+            None,
         )?;
+
+        if let Some(goss) = sample_capsule.goss {
+            println!(
+                "found GOS : {:#?} for capsule {}",
+                goss, sample_capsule.name
+            );
+
+            for sample_gos in goss {
+                let _gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
+                /*
+                if let Some(slides) = sample_gos.slides {
+                    for sample_slide in slides {
+                        Slide::create(sample_slide.position_in_gos, gos.id)?.save(&db)?;
+                    }
+                }
+                */
+            }
+        }
     }
 
     for sample_user in sample.users {
@@ -114,7 +182,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     for capsule_ref in capsules {
                         let db_capsule = Capsule::get_by_name(&capsule_ref, &db)?;
                         println!("found capsule : {:#?}", db_capsule);
-                        CapsuleProject::new(&db, db_capsule.id, project.id)?;
+                        CapsulesProject::new(&db, db_capsule.id, project.id)?;
                     }
                 }
             }

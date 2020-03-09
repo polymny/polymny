@@ -27,32 +27,66 @@ users:
       password: hashed
       activated: true
 
+assets:
+  - name: introduction.pdf
+    asset_path: dist/
+    asset_type: pdf
+
 capsules:
    - title: General purpose intriduction
      name: gpIntroduction
      description: A tour of Rust
-     slides: introduction.pdf
+     slide_ref: introduction.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
    - title: Introduction
      name: rustIntroduction
      description: A tour of Rust
-     slides: introduction.pdf
+     slide_ref: rustintroduction.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+         - position: 2
+           slides:
+            - position_in_gos: 1
    - title: Rust types
      name: rustTypes
      description: Basic types
-     slides: types.pdf
+     slide_ref: types.pdf
+     goss:
+         - position: 1
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+         - position: 2
+           slides:
+            - position_in_gos: 1
+         - position: 3
+           slides:
+            - position_in_gos: 1
+         - position: 4
+           slides:
+            - position_in_gos: 1
+            - position_in_gos: 2
+            - position_in_gos: 3
+            - position_in_gos: 4
    - title: Rust Ownership
      name: rustOwnership
      description: Ownership in rust
-     slides: ownership.pdf
+     slide_ref: ownership.pdf
    - title: Introduction
      name: elmIntroduction
      description: A tour of elm
-     slides: introduction.pdf
+     slide_ref: introduction.pdf
    - title: Immutability
      name: elmImmutability
      description: All values ine Elm are immutable
-     slides: immutabilty.pdf
+     slide_ref: immutabilty.pdf
    - title: Static types
      name: elmTypes
      description: Elm is statically typed
-     slides: types.pdf
+     slide_ref: types.pdf
