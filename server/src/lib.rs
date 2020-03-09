@@ -91,6 +91,9 @@ pub enum Error {
 
     /// An error occured while rendering a template.
     TeraError(tera::Error),
+
+    /// Empty Database request
+    DatabaseRequestEmptyError(String),
 }
 
 impl_from_error!(
@@ -129,6 +132,8 @@ impl fmt::Display for Error {
             Error::SendMailError(e) => write!(fmt, "error sending mail: {}", e),
 
             Error::TeraError(e) => write!(fmt, "error rendering template: {}", e),
+
+            Error::DatabaseRequestEmptyError(e) => write!(fmt, "No database entry for: {}", e),
         }
     }
 }
@@ -211,6 +216,10 @@ pub fn main() {
                 routes::capsule::all_capsules,
                 routes::capsule::update_capsule,
                 routes::capsule::delete_capsule,
+                routes::capsule::upload_slides,
+                routes::asset::get_asset,
+                routes::asset::all_assets,
+                routes::asset::delete_asset,
             ],
         )
         .launch();

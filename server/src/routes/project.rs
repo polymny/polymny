@@ -15,7 +15,7 @@ use rocket_multipart_form_data::{
 
 use uuid::Uuid;
 
-use crate::db::asset::{Asset, AssetObject, AssetType};
+use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::project::Project;
 use crate::db::user::User;
 use crate::{Database, Result};
@@ -116,7 +116,7 @@ pub fn project_upload(
                     output_path.push(format!("{}_{}", uuid, file_name));
                     fs::rename(path, &output_path)?;
                     let asset = Asset::new(&db, uuid, file_name, &output_path.to_str().unwrap())?;
-                    AssetObject::new(&db, asset.id, project.id, AssetType::Project)?;
+                    AssetsObject::new(&db, asset.id, project.id, AssetType::Project)?;
                     return Ok(json!({ "file_name": file_name, "project": user.projects(&db)? }));
                 }
             }
