@@ -210,7 +210,10 @@ pub fn main() {
     rocket::ignite()
         .mount("/", routes![setup])
         .mount("/", StaticFiles::from("dist"))
-        .mount("/api/", routes![routes::setup::test_database])
+        .mount(
+            "/api/",
+            routes![routes::setup::test_database, routes::setup::test_mailer],
+        )
         .launch()
         .kind();
 }

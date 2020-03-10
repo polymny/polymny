@@ -54,7 +54,7 @@ type alias MailerForm =
     , hostname : String
     , username : String
     , password : String
-    , destination : String
+    , recipient : String
     }
 
 
@@ -76,6 +76,7 @@ type Msg
     = Noop
     | DatabaseMsg DatabaseMsg
     | MailerMsg MailerMsg
+    | SubmitConfiguration
 
 
 type DatabaseMsg
@@ -93,8 +94,10 @@ type MailerMsg
     | MailerHostnameChanged String
     | MailerUsernameChanged String
     | MailerPasswordChanged String
-    | MailerDestinationChanged String
+    | MailerRecipientChanged String
     | MailerSubmit
+    | MailerTestError
+    | MailerTestSuccess
 
 
 
@@ -120,6 +123,9 @@ update msg model =
                     updateMailer mMsg model.mailer
             in
             ( { model | mailer = newMailer }, Cmd.map MailerMsg cmd )
+
+        SubmitConfiguration ->
+            ( model, Cmd.none )
 
 
 updateDatabase : DatabaseMsg -> DatabaseForm -> ( DatabaseForm, Cmd DatabaseMsg )
@@ -162,11 +168,17 @@ updateMailer msg form =
         MailerPasswordChanged newPassword ->
             ( { form | password = newPassword }, Cmd.none )
 
-        MailerDestinationChanged newDestination ->
-            ( { form | destination = newDestination }, Cmd.none )
+        MailerRecipientChanged newRecipient ->
+            ( { form | recipient = newRecipient }, Cmd.none )
 
         MailerSubmit ->
-            ( { form | status = Status.Sent }, Cmd.none )
+            ( { form | status = Status.Sent }, Api.testMailer mailerResultToMsg form )
+
+        MailerTestSuccess ->
+            ( { form | status = Status.Success () }, Cmd.none )
+
+        MailerTestError ->
+            ( { form | status = Status.Error () }, Cmd.none )
 
 
 databaseResultToMsg : Result Http.Error () -> DatabaseMsg
@@ -177,6 +189,16 @@ databaseResultToMsg result =
 
         Ok _ ->
             DatabaseTestSuccess
+
+
+mailerResultToMsg : Result Http.Error () -> MailerMsg
+mailerResultToMsg result =
+    case result of
+        Err _ ->
+            MailerTestError
+
+        Ok _ ->
+            MailerTestSuccess
 
 
 
@@ -271,7 +293,7 @@ databaseView { status, hostname, username, password, name } =
 
 
 mailerView : MailerForm -> List (Element Msg)
-mailerView { status, enabled, hostname, username, password, destination } =
+mailerView { status, enabled, hostname, username, password, recipient } =
     let
         msg =
             MailerMsg MailerSubmit
@@ -346,10 +368,10 @@ mailerView { status, enabled, hostname, username, password, destination } =
         , show = False
         }
     , Input.email attr
-        { label = Input.labelAbove [] (Element.text "Test email")
-        , onChange = \a -> enableMsg (MailerMsg (MailerDestinationChanged a))
+        { label = Input.labelAbove [] (Element.text "Recipient of the test email")
+        , onChange = \a -> enableMsg (MailerMsg (MailerRecipientChanged a))
         , placeholder = Nothing
-        , text = destination
+        , text = recipient
         }
     , button
     ]

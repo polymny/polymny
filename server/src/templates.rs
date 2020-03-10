@@ -18,6 +18,14 @@ pub fn validation_email_plain_text(activation_url: &str) -> String {
     )
 }
 
+/// Content of the test email in HTML format.
+pub const TEST_EMAIL_HTML: &str =
+    "<h1>Congratulations!</h1><p>If you received this email, it means that the mailer is working!</p>";
+
+/// Content of the test email in text format.
+pub const TEST_EMAIL_PLAIN_TEXT: &str =
+    "Congratulations!\n\nIf you received this email, it means that the mailer is working!";
+
 const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
 <html>
     <head>

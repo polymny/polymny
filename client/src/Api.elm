@@ -13,6 +13,7 @@ module Api exposing
     , newProject
     , signUp
     , testDatabase
+    , testMailer
     )
 
 import Http
@@ -230,4 +231,32 @@ testDatabase resultToMsg content =
         { url = "/api/test-database"
         , expect = Http.expectWhatever resultToMsg
         , body = stringBody (encodeDatabaseTestContent content)
+        }
+
+
+type alias MailerTestContent a =
+    { a
+        | hostname : String
+        , username : String
+        , password : String
+        , recipient : String
+    }
+
+
+encodeMailerTestContent : MailerTestContent a -> String
+encodeMailerTestContent { hostname, username, password, recipient } =
+    encode
+        [ ( "hostname", hostname )
+        , ( "username", username )
+        , ( "password", password )
+        , ( "recipient", recipient )
+        ]
+
+
+testMailer : (Result Http.Error () -> msg) -> MailerTestContent a -> Cmd msg
+testMailer resultToMsg content =
+    Http.post
+        { url = "/api/test-mailer"
+        , expect = Http.expectWhatever resultToMsg
+        , body = stringBody (encodeMailerTestContent content)
         }
