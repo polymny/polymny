@@ -8,7 +8,7 @@ import Element.Background as Background
 import Element.Font as Font
 import Element.Input as Input
 import Html
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode
 import Status exposing (Status)
 import Task
 import Time
@@ -66,62 +66,6 @@ emptyNewProjectContent =
     NewProjectContent Status.NotSent ""
 
 
-type alias Session =
-    { username : String
-    , projects : List Project
-    }
-
-
-type alias Project =
-    { id : Int
-    , name : String
-    , lastVisited : Int
-    , capsules : List Capsule
-    }
-
-
-createProject : Int -> String -> Int -> Project
-createProject id name lastVisited =
-    Project id name lastVisited []
-
-
-decodeProject : Decoder Project
-decodeProject =
-    Decode.map3 createProject
-        (Decode.field "id" Decode.int)
-        (Decode.field "project_name" Decode.string)
-        (Decode.field "last_visited" Decode.int)
-
-
-type alias Capsule =
-    { id : Int
-    , name : String
-    , title : String
-    , description : String
-    }
-
-
-decodeCapsule : Decoder Capsule
-decodeCapsule =
-    Decode.map4 Capsule
-        (Decode.field "id" Decode.int)
-        (Decode.field "name" Decode.string)
-        (Decode.field "title" Decode.string)
-        (Decode.field "description" Decode.string)
-
-
-decodeCapsules : Decoder (List Capsule)
-decodeCapsules =
-    Decode.list decodeCapsule
-
-
-decodeSession : Decoder Session
-decodeSession =
-    Decode.map2 Session
-        (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list decodeProject))
-
-
 type alias Global =
     { zone : Time.Zone
     }
@@ -141,7 +85,7 @@ type Model
 
 
 type alias LoggedInModel =
-    { session : Session
+    { session : Api.Session
     , page : LoggedInPage
     }
 
@@ -149,7 +93,7 @@ type alias LoggedInModel =
 type LoggedInPage
     = LoggedInHome
     | LoggedInNewProject NewProjectContent
-    | ProjectPage Project
+    | ProjectPage Api.Project
 
 
 isLoggedIn : Model -> Bool
@@ -171,7 +115,7 @@ init flags =
         initialCommand =
             Task.perform TimeZoneChange Time.here
     in
-    case Decode.decodeValue decodeSession flags of
+    case Decode.decodeValue Api.decodeSession flags of
         Err _ ->
             ( FullModel global Home, initialCommand )
 
@@ -200,7 +144,7 @@ type LoginMsg
     = LoginContentUsernameChanged String
     | LoginContentPasswordChanged String
     | LoginSubmitted
-    | LoginSuccess Session
+    | LoginSuccess Api.Session
     | LoginFailed
 
 
@@ -215,14 +159,14 @@ type SignUpMsg
 type LoggedInMsg
     = NewProjectClicked
     | NewProjectMsg NewProjectMsg
-    | ProjectClicked Project
-    | CapsulesReceived Project (List Capsule)
+    | ProjectClicked Api.Project
+    | CapsulesReceived Api.Project (List Api.Capsule)
 
 
 type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
-    | NewProjectSuccess Project
+    | NewProjectSuccess Api.Project
 
 
 
@@ -292,7 +236,7 @@ updateLogin loginMsg content =
 
         LoginSubmitted ->
             ( Login { content | status = Status.Sent }
-            , Api.login resultToMsg decodeSession content
+            , Api.login resultToMsg1 content
             )
 
         LoginSuccess s ->
@@ -350,7 +294,7 @@ updateLoggedIn msg { session, page } =
             ( { session = session, page = page }, Cmd.none )
 
 
-updateNewProjectMsg : NewProjectMsg -> Session -> NewProjectContent -> ( Session, NewProjectContent, Cmd Msg )
+updateNewProjectMsg : NewProjectMsg -> Api.Session -> NewProjectContent -> ( Api.Session, NewProjectContent, Cmd Msg )
 updateNewProjectMsg msg session content =
     case msg of
         NewProjectNameChanged newProjectName ->
@@ -373,34 +317,29 @@ updateNewProjectMsg msg session content =
 -- COMMANDS
 
 
-resultToMsg : Result e Session -> Msg
-resultToMsg result =
+resultToMsg : (x -> Msg) -> (e -> Msg) -> Result e x -> Msg
+resultToMsg ifSuccess ifError result =
     case result of
-        Err _ ->
-            LoginMsg LoginFailed
+        Ok x ->
+            ifSuccess x
 
-        Ok a ->
-            LoginMsg (LoginSuccess a)
+        Err e ->
+            ifError e
 
 
-resultToMsg2 : Result e String -> Msg
+resultToMsg1 : Result e Api.Session -> Msg
+resultToMsg1 result =
+    resultToMsg (\x -> LoginMsg (LoginSuccess x)) (\_ -> LoginMsg LoginFailed) result
+
+
+resultToMsg2 : Result e Api.Project -> Msg
 resultToMsg2 result =
-    case Result.map (Decode.decodeString decodeProject) result of
-        Ok (Ok project) ->
-            LoggedInMsg (NewProjectMsg (NewProjectSuccess project))
-
-        _ ->
-            Noop
+    resultToMsg (\x -> LoggedInMsg <| NewProjectMsg <| NewProjectSuccess <| x) (\_ -> Noop) result
 
 
-resultToMsg3 : Project -> Result e String -> Msg
+resultToMsg3 : Api.Project -> Result e (List Api.Capsule) -> Msg
 resultToMsg3 project result =
-    case Result.map (Decode.decodeString decodeCapsules) result of
-        Ok (Ok capsules) ->
-            LoggedInMsg (CapsulesReceived project capsules)
-
-        _ ->
-            Noop
+    resultToMsg (\x -> LoggedInMsg <| CapsulesReceived project x) (\_ -> Noop) result
 
 
 
@@ -611,7 +550,7 @@ loggedInView global { session, page } =
         [ element ]
 
 
-loggedInHomeView : Global -> Session -> Element Msg
+loggedInHomeView : Global -> Api.Session -> Element Msg
 loggedInHomeView global session =
     Element.column []
         [ welcomeHeading session.username
@@ -624,7 +563,7 @@ welcomeHeading name =
     Element.el [ Font.size 20, Element.padding 10 ] (Element.text ("Welcome " ++ name ++ "!"))
 
 
-loggedInNewProjectView : Session -> NewProjectContent -> Element Msg
+loggedInNewProjectView : Api.Session -> NewProjectContent -> Element Msg
 loggedInNewProjectView _ { status, name } =
     let
         submitOnEnter =
@@ -687,7 +626,7 @@ loggedInNewProjectView _ { status, name } =
                 form
 
 
-projectsView : Global -> List Project -> Element Msg
+projectsView : Global -> List Api.Project -> Element Msg
 projectsView global projects =
     case projects of
         [] ->
@@ -710,7 +649,7 @@ projectsView global projects =
                 ]
 
 
-projectView : Global -> Project -> Element Msg
+projectView : Global -> Api.Project -> Element Msg
 projectView global project =
     Element.row [ Element.spacing 10 ]
         [ Ui.linkButton (Just (LoggedInMsg (ProjectClicked project))) project.name
@@ -718,12 +657,12 @@ projectView global project =
         ]
 
 
-projectPageView : Session -> Project -> Element Msg
+projectPageView : Api.Session -> Api.Project -> Element Msg
 projectPageView session project =
     Element.column [] (List.map capsuleView project.capsules)
 
 
-capsuleView : Capsule -> Element Msg
+capsuleView : Api.Capsule -> Element Msg
 capsuleView capsule =
     Element.row [ Element.spacing 10 ]
         [ Element.text capsule.name
