@@ -98,6 +98,12 @@ pub struct ConfigForm {
     /// The name of the database.
     database_name: String,
 
+    /// Whether the mailer is enabled or not.
+    mailer_enabled: String,
+
+    /// Whether the email of users should be verified.
+    mailer_require_email_validation: String,
+
     /// The hostname of the SMTP server.
     mailer_hostname: String,
 
@@ -106,9 +112,6 @@ pub struct ConfigForm {
 
     /// The password of the user that connects to the mail server.
     mailer_password: String,
-
-    /// The recipient of the test mail.
-    mailer_recipient: String,
 }
 
 /// The routes that sets the configuration.
@@ -143,6 +146,25 @@ url = "postgres://{database_username}:{database_password}:{database_hostname}/{d
 
     let mut file = File::create("Rocket.toml")?;
     file.write_all(toml.as_bytes())?;
+
+    if form.mailer_enabled == "true" {
+        let toml = format!(
+            r#"
+mailer_enabled = true
+mailer_require_email_validation = {mailer_validation}
+mailer_host = "{mailer_host}"
+mailer_user = "{mailer_username}"
+mailer_password = "{mailer_password}"
+        "#,
+            mailer_validation = form.0.mailer_require_email_validation,
+            mailer_host = form.0.mailer_hostname,
+            mailer_username = form.0.mailer_username,
+            mailer_password = form.0.mailer_password,
+        );
+        file.write_all(toml.as_bytes())?;
+    } else {
+        file.write_all(b"mailer_enabled = false")?;
+    }
 
     Ok(())
 }

@@ -72,32 +72,34 @@ impl User {
         // Hash the password
         let hashed_password = hash(&password, DEFAULT_COST)?;
 
-        if let Some(mailer) = mailer {
-            // Generate the activation key
-            let rng = OsRng {};
-            let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+        match mailer {
+            Some(mailer) if mailer.require_email_validation => {
+                // Generate the activation key
+                let rng = OsRng {};
+                let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
 
-            let activation_url = format!("{}/api/activate/{}", mailer.root, activation_key);
-            let text = validation_email_plain_text(&activation_url);
-            let html = validation_email_html(&activation_url);
+                let activation_url = format!("{}/api/activate/{}", mailer.root, activation_key);
+                let text = validation_email_plain_text(&activation_url);
+                let html = validation_email_html(&activation_url);
 
-            mailer.send_mail(email, String::from("Welcome"), text, html)?;
+                mailer.send_mail(email, String::from("Welcome"), text, html)?;
 
-            Ok(NewUser {
-                username: String::from(username),
-                email: String::from(email),
-                hashed_password,
-                activated: false,
-                activation_key: Some(activation_key),
-            })
-        } else {
-            Ok(NewUser {
+                Ok(NewUser {
+                    username: String::from(username),
+                    email: String::from(email),
+                    hashed_password,
+                    activated: false,
+                    activation_key: Some(activation_key),
+                })
+            }
+
+            _ => Ok(NewUser {
                 username: String::from(username),
                 email: String::from(email),
                 hashed_password,
                 activated: true,
                 activation_key: None,
-            })
+            }),
         }
     }
 

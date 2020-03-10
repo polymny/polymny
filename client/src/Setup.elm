@@ -51,6 +51,7 @@ emptyDatabaseForm =
 type alias MailerForm =
     { status : Status () ()
     , enabled : Bool
+    , requiresMailConfirmation : Bool
     , hostname : String
     , username : String
     , password : String
@@ -60,7 +61,7 @@ type alias MailerForm =
 
 emptyMailerForm : MailerForm
 emptyMailerForm =
-    MailerForm Status.NotSent False "" "" "" ""
+    MailerForm Status.NotSent True True "" "" "" ""
 
 
 init : () -> ( Model, Cmd Msg )
@@ -91,6 +92,7 @@ type DatabaseMsg
 
 type MailerMsg
     = MailerEnabledChanged Bool
+    | MailerRequireMailConfirmationChanged Bool
     | MailerHostnameChanged String
     | MailerUsernameChanged String
     | MailerPasswordChanged String
@@ -158,6 +160,9 @@ updateMailer msg form =
     case msg of
         MailerEnabledChanged newEnabled ->
             ( { form | enabled = newEnabled }, Cmd.none )
+
+        MailerRequireMailConfirmationChanged new ->
+            ( { form | requiresMailConfirmation = new }, Cmd.none)
 
         MailerHostnameChanged newHostname ->
             ( { form | hostname = newHostname }, Cmd.none )
