@@ -94,7 +94,7 @@ pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
 pub fn all_capsules(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    Ok(json!({ "capsules": Capsule::all(&db)?}))
+    Ok(json!(Capsule::all(&db)?))
 }
 
 /// Update a capsule

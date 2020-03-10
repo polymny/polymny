@@ -1,4 +1,4 @@
-module Api exposing (logOut, login, newProject, signUp, testDatabase)
+module Api exposing (capsulesFromProjectId, logOut, login, newProject, signUp, testDatabase)
 
 import Http
 import Json.Decode exposing (Decoder)
@@ -106,6 +106,18 @@ newProject resultToMsg content =
         { url = "/api/new-project"
         , expect = Http.expectString resultToMsg
         , body = stringBody (encodeNewProjectContent content)
+        }
+
+
+
+-- Project page
+
+
+capsulesFromProjectId : (Result Http.Error String -> msg) -> Int -> Cmd msg
+capsulesFromProjectId resultToMsg id =
+    Http.get
+        { url = "/api/capsules"
+        , expect = Http.expectString resultToMsg
         }
 
 

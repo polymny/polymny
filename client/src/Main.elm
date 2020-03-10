@@ -73,16 +73,46 @@ type alias Session =
 
 
 type alias Project =
-    { name : String
+    { id : Int
+    , name : String
     , lastVisited : Int
+    , capsules : List Capsule
     }
+
+
+createProject : Int -> String -> Int -> Project
+createProject id name lastVisited =
+    Project id name lastVisited []
 
 
 decodeProject : Decoder Project
 decodeProject =
-    Decode.map2 Project
+    Decode.map3 createProject
+        (Decode.field "id" Decode.int)
         (Decode.field "project_name" Decode.string)
         (Decode.field "last_visited" Decode.int)
+
+
+type alias Capsule =
+    { id : Int
+    , name : String
+    , title : String
+    , description : String
+    }
+
+
+decodeCapsule : Decoder Capsule
+decodeCapsule =
+    Decode.map4 Capsule
+        (Decode.field "id" Decode.int)
+        (Decode.field "name" Decode.string)
+        (Decode.field "title" Decode.string)
+        (Decode.field "description" Decode.string)
+
+
+decodeCapsules : Decoder (List Capsule)
+decodeCapsules =
+    Decode.list decodeCapsule
 
 
 decodeSession : Decoder Session
@@ -119,6 +149,7 @@ type alias LoggedInModel =
 type LoggedInPage
     = LoggedInHome
     | LoggedInNewProject NewProjectContent
+    | ProjectPage Project
 
 
 isLoggedIn : Model -> Bool
@@ -184,6 +215,8 @@ type SignUpMsg
 type LoggedInMsg
     = NewProjectClicked
     | NewProjectMsg NewProjectMsg
+    | ProjectClicked Project
+    | CapsulesReceived Project (List Capsule)
 
 
 type NewProjectMsg
@@ -307,6 +340,12 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
 
+        ( ProjectClicked project, _ ) ->
+            ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
+
+        ( CapsulesReceived project newCapsules, _ ) ->
+            ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
+
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
 
@@ -349,6 +388,16 @@ resultToMsg2 result =
     case Result.map (Decode.decodeString decodeProject) result of
         Ok (Ok project) ->
             LoggedInMsg (NewProjectMsg (NewProjectSuccess project))
+
+        _ ->
+            Noop
+
+
+resultToMsg3 : Project -> Result e String -> Msg
+resultToMsg3 project result =
+    case Result.map (Decode.decodeString decodeCapsules) result of
+        Ok (Ok capsules) ->
+            LoggedInMsg (CapsulesReceived project capsules)
 
         _ ->
             Noop
@@ -543,6 +592,9 @@ loggedInView global { session, page } =
                 LoggedInNewProject content ->
                     loggedInNewProjectView session content
 
+                ProjectPage project ->
+                    projectPageView session project
+
         element =
             Element.column
                 [ Element.alignTop
@@ -658,11 +710,25 @@ projectsView global projects =
                 ]
 
 
-projectView : Global -> Project -> Element msg
-projectView global { name, lastVisited } =
+projectView : Global -> Project -> Element Msg
+projectView global project =
     Element.row [ Element.spacing 10 ]
-        [ Element.text name
-        , Element.text (TimeUtils.timeToString global.zone lastVisited)
+        [ Ui.linkButton (Just (LoggedInMsg (ProjectClicked project))) project.name
+        , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
+        ]
+
+
+projectPageView : Session -> Project -> Element Msg
+projectPageView session project =
+    Element.column [] (List.map capsuleView project.capsules)
+
+
+capsuleView : Capsule -> Element Msg
+capsuleView capsule =
+    Element.row [ Element.spacing 10 ]
+        [ Element.text capsule.name
+        , Element.text capsule.title
+        , Element.text capsule.description
         ]
 
 
