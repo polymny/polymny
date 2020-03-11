@@ -11,6 +11,7 @@ module Api exposing
     , logOut
     , login
     , newProject
+    , newCapsule
     , signUp
     , testDatabase
     )
@@ -198,6 +199,33 @@ capsulesFromProjectId resultToMsg id =
     Http.get
         { url = "/api/capsules"
         , expect = Http.expectJson resultToMsg decodeCapsules
+        }
+
+
+-- New capsule  form
+type alias NewCapsuleContent a =
+    { a
+        | name : String
+        , title: String
+        , description: String
+    }
+
+
+encodeNewCapsuleContent : NewCapsuleContent a -> String
+encodeNewCapsuleContent { name, title, description } =
+    encode
+        [ ( "name", name )
+        , ( "title", title )
+        , ( "description", description )
+        ]
+
+
+newCapsule : (Result Http.Error Capsule -> msg) -> NewCapsuleContent a -> Cmd msg
+newCapsule resultToMsg content =
+    Http.post
+        { url = "/api/new-capsule"
+        , expect = Http.expectJson resultToMsg decodeCapsule
+        , body = stringBody (encodeNewCapsuleContent content)
         }
 
 

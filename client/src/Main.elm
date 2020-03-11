@@ -61,9 +61,23 @@ type alias NewProjectContent =
     }
 
 
+
 emptyNewProjectContent : NewProjectContent
 emptyNewProjectContent =
     NewProjectContent Status.NotSent ""
+
+type alias NewCapsuleContent =
+    { status : Status () ()
+    , name : String
+    , title : String
+    , description : String
+    }
+
+emptyNewCapsuleContent : NewCapsuleContent
+emptyNewCapsuleContent =
+    NewCapsuleContent Status.NotSent "" "" ""
+
+
 
 
 type alias Global =
@@ -93,6 +107,7 @@ type alias LoggedInModel =
 type LoggedInPage
     = LoggedInHome
     | LoggedInNewProject NewProjectContent
+    | LoggedInNewCapsule NewCapsuleContent
     | ProjectPage Api.Project
 
 
@@ -159,6 +174,8 @@ type SignUpMsg
 type LoggedInMsg
     = NewProjectClicked
     | NewProjectMsg NewProjectMsg
+    | NewCapsuleClicked
+    | NewCapsuleMsg NewCapsuleMsg
     | ProjectClicked Api.Project
     | CapsulesReceived Api.Project (List Api.Capsule)
 
@@ -167,6 +184,14 @@ type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
     | NewProjectSuccess Api.Project
+
+type NewCapsuleMsg
+    = NewCapsuleNameChanged String
+    | NewCapsuleTitleChanged String
+    | NewCapsuleDescriptionChanged String
+    | NewCapsuleSubmitted
+    | NewCapsuleSuccess Api.Capsule
+
 
 
 
@@ -277,12 +302,31 @@ updateLoggedIn msg { session, page } =
             , Cmd.none
             )
 
+        ( NewCapsuleClicked, _ ) ->
+            ( { session = session
+              , page = LoggedInNewCapsule emptyNewCapsuleContent
+              }
+            , Cmd.none
+            )
+
+
+
         ( NewProjectMsg newProjectMsg, LoggedInNewProject content ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateNewProjectMsg newProjectMsg session content
             in
+
             ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
+
+        ( NewCapsuleMsg newCapsuleMsg, LoggedInNewCapsule content ) ->
+            let
+                ( newSession, newModel, newCmd ) =
+                    updateNewCapsuleMsg newCapsuleMsg session content
+            in
+            ( { session = newSession, page = LoggedInNewCapsule newModel }, newCmd )
+
+
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
@@ -308,6 +352,30 @@ updateNewProjectMsg msg session content =
 
         NewProjectSuccess project ->
             ( { session | projects = project :: session.projects }
+            , { content | status = Status.Success () }
+            , Cmd.none
+            )
+
+
+updateNewCapsuleMsg : NewCapsuleMsg -> Api.Session -> NewCapsuleContent -> ( Api.Session, NewCapsuleContent, Cmd Msg )
+updateNewCapsuleMsg msg session content =
+    case msg of
+        NewCapsuleNameChanged newCapsuleName ->
+            ( session, { content | name = newCapsuleName }, Cmd.none )
+
+        NewCapsuleTitleChanged newTitleName ->
+            ( session, { content | title = newTitleName }, Cmd.none )
+        NewCapsuleDescriptionChanged newDescriptionName ->
+            ( session, { content  | description = newDescriptionName }, Cmd.none )
+
+        NewCapsuleSubmitted ->
+            ( session
+            , { content | status = Status.Sent }
+            , Api.newCapsule resultToMsg4 content
+            )
+
+        NewCapsuleSuccess capsule ->
+            ( session
             , { content | status = Status.Success () }
             , Cmd.none
             )
@@ -340,6 +408,10 @@ resultToMsg2 result =
 resultToMsg3 : Api.Project -> Result e (List Api.Capsule) -> Msg
 resultToMsg3 project result =
     resultToMsg (\x -> LoggedInMsg <| CapsulesReceived project x) (\_ -> Noop) result
+
+resultToMsg4 : Result e Api.Capsule -> Msg
+resultToMsg4 result =
+    resultToMsg (\x -> LoggedInMsg <| NewCapsuleMsg <| NewCapsuleSuccess <| x) (\_ -> Noop) result
 
 
 
@@ -534,6 +606,11 @@ loggedInView global { session, page } =
                 ProjectPage project ->
                     projectPageView session project
 
+                LoggedInNewCapsule content ->
+                    loggedInNewCapsuleView session content
+
+
+
         element =
             Element.column
                 [ Element.alignTop
@@ -625,6 +702,82 @@ loggedInNewProjectView _ { status, name } =
             Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
                 form
 
+loggedInNewCapsuleView : Api.Session -> NewCapsuleContent -> Element Msg
+loggedInNewCapsuleView _ { status, name, title, description } =
+    let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter NewCapsuleSubmitted ]
+
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Creating capsuke..."
+
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Capsule created!"
+
+                _ ->
+                    Ui.primaryButton (Just NewCapsuleSubmitted) "Create capsule"
+
+        message =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Capsule creation failed")
+
+                Status.Success () ->
+                    Just (Ui.successModal "Capsule created!")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "New capsule" ]
+
+        fields =
+            [ Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule name")
+                , onChange = NewCapsuleNameChanged
+                , placeholder = Nothing
+                , text = name
+                }
+            , Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule Title")
+                , onChange = NewCapsuleTitleChanged
+                , placeholder = Nothing
+                , text = title
+                }
+            , Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule description")
+                , onChange = NewCapsuleDescriptionChanged
+                , placeholder = Nothing
+                , text = description
+                }
+            , submitButton
+            ]
+
+
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map LoggedInMsg <|
+        Element.map NewCapsuleMsg <|
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+                form
+
 
 projectsView : Global -> List Api.Project -> Element Msg
 projectsView global projects =
@@ -681,10 +834,18 @@ topBar model =
         [ Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             [ homeButton ]
-        , Element.row
+       , Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ newProjectButton ]
+
+             else
+                []
+            )
+       , Element.row
+            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            (if isLoggedIn model then
+                [ newCapsuleButton ]
 
              else
                 []
@@ -707,6 +868,11 @@ homeButton =
 newProjectButton : Element Msg
 newProjectButton =
     Ui.textButton (Just (LoggedInMsg NewProjectClicked)) "New project"
+
+newCapsuleButton : Element Msg
+newCapsuleButton =
+    Ui.textButton (Just (LoggedInMsg NewCapsuleClicked)) "New capsule"
+
 
 
 loginButton : Element Msg
