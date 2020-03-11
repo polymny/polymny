@@ -212,7 +212,11 @@ pub fn main() {
         .mount("/", StaticFiles::from("dist"))
         .mount(
             "/api/",
-            routes![routes::setup::test_database, routes::setup::test_mailer],
+            routes![
+                routes::setup::test_database,
+                routes::setup::test_mailer,
+                routes::setup::setup_config
+            ],
         )
         .launch()
         .kind();

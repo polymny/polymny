@@ -11,6 +11,7 @@ module Api exposing
     , logOut
     , login
     , newProject
+    , setupConfig
     , signUp
     , testDatabase
     , testMailer
@@ -240,6 +241,8 @@ type alias MailerTestContent a =
         , username : String
         , password : String
         , recipient : String
+        , enabled : Bool
+        , requireMailConfirmation : Bool
     }
 
 
@@ -253,10 +256,46 @@ encodeMailerTestContent { hostname, username, password, recipient } =
         ]
 
 
+encodeConfig : DatabaseTestContent a -> MailerTestContent b -> String
+encodeConfig database mailer =
+    encode
+        [ ( "database_hostname", database.hostname )
+        , ( "database_username", database.username )
+        , ( "database_password", database.password )
+        , ( "database_name", database.name )
+        , ( "mailer_enabled"
+          , if mailer.enabled then
+                "true"
+
+            else
+                "false"
+          )
+        , ( "mailer_require_email_confirmation"
+          , if mailer.requireMailConfirmation then
+                "true"
+
+            else
+                "false"
+          )
+        , ( "mailer_hostname", mailer.hostname )
+        , ( "mailer_username", mailer.username )
+        , ( "mailer_password", mailer.password )
+        ]
+
+
 testMailer : (Result Http.Error () -> msg) -> MailerTestContent a -> Cmd msg
 testMailer resultToMsg content =
     Http.post
         { url = "/api/test-mailer"
         , expect = Http.expectWhatever resultToMsg
         , body = stringBody (encodeMailerTestContent content)
+        }
+
+
+setupConfig : (Result Http.Error () -> msg) -> DatabaseTestContent a -> MailerTestContent b -> Cmd msg
+setupConfig resultToMsg database mailer =
+    Http.post
+        { url = "/api/setup-config"
+        , expect = Http.expectWhatever resultToMsg
+        , body = stringBody (encodeConfig database mailer)
         }
