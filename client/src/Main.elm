@@ -107,7 +107,7 @@ type alias LoggedInModel =
 type LoggedInPage
     = LoggedInHome
     | LoggedInNewProject NewProjectContent
-    | LoggedInNewCapsule NewCapsuleContent
+    | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
 
 
@@ -174,7 +174,7 @@ type SignUpMsg
 type LoggedInMsg
     = NewProjectClicked
     | NewProjectMsg NewProjectMsg
-    | NewCapsuleClicked
+    | NewCapsuleClicked Int
     | NewCapsuleMsg NewCapsuleMsg
     | ProjectClicked Api.Project
     | CapsulesReceived Api.Project (List Api.Capsule)
@@ -302,9 +302,9 @@ updateLoggedIn msg { session, page } =
             , Cmd.none
             )
 
-        ( NewCapsuleClicked, _ ) ->
+        ( NewCapsuleClicked projectId, _ ) ->
             ( { session = session
-              , page = LoggedInNewCapsule emptyNewCapsuleContent
+              , page = LoggedInNewCapsule projectId emptyNewCapsuleContent
               }
             , Cmd.none
             )
@@ -319,12 +319,12 @@ updateLoggedIn msg { session, page } =
 
             ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
 
-        ( NewCapsuleMsg newCapsuleMsg, LoggedInNewCapsule content ) ->
+        ( NewCapsuleMsg newCapsuleMsg, LoggedInNewCapsule projectId content ) ->
             let
                 ( newSession, newModel, newCmd ) =
-                    updateNewCapsuleMsg newCapsuleMsg session content
+                    updateNewCapsuleMsg newCapsuleMsg session projectId content
             in
-            ( { session = newSession, page = LoggedInNewCapsule newModel }, newCmd )
+            ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
 
 
@@ -357,8 +357,8 @@ updateNewProjectMsg msg session content =
             )
 
 
-updateNewCapsuleMsg : NewCapsuleMsg -> Api.Session -> NewCapsuleContent -> ( Api.Session, NewCapsuleContent, Cmd Msg )
-updateNewCapsuleMsg msg session content =
+updateNewCapsuleMsg : NewCapsuleMsg -> Api.Session -> Int -> NewCapsuleContent -> ( Api.Session, NewCapsuleContent, Cmd Msg )
+updateNewCapsuleMsg msg session projectId content =
     case msg of
         NewCapsuleNameChanged newCapsuleName ->
             ( session, { content | name = newCapsuleName }, Cmd.none )
@@ -371,7 +371,7 @@ updateNewCapsuleMsg msg session content =
         NewCapsuleSubmitted ->
             ( session
             , { content | status = Status.Sent }
-            , Api.newCapsule resultToMsg4 content
+            , Api.newCapsule resultToMsg4 projectId content
             )
 
         NewCapsuleSuccess capsule ->
@@ -606,7 +606,7 @@ loggedInView global { session, page } =
                 ProjectPage project ->
                     projectPageView session project
 
-                LoggedInNewCapsule content ->
+                LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
 
@@ -826,6 +826,40 @@ capsuleView capsule =
 
 topBar : Model -> Element Msg
 topBar model =
+    case model of
+        LoggedIn {session, page} ->
+            case page of
+                ProjectPage { id } ->
+                    Element.row
+                        [ Background.color Colors.primary
+                        , Element.width Element.fill
+                        , Element.spacing 30
+                        ]
+                        [ Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            [ homeButton ]
+                       , Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            (if isLoggedIn model then
+                                [ newCapsuleButton id ]
+
+                             else
+                                []
+                            )
+                        , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                            (if isLoggedIn model then
+                                [ logOutButton ]
+
+                             else
+                                [ loginButton, signUpButton ]
+                            )
+                        ]
+                _ ->
+                    nonFull model
+        _ -> nonFull model
+
+nonFull : Model -> Element Msg
+nonFull model =
     Element.row
         [ Background.color Colors.primary
         , Element.width Element.fill
@@ -838,14 +872,6 @@ topBar model =
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ newProjectButton ]
-
-             else
-                []
-            )
-       , Element.row
-            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-            (if isLoggedIn model then
-                [ newCapsuleButton ]
 
              else
                 []
@@ -869,9 +895,9 @@ newProjectButton : Element Msg
 newProjectButton =
     Ui.textButton (Just (LoggedInMsg NewProjectClicked)) "New project"
 
-newCapsuleButton : Element Msg
-newCapsuleButton =
-    Ui.textButton (Just (LoggedInMsg NewCapsuleClicked)) "New capsule"
+newCapsuleButton : Int -> Element Msg
+newCapsuleButton id =
+    Ui.textButton (Just (LoggedInMsg (NewCapsuleClicked id))) "New capsule"
 
 
 

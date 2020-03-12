@@ -211,21 +211,22 @@ type alias NewCapsuleContent a =
     }
 
 
-encodeNewCapsuleContent : NewCapsuleContent a -> String
-encodeNewCapsuleContent { name, title, description } =
+encodeNewCapsuleContent : Int -> NewCapsuleContent a -> String
+encodeNewCapsuleContent projectId { name, title, description } =
     encode
         [ ( "name", name )
         , ( "title", title )
         , ( "description", description )
+        , ( "project_id", String.fromInt projectId )
         ]
 
 
-newCapsule : (Result Http.Error Capsule -> msg) -> NewCapsuleContent a -> Cmd msg
-newCapsule resultToMsg content =
+newCapsule : (Result Http.Error Capsule -> msg) -> Int -> NewCapsuleContent a -> Cmd msg
+newCapsule resultToMsg projectId content =
     Http.post
         { url = "/api/new-capsule"
         , expect = Http.expectJson resultToMsg decodeCapsule
-        , body = stringBody (encodeNewCapsuleContent content)
+        , body = stringBody (encodeNewCapsuleContent projectId content)
         }
 
 
