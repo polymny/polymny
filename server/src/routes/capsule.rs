@@ -23,6 +23,7 @@ use tempfile::tempdir;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
 use crate::db::gos::Gos;
+use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::schema::capsules;
@@ -43,6 +44,9 @@ pub struct NewCapsuleForm {
 
     /// The description of the capsule.
     pub description: String,
+
+    /// the project associated to the capsule.
+    pub project_id: i32,
 }
 
 /// A struct/form for update (PUT) operations
@@ -61,6 +65,7 @@ pub struct UpdateCapsuleForm {
 
     /// The description of the capsule.
     pub description: Option<String>,
+    // TODO: allow update of project id ?
 }
 
 /// The route to register new capsule.
@@ -74,7 +79,7 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
             &capsule.title,
             capsule.slide_show_id,
             &capsule.description,
-            None,
+            Some(Project::get_by_id(capsule.project_id, &db)?),
         )?}))
 }
 

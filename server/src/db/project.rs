@@ -67,7 +67,7 @@ impl Project {
     }
 
     /// Retrieves a project from its id.
-    pub fn get(id: i32, db: &PgConnection) -> Result<Project> {
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Project> {
         use crate::schema::projects::dsl;
 
         let project = dsl::projects.filter(dsl::id.eq(id)).first::<Project>(db);
