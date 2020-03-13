@@ -20,9 +20,9 @@ client-dev: client/src/** client-static
 	@cd client && $(ELM) make src/Main.elm --output ../$(BUILD_DIR)/main.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m client"
 
-setup-dev: setup/src/** setup-static
+setup-dev: client/src/** client-static
 	@/bin/echo -e "\033[32;1m   Compiling\033[0m setup"
-	@cd client && $(ELM) make src/Main.elm --output ../$(BUILD_DIR)/setup.js
+	@cd client && $(ELM) make src/Setup.elm --output ../$(BUILD_DIR)/setup.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m setup"
 
 client-watch:
