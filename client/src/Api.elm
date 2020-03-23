@@ -10,8 +10,8 @@ module Api exposing
     , decodeSession
     , logOut
     , login
-    , newProject
     , newCapsule
+    , newProject
     , signUp
     , testDatabase
     )
@@ -202,12 +202,15 @@ capsulesFromProjectId resultToMsg id =
         }
 
 
+
 -- New capsule  form
+
+
 type alias NewCapsuleContent a =
     { a
         | name : String
-        , title: String
-        , description: String
+        , title : String
+        , description : String
     }
 
 

@@ -61,10 +61,10 @@ type alias NewProjectContent =
     }
 
 
-
 emptyNewProjectContent : NewProjectContent
 emptyNewProjectContent =
     NewProjectContent Status.NotSent ""
+
 
 type alias NewCapsuleContent =
     { status : Status () ()
@@ -73,11 +73,10 @@ type alias NewCapsuleContent =
     , description : String
     }
 
+
 emptyNewCapsuleContent : NewCapsuleContent
 emptyNewCapsuleContent =
     NewCapsuleContent Status.NotSent "" "" ""
-
-
 
 
 type alias Global =
@@ -185,13 +184,13 @@ type NewProjectMsg
     | NewProjectSubmitted
     | NewProjectSuccess Api.Project
 
+
 type NewCapsuleMsg
     = NewCapsuleNameChanged String
     | NewCapsuleTitleChanged String
     | NewCapsuleDescriptionChanged String
     | NewCapsuleSubmitted
     | NewCapsuleSuccess Api.Capsule
-
 
 
 
@@ -309,14 +308,11 @@ updateLoggedIn msg { session, page } =
             , Cmd.none
             )
 
-
-
         ( NewProjectMsg newProjectMsg, LoggedInNewProject content ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateNewProjectMsg newProjectMsg session content
             in
-
             ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
 
         ( NewCapsuleMsg newCapsuleMsg, LoggedInNewCapsule projectId content ) ->
@@ -325,8 +321,6 @@ updateLoggedIn msg { session, page } =
                     updateNewCapsuleMsg newCapsuleMsg session projectId content
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
-
-
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
@@ -365,8 +359,9 @@ updateNewCapsuleMsg msg session projectId content =
 
         NewCapsuleTitleChanged newTitleName ->
             ( session, { content | title = newTitleName }, Cmd.none )
+
         NewCapsuleDescriptionChanged newDescriptionName ->
-            ( session, { content  | description = newDescriptionName }, Cmd.none )
+            ( session, { content | description = newDescriptionName }, Cmd.none )
 
         NewCapsuleSubmitted ->
             ( session
@@ -408,6 +403,7 @@ resultToMsg2 result =
 resultToMsg3 : Api.Project -> Result e (List Api.Capsule) -> Msg
 resultToMsg3 project result =
     resultToMsg (\x -> LoggedInMsg <| CapsulesReceived project x) (\_ -> Noop) result
+
 
 resultToMsg4 : Result e Api.Capsule -> Msg
 resultToMsg4 result =
@@ -609,8 +605,6 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-
-
         element =
             Element.column
                 [ Element.alignTop
@@ -702,6 +696,7 @@ loggedInNewProjectView _ { status, name } =
             Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
                 form
 
+
 loggedInNewCapsuleView : Api.Session -> NewCapsuleContent -> Element Msg
 loggedInNewCapsuleView _ { status, name, title, description } =
     let
@@ -762,8 +757,6 @@ loggedInNewCapsuleView _ { status, name, title, description } =
                 }
             , submitButton
             ]
-
-
 
         form =
             case message of
@@ -827,7 +820,7 @@ capsuleView capsule =
 topBar : Model -> Element Msg
 topBar model =
     case model of
-        LoggedIn {session, page} ->
+        LoggedIn { session, page } ->
             case page of
                 ProjectPage { id } ->
                     Element.row
@@ -838,7 +831,7 @@ topBar model =
                         [ Element.row
                             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
                             [ homeButton ]
-                       , Element.row
+                        , Element.row
                             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
                             (if isLoggedIn model then
                                 [ newCapsuleButton id ]
@@ -854,9 +847,13 @@ topBar model =
                                 [ loginButton, signUpButton ]
                             )
                         ]
+
                 _ ->
                     nonFull model
-        _ -> nonFull model
+
+        _ ->
+            nonFull model
+
 
 nonFull : Model -> Element Msg
 nonFull model =
@@ -868,7 +865,7 @@ nonFull model =
         [ Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             [ homeButton ]
-       , Element.row
+        , Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             (if isLoggedIn model then
                 [ newProjectButton ]
@@ -895,10 +892,10 @@ newProjectButton : Element Msg
 newProjectButton =
     Ui.textButton (Just (LoggedInMsg NewProjectClicked)) "New project"
 
+
 newCapsuleButton : Int -> Element Msg
 newCapsuleButton id =
     Ui.textButton (Just (LoggedInMsg (NewCapsuleClicked id))) "New capsule"
-
 
 
 loginButton : Element Msg
