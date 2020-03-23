@@ -197,7 +197,7 @@ newProject resultToMsg content =
 capsulesFromProjectId : (Result Http.Error (List Capsule) -> msg) -> Int -> Cmd msg
 capsulesFromProjectId resultToMsg id =
     Http.get
-        { url = "/api/capsules"
+        { url = "/api/project/" ++ String.fromInt id ++ "/capsules"
         , expect = Http.expectJson resultToMsg decodeCapsules
         }
 
