@@ -805,7 +805,11 @@ projectView global project =
 
 projectPageView : Api.Session -> Api.Project -> Element Msg
 projectPageView session project =
-    Element.column [] (List.map capsuleView project.capsules)
+    Element.column [ Element.padding 10 ]
+        [ Element.el [ Font.size 18 ] (Element.text ("Capsules for project " ++ project.name))
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleView project.capsules)
+        ]
 
 
 capsuleView : Api.Capsule -> Element Msg
