@@ -1,7 +1,9 @@
 module Api exposing
     ( Capsule
+    , CapsuleDetails
     , Project
     , Session
+    , capsuleFromId
     , capsulesFromProjectId
     , createProject
     , decodeCapsule
@@ -230,6 +232,69 @@ newCapsule resultToMsg projectId content =
         { url = "/api/new-capsule"
         , expect = Http.expectJson resultToMsg decodeCapsule
         , body = stringBody (encodeNewCapsuleContent projectId content)
+        }
+
+
+
+-- Capsule Details
+
+
+type alias Slide =
+    { id : Int
+    , position_in_gos : Int
+    , gos_id : Int
+    }
+
+
+decodeSlide : Decoder Slide
+decodeSlide =
+    Decode.map3 Slide
+        (Decode.field "id" Decode.int)
+        (Decode.field "position_in_gos" Decode.int)
+        (Decode.field "gos_id" Decode.int)
+
+
+type alias Gos =
+    { id : Int
+    , position : Int
+    , capsule_id : Int
+    , slides : List Slide
+    }
+
+
+decodeGos : Decoder Gos
+decodeGos =
+    Decode.map4 Gos
+        (Decode.field "id" Decode.int)
+        (Decode.field "position" Decode.int)
+        (Decode.field "capsule_id" Decode.int)
+        (Decode.field "slides" (Decode.list decodeSlide))
+
+
+type alias CapsuleDetails =
+    { id : Int
+    , name : String
+    , title : String
+    , description : String
+    , goss : List Gos
+    }
+
+
+decodeCapsuleDetails : Decoder CapsuleDetails
+decodeCapsuleDetails =
+    Decode.map5 CapsuleDetails
+        (Decode.field "id" Decode.int)
+        (Decode.field "name" Decode.string)
+        (Decode.field "title" Decode.string)
+        (Decode.field "description" Decode.string)
+        (Decode.field "goss" (Decode.list decodeGos))
+
+
+capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
+capsuleFromId resultToMsg id =
+    Http.get
+        { url = "/api/capsule/" ++ String.fromInt id
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         }
 
 

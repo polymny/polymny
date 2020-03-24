@@ -108,6 +108,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
+    | CapsulePage Api.CapsuleDetails
 
 
 isLoggedIn : Model -> Bool
@@ -177,6 +178,8 @@ type LoggedInMsg
     | NewCapsuleMsg NewCapsuleMsg
     | ProjectClicked Api.Project
     | CapsulesReceived Api.Project (List Api.Capsule)
+    | CapsuleClicked Api.Capsule
+    | CapsuleReceived Api.CapsuleDetails
 
 
 type NewProjectMsg
@@ -328,6 +331,12 @@ updateLoggedIn msg { session, page } =
         ( CapsulesReceived project newCapsules, _ ) ->
             ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
 
+        ( CapsuleClicked capsule, _ ) ->
+            ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
+
+        ( CapsuleReceived capsule, _ ) ->
+            ( LoggedInModel session (CapsulePage capsule), Cmd.none )
+
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
 
@@ -369,7 +378,7 @@ updateNewCapsuleMsg msg session projectId content =
             , Api.newCapsule resultToMsg4 projectId content
             )
 
-        NewCapsuleSuccess capsule ->
+        NewCapsuleSuccess _ ->
             ( session
             , { content | status = Status.Success () }
             , Cmd.none
@@ -408,6 +417,11 @@ resultToMsg3 project result =
 resultToMsg4 : Result e Api.Capsule -> Msg
 resultToMsg4 result =
     resultToMsg (\x -> LoggedInMsg <| NewCapsuleMsg <| NewCapsuleSuccess <| x) (\_ -> Noop) result
+
+
+resultToMsg5 : Result e Api.CapsuleDetails -> Msg
+resultToMsg5 result =
+    resultToMsg (\x -> LoggedInMsg <| CapsuleReceived x) (\_ -> Noop) result
 
 
 
@@ -604,6 +618,9 @@ loggedInView global { session, page } =
 
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
+
+                CapsulePage capsuleDetails ->
+                    capsulePageView session capsuleDetails
 
         element =
             Element.column
@@ -804,7 +821,7 @@ projectView global project =
 
 
 projectPageView : Api.Session -> Api.Project -> Element Msg
-projectPageView session project =
+projectPageView _ project =
     Element.column [ Element.padding 10 ]
         [ Element.el [ Font.size 18 ] (Element.text ("Capsules for project " ++ project.name))
         , Element.column [ Element.padding 10, Element.spacing 10 ]
@@ -815,9 +832,16 @@ projectPageView session project =
 capsuleView : Api.Capsule -> Element Msg
 capsuleView capsule =
     Element.row [ Element.spacing 10 ]
-        [ Element.text capsule.name
+        [ Ui.linkButton (Just (LoggedInMsg (CapsuleClicked capsule))) capsule.name
         , Element.text capsule.title
         , Element.text capsule.description
+        ]
+
+
+capsulePageView : Api.Session -> Api.CapsuleDetails -> Element Msg
+capsulePageView _ capsuleDetails =
+    Element.column [ Element.padding 10 ]
+        [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.name))
         ]
 
 
