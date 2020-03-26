@@ -239,55 +239,95 @@ newCapsule resultToMsg projectId content =
 -- Capsule Details
 
 
+type alias Asset =
+    { id : Int
+    , asset_path : String
+    , asset_type : String
+    , name : String
+    , upload_date : Int
+    , uuid : String
+    }
+
+
+decodeAsset : Decoder Asset
+decodeAsset =
+    Decode.map6 Asset
+        (Decode.field "id" Decode.int)
+        (Decode.field "asset_path" Decode.string)
+        (Decode.field "asset_type" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "upload_date" Decode.int)
+        (Decode.field "uuid" Decode.string)
+
+
 type alias Slide =
     { id : Int
     , position_in_gos : Int
     , gos_id : Int
+    , asset : Asset
     }
 
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map3 Slide
+    Decode.map4 Slide
         (Decode.field "id" Decode.int)
         (Decode.field "position_in_gos" Decode.int)
         (Decode.field "gos_id" Decode.int)
+        (Decode.field "slide_show" decodeAsset)
 
 
 type alias Gos =
     { id : Int
     , position : Int
     , capsule_id : Int
-    , slides : List Slide
     }
 
 
 decodeGos : Decoder Gos
 decodeGos =
-    Decode.map4 Gos
+    Decode.map3 Gos
         (Decode.field "id" Decode.int)
         (Decode.field "position" Decode.int)
         (Decode.field "capsule_id" Decode.int)
-        (Decode.field "slides" (Decode.list decodeSlide))
+
+
+
+-- Gos1 is a fake structure to simulate a list of 2 elements.
+-- 1st elemnent is the desciption of the gos itself
+-- 2nd element is array of slide. One or more per goss
+
+
+type alias Gos1 =
+    { gos : Gos
+    , slide : List Slide
+    }
+
+
+decodeGos1 : Decoder Gos1
+decodeGos1 =
+    Decode.map2 Gos1
+        (Decode.index 0 decodeGos)
+        (Decode.index 1 (Decode.list decodeSlide))
 
 
 type alias CapsuleDetails =
-    { id : Int
-    , name : String
-    , title : String
-    , description : String
-    , goss : List Gos
+    { capsule : Capsule
+    , goss : List Gos1
+    , projects : List Project
+    , slide_show : Asset
+    , slides : List Slide
     }
 
 
 decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
     Decode.map5 CapsuleDetails
-        (Decode.field "id" Decode.int)
-        (Decode.field "name" Decode.string)
-        (Decode.field "title" Decode.string)
-        (Decode.field "description" Decode.string)
-        (Decode.field "goss" (Decode.list decodeGos))
+        (Decode.field "capsule" decodeCapsule)
+        (Decode.field "goss" (Decode.list decodeGos1))
+        (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "slide_show" decodeAsset)
+        (Decode.field "slides" (Decode.list decodeSlide))
 
 
 capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg

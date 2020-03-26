@@ -396,7 +396,11 @@ resultToMsg ifSuccess ifError result =
             ifSuccess x
 
         Err e ->
-            ifError e
+            let
+                err =
+                    Debug.log "Error" e
+            in
+            ifError err
 
 
 resultToMsg1 : Result e Api.Session -> Msg
@@ -841,7 +845,7 @@ capsuleView capsule =
 capsulePageView : Api.Session -> Api.CapsuleDetails -> Element Msg
 capsulePageView _ capsuleDetails =
     Element.column [ Element.padding 10 ]
-        [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.name))
+        [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
         ]
 
 
