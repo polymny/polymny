@@ -1,8 +1,11 @@
 module Api exposing
-    ( Capsule
+    ( Asset
+    , Capsule
     , CapsuleDetails
+    , Gos1
     , Project
     , Session
+    , Slide
     , capsuleFromId
     , capsulesFromProjectId
     , createProject
@@ -274,7 +277,7 @@ decodeSlide =
         (Decode.field "id" Decode.int)
         (Decode.field "position_in_gos" Decode.int)
         (Decode.field "gos_id" Decode.int)
-        (Decode.field "slide_show" decodeAsset)
+        (Decode.field "asset" decodeAsset)
 
 
 type alias Gos =
@@ -316,18 +319,16 @@ type alias CapsuleDetails =
     , goss : List Gos1
     , projects : List Project
     , slide_show : Asset
-    , slides : List Slide
     }
 
 
 decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
-    Decode.map5 CapsuleDetails
+    Decode.map4 CapsuleDetails
         (Decode.field "capsule" decodeCapsule)
         (Decode.field "goss" (Decode.list decodeGos1))
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "slide_show" decodeAsset)
-        (Decode.field "slides" (Decode.list decodeSlide))
 
 
 capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg

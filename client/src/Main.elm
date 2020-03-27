@@ -835,7 +835,7 @@ projectPageView _ project =
 
 capsuleView : Api.Capsule -> Element Msg
 capsuleView capsule =
-    Element.row [ Element.spacing 10 ]
+    Element.column [ Element.spacing 10 ]
         [ Ui.linkButton (Just (LoggedInMsg (CapsuleClicked capsule))) capsule.name
         , Element.text capsule.title
         , Element.text capsule.description
@@ -846,7 +846,50 @@ capsulePageView : Api.Session -> Api.CapsuleDetails -> Element Msg
 capsulePageView _ capsuleDetails =
     Element.column [ Element.padding 10 ]
         [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+        , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
+        , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleGosView capsuleDetails.goss)
         ]
+
+
+capsuleGosView : Api.Gos1 -> Element Msg
+capsuleGosView gos1 =
+    Element.row [ Element.spacing 10 ]
+        [ Element.text ("ID = " ++ String.fromInt gos1.gos.id)
+        , Element.text ("Position = " ++ String.fromInt gos1.gos.position)
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleGosSlideView gos1.slide)
+        ]
+
+
+capsuleGosSlideView : Api.Slide -> Element Msg
+capsuleGosSlideView slide =
+    Element.column [ Element.spacing 10 ]
+        [ Element.text "Slide"
+        , Element.text ("ID = " ++ String.fromInt slide.id)
+        , Element.text ("Position in gos = " ++ String.fromInt slide.position_in_gos)
+        , capsuleGosAssetView slide.asset
+        ]
+
+
+capsuleGosAssetView : Api.Asset -> Element Msg
+capsuleGosAssetView asset =
+    Element.column [ Element.spacing 10 ]
+        [ Element.text "Asset: "
+        , Element.text ("ID = " ++ String.fromInt asset.id)
+        , Element.text asset.asset_path
+        , viewSlideImage asset.asset_path
+        , Element.text asset.asset_type
+        , Element.text asset.name
+        , Element.text ("upload date = " ++ String.fromInt asset.upload_date)
+        , Element.text asset.uuid
+        ]
+
+
+viewSlideImage : String -> Element Msg
+viewSlideImage url =
+    Element.image [ Element.width (Element.px 200) ] { src = url, description = "One desc" }
 
 
 topBar : Model -> Element Msg
