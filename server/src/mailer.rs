@@ -51,13 +51,23 @@ impl Mailer {
 
     /// Creates a mailer from the rocket config.
     pub fn from_config(config: &Config) -> Option<Mailer> {
-        let enabled = config.get_bool("mailer_enabled").unwrap_or(true);
+        if config.get_bool("mailer_enabled").ok() == Some(false) {
+            return None;
+        }
+
         let root = config.get_string("root").ok()?;
         let host = config.get_string("mailer_host").ok()?;
         let user = config.get_string("mailer_user").ok()?;
         let password = config.get_string("mailer_password").ok()?;
+        let require_email_validation = config.get_bool("require_email_validation").ok()?;
 
-        Some(Mailer::new(enabled, root, host, user, password))
+        Some(Mailer::new(
+            require_email_validation,
+            root,
+            host,
+            user,
+            password,
+        ))
     }
 
     /// Uses a mailer to send an email.

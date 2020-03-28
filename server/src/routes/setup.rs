@@ -98,6 +98,12 @@ pub struct ConfigForm {
     /// The name of the database.
     database_name: String,
 
+    /// Whether the mailer is enabled or not.
+    mailer_enabled: String,
+
+    /// Whether the email of users should be verified.
+    mailer_require_email_confirmation: String,
+
     /// The hostname of the SMTP server.
     mailer_hostname: String,
 
@@ -106,15 +112,12 @@ pub struct ConfigForm {
 
     /// The password of the user that connects to the mail server.
     mailer_password: String,
-
-    /// The recipient of the test mail.
-    mailer_recipient: String,
 }
 
 /// The routes that sets the configuration.
 #[post("/setup-config", data = "<form>")]
 pub fn setup_config(form: Form<ConfigForm>) -> Result<()> {
-    let key = String::from_utf8(
+    let mut key = String::from_utf8(
         Command::new("openssl")
             .arg("rand")
             .arg("-base64")
@@ -125,13 +128,16 @@ pub fn setup_config(form: Form<ConfigForm>) -> Result<()> {
     )
     .expect("failed to get key");
 
+    // Removes the trailing newline in the openssl command
+    key.pop();
+
     let toml = format!(
         r#"[global]
 root = "{root}"
 secret_key = "{secret_key}"
 
 [global.databases.database]
-url = "postgres://{database_username}:{database_password}:{database_hostname}/{database_name}"
+url = "postgres://{database_username}:{database_password}@{database_hostname}/{database_name}"
 "#,
         root = "http://localhost:8000",
         secret_key = key,
@@ -143,6 +149,28 @@ url = "postgres://{database_username}:{database_password}:{database_hostname}/{d
 
     let mut file = File::create("Rocket.toml")?;
     file.write_all(toml.as_bytes())?;
+
+    if form.mailer_enabled == "true" {
+        let toml = format!(
+            r#"
+mailer_enabled = true
+mailer_require_email_confirmation = {mailer_confirmation}
+mailer_host = "{mailer_host}"
+mailer_user = "{mailer_username}"
+mailer_password = "{mailer_password}"
+"#,
+            mailer_confirmation = form.0.mailer_require_email_confirmation,
+            mailer_host = form.0.mailer_hostname,
+            mailer_username = form.0.mailer_username,
+            mailer_password = form.0.mailer_password,
+        );
+        file.write_all(toml.as_bytes())?;
+    } else {
+        file.write_all(b"mailer_enabled = false\n")?;
+    }
+
+    // It would be nice to run diesel migrations here to initialize the database so the admin
+    // doesn't have to open the terminal and initialize it themselves.
 
     Ok(())
 }

@@ -14,7 +14,7 @@ import Status exposing (Status)
 import Ui
 
 
-main : Program () Model Msg
+main : Program () FullModel Msg
 main =
     Browser.element
         { init = init
@@ -28,8 +28,14 @@ main =
 -- MODEL
 
 
+type FullModel
+    = Configuring Model
+    | Finished
+
+
 type alias Model =
-    { database : DatabaseForm
+    { status : Status () ()
+    , database : DatabaseForm
     , mailer : MailerForm
     }
 
@@ -51,6 +57,7 @@ emptyDatabaseForm =
 type alias MailerForm =
     { status : Status () ()
     , enabled : Bool
+    , requireMailConfirmation : Bool
     , hostname : String
     , username : String
     , password : String
@@ -60,12 +67,12 @@ type alias MailerForm =
 
 emptyMailerForm : MailerForm
 emptyMailerForm =
-    MailerForm Status.NotSent False "" "" "" ""
+    MailerForm Status.NotSent True True "" "" "" ""
 
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( FullModel, Cmd Msg )
 init _ =
-    ( Model emptyDatabaseForm emptyMailerForm, Cmd.none )
+    ( Configuring (Model Status.NotSent emptyDatabaseForm emptyMailerForm), Cmd.none )
 
 
 
@@ -77,6 +84,8 @@ type Msg
     | DatabaseMsg DatabaseMsg
     | MailerMsg MailerMsg
     | SubmitConfiguration
+    | SubmissionFailed
+    | SubmissionSuccessful
 
 
 type DatabaseMsg
@@ -91,6 +100,7 @@ type DatabaseMsg
 
 type MailerMsg
     = MailerEnabledChanged Bool
+    | MailerRequireMailConfirmationChanged Bool
     | MailerHostnameChanged String
     | MailerUsernameChanged String
     | MailerPasswordChanged String
@@ -104,28 +114,37 @@ type MailerMsg
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Noop ->
-            ( model, Cmd.none )
+update : Msg -> FullModel -> ( FullModel, Cmd Msg )
+update msg fullModel =
+    case ( fullModel, msg ) of
+        ( Configuring model, Noop ) ->
+            ( Configuring model, Cmd.none )
 
-        DatabaseMsg dMsg ->
+        ( Configuring model, DatabaseMsg dMsg ) ->
             let
                 ( newDb, cmd ) =
                     updateDatabase dMsg model.database
             in
-            ( { model | database = newDb }, Cmd.map DatabaseMsg cmd )
+            ( Configuring { model | database = newDb }, Cmd.map DatabaseMsg cmd )
 
-        MailerMsg mMsg ->
+        ( Configuring model, MailerMsg mMsg ) ->
             let
                 ( newMailer, cmd ) =
                     updateMailer mMsg model.mailer
             in
-            ( { model | mailer = newMailer }, Cmd.map MailerMsg cmd )
+            ( Configuring { model | mailer = newMailer }, Cmd.map MailerMsg cmd )
 
-        SubmitConfiguration ->
-            ( model, Cmd.none )
+        ( Configuring model, SubmitConfiguration ) ->
+            ( Configuring { model | status = Status.Sent }, Api.setupConfig submitResultToMsg model.database model.mailer )
+
+        ( Configuring model, SubmissionFailed ) ->
+            ( Configuring { model | status = Status.Error () }, Cmd.none )
+
+        ( Configuring _, SubmissionSuccessful ) ->
+            ( Finished, Cmd.none )
+
+        ( Finished, _ ) ->
+            ( Finished, Cmd.none )
 
 
 updateDatabase : DatabaseMsg -> DatabaseForm -> ( DatabaseForm, Cmd DatabaseMsg )
@@ -158,6 +177,9 @@ updateMailer msg form =
     case msg of
         MailerEnabledChanged newEnabled ->
             ( { form | enabled = newEnabled }, Cmd.none )
+
+        MailerRequireMailConfirmationChanged new ->
+            ( { form | requireMailConfirmation = new }, Cmd.none )
 
         MailerHostnameChanged newHostname ->
             ( { form | hostname = newHostname }, Cmd.none )
@@ -201,22 +223,45 @@ mailerResultToMsg result =
             MailerTestSuccess
 
 
+submitResultToMsg : Result Http.Error () -> Msg
+submitResultToMsg result =
+    case result of
+        Err _ ->
+            SubmissionFailed
+
+        Ok _ ->
+            SubmissionSuccessful
+
+
 
 -- VIEW
 
 
-view : Model -> Html.Html Msg
+view : FullModel -> Html.Html Msg
 view fullModel =
     Element.layout [ Font.size 15 ] (viewContent fullModel)
 
 
-viewContent : Model -> Element Msg
+viewContent : FullModel -> Element Msg
 viewContent model =
     Element.column [ Element.width Element.fill ] [ topBar, content model ]
 
 
-content : Model -> Element Msg
-content { database, mailer } =
+content : FullModel -> Element Msg
+content fullModel =
+    case fullModel of
+        Configuring model ->
+            configuringContent model
+
+        Finished ->
+            Element.column [ Element.centerX ]
+                [ Element.el [ Font.bold ] (Element.text "Congratulations")
+                , Element.text "Your server is now configured, you can restart it to launch the application"
+                ]
+
+
+configuringContent : Model -> Element Msg
+configuringContent { database, mailer } =
     let
         bottomBorder =
             { bottom = 1
@@ -231,6 +276,7 @@ content { database, mailer } =
     Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
         [ Element.column attr (databaseView database)
         , Element.column attr (mailerView mailer)
+        , Ui.primaryButton (Just SubmitConfiguration) "Set configuration"
         ]
 
 
@@ -293,7 +339,7 @@ databaseView { status, hostname, username, password, name } =
 
 
 mailerView : MailerForm -> List (Element Msg)
-mailerView { status, enabled, hostname, username, password, recipient } =
+mailerView { status, enabled, hostname, username, password, recipient, requireMailConfirmation } =
     let
         msg =
             MailerMsg MailerSubmit
@@ -347,6 +393,12 @@ mailerView { status, enabled, hostname, username, password, recipient } =
         , icon = Input.defaultCheckbox
         , checked = enabled
         , label = Input.labelLeft [] (Element.text "Enable mailer")
+        }
+    , Input.checkbox []
+        { onChange = \x -> MailerMsg (MailerRequireMailConfirmationChanged x)
+        , icon = Input.defaultCheckbox
+        , checked = requireMailConfirmation
+        , label = Input.labelLeft [] (Element.text "Require email confirmation")
         }
     , Input.text attr
         { label = Input.labelAbove [] (Element.text "Host")

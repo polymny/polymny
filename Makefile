@@ -8,29 +8,28 @@ endif
 
 BUILD_DIR=./server/dist
 
-all: client-dev client-static server-dev
+all: client-dev setup-dev server-dev
 
-client-static:
-	@/bin/echo -e "\033[32;1m     Copying\033[0m client static files"
-	@mkdir -p $(BUILD_DIR)
-	@/bin/echo -e "\033[32;1m      Copied\033[0m client static files"
-
-client-dev: client/src/** client-static
+client-dev: client/src/**
 	@/bin/echo -e "\033[32;1m   Compiling\033[0m client"
+	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELM) make src/Main.elm --output ../$(BUILD_DIR)/main.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m client"
 
-setup-dev: setup/src/** setup-static
+setup-dev: client/src/**
 	@/bin/echo -e "\033[32;1m   Compiling\033[0m setup"
-	@cd client && $(ELM) make src/Main.elm --output ../$(BUILD_DIR)/setup.js
+	@mkdir -p $(BUILD_DIR)
+	@cd client && $(ELM) make src/Setup.elm --output ../$(BUILD_DIR)/setup.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m setup"
 
 client-watch:
 	@/bin/echo -e "\033[32;1m    Watching\033[0m client"
+	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELMLIVE) src/Main.elm -p 7000 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/main.js
 
 setup-watch:
 	@/bin/echo -e "\033[32;1m    Watching\033[0m setup"
+	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELMLIVE) src/Setup.elm -p 7000 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/setup.js
 
 server-dev:
