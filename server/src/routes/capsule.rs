@@ -23,6 +23,7 @@ use tempfile::tempdir;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
 use crate::db::gos::Gos;
+use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::schema::capsules;
@@ -43,6 +44,9 @@ pub struct NewCapsuleForm {
 
     /// The description of the capsule.
     pub description: String,
+
+    /// the project associated to the capsule.
+    pub project_id: i32,
 }
 
 /// A struct/form for update (PUT) operations
@@ -61,6 +65,7 @@ pub struct UpdateCapsuleForm {
 
     /// The description of the capsule.
     pub description: Option<String>,
+    // TODO: allow update of project id ?
 }
 
 /// The route to register new capsule.
@@ -74,7 +79,7 @@ pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonVa
             &capsule.title,
             capsule.slide_show_id,
             &capsule.description,
-            None,
+            Some(Project::get_by_id(capsule.project_id, &db)?),
         )?}))
 }
 
@@ -86,7 +91,7 @@ pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
                "slide_show":  capsule.get_slide_show(&db)?,
                "projects":    capsule.get_projects(&db)?,
                "goss":        capsule.get_goss(&db)? ,
-               "slides":      capsule.get_slides(&db)?} ))
+    }))
 }
 
 /// Get all the capsules .
@@ -156,14 +161,15 @@ pub fn upload_slides(
                 let path = &file.path;
 
                 if let Some(file_name) = file_name {
-                    // Store uploaded presentation
-                    let mut output_path = PathBuf::from("dist");
-                    output_path.push(&user.username);
+                    let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
-                    output_path.push(format!("{}_{}", uuid, file_name));
-                    fs::rename(path, &output_path)?;
-                    let asset = Asset::new(&db, uuid, file_name, &output_path.to_str().unwrap())?;
+                    server_path.push(format!("{}_{}", uuid, file_name));
+                    let asset = Asset::new(&db, uuid, file_name, &server_path.to_str().unwrap())?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
+
+                    let mut output_path = PathBuf::from("dist");
+                    output_path.push(server_path);
+                    fs::rename(path, &output_path)?;
 
                     //update capsule with the ref to the uploaded pdf
                     use crate::schema::capsules::dsl;
@@ -215,19 +221,19 @@ pub fn upload_slides(
                         // one slide per GOS
                         let gos = Gos::new(&db, idx, capsule.id)?;
                         let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
-                        let mut output_path = PathBuf::from("dist");
                         let uuid = Uuid::new_v4();
                         let slide_name = format!("{}__{}.png", stem, idx);
-                        output_path.push(&user.username);
-                        output_path.push("extract");
-                        output_path.push(format!("{}_{}", uuid, slide_name));
-                        fs::rename(e, &output_path)?;
+                        let mut server_path = PathBuf::from(&user.username);
+                        server_path.push("extract");
+                        server_path.push(format!("{}_{}", uuid, slide_name));
                         idx += 1;
-
                         let asset =
-                            Asset::new(&db, uuid, &slide_name, &output_path.to_str().unwrap())?;
-
+                            Asset::new(&db, uuid, &slide_name, &server_path.to_str().unwrap())?;
                         Slide::new(&db, 1, gos.id, asset.id)?;
+
+                        let mut output_path = PathBuf::from("dist");
+                        output_path.push(server_path);
+                        fs::rename(e, &output_path)?;
                     }
                     dir.close()?;
                     return Ok(json!({ "file_name": file_name,

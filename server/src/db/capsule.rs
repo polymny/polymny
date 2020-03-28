@@ -135,7 +135,7 @@ impl Capsule {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
         Ok(cap_p
             .into_iter()
-            .map(|x| Project::get(x.project_id, &db))
+            .map(|x| Project::get_by_id(x.project_id, &db))
             .collect::<Result<Vec<Project>>>()?)
     }
 
@@ -151,7 +151,7 @@ impl Capsule {
     }
 
     /// get the slide show associated to capsule
-    pub fn get_goss(&self, db: &PgConnection) -> Result<Vec<(Gos, Vec<Slide>)>> {
+    pub fn get_goss(&self, db: &PgConnection) -> Result<Vec<(Gos, Vec<SlideWithAsset>)>> {
         use crate::schema::goss::dsl as dsl_gos;
         let goss = Gos::belonging_to(self)
             .order(dsl_gos::position.asc())
@@ -164,7 +164,17 @@ impl Capsule {
         let grouped_slides: Vec<Vec<Slide>> = slides.grouped_by(&goss);
         let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
             goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
-        Ok(goss_and_slides)
+
+        let mut goss_and_slides_with_asset: Vec<(Gos, Vec<SlideWithAsset>)> = Vec::new();
+        for (goss, slides) in goss_and_slides {
+            let slides_with_assets = slides
+                .into_iter()
+                .map(|x| SlideWithAsset::new(&x, db))
+                .collect::<Result<Vec<SlideWithAsset>>>()?;
+            goss_and_slides_with_asset.push((goss, slides_with_assets));
+        }
+
+        Ok(goss_and_slides_with_asset)
     }
 
     /// get the slide show associated to capsule

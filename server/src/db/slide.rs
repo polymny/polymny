@@ -147,4 +147,9 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
         })
     }
+    /// delete a slide.
+    pub fn delete(&self, db: &PgConnection) -> Result<usize> {
+        let slide = Slide::get(self.id, &db)?;
+        slide.delete(&db)
+    }
 }

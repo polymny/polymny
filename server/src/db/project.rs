@@ -10,6 +10,7 @@ use diesel::RunQueryDsl;
 
 use chrono::{NaiveDateTime, Utc};
 
+use crate::db::capsule::{Capsule, CapsulesProject};
 use crate::db::user::User;
 use crate::schema::projects;
 use crate::Result;
@@ -67,12 +68,21 @@ impl Project {
     }
 
     /// Retrieves a project from its id.
-    pub fn get(id: i32, db: &PgConnection) -> Result<Project> {
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Project> {
         use crate::schema::projects::dsl;
 
         let project = dsl::projects.filter(dsl::id.eq(id)).first::<Project>(db);
 
         Ok(project?)
+    }
+
+    /// get the projects associated to a user
+    pub fn get_capsules(&self, db: &PgConnection) -> Result<Vec<Capsule>> {
+        let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
+        Ok(cap_p
+            .into_iter()
+            .map(|x| Capsule::get_by_id(x.capsule_id, &db))
+            .collect::<Result<Vec<Capsule>>>()?)
     }
 
     /// Retrieves all projects

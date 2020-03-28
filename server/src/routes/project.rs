@@ -44,8 +44,18 @@ pub fn new_project(
 /// The route to get a project.
 #[get("/project/<id>")]
 pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
-    let project = Project::get(id, &db)?;
+    let project = Project::get_by_id(id, &db)?;
     Ok(json!(project))
+}
+
+/// The route to get a project.
+#[get("/project/<id>/capsules")]
+pub fn get_capsules(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
+    let cookie = cookies.get_private("EXAUTH");
+    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+    let project = Project::get_by_id(id, &db)?;
+
+    Ok(json!(project.get_capsules(&db)?))
 }
 
 /// Get all the projects .
@@ -66,7 +76,7 @@ pub fn update_project(
 ) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get(id, &db)?;
+    let project = Project::get_by_id(id, &db)?;
     Ok(json!(project.update(
         &db,
         &project_form.project_name,
@@ -78,7 +88,7 @@ pub fn update_project(
 pub fn delete_project(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get(id, &db)?;
+    let project = Project::get_by_id(id, &db)?;
     Ok(json!({ "nb projects deleted":
         project.delete(&db)?}))
 }
@@ -94,7 +104,7 @@ pub fn project_upload(
 ) -> Result<JsonValue> {
     let cookie = cookies.get_private("EXAUTH");
     let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get(id, &db)?;
+    let project = Project::get_by_id(id, &db)?;
 
     let mut options = MultipartFormDataOptions::new();
     options

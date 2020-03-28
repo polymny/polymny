@@ -183,6 +183,7 @@ pub fn main() {
                 routes::auth::logout,
                 routes::project::new_project,
                 routes::project::get_project,
+                routes::project::get_capsules,
                 routes::project::all_projects,
                 routes::project::update_project,
                 routes::project::delete_project,

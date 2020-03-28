@@ -66,6 +66,19 @@ emptyNewProjectContent =
     NewProjectContent Status.NotSent ""
 
 
+type alias NewCapsuleContent =
+    { status : Status () ()
+    , name : String
+    , title : String
+    , description : String
+    }
+
+
+emptyNewCapsuleContent : NewCapsuleContent
+emptyNewCapsuleContent =
+    NewCapsuleContent Status.NotSent "" "" ""
+
+
 type alias Global =
     { zone : Time.Zone
     }
@@ -93,7 +106,9 @@ type alias LoggedInModel =
 type LoggedInPage
     = LoggedInHome
     | LoggedInNewProject NewProjectContent
+    | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
+    | CapsulePage Api.CapsuleDetails
 
 
 isLoggedIn : Model -> Bool
@@ -159,14 +174,26 @@ type SignUpMsg
 type LoggedInMsg
     = NewProjectClicked
     | NewProjectMsg NewProjectMsg
+    | NewCapsuleClicked Int
+    | NewCapsuleMsg NewCapsuleMsg
     | ProjectClicked Api.Project
     | CapsulesReceived Api.Project (List Api.Capsule)
+    | CapsuleClicked Api.Capsule
+    | CapsuleReceived Api.CapsuleDetails
 
 
 type NewProjectMsg
     = NewProjectNameChanged String
     | NewProjectSubmitted
     | NewProjectSuccess Api.Project
+
+
+type NewCapsuleMsg
+    = NewCapsuleNameChanged String
+    | NewCapsuleTitleChanged String
+    | NewCapsuleDescriptionChanged String
+    | NewCapsuleSubmitted
+    | NewCapsuleSuccess Api.Capsule
 
 
 
@@ -277,6 +304,13 @@ updateLoggedIn msg { session, page } =
             , Cmd.none
             )
 
+        ( NewCapsuleClicked projectId, _ ) ->
+            ( { session = session
+              , page = LoggedInNewCapsule projectId emptyNewCapsuleContent
+              }
+            , Cmd.none
+            )
+
         ( NewProjectMsg newProjectMsg, LoggedInNewProject content ) ->
             let
                 ( newSession, newModel, newCmd ) =
@@ -284,11 +318,24 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewProject newModel }, newCmd )
 
+        ( NewCapsuleMsg newCapsuleMsg, LoggedInNewCapsule projectId content ) ->
+            let
+                ( newSession, newModel, newCmd ) =
+                    updateNewCapsuleMsg newCapsuleMsg session projectId content
+            in
+            ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
+
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
 
         ( CapsulesReceived project newCapsules, _ ) ->
             ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
+
+        ( CapsuleClicked capsule, _ ) ->
+            ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
+
+        ( CapsuleReceived capsule, _ ) ->
+            ( LoggedInModel session (CapsulePage capsule), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -313,6 +360,31 @@ updateNewProjectMsg msg session content =
             )
 
 
+updateNewCapsuleMsg : NewCapsuleMsg -> Api.Session -> Int -> NewCapsuleContent -> ( Api.Session, NewCapsuleContent, Cmd Msg )
+updateNewCapsuleMsg msg session projectId content =
+    case msg of
+        NewCapsuleNameChanged newCapsuleName ->
+            ( session, { content | name = newCapsuleName }, Cmd.none )
+
+        NewCapsuleTitleChanged newTitleName ->
+            ( session, { content | title = newTitleName }, Cmd.none )
+
+        NewCapsuleDescriptionChanged newDescriptionName ->
+            ( session, { content | description = newDescriptionName }, Cmd.none )
+
+        NewCapsuleSubmitted ->
+            ( session
+            , { content | status = Status.Sent }
+            , Api.newCapsule resultToMsg4 projectId content
+            )
+
+        NewCapsuleSuccess _ ->
+            ( session
+            , { content | status = Status.Success () }
+            , Cmd.none
+            )
+
+
 
 -- COMMANDS
 
@@ -324,7 +396,11 @@ resultToMsg ifSuccess ifError result =
             ifSuccess x
 
         Err e ->
-            ifError e
+            let
+                err =
+                    Debug.log "Error" e
+            in
+            ifError err
 
 
 resultToMsg1 : Result e Api.Session -> Msg
@@ -340,6 +416,16 @@ resultToMsg2 result =
 resultToMsg3 : Api.Project -> Result e (List Api.Capsule) -> Msg
 resultToMsg3 project result =
     resultToMsg (\x -> LoggedInMsg <| CapsulesReceived project x) (\_ -> Noop) result
+
+
+resultToMsg4 : Result e Api.Capsule -> Msg
+resultToMsg4 result =
+    resultToMsg (\x -> LoggedInMsg <| NewCapsuleMsg <| NewCapsuleSuccess <| x) (\_ -> Noop) result
+
+
+resultToMsg5 : Result e Api.CapsuleDetails -> Msg
+resultToMsg5 result =
+    resultToMsg (\x -> LoggedInMsg <| CapsuleReceived x) (\_ -> Noop) result
 
 
 
@@ -534,6 +620,12 @@ loggedInView global { session, page } =
                 ProjectPage project ->
                     projectPageView session project
 
+                LoggedInNewCapsule _ content ->
+                    loggedInNewCapsuleView session content
+
+                CapsulePage capsuleDetails ->
+                    capsulePageView session capsuleDetails
+
         element =
             Element.column
                 [ Element.alignTop
@@ -626,6 +718,81 @@ loggedInNewProjectView _ { status, name } =
                 form
 
 
+loggedInNewCapsuleView : Api.Session -> NewCapsuleContent -> Element Msg
+loggedInNewCapsuleView _ { status, name, title, description } =
+    let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter NewCapsuleSubmitted ]
+
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Creating capsuke..."
+
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Capsule created!"
+
+                _ ->
+                    Ui.primaryButton (Just NewCapsuleSubmitted) "Create capsule"
+
+        message =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Capsule creation failed")
+
+                Status.Success () ->
+                    Just (Ui.successModal "Capsule created!")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "New capsule" ]
+
+        fields =
+            [ Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule name")
+                , onChange = NewCapsuleNameChanged
+                , placeholder = Nothing
+                , text = name
+                }
+            , Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule Title")
+                , onChange = NewCapsuleTitleChanged
+                , placeholder = Nothing
+                , text = title
+                }
+            , Input.text submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Capsule description")
+                , onChange = NewCapsuleDescriptionChanged
+                , placeholder = Nothing
+                , text = description
+                }
+            , submitButton
+            ]
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.map LoggedInMsg <|
+        Element.map NewCapsuleMsg <|
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+                form
+
+
 projectsView : Global -> List Api.Project -> Element Msg
 projectsView global projects =
     case projects of
@@ -658,21 +825,113 @@ projectView global project =
 
 
 projectPageView : Api.Session -> Api.Project -> Element Msg
-projectPageView session project =
-    Element.column [] (List.map capsuleView project.capsules)
+projectPageView _ project =
+    Element.column [ Element.padding 10 ]
+        [ Element.el [ Font.size 18 ] (Element.text ("Capsules for project " ++ project.name))
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleView project.capsules)
+        ]
 
 
 capsuleView : Api.Capsule -> Element Msg
 capsuleView capsule =
-    Element.row [ Element.spacing 10 ]
-        [ Element.text capsule.name
+    Element.column [ Element.spacing 10 ]
+        [ Ui.linkButton (Just (LoggedInMsg (CapsuleClicked capsule))) capsule.name
         , Element.text capsule.title
         , Element.text capsule.description
         ]
 
 
+capsulePageView : Api.Session -> Api.CapsuleDetails -> Element Msg
+capsulePageView _ capsuleDetails =
+    Element.column [ Element.padding 10 ]
+        [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+        , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
+        , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleGosView capsuleDetails.goss)
+        ]
+
+
+capsuleGosView : Api.Gos1 -> Element Msg
+capsuleGosView gos1 =
+    Element.row [ Element.spacing 10 ]
+        [ Element.text ("ID = " ++ String.fromInt gos1.gos.id)
+        , Element.text ("Position = " ++ String.fromInt gos1.gos.position)
+        , Element.column [ Element.padding 10, Element.spacing 10 ]
+            (List.map capsuleGosSlideView gos1.slide)
+        ]
+
+
+capsuleGosSlideView : Api.Slide -> Element Msg
+capsuleGosSlideView slide =
+    Element.column [ Element.spacing 10 ]
+        [ Element.text "Slide"
+        , Element.text ("ID = " ++ String.fromInt slide.id)
+        , Element.text ("Position in gos = " ++ String.fromInt slide.position_in_gos)
+        , capsuleGosAssetView slide.asset
+        ]
+
+
+capsuleGosAssetView : Api.Asset -> Element Msg
+capsuleGosAssetView asset =
+    Element.column [ Element.spacing 10 ]
+        [ Element.text "Asset: "
+        , Element.text ("ID = " ++ String.fromInt asset.id)
+        , Element.text asset.asset_path
+        , viewSlideImage asset.asset_path
+        , Element.text asset.asset_type
+        , Element.text asset.name
+        , Element.text ("upload date = " ++ String.fromInt asset.upload_date)
+        , Element.text asset.uuid
+        ]
+
+
+viewSlideImage : String -> Element Msg
+viewSlideImage url =
+    Element.image [ Element.width (Element.px 200) ] { src = url, description = "One desc" }
+
+
 topBar : Model -> Element Msg
 topBar model =
+    case model of
+        LoggedIn { session, page } ->
+            case page of
+                ProjectPage { id } ->
+                    Element.row
+                        [ Background.color Colors.primary
+                        , Element.width Element.fill
+                        , Element.spacing 30
+                        ]
+                        [ Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            [ homeButton ]
+                        , Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            (if isLoggedIn model then
+                                [ newCapsuleButton id ]
+
+                             else
+                                []
+                            )
+                        , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                            (if isLoggedIn model then
+                                [ logOutButton ]
+
+                             else
+                                [ loginButton, signUpButton ]
+                            )
+                        ]
+
+                _ ->
+                    nonFull model
+
+        _ ->
+            nonFull model
+
+
+nonFull : Model -> Element Msg
+nonFull model =
     Element.row
         [ Background.color Colors.primary
         , Element.width Element.fill
@@ -707,6 +966,11 @@ homeButton =
 newProjectButton : Element Msg
 newProjectButton =
     Ui.textButton (Just (LoggedInMsg NewProjectClicked)) "New project"
+
+
+newCapsuleButton : Int -> Element Msg
+newCapsuleButton id =
+    Ui.textButton (Just (LoggedInMsg (NewCapsuleClicked id))) "New capsule"
 
 
 loginButton : Element Msg

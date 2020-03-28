@@ -1,7 +1,12 @@
 module Api exposing
-    ( Capsule
+    ( Asset
+    , Capsule
+    , CapsuleDetails
+    , Gos1
     , Project
     , Session
+    , Slide
+    , capsuleFromId
     , capsulesFromProjectId
     , createProject
     , decodeCapsule
@@ -10,6 +15,7 @@ module Api exposing
     , decodeSession
     , logOut
     , login
+    , newCapsule
     , newProject
     , signUp
     , testDatabase
@@ -197,8 +203,140 @@ newProject resultToMsg content =
 capsulesFromProjectId : (Result Http.Error (List Capsule) -> msg) -> Int -> Cmd msg
 capsulesFromProjectId resultToMsg id =
     Http.get
-        { url = "/api/capsules"
+        { url = "/api/project/" ++ String.fromInt id ++ "/capsules"
         , expect = Http.expectJson resultToMsg decodeCapsules
+        }
+
+
+
+-- New capsule  form
+
+
+type alias NewCapsuleContent a =
+    { a
+        | name : String
+        , title : String
+        , description : String
+    }
+
+
+encodeNewCapsuleContent : Int -> NewCapsuleContent a -> String
+encodeNewCapsuleContent projectId { name, title, description } =
+    encode
+        [ ( "name", name )
+        , ( "title", title )
+        , ( "description", description )
+        , ( "project_id", String.fromInt projectId )
+        ]
+
+
+newCapsule : (Result Http.Error Capsule -> msg) -> Int -> NewCapsuleContent a -> Cmd msg
+newCapsule resultToMsg projectId content =
+    Http.post
+        { url = "/api/new-capsule"
+        , expect = Http.expectJson resultToMsg decodeCapsule
+        , body = stringBody (encodeNewCapsuleContent projectId content)
+        }
+
+
+
+-- Capsule Details
+
+
+type alias Asset =
+    { id : Int
+    , asset_path : String
+    , asset_type : String
+    , name : String
+    , upload_date : Int
+    , uuid : String
+    }
+
+
+decodeAsset : Decoder Asset
+decodeAsset =
+    Decode.map6 Asset
+        (Decode.field "id" Decode.int)
+        (Decode.field "asset_path" Decode.string)
+        (Decode.field "asset_type" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "upload_date" Decode.int)
+        (Decode.field "uuid" Decode.string)
+
+
+type alias Slide =
+    { id : Int
+    , position_in_gos : Int
+    , gos_id : Int
+    , asset : Asset
+    }
+
+
+decodeSlide : Decoder Slide
+decodeSlide =
+    Decode.map4 Slide
+        (Decode.field "id" Decode.int)
+        (Decode.field "position_in_gos" Decode.int)
+        (Decode.field "gos_id" Decode.int)
+        (Decode.field "asset" decodeAsset)
+
+
+type alias Gos =
+    { id : Int
+    , position : Int
+    , capsule_id : Int
+    }
+
+
+decodeGos : Decoder Gos
+decodeGos =
+    Decode.map3 Gos
+        (Decode.field "id" Decode.int)
+        (Decode.field "position" Decode.int)
+        (Decode.field "capsule_id" Decode.int)
+
+
+
+-- Gos1 is a fake structure to simulate a list of 2 elements.
+-- 1st elemnent is the desciption of the gos itself
+-- 2nd element is array of slide. One or more per goss
+
+
+type alias Gos1 =
+    { gos : Gos
+    , slide : List Slide
+    }
+
+
+decodeGos1 : Decoder Gos1
+decodeGos1 =
+    Decode.map2 Gos1
+        (Decode.index 0 decodeGos)
+        (Decode.index 1 (Decode.list decodeSlide))
+
+
+type alias CapsuleDetails =
+    { capsule : Capsule
+    , goss : List Gos1
+    , projects : List Project
+    , slide_show : Asset
+    }
+
+
+decodeCapsuleDetails : Decoder CapsuleDetails
+decodeCapsuleDetails =
+    Decode.map4 CapsuleDetails
+        (Decode.field "capsule" decodeCapsule)
+        (Decode.field "goss" (Decode.list decodeGos1))
+        (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "slide_show" decodeAsset)
+
+
+capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
+capsuleFromId resultToMsg id =
+    Http.get
+        { url = "/api/capsule/" ++ String.fromInt id
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         }
 
 
