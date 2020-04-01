@@ -485,13 +485,6 @@ resultToMsg5 result =
 -- VIEW
 
 
-defaultAttributes : List (Element.Attribute msg)
-defaultAttributes =
-    [ Border.rounded 3
-    , Element.padding 10
-    ]
-
-
 view : FullModel -> Html.Html Msg
 view fullModel =
     Element.layout [ Font.size 15 ] (viewContent fullModel)
@@ -1086,22 +1079,11 @@ selectFileButton : Element Msg
 selectFileButton =
     Element.map LoggedInMsg <|
         Element.map UploadSlideShowMsg <|
-            Input.button
-                (Font.color (Element.rgb255 255 255 255)
-                    :: Background.color (Element.rgb255 50 205 50)
-                    :: defaultAttributes
-                )
-                { onPress = Just UploadSlideShowSelectFileRequested, label = Element.text "Select file" }
+            Ui.simpleButton (Just UploadSlideShowSelectFileRequested) "Select file"
 
 
 uploadButton : Element Msg
 uploadButton =
     Element.map LoggedInMsg <|
         Element.map UploadSlideShowMsg <|
-            Input.button
-                (Font.color (Element.rgb255 255 255 255)
-                    :: Background.color (Element.rgb255 50 205 50)
-                    :: Element.centerX
-                    :: defaultAttributes
-                )
-                { onPress = Just UploadSlideShowFormSubmitted, label = Element.text "Upload" }
+            Ui.primaryButton (Just UploadSlideShowFormSubmitted) "Upload"
