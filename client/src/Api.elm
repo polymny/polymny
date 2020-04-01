@@ -7,6 +7,7 @@ module Api exposing
     , Session
     , Slide
     , capsuleFromId
+    , capsuleUploadSlideShow
     , capsulesFromProjectId
     , createProject
     , decodeCapsule
@@ -23,6 +24,7 @@ module Api exposing
     , testMailer
     )
 
+import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
 
@@ -338,6 +340,15 @@ capsuleFromId resultToMsg id =
     Http.get
         { url = "/api/capsule/" ++ String.fromInt id
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        }
+
+
+capsuleUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
+capsuleUploadSlideShow resultToMsg id content =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_slides"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
         }
 
 

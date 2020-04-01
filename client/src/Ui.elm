@@ -72,7 +72,7 @@ linkButton onPress content =
 simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
     Input.button
-        (Background.color Colors.white :: buttonAttributes)
+        (Background.color Colors.white :: Border.color Colors.grey :: Border.rounded 5 :: Border.width 1 :: buttonAttributes)
         { onPress = onPress
         , label = Element.text content
         }

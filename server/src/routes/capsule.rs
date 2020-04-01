@@ -236,9 +236,12 @@ pub fn upload_slides(
                         fs::rename(e, &output_path)?;
                     }
                     dir.close()?;
-                    return Ok(json!({ "file_name": file_name,
-                                       "capsule": capsule,
-                                       "goss": capsule.get_goss(&db)?
+                    // TODO: return capsule details like get_capsule
+                    return Ok(json!({
+                        "capsule": capsule,
+                        "slide_show":  capsule.get_slide_show(&db)?,
+                        "projects":    capsule.get_projects(&db)?,
+                        "goss":        capsule.get_goss(&db)? ,
                     }));
                 }
             }
