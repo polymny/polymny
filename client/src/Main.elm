@@ -5,8 +5,11 @@ import Browser
 import Colors
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import File exposing (File)
+import File.Select as Select
 import Html
 import Json.Decode as Decode
 import Status exposing (Status)
@@ -66,6 +69,16 @@ emptyNewProjectContent =
     NewProjectContent Status.NotSent ""
 
 
+type alias UploadForm =
+    { file : Maybe File
+    }
+
+
+emptyUploadForm : UploadForm
+emptyUploadForm =
+    UploadForm Nothing
+
+
 type alias NewCapsuleContent =
     { status : Status () ()
     , name : String
@@ -108,7 +121,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails
+    | CapsulePage Api.CapsuleDetails UploadForm
 
 
 isLoggedIn : Model -> Bool
@@ -180,6 +193,7 @@ type LoggedInMsg
     | CapsulesReceived Api.Project (List Api.Capsule)
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
+    | UploadSlideShowMsg UploadSlideShowMsg
 
 
 type NewProjectMsg
@@ -194,6 +208,12 @@ type NewCapsuleMsg
     | NewCapsuleDescriptionChanged String
     | NewCapsuleSubmitted
     | NewCapsuleSuccess Api.Capsule
+
+
+type UploadSlideShowMsg
+    = UploadSlideShowSelectFileRequested
+    | UploadSlideShowFileReady File
+    | UploadSlideShowFormSubmitted
 
 
 
@@ -325,6 +345,13 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form ) ->
+            let
+                ( newSession, newModel, newCmd ) =
+                    updateUploadSlideShow newUploadSlideShowMsg session form capsule.capsule.id
+            in
+            ( { session = newSession, page = CapsulePage capsule newModel }, newCmd )
+
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
 
@@ -335,7 +362,7 @@ updateLoggedIn msg { session, page } =
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule), Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule emptyUploadForm), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -385,6 +412,32 @@ updateNewCapsuleMsg msg session projectId content =
             )
 
 
+updateUploadSlideShow : UploadSlideShowMsg -> Api.Session -> UploadForm -> Int -> ( Api.Session, UploadForm, Cmd Msg )
+updateUploadSlideShow msg session model capsuleId =
+    case ( msg, model ) of
+        ( UploadSlideShowSelectFileRequested, form ) ->
+            ( session
+            , model
+            , Select.file
+                [ "application/pdf" ]
+                (\x -> LoggedInMsg (UploadSlideShowMsg (UploadSlideShowFileReady x)))
+            )
+
+        ( UploadSlideShowFileReady file, form ) ->
+            ( session
+            , { form | file = Just file }
+            , Cmd.none
+            )
+
+        ( UploadSlideShowFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( session, form, Cmd.none )
+
+                Just file ->
+                    ( session, form, Api.capsuleUploadSlideShow resultToMsg5 capsuleId file )
+
+
 
 -- COMMANDS
 
@@ -430,6 +483,13 @@ resultToMsg5 result =
 
 
 -- VIEW
+
+
+defaultAttributes : List (Element.Attribute msg)
+defaultAttributes =
+    [ Border.rounded 3
+    , Element.padding 10
+    ]
 
 
 view : FullModel -> Html.Html Msg
@@ -623,8 +683,8 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails ->
-                    capsulePageView session capsuleDetails
+                CapsulePage capsuleDetails form ->
+                    capsulePageView session capsuleDetails form
 
         element =
             Element.column
@@ -735,7 +795,7 @@ loggedInNewCapsuleView _ { status, name, title, description } =
         submitButton =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Creating capsuke..."
+                    Ui.primaryButtonDisabled "Creating capsule..."
 
                 Status.Success () ->
                     Ui.primaryButtonDisabled "Capsule created!"
@@ -793,6 +853,39 @@ loggedInNewCapsuleView _ { status, name, title, description } =
                 form
 
 
+loggedInUploadSlideShowView : Api.Session -> UploadForm -> Element Msg
+loggedInUploadSlideShowView session form =
+    Element.column [ Element.centerX, Element.spacing 20 ]
+        [ Element.text "Choisir une présentation au format PDF"
+        , uploadForm form
+        ]
+
+
+uploadForm : UploadForm -> Element Msg
+uploadForm form =
+    Element.column [ Element.centerX, Element.spacing 20 ]
+        [ Element.row
+            [ Element.spacing 20
+            , Element.centerX
+            ]
+            [ selectFileButton
+            , fileNameElement form.file
+            , uploadButton
+            ]
+        ]
+
+
+fileNameElement : Maybe File -> Element Msg
+fileNameElement file =
+    Element.text <|
+        case file of
+            Nothing ->
+                "No file selected"
+
+            Just realFile ->
+                File.name realFile
+
+
 projectsView : Global -> List Api.Project -> Element Msg
 projectsView global projects =
     case projects of
@@ -842,10 +935,11 @@ capsuleView capsule =
         ]
 
 
-capsulePageView : Api.Session -> Api.CapsuleDetails -> Element Msg
-capsulePageView _ capsuleDetails =
+capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
+capsulePageView session capsuleDetails form =
     Element.column [ Element.padding 10 ]
-        [ Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+        [ loggedInUploadSlideShowView session form
+        , Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
         , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
         , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
         , Element.column [ Element.padding 10, Element.spacing 10 ]
@@ -986,3 +1080,28 @@ logOutButton =
 signUpButton : Element Msg
 signUpButton =
     Ui.successButton (Just SignUpClicked) "Sign up"
+
+
+selectFileButton : Element Msg
+selectFileButton =
+    Element.map LoggedInMsg <|
+        Element.map UploadSlideShowMsg <|
+            Input.button
+                (Font.color (Element.rgb255 255 255 255)
+                    :: Background.color (Element.rgb255 50 205 50)
+                    :: defaultAttributes
+                )
+                { onPress = Just UploadSlideShowSelectFileRequested, label = Element.text "Select file" }
+
+
+uploadButton : Element Msg
+uploadButton =
+    Element.map LoggedInMsg <|
+        Element.map UploadSlideShowMsg <|
+            Input.button
+                (Font.color (Element.rgb255 255 255 255)
+                    :: Background.color (Element.rgb255 50 205 50)
+                    :: Element.centerX
+                    :: defaultAttributes
+                )
+                { onPress = Just UploadSlideShowFormSubmitted, label = Element.text "Upload" }
