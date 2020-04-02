@@ -153,12 +153,16 @@ pub fn upload_slides(
             FileField::Single(file) => {
                 let file_name = &file.file_name;
                 let path = &file.path;
-
                 if let Some(file_name) = file_name {
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, &server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        &format!("/{}", server_path.to_str().unwrap()),
+                    )?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
                     let mut output_path = PathBuf::from("dist");
@@ -221,10 +225,13 @@ pub fn upload_slides(
                         server_path.push("extract");
                         server_path.push(format!("{}_{}", uuid, slide_name));
                         idx += 1;
-                        let asset =
-                            Asset::new(&db, uuid, &slide_name, &server_path.to_str().unwrap())?;
+                        let asset = Asset::new(
+                            &db,
+                            uuid,
+                            &slide_name,
+                            &format!("/{}", server_path.to_str().unwrap()),
+                        )?;
                         Slide::new(&db, 1, gos.id, asset.id)?;
-
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         fs::rename(e, &output_path)?;
