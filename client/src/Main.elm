@@ -5,7 +5,6 @@ import Browser
 import Colors
 import Element exposing (Element)
 import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
@@ -153,6 +152,32 @@ init flags =
 
         Ok s ->
             ( FullModel global (LoggedIn (LoggedInModel s LoggedInHome)), initialCommand )
+
+
+modelFromFlags : Decode.Value -> Model
+modelFromFlags flags =
+    case Decode.decodeValue (Decode.field "page" Decode.string) flags of
+        Ok "index" ->
+            case Decode.decodeValue Api.decodeSession flags of
+                Ok session ->
+                    LoggedIn { session = session, page = LoggedInHome }
+
+                Err _ ->
+                    Home
+
+        Ok "capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm))
+
+                ( _, _ ) ->
+                    Home
+
+        Ok _ ->
+            Home
+
+        Err _ ->
+            Home
 
 
 
