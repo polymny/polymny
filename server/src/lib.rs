@@ -313,6 +313,11 @@ pub fn main() {
                 routes::asset::get_asset,
                 routes::asset::all_assets,
                 routes::asset::delete_asset,
+                routes::slide::get_slide,
+                routes::slide::move_slide,
+                routes::gos::get_gos,
+                routes::gos::update_gos,
+                routes::gos::delete_gos,
             ],
         )
         .launch()
