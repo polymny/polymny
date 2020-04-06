@@ -4,6 +4,8 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate serde;
 #[macro_use]
 extern crate rocket;
@@ -27,9 +29,22 @@ pub mod generated_schema;
 #[allow(missing_docs)]
 pub mod schema;
 
-use bcrypt::BcryptError;
-use rocket::fairing::AdHoc;
+use std::io::Cursor;
 use std::{error, fmt, io, result};
+
+use bcrypt::BcryptError;
+
+use rocket::fairing::AdHoc;
+use rocket::http::{ContentType, Cookies, Status};
+use rocket::request::Request;
+use rocket::response::{self, Responder, Response};
+
+use rocket_contrib::databases::diesel as rocket_diesel;
+use rocket_contrib::serve::StaticFiles;
+
+use crate::db::user::User;
+use crate::mailer::Mailer;
+use crate::templates::{index_html, setup_html};
 
 macro_rules! impl_from_error {
     ($type: ty, $variant: path, $from: ty) => {
@@ -40,6 +55,31 @@ macro_rules! impl_from_error {
         }
     };
 }
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! log_ { ($name:ident: $($args:tt)*) => { $name!(target: "_", $($args)*) }; }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! launch_info { ($($args:tt)*) => { info!(target: "launch", $($args)*) } }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! launch_info_ { ($($args:tt)*) => { info!(target: "launch_", $($args)*) } }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! error_ { ($($args:expr),+) => { log_!(error: $($args),+); }; }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! info_ { ($($args:expr),+) => { log_!(info: $($args),+); }; }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! trace_ { ($($args:expr),+) => { log_!(trace: $($args),+); }; }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! debug_ { ($($args:expr),+) => { log_!(debug: $($args),+); }; }
+#[doc(hidden)]
+#[macro_export]
+macro_rules! warn_ { ($($args:expr),+) => { log_!(warn: $($args),+); }; }
 
 /// The different errors that can occur when processing a request.
 #[derive(Debug)]
@@ -92,24 +132,50 @@ impl_from_error!(Error, Error::IoError, io::Error);
 impl_from_error!(Error, Error::MailError, lettre_email::error::Error);
 impl_from_error!(Error, Error::SendMailError, lettre::smtp::error::Error);
 
-impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+impl Error {
+    /// Returns the HTTP status corresponding to the error.
+    pub fn status(&self) -> Status {
+        match self {
+            Error::DatabaseConnectionError(_)
+            | Error::DatabaseRequestError(_)
+            | Error::IoError(_)
+            | Error::MailError(_)
+            | Error::SendMailError(_)
+            | Error::BcryptError(_)
+            | Error::DatabaseRequestEmptyError(_) => Status::InternalServerError,
+
+            Error::SessionDoesNotExist | Error::AuthenticationFailed | Error::RequiresLogin => {
+                Status::Unauthorized
+            }
+
+            Error::MissingArgumentInForm(_) | Error::NotFound => Status::NotFound,
+        }
+    }
+
+    /// Returns the complementary message.
+    pub fn message(&self) -> String {
         match self {
             Error::DatabaseConnectionError(e) => {
-                write!(fmt, "failed to connect to the database: {}", e)
+                format!("failed to connect to the database: {}", e)
             }
-            Error::DatabaseRequestError(e) => write!(fmt, "request to database failed: {}", e),
-            Error::SessionDoesNotExist => write!(fmt, "there is not such session"),
-            Error::AuthenticationFailed => write!(fmt, "authentication failed"),
-            Error::MissingArgumentInForm(e) => write!(fmt, "missing argument \"{}\" in form", e),
-            Error::BcryptError(e) => write!(fmt, "error in password hashing: {}", e),
-            Error::IoError(e) => write!(fmt, "io error: {}", e),
-            Error::MailError(e) => write!(fmt, "error sending mail: {}", e),
-            Error::SendMailError(e) => write!(fmt, "error sending mail: {}", e),
-            Error::DatabaseRequestEmptyError(e) => write!(fmt, "no database entry for {}", e),
-            Error::RequiresLogin => write!(fmt, "this request requires you to be logged in"),
-            Error::NotFound => write!(fmt, "the route requested does not exist"),
+            Error::DatabaseRequestError(e) => format!("request to database failed: {}", e),
+            Error::SessionDoesNotExist => format!("there is not such session"),
+            Error::AuthenticationFailed => format!("authentication failed"),
+            Error::MissingArgumentInForm(e) => format!("missing argument \"{}\" in form", e),
+            Error::BcryptError(e) => format!("error in password hashing: {}", e),
+            Error::IoError(e) => format!("io error: {}", e),
+            Error::MailError(e) => format!("error sending mail: {}", e),
+            Error::SendMailError(e) => format!("error sending mail: {}", e),
+            Error::DatabaseRequestEmptyError(e) => format!("no database entry for \"{}\"", e),
+            Error::RequiresLogin => format!("this request requires you to be logged in"),
+            Error::NotFound => format!("the route requested does not exist"),
         }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}: {}", self.status(), self.message())
     }
 }
 
@@ -118,17 +184,22 @@ impl error::Error for Error {}
 /// The result type of this library.
 pub type Result<T> = result::Result<T, Error>;
 
-use std::io::Cursor;
-
-use rocket::http::{ContentType, Cookies};
-use rocket::response::Response;
-
-use rocket_contrib::databases::diesel as rocket_diesel;
-use rocket_contrib::serve::StaticFiles;
-
-use crate::db::user::User;
-use crate::mailer::Mailer;
-use crate::templates::{index_html, setup_html};
+impl<'r> Responder<'r> for Error {
+    fn respond_to(self, _: &Request) -> response::Result<'r> {
+        error_!("Responding with {}", self);
+        Ok(Response::build()
+            .status(self.status())
+            .header(ContentType::JSON)
+            .sized_body(Cursor::new(
+                json!({
+                    "status": self.status().to_string(),
+                    "message": self.message(),
+                })
+                .to_string(),
+            ))
+            .finalize())
+    }
+}
 
 /// Our database type.
 #[database("database")]

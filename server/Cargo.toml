@@ -7,7 +7,7 @@ default-run = "server"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = "0.4.2"
+rocket = "0.4.4"
 mime = "0.3.12"
 diesel = { version = "1.4.3", features = ["chrono","uuid"] }
 diesel-derive-enum = { version = "0.4", features = ["postgres"] }
@@ -21,9 +21,10 @@ serde_yaml = "0.8"
 rocket-multipart-form-data = "0.7.2"
 uuid = { version = "0.6.5", features = ["serde", "v4"] }
 tempfile = "3.1.0"
+log = "0.4.8"
 
 [dependencies.rocket_contrib]
-version = "0.4.2"
+version = "0.4.4"
 default-features = false
 features = ["serve", "diesel_postgres_pool", "json"]
 
