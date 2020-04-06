@@ -972,16 +972,57 @@ designAttributes =
 capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
 capsulePageView session capsuleDetails form =
     Element.row designAttributes
-        [ Element.el [ Element.centerX, Element.alignTop ] (Element.text "Infos sur la capsule")
+        [ capsuleInfoView session capsuleDetails form
         , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                [ gos1View
-                , gos24View
-                , Element.text "5-6"
-                , Element.text "Ajouter un GOS"
-                ]
+                (List.map capsuleGosView2 capsuleDetails.goss)
+
+            -- , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+            --  [ gos1View
+            --  , gos24View
+            --  , Element.text "5-6"
+            --   , Element.text "Ajouter un GOS"
+            --    ]
             ]
+        ]
+
+
+capsuleGosView2 : Api.Gos1 -> Element Msg
+capsuleGosView2 gos1 =
+    Element.column designGosAttributes
+        [ Element.el
+            [ Element.padding 10
+            , Border.color Colors.danger
+            , Border.rounded 5
+            , Border.width 1
+            , Element.centerX
+            , Font.size 20
+            ]
+            (Element.text (String.fromInt gos1.gos.position))
+        , Element.column designAttributes
+            (List.map designSlideView gos1.slide)
+        ]
+
+
+
+--designSlideView "/Graydon/extract/103f0146-038b-4109-b8a0-05df0c35c44e_3_Engagement__1.png"
+--    Element.row [ Element.spacing 10 ]
+--        [ Element.text ("ID = " ++ String.fromInt gos1.gos.id)
+--        , Element.text ("Position = " ++ String.fromInt gos1.gos.position)
+--        , Element.column [ Element.padding 10, Element.spacing 10 ]
+--            (List.map capsuleGosSlideView gos1.slide)
+--        ]
+
+
+capsuleInfoView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
+capsuleInfoView session capsuleDetails form =
+    Element.column [ Element.centerX, Element.alignTop, Element.spacing 10, Element.padding 10 ]
+        [ Element.el [ Font.size 20 ] (Element.text "Infos sur la capsule")
+        , Element.el [ Font.size 14 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+        , Element.el [ Font.size 14 ] (Element.text ("Title :   " ++ capsuleDetails.capsule.title))
+        , Element.el [ Font.size 14 ] (Element.text ("Desritpion:  " ++ capsuleDetails.capsule.description))
+        , loggedInUploadSlideShowView session form
         ]
 
 
@@ -997,44 +1038,6 @@ designGosAttributes =
     ]
 
 
-gos1View : Element Msg
-gos1View =
-    Element.column designGosAttributes
-        [ Element.el
-            [ Element.padding 10
-            , Border.color Colors.danger
-            , Border.rounded 5
-            , Border.width 1
-            , Element.centerX
-            , Font.size 20
-            ]
-            (Element.text " 1 ")
-        , Element.column designAttributes
-            [ designSlideView "/Graydon/extract/103f0146-038b-4109-b8a0-05df0c35c44e_3_Engagement__1.png"
-            ]
-        ]
-
-
-gos24View : Element Msg
-gos24View =
-    Element.column designGosAttributes
-        [ Element.el
-            [ Element.padding 10
-            , Border.color Colors.danger
-            , Border.rounded 5
-            , Border.width 1
-            , Element.centerX
-            , Font.size 20
-            ]
-            (Element.text " 2-4 ")
-        , Element.column designAttributes
-            [ designSlideView "http://localhost:8000/Graydon/extract/e3239e72-ddeb-4b27-a043-dd1f443378c6_3_Engagement__2.png"
-            , designSlideView "http://localhost:8000/Graydon/extract/5ebc86d7-3425-4b34-a714-0286a79a440f_3_Engagement__3.png"
-            , designSlideView "http://localhost:8000/Graydon/extract/17da169c-ae22-4be5-8e04-af570ecdb76c_3_Engagement__4.png"
-            ]
-        ]
-
-
 designSlideAttributes : List (Element.Attribute msg)
 designSlideAttributes =
     [ Element.padding 10
@@ -1046,11 +1049,11 @@ designSlideAttributes =
     ]
 
 
-designSlideView : String -> Element Msg
-designSlideView url =
+designSlideView : Api.Slide -> Element Msg
+designSlideView slide =
     Element.row designSlideAttributes
-        [ Element.column [ Element.padding 10, Element.spacing 10 ]
-            [ viewSlideImage url
+        [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
+            [ viewSlideImage slide.asset.asset_path
             , Element.paragraph [ Element.padding 10, Font.size 18 ]
                 [ Element.text "Additional Resources "
                 , Ui.linkButton
@@ -1058,13 +1061,11 @@ designSlideView url =
                     "Click here to Add aditional"
                 ]
             ]
-        , Element.textColumn [ Background.color Colors.link, Element.width (Element.fill |> Element.maximum 300) ]
+        , Element.textColumn [ Background.color Colors.link, Element.width (Element.fill |> Element.maximum 500) ]
             [ Element.text "Prompteur:"
             , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
             , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
             , Element.paragraph [] [ Element.text (Lorem.sentence 10) ]
-
-            --, Element.el [] (Element.text (String.join "\n" (Lorem.paragraphs 3)))
             ]
         ]
 
