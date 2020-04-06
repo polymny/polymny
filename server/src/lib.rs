@@ -73,6 +73,12 @@ pub enum Error {
 
     /// Empty Database request
     DatabaseRequestEmptyError(String),
+
+    /// Tried to access data that requires to be logged in.
+    RequiresLogin,
+
+    /// 404 Not Found.
+    NotFound,
 }
 
 impl_from_error!(
@@ -100,7 +106,9 @@ impl fmt::Display for Error {
             Error::IoError(e) => write!(fmt, "io error: {}", e),
             Error::MailError(e) => write!(fmt, "error sending mail: {}", e),
             Error::SendMailError(e) => write!(fmt, "error sending mail: {}", e),
-            Error::DatabaseRequestEmptyError(e) => write!(fmt, "No database entry for: {}", e),
+            Error::DatabaseRequestEmptyError(e) => write!(fmt, "no database entry for {}", e),
+            Error::RequiresLogin => write!(fmt, "this request requires you to be logged in"),
+            Error::NotFound => write!(fmt, "the route requested does not exist"),
         }
     }
 }

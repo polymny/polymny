@@ -4,6 +4,9 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
 
+use rocket::http::Status;
+use rocket::request::{FromRequest, Outcome, Request};
+
 use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
@@ -12,11 +15,13 @@ use bcrypt::{hash, DEFAULT_COST};
 
 use serde::Deserialize;
 
+use crate::db::capsule::{Capsule, CapsulesProject};
 use crate::db::project::Project;
 use crate::db::session::{NewSession, Session};
 use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
 use crate::templates::{validation_email_html, validation_email_plain_text};
+use crate::Database;
 use crate::{Error, Result};
 
 /// A user of chouette.
@@ -178,8 +183,57 @@ impl User {
     /// Returns the list of the user's projects names.
     pub fn projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
         use crate::schema::projects::dsl::*;
-
         Ok(projects.filter(user_id.eq(self.id)).load::<Project>(db)?)
+    }
+
+    /// Gets a project by id, returning an error if the project does not belong to the user.
+    pub fn get_project_by_id(&self, project_id: i32, db: &Database) -> Result<Project> {
+        let project = Project::get_by_id(project_id, &db)?;
+        if project.user_id == self.id {
+            Ok(project)
+        } else {
+            Err(Error::NotFound)
+        }
+    }
+
+    /// Gets a capsule by id, returning an error if the capsule does not belong to the user.
+    pub fn get_capsule_by_id(&self, capsule_id: i32, db: &Database) -> Result<Capsule> {
+        let capsule = Capsule::get_by_id(capsule_id, &db)?;
+        // TODO: do this in full SQL instead
+        let is_allowed = CapsulesProject::belonging_to(&capsule)
+            .load::<CapsulesProject>(&db.0)?
+            .into_iter()
+            .filter_map(|x| Project::get_by_id(x.project_id, &db).ok())
+            .any(|x| x.user_id == self.id);
+
+        if is_allowed {
+            Ok(capsule)
+        } else {
+            Err(Error::NotFound)
+        }
+    }
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for User {
+    type Error = Error;
+
+    fn from_request(request: &'a Request<'r>) -> Outcome<Self, Self::Error> {
+        let cookie = match request.cookies().get_private("EXAUTH") {
+            Some(c) => c,
+            _ => return Outcome::Failure((Status::NotFound, Error::RequiresLogin)),
+        };
+
+        let db: Database = match FromRequest::from_request(request) {
+            Outcome::Success(db) => db,
+            _ => return Outcome::Failure((Status::NotFound, Error::RequiresLogin)),
+        };
+
+        let user = match User::from_session(cookie.value(), &db) {
+            Ok(user) => user,
+            _ => return Outcome::Failure((Status::NotFound, Error::RequiresLogin)),
+        };
+
+        Outcome::Success(user)
     }
 }
 

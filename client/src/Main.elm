@@ -144,7 +144,11 @@ init flags =
             Task.perform TimeZoneChange Time.here
     in
     case Decode.decodeValue Api.decodeSession flags of
-        Err _ ->
+        Err e ->
+            let
+                _ =
+                    debug "Error" e
+            in
             ( FullModel global Home, initialCommand )
 
         Ok s ->
@@ -451,7 +455,7 @@ resultToMsg ifSuccess ifError result =
         Err e ->
             let
                 err =
-                    Debug.log "Error" e
+                    debug "Error" e
             in
             ifError err
 
@@ -1087,3 +1091,19 @@ uploadButton =
     Element.map LoggedInMsg <|
         Element.map UploadSlideShowMsg <|
             Ui.primaryButton (Just UploadSlideShowFormSubmitted) "Upload"
+
+
+
+-- Auxliary function debug
+
+
+debug : String -> a -> a
+debug message value =
+    Debug.log message value
+
+
+
+-- Release version
+-- debug : String -> a -> a
+-- debug message value =
+--     value

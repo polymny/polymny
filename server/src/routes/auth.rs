@@ -72,9 +72,7 @@ pub fn login(db: Database, mut cookies: Cookies, login: Form<LoginForm>) -> Resu
 
 /// Returns the username.
 #[post("/session")]
-pub fn session(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let user = User::from_session(cookie.unwrap().value(), &db)?;
+pub fn session(db: Database, user: User) -> Result<JsonValue> {
     Ok(json!({"username": user.username, "projects": user.projects(&db)?}))
 }
 

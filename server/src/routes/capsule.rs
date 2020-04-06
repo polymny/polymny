@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use rocket::http::{ContentType, Cookies};
+use rocket::http::ContentType;
 use rocket::request::Form;
 use rocket::Data;
 
@@ -70,23 +70,25 @@ pub struct UpdateCapsuleForm {
 
 /// The route to register new capsule.
 #[post("/new-capsule", data = "<capsule>")]
-pub fn new_capsule(db: Database, capsule: Form<NewCapsuleForm>) -> Result<JsonValue> {
-    Ok(json!({
-        "capsule":
-        Capsule::new(
-            &db,
-            &capsule.name,
-            &capsule.title,
-            capsule.slide_show_id,
-            &capsule.description,
-            Some(Project::get_by_id(capsule.project_id, &db)?),
-        )?}))
+pub fn new_capsule(db: Database, user: User, capsule: Form<NewCapsuleForm>) -> Result<JsonValue> {
+    user.get_project_by_id(capsule.project_id, &db)?;
+
+    let capsule = Capsule::new(
+        &db,
+        &capsule.name,
+        &capsule.title,
+        capsule.slide_show_id,
+        &capsule.description,
+        Some(Project::get_by_id(capsule.project_id, &db)?),
+    )?;
+
+    Ok(json!({ "capsule": capsule }))
 }
 
 /// The route to get a capsule.
 #[get("/capsule/<id>")]
-pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
-    let capsule = Capsule::get_by_id(id, &db)?;
+pub fn get_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
                "projects":    capsule.get_projects(&db)?,
@@ -96,9 +98,7 @@ pub fn get_capsule(db: Database, id: i32) -> Result<JsonValue> {
 
 /// Get all the capsules .
 #[get("/capsules")]
-pub fn all_capsules(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+pub fn all_capsules(db: Database, _user: User) -> Result<JsonValue> {
     Ok(json!(Capsule::all(&db)?))
 }
 
@@ -106,12 +106,11 @@ pub fn all_capsules(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
 #[put("/capsule/<capsule_id>", data = "<capsule_form>")]
 pub fn update_capsule(
     db: Database,
-    mut cookies: Cookies,
+    user: User,
     capsule_id: i32,
     capsule_form: Form<UpdateCapsuleForm>,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+    user.get_capsule_by_id(capsule_id, &db)?;
 
     use crate::schema::capsules::dsl::id;
     diesel::update(capsules::table)
@@ -123,26 +122,21 @@ pub fn update_capsule(
 }
 /// Delete a capsule
 #[delete("/capsule/<id>")]
-pub fn delete_capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let capsule = Capsule::get_by_id(id, &db)?;
-    Ok(json!({ "nb capsules deleted":
-        capsule.delete(&db)?}))
+pub fn delete_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    Ok(json!({"nb capsules deleted": capsule.delete(&db)?}))
 }
 
 /// Upload a presentation (slides)
 #[post("/capsule/<id>/upload_slides", data = "<data>")]
 pub fn upload_slides(
     db: Database,
-    mut cookies: Cookies,
+    user: User,
     content_type: &ContentType,
     id: i32,
     data: Data,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let capsule = Capsule::get_by_id(id, &db)?;
+    let capsule = user.get_capsule_by_id(id, &db)?;
 
     let mut options = MultipartFormDataOptions::new();
     options

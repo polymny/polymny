@@ -3,7 +3,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use rocket::http::{ContentType, Cookies};
+use rocket::http::ContentType;
 use rocket::request::Form;
 use rocket::Data;
 
@@ -29,54 +29,39 @@ pub struct NewProjectForm {
 
 /// The route to register new project.
 #[post("/new-project", data = "<project>")]
-pub fn new_project(
-    db: Database,
-    mut cookies: Cookies,
-    project: Form<NewProjectForm>,
-) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let user = User::from_session(cookie.unwrap().value(), &db)?;
+pub fn new_project(db: Database, user: User, project: Form<NewProjectForm>) -> Result<JsonValue> {
     let project = Project::create(&project.project_name, user.id)?;
-
     Ok(json!(project.save(&db)?))
 }
 
 /// The route to get a project.
 #[get("/project/<id>")]
-pub fn get_project(db: Database, id: i32) -> Result<JsonValue> {
-    let project = Project::get_by_id(id, &db)?;
-    Ok(json!(project))
+pub fn get_project(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    Ok(json!(user.get_project_by_id(id, &db)?))
 }
 
-/// The route to get a project.
+/// The route to get the capsules from a project.
 #[get("/project/<id>/capsules")]
-pub fn get_capsules(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get_by_id(id, &db)?;
-
+pub fn get_capsules(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let project = user.get_project_by_id(id, &db)?;
     Ok(json!(project.get_capsules(&db)?))
 }
 
 /// Get all the projects .
 #[get("/projects")]
-pub fn all_projects(db: Database, mut cookies: Cookies) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    Ok(json!({ "projects": Project::all(&db)?}))
+pub fn all_projects(db: Database, _user: User) -> Result<JsonValue> {
+    Ok(json!(Project::all(&db)?))
 }
 
 /// Update a project
 #[put("/project/<id>", data = "<project_form>")]
 pub fn update_project(
     db: Database,
-    mut cookies: Cookies,
+    user: User,
     id: i32,
     project_form: Form<NewProjectForm>,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get_by_id(id, &db)?;
+    let project = user.get_project_by_id(id, &db)?;
     Ok(json!(project.update(
         &db,
         &project_form.project_name,
@@ -85,26 +70,21 @@ pub fn update_project(
 }
 /// Delete a project
 #[delete("/project/<id>")]
-pub fn delete_project(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get_by_id(id, &db)?;
-    Ok(json!({ "nb projects deleted":
-        project.delete(&db)?}))
+pub fn delete_project(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let project = user.get_project_by_id(id, &db)?;
+    Ok(json!({"nb projects deleted": project.delete(&db)?}))
 }
 
 /// Upload an asset in the project
 #[post("/project/<id>/upload", data = "<data>")]
 pub fn project_upload(
     db: Database,
-    mut cookies: Cookies,
+    user: User,
     content_type: &ContentType,
     id: i32,
     data: Data,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let user = User::from_session(cookie.unwrap().value(), &db)?;
-    let project = Project::get_by_id(id, &db)?;
+    let project = user.get_project_by_id(id, &db)?;
 
     let mut options = MultipartFormDataOptions::new();
     options
