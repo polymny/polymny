@@ -5,12 +5,14 @@ import Browser
 import Colors
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
 import File.Select as Select
 import Html
 import Json.Decode as Decode
+import Lorem
 import Status exposing (Status)
 import Task
 import Time
@@ -957,16 +959,125 @@ capsuleView capsule =
         ]
 
 
+designAttributes : List (Element.Attribute msg)
+designAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.grey
+    ]
+
+
 capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
 capsulePageView session capsuleDetails form =
-    Element.column [ Element.padding 10 ]
-        [ loggedInUploadSlideShowView session form
-        , Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
-        , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
-        , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
-        , Element.column [ Element.padding 10, Element.spacing 10 ]
-            (List.map capsuleGosView capsuleDetails.goss)
+    Element.row designAttributes
+        [ Element.el [ Element.centerX, Element.alignTop ] (Element.text "Infos sur la capsule")
+        , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
+            [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
+            , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                [ gos1View
+                , gos24View
+                , Element.text "5-6"
+                , Element.text "Ajouter un GOS"
+                ]
+            ]
         ]
+
+
+designGosAttributes : List (Element.Attribute msg)
+designGosAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Element.alignTop
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.grey
+    , Background.color Colors.grey
+    ]
+
+
+gos1View : Element Msg
+gos1View =
+    Element.column designGosAttributes
+        [ Element.el
+            [ Element.padding 10
+            , Border.color Colors.danger
+            , Border.rounded 5
+            , Border.width 1
+            , Element.centerX
+            , Font.size 20
+            ]
+            (Element.text " 1 ")
+        , Element.column designAttributes
+            [ designSlideView "/Graydon/extract/103f0146-038b-4109-b8a0-05df0c35c44e_3_Engagement__1.png"
+            ]
+        ]
+
+
+gos24View : Element Msg
+gos24View =
+    Element.column designGosAttributes
+        [ Element.el
+            [ Element.padding 10
+            , Border.color Colors.danger
+            , Border.rounded 5
+            , Border.width 1
+            , Element.centerX
+            , Font.size 20
+            ]
+            (Element.text " 2-4 ")
+        , Element.column designAttributes
+            [ designSlideView "http://localhost:8000/Graydon/extract/e3239e72-ddeb-4b27-a043-dd1f443378c6_3_Engagement__2.png"
+            , designSlideView "http://localhost:8000/Graydon/extract/5ebc86d7-3425-4b34-a714-0286a79a440f_3_Engagement__3.png"
+            , designSlideView "http://localhost:8000/Graydon/extract/17da169c-ae22-4be5-8e04-af570ecdb76c_3_Engagement__4.png"
+            ]
+        ]
+
+
+designSlideAttributes : List (Element.Attribute msg)
+designSlideAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.white
+    , Border.dashed
+    ]
+
+
+designSlideView : String -> Element Msg
+designSlideView url =
+    Element.row designSlideAttributes
+        [ Element.column [ Element.padding 10, Element.spacing 10 ]
+            [ viewSlideImage url
+            , Element.paragraph [ Element.padding 10, Font.size 18 ]
+                [ Element.text "Additional Resources "
+                , Ui.linkButton
+                    (Just (LoggedInMsg NewProjectClicked))
+                    "Click here to Add aditional"
+                ]
+            ]
+        , Element.textColumn [ Background.color Colors.link, Element.width (Element.fill |> Element.maximum 300) ]
+            [ Element.text "Prompteur:"
+            , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
+            , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
+            , Element.paragraph [] [ Element.text (Lorem.sentence 10) ]
+
+            --, Element.el [] (Element.text (String.join "\n" (Lorem.paragraphs 3)))
+            ]
+        ]
+
+
+
+--   Element.column [ Element.padding 10 ]
+--       [ loggedInUploadSlideShowView session form
+--       , Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+--       , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
+--       , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
+--       , Element.column [ Element.padding 10, Element.spacing 10 ]
+--           (List.map capsuleGosView capsuleDetails.goss)
+--       ]
 
 
 capsuleGosView : Api.Gos1 -> Element Msg
