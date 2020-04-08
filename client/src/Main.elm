@@ -144,16 +144,7 @@ init flags =
         initialCommand =
             Task.perform TimeZoneChange Time.here
     in
-    case Decode.decodeValue Api.decodeSession flags of
-        Err e ->
-            let
-                _ =
-                    debug "Error" e
-            in
-            ( FullModel global Home, initialCommand )
-
-        Ok s ->
-            ( FullModel global (LoggedIn (LoggedInModel s LoggedInHome)), initialCommand )
+    ( FullModel global (modelFromFlags flags), initialCommand )
 
 
 modelFromFlags : Decode.Value -> Model
@@ -175,10 +166,18 @@ modelFromFlags flags =
                 ( _, _ ) ->
                     Home
 
-        Ok _ ->
+        Ok ok ->
+            let
+                _ =
+                    debug "Unknown page" ok
+            in
             Home
 
-        Err _ ->
+        Err err ->
+            let
+                _ =
+                    debug "Error" err
+            in
             Home
 
 
