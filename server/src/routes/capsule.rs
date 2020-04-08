@@ -22,7 +22,6 @@ use tempfile::tempdir;
 
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
-use crate::db::gos::Gos;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
@@ -91,8 +90,8 @@ pub fn get_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
+               "slides":      capsule.get_slides(&db)? ,
                "projects":    capsule.get_projects(&db)?,
-               "goss":        capsule.get_goss(&db)? ,
     }))
 }
 
@@ -179,14 +178,10 @@ pub fn upload_slides(
                     // if exists remove all prevouis generatd goss and slides
                     // TODO: Brutal way add an option to upload pdf without supression of
                     // all goss and slides
-                    for item in capsule.get_goss(&db)? {
-                        let (gos, slides) = item;
-                        for slide in slides {
-                            AssetsObject::delete_by_object(&db, slide.id, AssetType::Slide)?;
-                            slide.delete(&db)?;
-                            //TODO: supress file on disk
-                        }
-                        gos.delete(&db)?;
+                    for slide in capsule.get_slides(&db)? {
+                        AssetsObject::delete_by_object(&db, slide.id, AssetType::Slide)?;
+                        slide.delete(&db)?;
+                        //TODO: supress file on disk
                     }
 
                     // Generates images one per presentation page
@@ -213,36 +208,38 @@ pub fn upload_slides(
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
                     entries.sort();
 
+                    //TODO : use enumerate  instead of idx ?
                     let mut idx = 1;
                     for e in entries {
                         // Create one GOS and associated per image
                         // one slide per GOS
-                        let gos = Gos::new(&db, idx, capsule.id)?;
                         let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
                         let uuid = Uuid::new_v4();
                         let slide_name = format!("{}__{}.png", stem, idx);
                         let mut server_path = PathBuf::from(&user.username);
                         server_path.push("extract");
                         server_path.push(format!("{}_{}", uuid, slide_name));
-                        idx += 1;
                         let asset = Asset::new(
                             &db,
                             uuid,
                             &slide_name,
                             &format!("/{}", server_path.to_str().unwrap()),
                         )?;
-                        Slide::new(&db, 1, gos.id, asset.id)?;
+                        // When generated a slide take position (idx*100) and one per GOS
+                        // GOS also taje (idx*100)
+                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id)?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         fs::rename(e, &output_path)?;
+                        idx += 1;
                     }
                     dir.close()?;
                     // TODO: return capsule details like get_capsule
                     return Ok(json!({
-                        "capsule": capsule,
+                        "capsule":     capsule,
                         "slide_show":  capsule.get_slide_show(&db)?,
+                        "slides":      capsule.get_slides(&db)? ,
                         "projects":    capsule.get_projects(&db)?,
-                        "goss":        capsule.get_goss(&db)? ,
                     }));
                 }
             }

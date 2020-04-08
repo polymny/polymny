@@ -28,14 +28,6 @@ table! {
 }
 
 table! {
-    goss (id) {
-        id -> Int4,
-        position -> Int4,
-        capsule_id -> Int4,
-    }
-}
-
-table! {
     projects (id) {
         id -> Int4,
         user_id -> Int4,
@@ -55,9 +47,11 @@ table! {
 table! {
     slides (id) {
         id -> Int4,
+        position -> Int4,
         position_in_gos -> Int4,
-        gos_id -> Int4,
+        gos -> Int4,
         asset_id -> Int4,
+        capsule_id -> Int4,
     }
 }
 
@@ -75,17 +69,15 @@ table! {
 joinable!(capsules -> assets (slide_show_id));
 joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
-joinable!(goss -> capsules (capsule_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
 joinable!(slides -> assets (asset_id));
-joinable!(slides -> goss (gos_id));
+joinable!(slides -> capsules (capsule_id));
 
 allow_tables_to_appear_in_same_query!(
     assets,
     capsules,
     capsules_projects,
-    goss,
     projects,
     sessions,
     slides,

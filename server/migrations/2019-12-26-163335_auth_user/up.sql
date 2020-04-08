@@ -46,7 +46,7 @@ CREATE TABLE capsules_projects (
 
 
 
-CREATE TYPE asset_type AS ENUM ('project', 'capsule', 'gos', 'slide');
+CREATE TYPE asset_type AS ENUM ('project', 'capsule', 'slide');
 
 CREATE TABLE assets_objects (
     id SERIAL PRIMARY KEY,
@@ -55,14 +55,11 @@ CREATE TABLE assets_objects (
     object_type asset_type NOT NULL
 );
 
-CREATE TABLE goss (
-    id SERIAL PRIMARY KEY,
-    position INT NOT NULL,
-    capsule_id INT NOT NULL references capsules(id)
-);
 CREATE TABLE slides (
     id SERIAL PRIMARY KEY,
+    position INT NOT NULL,
     position_in_gos INT NOT NULL,
-    gos_id INT NOT NULL references goss(id),
-    asset_id INT NOT NULL references assets(id)
+    gos INT NOT NULL,
+    asset_id INT NOT NULL references assets(id),
+    capsule_id INT NOT NULL references capsules(id)
 );
