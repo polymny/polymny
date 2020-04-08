@@ -11,6 +11,7 @@ module Api exposing
     , capsulesFromProjectId
     , createProject
     , decodeCapsule
+    , decodeCapsuleDetails
     , decodeCapsules
     , decodeProject
     , decodeSession

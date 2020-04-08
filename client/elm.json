@@ -13,7 +13,9 @@
             "elm/http": "2.0.0",
             "elm/json": "1.1.3",
             "elm/time": "1.0.0",
+            "frandibar/elm-font-awesome-5": "1.0.0",
             "mdgriffith/elm-ui": "1.1.5",
+            "ohanhi/lorem": "1.0.2",
             "tesk9/palette": "2.0.0"
         },
         "indirect": {

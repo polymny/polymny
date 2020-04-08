@@ -9,6 +9,7 @@ module Ui exposing
     , successButton
     , successModal
     , textButton
+    , trashIcon
     )
 
 import Colors
@@ -17,6 +18,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import FontAwesome
+import Html
 import Html.Events
 import Json.Decode as Decode
 
@@ -154,3 +157,21 @@ successModal text =
             :: modalAttributes
         )
         [ Element.text text ]
+
+
+
+-- Icons
+
+
+trashIcon : Element msg
+trashIcon =
+    Element.html
+        (Html.div
+            []
+            [ FontAwesome.iconWithOptions
+                FontAwesome.trash
+                FontAwesome.Solid
+                [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                []
+            ]
+        )

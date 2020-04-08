@@ -52,6 +52,7 @@ impl Gos {
     }
 
     /// Retrieves a gos from its id.
+    /// TODO: rename get_by_id
     pub fn get(id: i32, db: &PgConnection) -> Result<Gos> {
         use crate::schema::goss::dsl;
 
@@ -69,7 +70,7 @@ impl Gos {
         Ok(goss?)
     }
 
-    /// Creates a new gos.
+    /// TODO: not correct update function Creates a new gos.
     pub fn update(&self, db: &PgConnection, position: i32, capsule_id: i32) -> Result<Gos> {
         use crate::schema::goss::dsl;
         Ok(diesel::update(goss::table)

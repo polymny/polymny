@@ -35,13 +35,14 @@ use std::{error, fmt, io, result};
 use bcrypt::BcryptError;
 
 use rocket::fairing::AdHoc;
-use rocket::http::{ContentType, Cookies, Status};
+use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 
 use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
 
+use crate::db::capsule::Capsule;
 use crate::db::user::User;
 use crate::mailer::Mailer;
 use crate::templates::{index_html, setup_html};
@@ -200,19 +201,13 @@ impl<'r> Responder<'r> for Error {
             .finalize())
     }
 }
-
 /// Our database type.
 #[database("database")]
 pub struct Database(rocket_diesel::PgConnection);
 
 /// The index page.
 #[get("/")]
-pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
-    let user = cookies
-        .get_private("EXAUTH")
-        .map(|x| User::from_session(x.value(), &db).ok())
-        .flatten();
-
+pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -221,8 +216,41 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
 
     let flags = user_and_projects.map(|(user, projects)| {
         json!({
+            "page": "index",
             "username": user.username,
             "projects": projects,
+        })
+    });
+
+    let response = Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags)))
+        .finalize();
+
+    Ok(response)
+}
+
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>")]
+pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let user_and_projects = if let Some(user) = user.as_ref() {
+        Some((user, user.projects(&db)?))
+    } else {
+        None
+    };
+
+    let capsule = Capsule::get_by_id(id, &db)?;
+    let slide_show = capsule.get_slide_show(&db)?;
+    let goss = capsule.get_goss(&db)?;
+
+    let flags = user_and_projects.map(|(user, projects)| {
+        json!({
+            "page": "capsule",
+            "username": user.username,
+            "projects": projects,
+            "capsule" : capsule,
+            "slide_show": slide_show,
+            "goss": goss,
         })
     });
 
@@ -251,7 +279,7 @@ pub fn main() {
             let mailer = Mailer::from_config(rocket.config());
             Ok(rocket.manage(mailer))
         }))
-        .mount("/", routes![index])
+        .mount("/", routes![index, capsule])
         .mount("/", StaticFiles::from("dist"))
         .mount(
             "/api/",
@@ -276,6 +304,11 @@ pub fn main() {
                 routes::asset::get_asset,
                 routes::asset::all_assets,
                 routes::asset::delete_asset,
+                routes::slide::get_slide,
+                routes::slide::move_slide,
+                routes::gos::get_gos,
+                routes::gos::update_gos,
+                routes::gos::delete_gos,
             ],
         )
         .launch()

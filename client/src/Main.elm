@@ -12,6 +12,7 @@ import File exposing (File)
 import File.Select as Select
 import Html
 import Json.Decode as Decode
+import Lorem
 import Status exposing (Status)
 import Task
 import Time
@@ -153,6 +154,32 @@ init flags =
 
         Ok s ->
             ( FullModel global (LoggedIn (LoggedInModel s LoggedInHome)), initialCommand )
+
+
+modelFromFlags : Decode.Value -> Model
+modelFromFlags flags =
+    case Decode.decodeValue (Decode.field "page" Decode.string) flags of
+        Ok "index" ->
+            case Decode.decodeValue Api.decodeSession flags of
+                Ok session ->
+                    LoggedIn { session = session, page = LoggedInHome }
+
+                Err _ ->
+                    Home
+
+        Ok "capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm))
+
+                ( _, _ ) ->
+                    Home
+
+        Ok _ ->
+            Home
+
+        Err _ ->
+            Home
 
 
 
@@ -852,7 +879,14 @@ loggedInNewCapsuleView _ { status, name, title, description } =
 
 loggedInUploadSlideShowView : Api.Session -> UploadForm -> Element Msg
 loggedInUploadSlideShowView session form =
-    Element.column [ Element.centerX, Element.spacing 20 ]
+    Element.column
+        [ Element.centerX
+        , Element.spacing 10
+        , Element.padding 10
+        , Border.rounded 5
+        , Border.width 1
+        , Border.color Colors.grey
+        ]
         [ Element.text "Choisir une présentation au format PDF"
         , uploadForm form
         ]
@@ -932,49 +966,115 @@ capsuleView capsule =
         ]
 
 
+designAttributes : List (Element.Attribute msg)
+designAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.grey
+    ]
+
+
+designGosAttributes : List (Element.Attribute msg)
+designGosAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Element.alignTop
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.grey
+    , Background.color Colors.grey
+    ]
+
+
+designSlideAttributes : List (Element.Attribute msg)
+designSlideAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.white
+    , Border.dashed
+    ]
+
+
 capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
 capsulePageView session capsuleDetails form =
-    Element.column [ Element.padding 10 ]
-        [ loggedInUploadSlideShowView session form
-        , Element.el [ Font.size 18 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
-        , Element.el [ Font.size 16 ] (Element.text ("title is  " ++ capsuleDetails.capsule.title))
-        , Element.el [ Font.size 14 ] (Element.text ("Desritpion is  " ++ capsuleDetails.capsule.description))
-        , Element.column [ Element.padding 10, Element.spacing 10 ]
-            (List.map capsuleGosView capsuleDetails.goss)
+    Element.row designAttributes
+        [ capsuleInfoView session capsuleDetails form
+        , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
+            [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
+            , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                (List.map capsuleGosView capsuleDetails.goss)
+            ]
         ]
 
 
 capsuleGosView : Api.Gos1 -> Element Msg
 capsuleGosView gos1 =
-    Element.row [ Element.spacing 10 ]
-        [ Element.text ("ID = " ++ String.fromInt gos1.gos.id)
-        , Element.text ("Position = " ++ String.fromInt gos1.gos.position)
-        , Element.column [ Element.padding 10, Element.spacing 10 ]
-            (List.map capsuleGosSlideView gos1.slide)
+    Element.column designGosAttributes
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.padding 10
+                , Border.color Colors.danger
+                , Border.rounded 5
+                , Border.width 1
+                , Element.centerX
+                , Font.size 20
+                ]
+                (Element.text (String.fromInt gos1.gos.position))
+            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+            ]
+        , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt gos1.gos.id))
+        , Element.column designAttributes
+            (List.map designSlideView gos1.slide)
         ]
 
 
-capsuleGosSlideView : Api.Slide -> Element Msg
-capsuleGosSlideView slide =
-    Element.column [ Element.spacing 10 ]
-        [ Element.text "Slide"
-        , Element.text ("ID = " ++ String.fromInt slide.id)
-        , Element.text ("Position in gos = " ++ String.fromInt slide.position_in_gos)
-        , capsuleGosAssetView slide.asset
+capsuleInfoView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
+capsuleInfoView session capsuleDetails form =
+    Element.column [ Element.centerX, Element.alignTop, Element.spacing 10, Element.padding 10 ]
+        [ Element.column []
+            [ Element.el [ Font.size 20 ] (Element.text "Infos sur la capsule")
+            , Element.el [ Font.size 14 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
+            , Element.el [ Font.size 14 ] (Element.text ("Title :   " ++ capsuleDetails.capsule.title))
+            , Element.el [ Font.size 14 ] (Element.text ("Desritpion:  " ++ capsuleDetails.capsule.description))
+            ]
+        , loggedInUploadSlideShowView session form
         ]
 
 
-capsuleGosAssetView : Api.Asset -> Element Msg
-capsuleGosAssetView asset =
-    Element.column [ Element.spacing 10 ]
-        [ Element.text "Asset: "
-        , Element.text ("ID = " ++ String.fromInt asset.id)
-        , Element.text asset.asset_path
-        , viewSlideImage asset.asset_path
-        , Element.text asset.asset_type
-        , Element.text asset.name
-        , Element.text ("upload date = " ++ String.fromInt asset.upload_date)
-        , Element.text asset.uuid
+designSlideView : Api.Slide -> Element Msg
+designSlideView slide =
+    Element.row designSlideAttributes
+        [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
+            [ viewSlideImage slide.asset.asset_path
+            , Element.paragraph [ Element.padding 10, Font.size 18 ]
+                [ Element.text "Additional Resources "
+                , Ui.linkButton
+                    (Just (LoggedInMsg NewProjectClicked))
+                    "Click here to Add aditional"
+                ]
+            , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
+            , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt slide.gos_id))
+            , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
+            , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
+            ]
+        , Element.textColumn
+            [ Background.color Colors.white
+            , Element.alignTop
+            , Element.width
+                (Element.fill
+                    |> Element.maximum 500
+                    |> Element.minimum 200
+                )
+            ]
+            [ Element.text "Prompteur:"
+            , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
+            , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
+            , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
+            ]
         ]
 
 
