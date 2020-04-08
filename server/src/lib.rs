@@ -35,7 +35,7 @@ use std::{error, fmt, io, result};
 use bcrypt::BcryptError;
 
 use rocket::fairing::AdHoc;
-use rocket::http::{ContentType, Cookies, Status};
+use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 
@@ -207,12 +207,7 @@ pub struct Database(rocket_diesel::PgConnection);
 
 /// The index page.
 #[get("/")]
-pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
-    let user = cookies
-        .get_private("EXAUTH")
-        .map(|x| User::from_session(x.value(), &db).ok())
-        .flatten();
-
+pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -237,12 +232,7 @@ pub fn index(db: Database, mut cookies: Cookies) -> Result<Response> {
 
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>")]
-pub fn capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<Response> {
-    let user = cookies
-        .get_private("EXAUTH")
-        .map(|x| User::from_session(x.value(), &db).ok())
-        .flatten();
-
+pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -263,6 +253,7 @@ pub fn capsule(db: Database, mut cookies: Cookies, id: i32) -> Result<Response> 
             "goss": goss,
         })
     });
+
     let response = Response::build()
         .header(ContentType::HTML)
         .sized_body(Cursor::new(index_html(flags)))

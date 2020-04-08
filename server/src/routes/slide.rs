@@ -3,7 +3,6 @@
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use rocket::http::Cookies;
 use rocket::request::Form;
 use rocket_contrib::json::JsonValue;
 
@@ -14,11 +13,9 @@ use crate::{Database, Result};
 
 /// The route to get a asset.
 #[get("/slide/<id>")]
-pub fn get_slide(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
+pub fn get_slide(db: Database, _user: User, id: i32) -> Result<JsonValue> {
     // let (asset, projects) = Asset::get(id, &db)?;
     // Ok(json!({ "asset": asset, "projects": projects } ))
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
     let slide = Slide::get(id, &db)?;
     Ok(json!(slide))
 }
@@ -41,15 +38,13 @@ pub struct MoveSlideForm {
 #[put("/slide/<slide_id>/move", data = "<move_slide>")]
 pub fn move_slide(
     db: Database,
-    mut cookies: Cookies,
+    _user: User,
     slide_id: i32,
     move_slide: Form<MoveSlideForm>,
 ) -> Result<JsonValue> {
     // let (asset, projects) = Asset::get(id, &db)?;
     // Ok(json!({ "asset": asset, "projects": projects } ))
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-    let slide = Slide::get(slide_id, &db)?;
+    let _slide = Slide::get(slide_id, &db)?;
     println!("Move slide : {:#?}", move_slide);
 
     use crate::schema::slides::dsl::id;

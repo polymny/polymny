@@ -3,7 +3,6 @@
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use rocket::http::Cookies;
 use rocket::request::Form;
 
 use rocket_contrib::json::JsonValue;
@@ -26,9 +25,7 @@ pub struct UpdateGosForm {
 
 /// The route to get a asset.
 #[get("/gos/<id>")]
-pub fn get_gos(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+pub fn get_gos(db: Database, _user: User, id: i32) -> Result<JsonValue> {
     let gos = Gos::get(id, &db)?;
     Ok(json!(gos))
 }
@@ -37,13 +34,10 @@ pub fn get_gos(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue>
 #[put("/gos/<gos_id>", data = "<gos_form>")]
 pub fn update_gos(
     db: Database,
-    mut cookies: Cookies,
+    _user: User,
     gos_id: i32,
     gos_form: Form<UpdateGosForm>,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
-
     use crate::schema::goss::dsl::id;
     diesel::update(goss::table)
         .filter(id.eq(gos_id))
@@ -55,10 +49,7 @@ pub fn update_gos(
 
 /// Delete a GOS
 #[delete("/gos/<id>")]
-pub fn delete_gos(db: Database, mut cookies: Cookies, id: i32) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
+pub fn delete_gos(db: Database, _user: User, id: i32) -> Result<JsonValue> {
     let gos = Gos::get(id, &db)?;
-    Ok(json!({ "nb GOS deleted":
-        gos.delete(&db)?}))
+    Ok(json!({ "nb GOS deleted": gos.delete(&db)?}))
 }
