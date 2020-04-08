@@ -1005,29 +1005,8 @@ capsulePageView session capsuleDetails form =
         , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.map capsuleGosView capsuleDetails.goss)
+                (List.map designSlideView capsuleDetails.slides)
             ]
-        ]
-
-
-capsuleGosView : Api.Gos1 -> Element Msg
-capsuleGosView gos1 =
-    Element.column designGosAttributes
-        [ Element.row [ Element.width Element.fill ]
-            [ Element.el
-                [ Element.padding 10
-                , Border.color Colors.danger
-                , Border.rounded 5
-                , Border.width 1
-                , Element.centerX
-                , Font.size 20
-                ]
-                (Element.text (String.fromInt gos1.gos.position))
-            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-            ]
-        , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt gos1.gos.id))
-        , Element.column designAttributes
-            (List.map designSlideView gos1.slide)
         ]
 
 
@@ -1056,8 +1035,9 @@ designSlideView slide =
                     "Click here to Add aditional"
                 ]
             , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-            , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt slide.gos_id))
+            , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
             , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
+            , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
             , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
             ]
         , Element.textColumn
