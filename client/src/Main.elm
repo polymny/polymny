@@ -1005,7 +1005,7 @@ capsulePageView session capsuleDetails form =
         , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.map designSlideView capsuleDetails.slides)
+                (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
             ]
         ]
 
@@ -1020,6 +1020,26 @@ capsuleInfoView session capsuleDetails form =
             , Element.el [ Font.size 14 ] (Element.text ("Desritpion:  " ++ capsuleDetails.capsule.description))
             ]
         , loggedInUploadSlideShowView session form
+        ]
+
+
+capsuleGosView : List Api.Slide -> Element Msg
+capsuleGosView gos =
+    Element.column designGosAttributes
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.padding 10
+                , Border.color Colors.danger
+                , Border.rounded 5
+                , Border.width 1
+                , Element.centerX
+                , Font.size 20
+                ]
+                (Element.text (String.fromInt 1))
+            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+            ]
+        , Element.column designAttributes
+            (List.map designSlideView gos)
         ]
 
 
