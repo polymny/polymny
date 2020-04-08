@@ -305,7 +305,7 @@ pub fn main() {
                 routes::asset::all_assets,
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
-                routes::slide::move_slide,
+                routes::slide::update_slide,
             ],
         )
         .launch()
