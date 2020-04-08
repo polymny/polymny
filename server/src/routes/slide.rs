@@ -43,12 +43,10 @@ pub fn get_slide(db: Database, _user: User, id: i32) -> Result<JsonValue> {
 #[put("/slide/<slide_id>", data = "<slide_form>")]
 pub fn update_slide(
     db: Database,
-    mut cookies: Cookies,
+    _user: User,
     slide_id: i32,
     slide_form: Form<UpdateSlideForm>,
 ) -> Result<JsonValue> {
-    let cookie = cookies.get_private("EXAUTH");
-    let _user = User::from_session(cookie.unwrap().value(), &db)?;
     println!("slide info to update : {:#?}", slide_form);
 
     use crate::schema::slides::dsl::id;
