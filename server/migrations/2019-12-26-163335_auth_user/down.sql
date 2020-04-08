@@ -1,7 +1,6 @@
 -- This file should undo anything in `up.sql`
 
 DROP TABLE IF EXISTS slides;
-DROP TABLE IF EXISTS goss;
 DROP TABLE IF EXISTS assets_objects;
 DROP TABLE IF EXISTS capsules_projects;
 DROP TABLE IF EXISTS capsules;

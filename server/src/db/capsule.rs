@@ -3,8 +3,6 @@
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
-use crate::db::gos::Gos;
-
 use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
@@ -151,42 +149,11 @@ impl Capsule {
     }
 
     /// get the slide show associated to capsule
-    pub fn get_goss(&self, db: &PgConnection) -> Result<Vec<(Gos, Vec<SlideWithAsset>)>> {
-        use crate::schema::goss::dsl as dsl_gos;
-        let goss = Gos::belonging_to(self)
-            .order(dsl_gos::position.asc())
-            .load::<Gos>(db)?;
-
-        use crate::schema::slides::dsl as dsl_slides;
-        let slides = Slide::belonging_to(&goss)
-            .order(dsl_slides::position_in_gos.asc())
-            .load::<Slide>(db)?;
-        let grouped_slides: Vec<Vec<Slide>> = slides.grouped_by(&goss);
-        let goss_and_slides: Vec<(Gos, Vec<Slide>)> =
-            goss.into_iter().zip(grouped_slides).collect::<Vec<_>>();
-
-        let mut goss_and_slides_with_asset: Vec<(Gos, Vec<SlideWithAsset>)> = Vec::new();
-        for (goss, slides) in goss_and_slides {
-            let slides_with_assets = slides
-                .into_iter()
-                .map(|x| SlideWithAsset::new(&x, db))
-                .collect::<Result<Vec<SlideWithAsset>>>()?;
-            goss_and_slides_with_asset.push((goss, slides_with_assets));
-        }
-
-        Ok(goss_and_slides_with_asset)
-    }
-
-    /// get the slide show associated to capsule
     pub fn get_slides(&self, db: &PgConnection) -> Result<Vec<SlideWithAsset>> {
-        use crate::schema::goss::dsl as dsl_gos;
-        let goss = Gos::belonging_to(self)
-            .order(dsl_gos::position.asc())
-            .load::<Gos>(db)?;
-
+        //TODO : Verify if gest slide is correct without GOS
         use crate::schema::slides::dsl as dsl_slides;
-        let slides = Slide::belonging_to(&goss)
-            .order(dsl_slides::position_in_gos.asc())
+        let slides = Slide::belonging_to(self)
+            .order(dsl_slides::position.asc())
             .load::<Slide>(db)?;
         Ok(slides
             .iter()

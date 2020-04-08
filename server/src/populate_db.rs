@@ -14,7 +14,6 @@ use uuid::Uuid;
 
 use server::db::asset::Asset;
 use server::db::capsule::{Capsule, CapsulesProject};
-use server::db::gos::Gos;
 use server::db::project::Project;
 use server::db::user::User;
 
@@ -46,7 +45,6 @@ struct SampleCapsule {
     title: String,
     description: String,
     slide_ref: Option<String>,
-    goss: Option<Vec<SampleGos>>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -132,7 +130,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
 
         println!("Capsule : {:#?}", &sample_capsule.name);
-        let capsule = Capsule::new(
+        Capsule::new(
             &db,
             &sample_capsule.name,
             &sample_capsule.title,
@@ -140,24 +138,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             &sample_capsule.description,
             None,
         )?;
-
-        if let Some(goss) = sample_capsule.goss {
-            println!(
-                "found GOS : {:#?} for capsule {}",
-                goss, sample_capsule.name
-            );
-
-            for sample_gos in goss {
-                let _gos = Gos::create(sample_gos.position, capsule.id)?.save(&db)?;
-                /*
-                if let Some(slides) = sample_gos.slides {
-                    for sample_slide in slides {
-                        Slide::create(sample_slide.position_in_gos, gos.id)?.save(&db)?;
-                    }
-                }
-                */
-            }
-        }
     }
 
     for sample_user in sample.users {
