@@ -241,16 +241,16 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
 
     let capsule = Capsule::get_by_id(id, &db)?;
     let slide_show = capsule.get_slide_show(&db)?;
-    let goss = capsule.get_goss(&db)?;
+    let slides = capsule.get_slides(&db)?;
 
     let flags = user_and_projects.map(|(user, projects)| {
         json!({
-            "page": "capsule",
-            "username": user.username,
-            "projects": projects,
-            "capsule" : capsule,
+            "page":       "capsule",
+            "username":   user.username,
+            "projects":   projects,
+            "capsule" :   capsule,
             "slide_show": slide_show,
-            "goss": goss,
+            "slides":     slides,
         })
     });
 
@@ -305,10 +305,7 @@ pub fn main() {
                 routes::asset::all_assets,
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
-                routes::slide::move_slide,
-                routes::gos::get_gos,
-                routes::gos::update_gos,
-                routes::gos::delete_gos,
+                routes::slide::update_slide,
             ],
         )
         .launch()

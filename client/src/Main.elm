@@ -144,16 +144,7 @@ init flags =
         initialCommand =
             Task.perform TimeZoneChange Time.here
     in
-    case Decode.decodeValue Api.decodeSession flags of
-        Err e ->
-            let
-                _ =
-                    debug "Error" e
-            in
-            ( FullModel global Home, initialCommand )
-
-        Ok s ->
-            ( FullModel global (LoggedIn (LoggedInModel s LoggedInHome)), initialCommand )
+    ( FullModel global (modelFromFlags flags), initialCommand )
 
 
 modelFromFlags : Decode.Value -> Model
@@ -175,10 +166,18 @@ modelFromFlags flags =
                 ( _, _ ) ->
                     Home
 
-        Ok _ ->
+        Ok ok ->
+            let
+                _ =
+                    debug "Unknown page" ok
+            in
             Home
 
-        Err _ ->
+        Err err ->
+            let
+                _ =
+                    debug "Error" err
+            in
             Home
 
 
@@ -1006,29 +1005,8 @@ capsulePageView session capsuleDetails form =
         , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.map capsuleGosView capsuleDetails.goss)
+                (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
             ]
-        ]
-
-
-capsuleGosView : Api.Gos1 -> Element Msg
-capsuleGosView gos1 =
-    Element.column designGosAttributes
-        [ Element.row [ Element.width Element.fill ]
-            [ Element.el
-                [ Element.padding 10
-                , Border.color Colors.danger
-                , Border.rounded 5
-                , Border.width 1
-                , Element.centerX
-                , Font.size 20
-                ]
-                (Element.text (String.fromInt gos1.gos.position))
-            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-            ]
-        , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt gos1.gos.id))
-        , Element.column designAttributes
-            (List.map designSlideView gos1.slide)
         ]
 
 
@@ -1045,6 +1023,26 @@ capsuleInfoView session capsuleDetails form =
         ]
 
 
+capsuleGosView : List Api.Slide -> Element Msg
+capsuleGosView gos =
+    Element.column designGosAttributes
+        [ Element.row [ Element.width Element.fill ]
+            [ Element.el
+                [ Element.padding 10
+                , Border.color Colors.danger
+                , Border.rounded 5
+                , Border.width 1
+                , Element.centerX
+                , Font.size 20
+                ]
+                (Element.text (String.fromInt 1))
+            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+            ]
+        , Element.column designAttributes
+            (List.map designSlideView gos)
+        ]
+
+
 designSlideView : Api.Slide -> Element Msg
 designSlideView slide =
     Element.row designSlideAttributes
@@ -1057,8 +1055,9 @@ designSlideView slide =
                     "Click here to Add aditional"
                 ]
             , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-            , Element.el [] (Element.text ("DEBUG: gos_id = " ++ String.fromInt slide.gos_id))
+            , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
             , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
+            , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
             , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
             ]
         , Element.textColumn

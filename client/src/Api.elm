@@ -2,7 +2,6 @@ module Api exposing
     ( Asset
     , Capsule
     , CapsuleDetails
-    , Gos1
     , Project
     , Session
     , Slide
@@ -21,10 +20,12 @@ module Api exposing
     , newProject
     , setupConfig
     , signUp
+    , sortSlides
     , testDatabase
     , testMailer
     )
 
+import Dict exposing (Dict)
 import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -270,58 +271,48 @@ decodeAsset =
 
 type alias Slide =
     { id : Int
+    , position : Int
     , position_in_gos : Int
-    , gos_id : Int
+    , gos : Int
     , asset : Asset
+    , caspule_id : Int
     }
 
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map4 Slide
-        (Decode.field "id" Decode.int)
-        (Decode.field "position_in_gos" Decode.int)
-        (Decode.field "gos_id" Decode.int)
-        (Decode.field "asset" decodeAsset)
-
-
-type alias Gos =
-    { id : Int
-    , position : Int
-    , capsule_id : Int
-    }
-
-
-decodeGos : Decoder Gos
-decodeGos =
-    Decode.map3 Gos
+    Decode.map6 Slide
         (Decode.field "id" Decode.int)
         (Decode.field "position" Decode.int)
+        (Decode.field "position_in_gos" Decode.int)
+        (Decode.field "gos" Decode.int)
+        (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
 
 
+sortSlidesAux : List Slide -> Dict Int (List Slide) -> Dict Int (List Slide)
+sortSlidesAux input current =
+    case input of
+        [] ->
+            current
 
--- Gos1 is a fake structure to simulate a list of 2 elements.
--- 1st elemnent is the desciption of the gos itself
--- 2nd element is array of slide. One or more per goss
+        h :: t ->
+            case Dict.get h.gos current of
+                Nothing ->
+                    sortSlidesAux t (Dict.insert h.gos [ h ] current)
+
+                Just _ ->
+                    sortSlidesAux t (Dict.update h.gos (Maybe.map (\x -> h :: x)) current)
 
 
-type alias Gos1 =
-    { gos : Gos
-    , slide : List Slide
-    }
-
-
-decodeGos1 : Decoder Gos1
-decodeGos1 =
-    Decode.map2 Gos1
-        (Decode.index 0 decodeGos)
-        (Decode.index 1 (Decode.list decodeSlide))
+sortSlides : List Slide -> List (List Slide)
+sortSlides input =
+    List.map Tuple.second (List.sortBy Tuple.first (Dict.toList (sortSlidesAux input Dict.empty)))
 
 
 type alias CapsuleDetails =
     { capsule : Capsule
-    , goss : List Gos1
+    , slides : List Slide
     , projects : List Project
     , slide_show : Asset
     }
@@ -331,7 +322,7 @@ decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
     Decode.map4 CapsuleDetails
         (Decode.field "capsule" decodeCapsule)
-        (Decode.field "goss" (Decode.list decodeGos1))
+        (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "slide_show" decodeAsset)
 

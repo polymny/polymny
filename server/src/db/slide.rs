@@ -5,63 +5,87 @@ use diesel::prelude::*;
 use diesel::RunQueryDsl;
 
 use crate::db::asset::Asset;
-use crate::db::gos::Gos;
+use crate::db::capsule::Capsule;
 use crate::schema::slides;
 use crate::Result;
 
 /// A slide of preparation
 #[derive(Identifiable, Queryable, PartialEq, Debug, Serialize, Associations)]
-#[belongs_to(Gos)]
+#[belongs_to(Capsule)]
 pub struct Slide {
     /// The id of the slide.
     pub id: i32,
+
+    /// The position of the slide in the slide show
+    pub position: i32,
 
     /// The position of the slide in the GOS.
     pub position_in_gos: i32,
 
     /// The GOS associated to slide.
-    pub gos_id: i32,
+    pub gos: i32,
 
     /// The asset associated to slide.
     pub asset_id: i32,
+
+    /// capsule id
+    pub capsule_id: i32,
 }
 
 /// A slide that isn't stored into the database yet.
 #[derive(Debug, Insertable)]
 #[table_name = "slides"]
 pub struct NewSlide {
+    /// The position of the slide in the slide show
+    pub position: i32,
+
     /// The position of the slide in the GOS.
     pub position_in_gos: i32,
 
     /// The GOS associated to slide.
-    pub gos_id: i32,
+    pub gos: i32,
 
     /// The asset associated to slide.
     pub asset_id: i32,
+
+    /// capsule id
+    pub capsule_id: i32,
 }
 
 impl Slide {
     /// Creates a new slide and store i tin database
     pub fn new(
         db: &PgConnection,
+        position: i32,
         position_in_gos: i32,
-        gos_id: i32,
+        gos: i32,
         asset_id: i32,
+        capsule_id: i32,
     ) -> Result<Slide> {
         Ok(NewSlide {
+            position,
             position_in_gos,
-            gos_id,
+            gos,
             asset_id,
+            capsule_id,
         }
         .save(&db)?)
     }
 
     /// Creates a new slide.
-    pub fn create(position_in_gos: i32, gos_id: i32, asset_id: i32) -> Result<NewSlide> {
+    pub fn create(
+        position: i32,
+        position_in_gos: i32,
+        gos: i32,
+        asset_id: i32,
+        capsule_id: i32,
+    ) -> Result<NewSlide> {
         Ok(NewSlide {
+            position,
             position_in_gos,
-            gos_id,
+            gos,
             asset_id,
+            capsule_id,
         })
     }
 
@@ -81,25 +105,6 @@ impl Slide {
         let slides = dsl::slides.load::<Slide>(db);
 
         Ok(slides?)
-    }
-
-    /// Creates a new slide.
-    pub fn update(
-        &self,
-        db: &PgConnection,
-        position_in_gos: i32,
-        gos_id: i32,
-        asset_id: i32,
-    ) -> Result<Slide> {
-        use crate::schema::slides::dsl;
-        Ok(diesel::update(slides::table)
-            .set((
-                dsl::position_in_gos.eq(position_in_gos),
-                dsl::gos_id.eq(gos_id),
-                dsl::asset_id.eq(asset_id),
-            ))
-            .filter(dsl::id.eq(self.id))
-            .get_result::<Slide>(db)?)
     }
 
     /// delete a slide.
@@ -127,14 +132,20 @@ pub struct SlideWithAsset {
     /// The id of the slide.
     pub id: i32,
 
+    /// The position of the slide in the slide show
+    pub position: i32,
+
     /// The position of the slide in the GOS.
     pub position_in_gos: i32,
 
     /// The GOS associated to slide.
-    pub gos_id: i32,
+    pub gos: i32,
 
     /// The asset associated to slide.
     pub asset: Asset,
+
+    /// capsule id
+    pub capsule_id: i32,
 }
 
 impl SlideWithAsset {
@@ -142,12 +153,15 @@ impl SlideWithAsset {
     pub fn new(slide: &Slide, db: &PgConnection) -> Result<SlideWithAsset> {
         Ok(SlideWithAsset {
             id: slide.id,
+            position: slide.position,
             position_in_gos: slide.position_in_gos,
-            gos_id: slide.gos_id,
+            gos: slide.gos,
             asset: Asset::get(slide.asset_id, &db)?,
+            capsule_id: slide.capsule_id,
         })
     }
     /// delete a slide.
+    /// TODO : Delete also linked asset ?
     pub fn delete(&self, db: &PgConnection) -> Result<usize> {
         let slide = Slide::get(self.id, &db)?;
         slide.delete(&db)
