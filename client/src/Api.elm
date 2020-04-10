@@ -20,10 +20,12 @@ module Api exposing
     , newProject
     , setupConfig
     , signUp
+    , sortSlides
     , testDatabase
     , testMailer
     )
 
+import Dict exposing (Dict)
 import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -286,6 +288,26 @@ decodeSlide =
         (Decode.field "gos" Decode.int)
         (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
+
+
+sortSlidesAux : List Slide -> Dict Int (List Slide) -> Dict Int (List Slide)
+sortSlidesAux input current =
+    case input of
+        [] ->
+            current
+
+        h :: t ->
+            case Dict.get h.gos current of
+                Nothing ->
+                    sortSlidesAux t (Dict.insert h.gos [ h ] current)
+
+                Just _ ->
+                    sortSlidesAux t (Dict.update h.gos (Maybe.map (\x -> h :: x)) current)
+
+
+sortSlides : List Slide -> List (List Slide)
+sortSlides input =
+    List.map Tuple.second (List.sortBy Tuple.first (Dict.toList (sortSlidesAux input Dict.empty)))
 
 
 type alias CapsuleDetails =

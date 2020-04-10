@@ -1,5 +1,5 @@
 //! This module contains all the routes related to capsules.
-use std::fs;
+use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -166,7 +166,8 @@ pub fn upload_slides(
 
                     let mut output_path = PathBuf::from("dist");
                     output_path.push(server_path);
-                    fs::rename(path, &output_path)?;
+                    create_dir(output_path.parent().unwrap()).ok();
+                    fs::copy(path, &output_path)?;
 
                     //update capsule with the ref to the uploaded pdf
                     use crate::schema::capsules::dsl;
@@ -230,7 +231,8 @@ pub fn upload_slides(
                         Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id)?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
-                        fs::rename(e, &output_path)?;
+                        create_dir(output_path.parent().unwrap()).ok();
+                        fs::copy(e, &output_path)?;
                         idx += 1;
                     }
                     dir.close()?;
