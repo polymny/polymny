@@ -84,12 +84,13 @@ emptyUploadForm =
 type alias ModalModel =
     { status : Status () ()
     , showDialog : Bool
+    , bodyText : String
     }
 
 
 emptyModalModel : ModalModel
 emptyModalModel =
-    ModalModel Status.NotSent False
+    ModalModel Status.NotSent False ""
 
 
 type alias NewCapsuleContent =
@@ -237,7 +238,7 @@ type LoggedInMsg
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
     | UploadSlideShowMsg UploadSlideShowMsg
-    | OpenDialog
+    | OpenDialog String
     | CloseDialog
 
 
@@ -409,8 +410,8 @@ updateLoggedIn msg { session, page } =
         ( CapsuleReceived capsule, _ ) ->
             ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyModalModel), Cmd.none )
 
-        ( OpenDialog, CapsulePage capsule form modalModel ) ->
-            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = True } }, Cmd.none )
+        ( OpenDialog newBodyText, CapsulePage capsule form modalModel ) ->
+            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = True, bodyText = newBodyText } }, Cmd.none )
 
         ( CloseDialog, CapsulePage capsule form modalModel ) ->
             ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = False } }, Cmd.none )
@@ -1032,7 +1033,7 @@ capsulePageView session capsuleDetails form modal =
     let
         dialogConfig =
             if modal.showDialog then
-                Just config
+                Just (config modal.bodyText)
 
             else
                 Nothing
@@ -1100,34 +1101,23 @@ designSlideView slide =
             , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
             , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
             ]
-        , Element.textColumn
-            [ Background.color Colors.white
-            , Element.alignTop
-            , Element.width
-                (Element.fill
-                    |> Element.maximum 500
-                    |> Element.minimum 200
-                )
-            ]
-            [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
-            , Element.paragraph [ Font.size 12 ]
-                [ Element.text slide.prompt
-                , Ui.editIcon
-                , Ui.successModal "An email has been sent to your address!"
-                , viewEditModal
+        , Element.map LoggedInMsg <|
+            Element.textColumn
+                [ Background.color Colors.white
+                , Element.alignTop
+                , Element.width
+                    (Element.fill
+                        |> Element.maximum 500
+                        |> Element.minimum 200
+                    )
                 ]
-            ]
-        ]
-
-
-viewEditModal : Element Msg
-viewEditModal =
-    Element.map LoggedInMsg <|
-        Element.el
-            []
-        <|
-            Element.column []
-                [ Input.button
+                [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
+                , Element.paragraph [ Font.size 12 ]
+                    [ Element.text slide.prompt
+                    , Ui.editIcon
+                    , Ui.successModal "An email has been sent to your address!"
+                    ]
+                , Input.button
                     [ Background.color white
                     , Font.color black
                     , Border.rounded 2
@@ -1138,10 +1128,11 @@ viewEditModal =
                         , Font.color white
                         ]
                     ]
-                    { onPress = Just OpenDialog
-                    , label = Element.text "Open Dialog"
+                    { onPress = Just (OpenDialog slide.prompt)
+                    , label = Element.text "Editer le message du prompteur"
                     }
                 ]
+        ]
 
 
 viewSlideImage : String -> Element Msg
@@ -1235,8 +1226,8 @@ red =
     Element.rgb 1 0 0
 
 
-config : Dialog.Config LoggedInMsg
-config =
+config : String -> Dialog.Config LoggedInMsg
+config msg =
     { closeMessage = Just CloseDialog
     , maskAttributes = []
     , containerAttributes =
@@ -1251,15 +1242,16 @@ config =
     , headerAttributes = [ Font.size 24, Font.color red, Element.padding 5 ]
     , bodyAttributes = [ Background.color gray, Element.padding 20 ]
     , footerAttributes = []
-    , header = Just (Element.text "Advanced Dialog")
-    , body = Just body
+    , header = Just (Element.text "PROMPTER")
+    , body = Just (body msg)
     , footer = Just footerButtons
     }
 
 
-body : Element LoggedInMsg
-body =
-    Element.column [ Element.width Element.fill ] [ Element.el [ Element.centerX ] (Element.text "Advanced Dialog body") ]
+body : String -> Element LoggedInMsg
+body msg =
+    Element.column [ Element.width Element.fill ]
+        [ Element.el [ Element.centerX ] (Element.text ("Advanced Dialog body ::::: " ++ msg)) ]
 
 
 footerButtons : Element LoggedInMsg
