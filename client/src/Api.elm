@@ -307,7 +307,15 @@ sortSlidesAux input current =
 
 sortSlides : List Slide -> List (List Slide)
 sortSlides input =
-    List.map Tuple.second (List.sortBy Tuple.first (Dict.toList (sortSlidesAux input Dict.empty)))
+    List.map Tuple.second
+        (List.sortBy Tuple.first
+            (List.map
+                (Tuple.mapSecond
+                    (List.sortBy (\x -> x.position_in_gos))
+                )
+                (Dict.toList (sortSlidesAux input Dict.empty))
+            )
+        )
 
 
 type alias CapsuleDetails =
