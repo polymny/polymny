@@ -3,6 +3,8 @@ module Main exposing (main)
 import Api
 import Browser
 import Colors
+import DnDList
+import DnDList.Groups
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -26,7 +28,7 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -122,7 +124,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails UploadForm
+    | CapsulePage Api.CapsuleDetails UploadForm DnDList.Groups.Model DnDList.Model
 
 
 isLoggedIn : Model -> Bool
@@ -161,7 +163,7 @@ modelFromFlags flags =
         Ok "capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm))
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm slideSystem.model gosSystem.model))
 
                 ( _, _ ) ->
                     Home
@@ -179,6 +181,53 @@ modelFromFlags flags =
                     debug "Error" err
             in
             Home
+
+
+
+-- Drag n drop
+
+
+slideConfig : DnDList.Groups.Config Api.Slide
+slideConfig =
+    { beforeUpdate = \_ _ list -> list
+    , listen = DnDList.Groups.OnDrag
+    , operation = DnDList.Groups.Rotate
+    , groups =
+        { listen = DnDList.Groups.OnDrag
+        , operation = DnDList.Groups.InsertBefore
+        , comparator = slideComparator
+        , setter = slideSetter
+        }
+    }
+
+
+slideComparator : Api.Slide -> Api.Slide -> Bool
+slideComparator s1 s2 =
+    s1.gos == s1.gos && s1.position_in_gos == s2.position_in_gos
+
+
+slideSetter : Api.Slide -> Api.Slide -> Api.Slide
+slideSetter s1 s2 =
+    { s2 | gos = s1.gos, position_in_gos = s1.position_in_gos }
+
+
+slideSystem : DnDList.Groups.System Api.Slide SlideDnDMsg
+slideSystem =
+    DnDList.Groups.create slideConfig SlideMoved
+
+
+gosConfig : DnDList.Config (List Api.Slide)
+gosConfig =
+    { beforeUpdate = \_ _ list -> list
+    , movement = DnDList.Free
+    , listen = DnDList.OnDrag
+    , operation = DnDList.Rotate
+    }
+
+
+gosSystem : DnDList.System (List Api.Slide) SlideDnDMsg
+gosSystem =
+    DnDList.create gosConfig GosMoved
 
 
 
@@ -223,6 +272,7 @@ type LoggedInMsg
     | CapsulesReceived Api.Project (List Api.Capsule)
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
+    | SlideDnD SlideDnDMsg
     | UploadSlideShowMsg UploadSlideShowMsg
 
 
@@ -240,10 +290,39 @@ type NewCapsuleMsg
     | NewCapsuleSuccess Api.Capsule
 
 
+type SlideDnDMsg
+    = SlideMoved DnDList.Groups.Msg
+    | GosMoved DnDList.Msg
+
+
 type UploadSlideShowMsg
     = UploadSlideShowSelectFileRequested
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : FullModel -> Sub Msg
+subscriptions { model } =
+    case model of
+        LoggedIn { page } ->
+            case page of
+                CapsulePage _ _ slideModel gosModel ->
+                    Sub.map (\x -> LoggedInMsg (SlideDnD x))
+                        (Sub.batch
+                            [ slideSystem.subscriptions slideModel
+                            , gosSystem.subscriptions gosModel
+                            ]
+                        )
+
+                _ ->
+                    Sub.none
+
+        _ ->
+            Sub.none
 
 
 
@@ -375,12 +454,22 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
-        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form ) ->
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form _ _ ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateUploadSlideShow newUploadSlideShowMsg session form capsule.capsule.id
             in
-            ( { session = newSession, page = CapsulePage capsule newModel }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule newModel slideSystem.model gosSystem.model }, newCmd )
+
+        ( SlideDnD slideMsg, CapsulePage capsule form slideModel gosModel ) ->
+            let
+                ( data, cmd ) =
+                    updateSlideDnD slideMsg { capsule = capsule, slideModel = slideModel, gosModel = gosModel }
+
+                newPage =
+                    CapsulePage data.capsule form data.slideModel data.gosModel
+            in
+            ( { session = session, page = newPage }, Cmd.map (\x -> LoggedInMsg (SlideDnD x)) cmd )
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
@@ -392,7 +481,7 @@ updateLoggedIn msg { session, page } =
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule emptyUploadForm), Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule emptyUploadForm slideSystem.model gosSystem.model), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -466,6 +555,44 @@ updateUploadSlideShow msg session model capsuleId =
 
                 Just file ->
                     ( session, form, Api.capsuleUploadSlideShow resultToMsg5 capsuleId file )
+
+
+type alias CapsulePageData a =
+    { a
+        | capsule : Api.CapsuleDetails
+        , slideModel : DnDList.Groups.Model
+        , gosModel : DnDList.Model
+    }
+
+
+updateSlideDnD : SlideDnDMsg -> CapsulePageData a -> ( CapsulePageData a, Cmd SlideDnDMsg )
+updateSlideDnD slideMsg data =
+    case slideMsg of
+        SlideMoved msg ->
+            let
+                ( slideModel, slides ) =
+                    slideSystem.update msg data.slideModel data.capsule.slides
+
+                capsule =
+                    data.capsule
+
+                newCapsule =
+                    { capsule | slides = slides }
+            in
+            ( { data | capsule = newCapsule, slideModel = slideModel }, slideSystem.commands slideModel )
+
+        GosMoved msg ->
+            let
+                ( gosModel, goss ) =
+                    gosSystem.update msg data.gosModel (Api.sortSlides data.capsule.slides)
+
+                capsule =
+                    data.capsule
+
+                newCapsule =
+                    { capsule | slides = List.concat goss }
+            in
+            ( { data | capsule = newCapsule, gosModel = gosModel }, gosSystem.commands gosModel )
 
 
 
@@ -706,7 +833,7 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails form ->
+                CapsulePage capsuleDetails form _ _ ->
                     capsulePageView session capsuleDetails form
 
         element =
