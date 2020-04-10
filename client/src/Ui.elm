@@ -1,5 +1,6 @@
 module Ui exposing
-    ( errorModal
+    ( editIcon
+    , errorModal
     , linkButton
     , onEnter
     , primaryButton
@@ -170,6 +171,20 @@ trashIcon =
             []
             [ FontAwesome.iconWithOptions
                 FontAwesome.trash
+                FontAwesome.Solid
+                [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                []
+            ]
+        )
+
+
+editIcon : Element msg
+editIcon =
+    Element.html
+        (Html.div
+            []
+            [ FontAwesome.iconWithOptions
+                FontAwesome.edit
                 FontAwesome.Solid
                 [ FontAwesome.Size (FontAwesome.Mult 2) ]
                 []

@@ -276,18 +276,20 @@ type alias Slide =
     , gos : Int
     , asset : Asset
     , caspule_id : Int
+    , prompt : String
     }
 
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map6 Slide
+    Decode.map7 Slide
         (Decode.field "id" Decode.int)
         (Decode.field "position" Decode.int)
         (Decode.field "position_in_gos" Decode.int)
         (Decode.field "gos" Decode.int)
         (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
+        (Decode.field "prompt" Decode.string)
 
 
 sortSlidesAux : List Slide -> Dict Int (List Slide) -> Dict Int (List Slide)

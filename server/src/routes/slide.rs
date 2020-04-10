@@ -29,6 +29,9 @@ pub struct UpdateSlideForm {
 
     /// capsule id
     pub capsule_id: Option<i32>,
+
+    /// The prompt text.
+    pub prompt: Option<String>,
 }
 
 /// The route to get a asset.

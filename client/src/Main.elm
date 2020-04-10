@@ -3,6 +3,7 @@ module Main exposing (main)
 import Api
 import Browser
 import Colors
+import Dialog
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -12,7 +13,6 @@ import File exposing (File)
 import File.Select as Select
 import Html
 import Json.Decode as Decode
-import Lorem
 import Status exposing (Status)
 import Task
 import Time
@@ -71,13 +71,25 @@ emptyNewProjectContent =
 
 
 type alias UploadForm =
-    { file : Maybe File
+    { status : Status () ()
+    , file : Maybe File
     }
 
 
 emptyUploadForm : UploadForm
 emptyUploadForm =
-    UploadForm Nothing
+    UploadForm Status.NotSent Nothing
+
+
+type alias ModalModel =
+    { status : Status () ()
+    , showDialog : Bool
+    }
+
+
+emptyModalModel : ModalModel
+emptyModalModel =
+    ModalModel Status.NotSent False
 
 
 type alias NewCapsuleContent =
@@ -95,6 +107,7 @@ emptyNewCapsuleContent =
 
 type alias Global =
     { zone : Time.Zone
+    , dummy : String
     }
 
 
@@ -122,7 +135,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails UploadForm
+    | CapsulePage Api.CapsuleDetails UploadForm ModalModel
 
 
 isLoggedIn : Model -> Bool
@@ -139,7 +152,7 @@ init : Decode.Value -> ( FullModel, Cmd Msg )
 init flags =
     let
         global =
-            { zone = Time.utc }
+            { zone = Time.utc, dummy = "dummy" }
 
         initialCommand =
             Task.perform TimeZoneChange Time.here
@@ -161,7 +174,7 @@ modelFromFlags flags =
         Ok "capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm))
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm emptyModalModel))
 
                 ( _, _ ) ->
                     Home
@@ -224,6 +237,8 @@ type LoggedInMsg
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
     | UploadSlideShowMsg UploadSlideShowMsg
+    | OpenDialog
+    | CloseDialog
 
 
 type NewProjectMsg
@@ -375,12 +390,12 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
-        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form ) ->
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form modalModel ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateUploadSlideShow newUploadSlideShowMsg session form capsule.capsule.id
             in
-            ( { session = newSession, page = CapsulePage capsule newModel }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule newModel modalModel }, newCmd )
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
@@ -392,7 +407,13 @@ updateLoggedIn msg { session, page } =
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule emptyUploadForm), Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyModalModel), Cmd.none )
+
+        ( OpenDialog, CapsulePage capsule form modalModel ) ->
+            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = True } }, Cmd.none )
+
+        ( CloseDialog, CapsulePage capsule form modalModel ) ->
+            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = False } }, Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -445,7 +466,7 @@ updateNewCapsuleMsg msg session projectId content =
 updateUploadSlideShow : UploadSlideShowMsg -> Api.Session -> UploadForm -> Int -> ( Api.Session, UploadForm, Cmd Msg )
 updateUploadSlideShow msg session model capsuleId =
     case ( msg, model ) of
-        ( UploadSlideShowSelectFileRequested, form ) ->
+        ( UploadSlideShowSelectFileRequested, _ ) ->
             ( session
             , model
             , Select.file
@@ -469,6 +490,14 @@ updateUploadSlideShow msg session model capsuleId =
 
 
 
+-- updateModal : ModalMsg -> ModalModel -> ( ModalModel, Cmd Msg )
+-- updateModal msg model =
+--    case msg of
+--        OpenDialog ->
+--            ( { model | showDialog = True }, Cmd.none )
+--
+--        CloseDialog ->
+--            ( { model | showDialog = False }, Cmd.none )
 -- COMMANDS
 
 
@@ -706,8 +735,8 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails form ->
-                    capsulePageView session capsuleDetails form
+                CapsulePage capsuleDetails form modal ->
+                    capsulePageView session capsuleDetails form modal
 
         element =
             Element.column
@@ -877,7 +906,7 @@ loggedInNewCapsuleView _ { status, name, title, description } =
 
 
 loggedInUploadSlideShowView : Api.Session -> UploadForm -> Element Msg
-loggedInUploadSlideShowView session form =
+loggedInUploadSlideShowView _ form =
     Element.column
         [ Element.centerX
         , Element.spacing 10
@@ -998,16 +1027,27 @@ designSlideAttributes =
     ]
 
 
-capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
-capsulePageView session capsuleDetails form =
-    Element.row designAttributes
-        [ capsuleInfoView session capsuleDetails form
-        , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
-            [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-            , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
+capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> ModalModel -> Element Msg
+capsulePageView session capsuleDetails form modal =
+    let
+        dialogConfig =
+            if modal.showDialog then
+                Just config
+
+            else
+                Nothing
+    in
+    Element.el [ Element.padding 10, Element.mapAttribute LoggedInMsg (Element.inFront (Dialog.view dialogConfig)) ]
+        (Element.row
+            designAttributes
+            [ capsuleInfoView session capsuleDetails form
+            , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
+                [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
+                , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                    (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
+                ]
             ]
-        ]
+        )
 
 
 capsuleInfoView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
@@ -1045,7 +1085,7 @@ capsuleGosView gos =
 
 designSlideView : Api.Slide -> Element Msg
 designSlideView slide =
-    Element.row designSlideAttributes
+    Element.row (Element.padding 10 :: designSlideAttributes)
         [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
             [ viewSlideImage slide.asset.asset_path
             , Element.paragraph [ Element.padding 10, Font.size 18 ]
@@ -1069,12 +1109,39 @@ designSlideView slide =
                     |> Element.minimum 200
                 )
             ]
-            [ Element.text "Prompteur:"
-            , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-            , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-            , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
+            [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
+            , Element.paragraph [ Font.size 12 ]
+                [ Element.text slide.prompt
+                , Ui.editIcon
+                , Ui.successModal "An email has been sent to your address!"
+                , viewEditModal
+                ]
             ]
         ]
+
+
+viewEditModal : Element Msg
+viewEditModal =
+    Element.map LoggedInMsg <|
+        Element.el
+            []
+        <|
+            Element.column []
+                [ Input.button
+                    [ Background.color white
+                    , Font.color black
+                    , Border.rounded 2
+                    , Border.width 1
+                    , Element.padding 2
+                    , Element.mouseOver
+                        [ Background.color black
+                        , Font.color white
+                        ]
+                    ]
+                    { onPress = Just OpenDialog
+                    , label = Element.text "Open Dialog"
+                    }
+                ]
 
 
 viewSlideImage : String -> Element Msg
@@ -1145,6 +1212,75 @@ nonFull model =
              else
                 [ loginButton, signUpButton ]
             )
+        ]
+
+
+white : Element.Color
+white =
+    Element.rgb 1 1 1
+
+
+black : Element.Color
+black =
+    Element.rgb 0 0 0
+
+
+gray : Element.Color
+gray =
+    Element.rgb 0.5 0.5 0.5
+
+
+red : Element.Color
+red =
+    Element.rgb 1 0 0
+
+
+config : Dialog.Config LoggedInMsg
+config =
+    { closeMessage = Just CloseDialog
+    , maskAttributes = []
+    , containerAttributes =
+        [ Background.color white
+        , Border.rounded 5
+        , Element.centerX
+        , Element.centerY
+        , Element.padding 10
+        , Element.spacing 20
+        , Element.width (Element.px 400)
+        ]
+    , headerAttributes = [ Font.size 24, Font.color red, Element.padding 5 ]
+    , bodyAttributes = [ Background.color gray, Element.padding 20 ]
+    , footerAttributes = []
+    , header = Just (Element.text "Advanced Dialog")
+    , body = Just body
+    , footer = Just footerButtons
+    }
+
+
+body : Element LoggedInMsg
+body =
+    Element.column [ Element.width Element.fill ] [ Element.el [ Element.centerX ] (Element.text "Advanced Dialog body") ]
+
+
+footerButtons : Element LoggedInMsg
+footerButtons =
+    Element.row [ Element.width Element.fill, Element.padding 2, Element.spacing 5 ]
+        [ Input.button
+            [ Background.color white
+            , Font.color black
+            , Font.bold
+            , Border.rounded 2
+            , Border.width 1
+            , Element.padding 5
+            , Element.alignRight
+            , Element.mouseOver
+                [ Background.color black
+                , Font.color white
+                ]
+            ]
+            { onPress = Just CloseDialog
+            , label = Element.text "Ok"
+            }
         ]
 
 

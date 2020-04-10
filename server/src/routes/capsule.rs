@@ -228,7 +228,7 @@ pub fn upload_slides(
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
                         // GOS also taje (idx*100)
-                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id)?;
+                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id, "Dummy prompt")?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
