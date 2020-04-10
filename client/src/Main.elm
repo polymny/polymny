@@ -714,6 +714,7 @@ loggedInView global { session, page } =
                 [ Element.alignTop
                 , Element.padding 10
                 , Element.width Element.fill
+                , Element.scrollbarX
                 ]
                 [ mainPage ]
     in
@@ -721,6 +722,7 @@ loggedInView global { session, page } =
         [ Element.height Element.fill
         , Element.width Element.fill
         , Element.spacing 20
+        , Element.scrollbarX
         ]
         [ element ]
 
@@ -1000,11 +1002,11 @@ designSlideAttributes =
 
 capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
 capsulePageView session capsuleDetails form =
-    Element.row designAttributes
+    Element.row (Element.scrollbarX :: designAttributes)
         [ capsuleInfoView session capsuleDetails form
-        , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
+        , Element.column (Element.scrollbarX :: Element.width Element.fill :: Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-            , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+            , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
                 (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
             ]
         ]
