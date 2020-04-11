@@ -13,6 +13,7 @@ import Element.Input as Input
 import File exposing (File)
 import File.Select as Select
 import Html
+import Html.Attributes
 import Json.Decode as Decode
 import Lorem
 import Status exposing (Status)
@@ -586,11 +587,14 @@ updateSlideDnD slideMsg data =
                 ( gosModel, goss ) =
                     gosSystem.update msg data.gosModel (Api.sortSlides data.capsule.slides)
 
+                updatedGoss =
+                    List.indexedMap (\i gos -> List.map (\slide -> { slide | gos = i }) gos) goss
+
                 capsule =
                     data.capsule
 
                 newCapsule =
-                    { capsule | slides = List.concat goss }
+                    { capsule | slides = List.concat updatedGoss }
             in
             ( { data | capsule = newCapsule, gosModel = gosModel }, gosSystem.commands gosModel )
 
@@ -833,8 +837,8 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails form _ _ ->
-                    capsulePageView session capsuleDetails form
+                CapsulePage capsuleDetails form slidesModel gosModel ->
+                    capsulePageView session capsuleDetails form slidesModel gosModel
 
         element =
             Element.column
@@ -849,7 +853,6 @@ loggedInView global { session, page } =
         [ Element.height Element.fill
         , Element.width Element.fill
         , Element.spacing 20
-        , Element.scrollbarX
         ]
         [ element ]
 
@@ -1127,14 +1130,15 @@ designSlideAttributes =
     ]
 
 
-capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
-capsulePageView session capsuleDetails form =
+capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> DnDList.Groups.Model -> DnDList.Model -> Element Msg
+capsulePageView session capsuleDetails form slidesModel gosModel =
     Element.row (Element.scrollbarX :: designAttributes)
         [ capsuleInfoView session capsuleDetails form
         , Element.column (Element.scrollbarX :: Element.width Element.fill :: Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
+                (List.indexedMap (capsuleGosView gosModel) (Api.sortSlides capsuleDetails.slides))
+            , gosGhostView gosModel capsuleDetails.slides
             ]
         ]
 
@@ -1152,24 +1156,132 @@ capsuleInfoView session capsuleDetails form =
         ]
 
 
-capsuleGosView : List Api.Slide -> Element Msg
-capsuleGosView gos =
-    Element.column designGosAttributes
-        [ Element.row [ Element.width Element.fill ]
-            [ Element.el
-                [ Element.padding 10
-                , Border.color Colors.danger
-                , Border.rounded 5
-                , Border.width 1
-                , Element.centerX
-                , Font.size 20
+capsuleGosView : DnDList.Model -> Int -> List Api.Slide -> Element Msg
+capsuleGosView gosModel gosIndex gos =
+    let
+        id =
+            "gos-" ++ String.fromInt gosIndex
+
+        dragAttributes : List (Element.Attribute Msg)
+        dragAttributes =
+            List.map
+                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                (List.map Element.htmlAttribute (gosSystem.dragEvents gosIndex id))
+
+        dropAttributes : List (Element.Attribute Msg)
+        dropAttributes =
+            List.map
+                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                (List.map Element.htmlAttribute (gosSystem.dropEvents gosIndex id))
+    in
+    case gosSystem.info gosModel of
+        Just { dragIndex, dragElement } ->
+            if dragIndex /= gosIndex then
+                Element.column
+                    (Element.htmlAttribute (Html.Attributes.id id)
+                        :: dropAttributes
+                        ++ designGosAttributes
+                    )
+                    [ Element.row [ Element.width Element.fill ]
+                        [ Element.el
+                            [ Element.padding 10
+                            , Border.color Colors.danger
+                            , Border.rounded 5
+                            , Border.width 1
+                            , Element.centerX
+                            , Font.size 20
+                            ]
+                            (Element.text (String.fromInt gosIndex))
+                        , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+                        ]
+                    , Element.column designAttributes
+                        (List.map designSlideView gos)
+                    ]
+
+            else
+                Element.column
+                    (Element.htmlAttribute (Html.Attributes.id id)
+                        :: designGosAttributes
+                    )
+                    [ Element.row [ Element.width Element.fill ]
+                        [ Element.el
+                            [ Element.padding 10
+                            , Border.color Colors.dangerLight
+                            , Border.rounded 5
+                            , Border.width 1
+                            , Element.centerX
+                            , Font.size 20
+                            ]
+                            (Element.text (String.fromInt gosIndex))
+                        , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+                        ]
+                    , Element.column designAttributes
+                        (List.map designSlideView gos)
+                    ]
+
+        _ ->
+            Element.column
+                (Element.htmlAttribute (Html.Attributes.id id)
+                    :: dragAttributes
+                    ++ designGosAttributes
+                )
+                [ Element.row [ Element.width Element.fill ]
+                    [ Element.el
+                        [ Element.padding 10
+                        , Border.color Colors.dangerDark
+                        , Border.rounded 5
+                        , Border.width 1
+                        , Element.centerX
+                        , Font.size 20
+                        ]
+                        (Element.text (String.fromInt gosIndex))
+                    , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+                    ]
+                , Element.column designAttributes
+                    (List.map designSlideView gos)
                 ]
-                (Element.text (String.fromInt 1))
-            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-            ]
-        , Element.column designAttributes
-            (List.map designSlideView gos)
-        ]
+
+
+gosGhostView : DnDList.Model -> List Api.Slide -> Element Msg
+gosGhostView gosModel slides =
+    case maybeDragGos gosModel slides of
+        Just s ->
+            let
+                gosIndex =
+                    Maybe.withDefault 0 (Maybe.map (\x -> x.gos) (List.head s))
+
+                ghostAttributes : List (Element.Attribute Msg)
+                ghostAttributes =
+                    List.map
+                        (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                        (List.map Element.htmlAttribute (gosSystem.ghostStyles gosModel))
+            in
+            Element.column
+                (designGosAttributes ++ ghostAttributes)
+                [ Element.row [ Element.width Element.fill ]
+                    [ Element.el
+                        [ Element.padding 10
+                        , Border.color Colors.dangerDark
+                        , Border.rounded 5
+                        , Border.width 1
+                        , Element.centerX
+                        , Font.size 20
+                        ]
+                        (Element.text (String.fromInt gosIndex))
+                    , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+                    ]
+                , Element.column designAttributes
+                    (List.map designSlideView s)
+                ]
+
+        _ ->
+            Element.none
+
+
+maybeDragGos : DnDList.Model -> List Api.Slide -> Maybe (List Api.Slide)
+maybeDragGos gosModel slides =
+    gosSystem.info gosModel
+        |> Maybe.andThen (\{ dragIndex } -> Api.sortSlides slides |> List.drop dragIndex |> List.head)
 
 
 designSlideView : Api.Slide -> Element Msg
