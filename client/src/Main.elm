@@ -81,16 +81,17 @@ emptyUploadForm =
     UploadForm Status.NotSent Nothing
 
 
-type alias ModalModel =
+type alias EditPromptContent =
     { status : Status () ()
     , showDialog : Bool
-    , bodyText : String
+    , prompt : String
+    , slideId : Int
     }
 
 
-emptyModalModel : ModalModel
-emptyModalModel =
-    ModalModel Status.NotSent False ""
+emptyEditPromptContent : EditPromptContent
+emptyEditPromptContent =
+    EditPromptContent Status.NotSent False "" 0
 
 
 type alias NewCapsuleContent =
@@ -136,7 +137,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails UploadForm ModalModel
+    | CapsulePage Api.CapsuleDetails UploadForm EditPromptContent
 
 
 isLoggedIn : Model -> Bool
@@ -175,7 +176,7 @@ modelFromFlags flags =
         Ok "capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm emptyModalModel))
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent))
 
                 ( _, _ ) ->
                     Home
@@ -238,8 +239,7 @@ type LoggedInMsg
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
     | UploadSlideShowMsg UploadSlideShowMsg
-    | OpenDialog String
-    | CloseDialog
+    | EditPromptMsg EditPromptMsg
 
 
 type NewProjectMsg
@@ -260,6 +260,14 @@ type UploadSlideShowMsg
     = UploadSlideShowSelectFileRequested
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
+
+
+type EditPromptMsg
+    = EditPromptOpenDialog Int String
+    | EditPromptCloseDialog
+    | EditPromptTextChanged String
+    | EditPromptSubmitted
+    | EditPromptSuccess Api.Slide
 
 
 
@@ -391,12 +399,19 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
-        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form modalModel ) ->
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule uploadSlideShowContent editPromptContent ) ->
             let
                 ( newSession, newModel, newCmd ) =
-                    updateUploadSlideShow newUploadSlideShowMsg session form capsule.capsule.id
+                    updateUploadSlideShow newUploadSlideShowMsg session uploadSlideShowContent capsule.capsule.id
             in
-            ( { session = newSession, page = CapsulePage capsule newModel modalModel }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule newModel editPromptContent }, newCmd )
+
+        ( EditPromptMsg editPromptMsg, CapsulePage capsule uploadSlideShowContent editPromptContent ) ->
+            let
+                ( newSession, newModel, newCmd ) =
+                    updateEditPromptMsg editPromptMsg session editPromptContent
+            in
+            ( { session = newSession, page = CapsulePage capsule uploadSlideShowContent newModel }, newCmd )
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
@@ -408,13 +423,7 @@ updateLoggedIn msg { session, page } =
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyModalModel), Cmd.none )
-
-        ( OpenDialog newBodyText, CapsulePage capsule form modalModel ) ->
-            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = True, bodyText = newBodyText } }, Cmd.none )
-
-        ( CloseDialog, CapsulePage capsule form modalModel ) ->
-            ( { session = session, page = CapsulePage capsule form { modalModel | showDialog = False } }, Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -464,6 +473,31 @@ updateNewCapsuleMsg msg session projectId content =
             )
 
 
+updateEditPromptMsg : EditPromptMsg -> Api.Session -> EditPromptContent -> ( Api.Session, EditPromptContent, Cmd Msg )
+updateEditPromptMsg msg session content =
+    case msg of
+        EditPromptOpenDialog id text ->
+            ( session, { content | showDialog = True, prompt = text, slideId = id }, Cmd.none )
+
+        EditPromptCloseDialog ->
+            ( session, { content | showDialog = False }, Cmd.none )
+
+        EditPromptTextChanged text ->
+            ( session, { content | prompt = text }, Cmd.none )
+
+        EditPromptSubmitted ->
+            ( session
+            , { content | status = Status.Sent }
+            , Api.updateSlide resultToMsg6 content.slideId content
+            )
+
+        EditPromptSuccess slide ->
+            ( session
+            , { content | showDialog = False, status = Status.Success () }
+            , Api.capsuleFromId resultToMsg5 slide.capsule_id
+            )
+
+
 updateUploadSlideShow : UploadSlideShowMsg -> Api.Session -> UploadForm -> Int -> ( Api.Session, UploadForm, Cmd Msg )
 updateUploadSlideShow msg session model capsuleId =
     case ( msg, model ) of
@@ -491,14 +525,6 @@ updateUploadSlideShow msg session model capsuleId =
 
 
 
--- updateModal : ModalMsg -> ModalModel -> ( ModalModel, Cmd Msg )
--- updateModal msg model =
---    case msg of
---        OpenDialog ->
---            ( { model | showDialog = True }, Cmd.none )
---
---        CloseDialog ->
---            ( { model | showDialog = False }, Cmd.none )
 -- COMMANDS
 
 
@@ -539,6 +565,11 @@ resultToMsg4 result =
 resultToMsg5 : Result e Api.CapsuleDetails -> Msg
 resultToMsg5 result =
     resultToMsg (\x -> LoggedInMsg <| CapsuleReceived x) (\_ -> Noop) result
+
+
+resultToMsg6 : Result e Api.Slide -> Msg
+resultToMsg6 result =
+    resultToMsg (\x -> LoggedInMsg <| EditPromptMsg <| EditPromptSuccess <| x) (\_ -> Noop) result
 
 
 
@@ -1028,17 +1059,22 @@ designSlideAttributes =
     ]
 
 
-capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> ModalModel -> Element Msg
-capsulePageView session capsuleDetails form modal =
+capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> EditPromptContent -> Element Msg
+capsulePageView session capsuleDetails form editPromptContent =
     let
         dialogConfig =
-            if modal.showDialog then
-                Just (config modal.bodyText)
+            if editPromptContent.showDialog then
+                Just (configPromptModal editPromptContent)
 
             else
                 Nothing
     in
-    Element.el [ Element.padding 10, Element.mapAttribute LoggedInMsg (Element.inFront (Dialog.view dialogConfig)) ]
+    Element.el
+        [ Element.padding 10
+        , Element.mapAttribute LoggedInMsg <|
+            Element.mapAttribute EditPromptMsg <|
+                Element.inFront (Dialog.view dialogConfig)
+        ]
         (Element.row
             designAttributes
             [ capsuleInfoView session capsuleDetails form
@@ -1102,36 +1138,22 @@ designSlideView slide =
             , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
             ]
         , Element.map LoggedInMsg <|
-            Element.textColumn
-                [ Background.color Colors.white
-                , Element.alignTop
-                , Element.width
-                    (Element.fill
-                        |> Element.maximum 500
-                        |> Element.minimum 200
-                    )
-                ]
-                [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
-                , Element.paragraph [ Font.size 12 ]
-                    [ Element.text slide.prompt
-                    , Ui.editIcon
-                    , Ui.successModal "An email has been sent to your address!"
+            Element.map EditPromptMsg <|
+                Element.textColumn
+                    [ Background.color Colors.white
+                    , Element.alignTop
+                    , Element.width
+                        (Element.fill
+                            |> Element.maximum 500
+                            |> Element.minimum 200
+                        )
                     ]
-                , Input.button
-                    [ Background.color white
-                    , Font.color black
-                    , Border.rounded 2
-                    , Border.width 1
-                    , Element.padding 2
-                    , Element.mouseOver
-                        [ Background.color black
-                        , Font.color white
+                    [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
+                    , Element.paragraph [ Font.size 12 ]
+                        [ Element.text slide.prompt
                         ]
+                    , Ui.editButton (Just (EditPromptOpenDialog slide.id slide.prompt)) "Modifier le prompteur"
                     ]
-                    { onPress = Just (OpenDialog slide.prompt)
-                    , label = Element.text "Editer le message du prompteur"
-                    }
-                ]
         ]
 
 
@@ -1206,32 +1228,12 @@ nonFull model =
         ]
 
 
-white : Element.Color
-white =
-    Element.rgb 1 1 1
-
-
-black : Element.Color
-black =
-    Element.rgb 0 0 0
-
-
-gray : Element.Color
-gray =
-    Element.rgb 0.5 0.5 0.5
-
-
-red : Element.Color
-red =
-    Element.rgb 1 0 0
-
-
-config : String -> Dialog.Config LoggedInMsg
-config msg =
-    { closeMessage = Just CloseDialog
+configPromptModal : EditPromptContent -> Dialog.Config EditPromptMsg
+configPromptModal editPromptContent =
+    { closeMessage = Just EditPromptCloseDialog
     , maskAttributes = []
     , containerAttributes =
-        [ Background.color white
+        [ Background.color Colors.white
         , Border.rounded 5
         , Element.centerX
         , Element.centerY
@@ -1239,41 +1241,64 @@ config msg =
         , Element.spacing 20
         , Element.width (Element.px 400)
         ]
-    , headerAttributes = [ Font.size 24, Font.color red, Element.padding 5 ]
-    , bodyAttributes = [ Background.color gray, Element.padding 20 ]
+    , headerAttributes = [ Font.size 24, Element.padding 5 ]
+    , bodyAttributes = [ Background.color Colors.grey, Element.padding 20 ]
     , footerAttributes = []
     , header = Just (Element.text "PROMPTER")
-    , body = Just (body msg)
-    , footer = Just footerButtons
+    , body = Just (bodyPromptModal editPromptContent)
+    , footer = Nothing
     }
 
 
-body : String -> Element LoggedInMsg
-body msg =
-    Element.column [ Element.width Element.fill ]
-        [ Element.el [ Element.centerX ] (Element.text ("Advanced Dialog body ::::: " ++ msg)) ]
+bodyPromptModal : EditPromptContent -> Element EditPromptMsg
+bodyPromptModal { status, prompt } =
+    let
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Updating slide..."
 
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Slide updated"
 
-footerButtons : Element LoggedInMsg
-footerButtons =
-    Element.row [ Element.width Element.fill, Element.padding 2, Element.spacing 5 ]
-        [ Input.button
-            [ Background.color white
-            , Font.color black
-            , Font.bold
-            , Border.rounded 2
-            , Border.width 1
-            , Element.padding 5
-            , Element.alignRight
-            , Element.mouseOver
-                [ Background.color black
-                , Font.color white
-                ]
+                _ ->
+                    Ui.primaryButton (Just EditPromptSubmitted) "Update prompt"
+
+        message =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Slide update failed")
+
+                Status.Success () ->
+                    Just (Ui.successModal "Slide prommpt udpdated")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Edit prompt" ]
+
+        fields =
+            [ Input.multiline []
+                { label = Input.labelAbove [] (Element.text "Prompteur:")
+                , onChange = EditPromptTextChanged
+                , placeholder = Nothing
+                , text = prompt
+                , spellcheck = True
+                }
+            , submitButton
             ]
-            { onPress = Just CloseDialog
-            , label = Element.text "Ok"
-            }
-        ]
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+        form
 
 
 homeButton : Element Msg

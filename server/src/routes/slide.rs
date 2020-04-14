@@ -6,7 +6,7 @@ use diesel::RunQueryDsl;
 use rocket::request::Form;
 use rocket_contrib::json::JsonValue;
 
-use crate::db::slide::Slide;
+use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::slides;
 use crate::{Database, Result};
@@ -59,7 +59,7 @@ pub fn update_slide(
         .execute(&db.0)?;
 
     let slide = Slide::get(slide_id, &db)?;
-    Ok(json!(slide))
+    Ok(json!(SlideWithAsset::new(&slide, &db)?))
 }
 /// The route to get a asset.
 #[put("/slide/<slide_id>/move", data = "<move_slide>")]

@@ -1,5 +1,6 @@
 module Ui exposing
-    ( editIcon
+    ( editButton
+    , editIcon
     , errorModal
     , linkButton
     , onEnter
@@ -118,6 +119,18 @@ primaryButton onPress content =
         }
 
 
+editButton : Maybe msg -> String -> Element msg
+editButton onPress content =
+    Input.button
+        (Background.color Colors.primary
+            :: Font.color Colors.white
+            :: buttonAttributes
+        )
+        { onPress = onPress
+        , label = Element.row [] [ editIcon, Element.text content ]
+        }
+
+
 primaryButtonDisabled : String -> Element msg
 primaryButtonDisabled content =
     Input.button
@@ -186,7 +199,7 @@ editIcon =
             [ FontAwesome.iconWithOptions
                 FontAwesome.edit
                 FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                [ FontAwesome.Size (FontAwesome.Mult 1) ]
                 []
             ]
         )

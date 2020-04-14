@@ -23,6 +23,7 @@ module Api exposing
     , sortSlides
     , testDatabase
     , testMailer
+    , updateSlide
     )
 
 import Dict exposing (Dict)
@@ -106,6 +107,67 @@ decodeSession =
     Decode.map2 Session
         (Decode.field "username" Decode.string)
         (Decode.field "projects" (Decode.list (decodeProject [])))
+
+
+type alias Asset =
+    { id : Int
+    , asset_path : String
+    , asset_type : String
+    , name : String
+    , upload_date : Int
+    , uuid : String
+    }
+
+
+decodeAsset : Decoder Asset
+decodeAsset =
+    Decode.map6 Asset
+        (Decode.field "id" Decode.int)
+        (Decode.field "asset_path" Decode.string)
+        (Decode.field "asset_type" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "upload_date" Decode.int)
+        (Decode.field "uuid" Decode.string)
+
+
+type alias Slide =
+    { id : Int
+    , position : Int
+    , position_in_gos : Int
+    , gos : Int
+    , asset : Asset
+    , capsule_id : Int
+    , prompt : String
+    }
+
+
+decodeSlide : Decoder Slide
+decodeSlide =
+    Decode.map7 Slide
+        (Decode.field "id" Decode.int)
+        (Decode.field "position" Decode.int)
+        (Decode.field "position_in_gos" Decode.int)
+        (Decode.field "gos" Decode.int)
+        (Decode.field "asset" decodeAsset)
+        (Decode.field "capsule_id" Decode.int)
+        (Decode.field "prompt" Decode.string)
+
+
+type alias CapsuleDetails =
+    { capsule : Capsule
+    , slides : List Slide
+    , projects : List Project
+    , slide_show : Asset
+    }
+
+
+decodeCapsuleDetails : Decoder CapsuleDetails
+decodeCapsuleDetails =
+    Decode.map4 CapsuleDetails
+        (Decode.field "capsule" decodeCapsule)
+        (Decode.field "slides" (Decode.list decodeSlide))
+        (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "slide_show" decodeAsset)
 
 
 
@@ -248,50 +310,6 @@ newCapsule resultToMsg projectId content =
 -- Capsule Details
 
 
-type alias Asset =
-    { id : Int
-    , asset_path : String
-    , asset_type : String
-    , name : String
-    , upload_date : Int
-    , uuid : String
-    }
-
-
-decodeAsset : Decoder Asset
-decodeAsset =
-    Decode.map6 Asset
-        (Decode.field "id" Decode.int)
-        (Decode.field "asset_path" Decode.string)
-        (Decode.field "asset_type" Decode.string)
-        (Decode.field "name" Decode.string)
-        (Decode.field "upload_date" Decode.int)
-        (Decode.field "uuid" Decode.string)
-
-
-type alias Slide =
-    { id : Int
-    , position : Int
-    , position_in_gos : Int
-    , gos : Int
-    , asset : Asset
-    , caspule_id : Int
-    , prompt : String
-    }
-
-
-decodeSlide : Decoder Slide
-decodeSlide =
-    Decode.map7 Slide
-        (Decode.field "id" Decode.int)
-        (Decode.field "position" Decode.int)
-        (Decode.field "position_in_gos" Decode.int)
-        (Decode.field "gos" Decode.int)
-        (Decode.field "asset" decodeAsset)
-        (Decode.field "capsule_id" Decode.int)
-        (Decode.field "prompt" Decode.string)
-
-
 sortSlidesAux : List Slide -> Dict Int (List Slide) -> Dict Int (List Slide)
 sortSlidesAux input current =
     case input of
@@ -312,23 +330,6 @@ sortSlides input =
     List.map Tuple.second (List.sortBy Tuple.first (Dict.toList (sortSlidesAux input Dict.empty)))
 
 
-type alias CapsuleDetails =
-    { capsule : Capsule
-    , slides : List Slide
-    , projects : List Project
-    , slide_show : Asset
-    }
-
-
-decodeCapsuleDetails : Decoder CapsuleDetails
-decodeCapsuleDetails =
-    Decode.map4 CapsuleDetails
-        (Decode.field "capsule" decodeCapsule)
-        (Decode.field "slides" (Decode.list decodeSlide))
-        (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "slide_show" decodeAsset)
-
-
 capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
 capsuleFromId resultToMsg id =
     Http.get
@@ -343,6 +344,32 @@ capsuleUploadSlideShow resultToMsg id content =
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_slides"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+type alias EditSlideContent a =
+    { a
+        | prompt : String
+    }
+
+
+encodeSlideContent : EditSlideContent a -> String
+encodeSlideContent { prompt } =
+    encode
+        [ ( "prompt", prompt )
+        ]
+
+
+updateSlide : (Result Http.Error Slide -> msg) -> Int -> EditSlideContent a -> Cmd msg
+updateSlide resultToMsg id content =
+    Http.request
+        { method = "PUT"
+        , headers = []
+        , url = "/api/slide/" ++ String.fromInt id
+        , expect = Http.expectJson resultToMsg decodeSlide
+        , body = stringBody (encodeSlideContent content)
+        , timeout = Nothing
+        , tracker = Nothing
         }
 
 
