@@ -1146,7 +1146,7 @@ capsulePageView session capsuleDetails form slideModel gosModel =
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
                 (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
-            , gosGhostView gosModel capsuleDetails.slides
+            , gosGhostView gosModel slideModel capsuleDetails.slides
             , slideGhostView slideModel capsuleDetails.slides
             ]
         ]
@@ -1165,169 +1165,40 @@ capsuleInfoView session capsuleDetails form =
         ]
 
 
+
+-- DRAG N DROP VIEWS
+
+
+type DragOptions
+    = Dragged
+    | Dropped
+    | Ghost
+    | EventLess
+
+
+
+-- GOS VIEWS
+
+
 capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
 capsuleGosView gosModel slideModel offset gosIndex gos =
-    let
-        id =
-            "gos-" ++ String.fromInt gosIndex
-
-        dragAttributes : List (Element.Attribute Msg)
-        dragAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                (List.map Element.htmlAttribute (gosSystem.dragEvents gosIndex id))
-
-        dropAttributes : List (Element.Attribute Msg)
-        dropAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                (List.map Element.htmlAttribute (gosSystem.dropEvents gosIndex id))
-    in
     case gosSystem.info gosModel of
         Just { dragIndex } ->
             if dragIndex /= gosIndex then
-                Element.column
-                    (Element.htmlAttribute (Html.Attributes.id id)
-                        :: designGosAttributes
-                        ++ dropAttributes
-                    )
-                    [ Element.row [ Element.width Element.fill ]
-                        [ Element.el
-                            [ Element.padding 10
-                            , Border.color Colors.danger
-                            , Border.rounded 5
-                            , Border.width 1
-                            , Element.centerX
-                            , Font.size 20
-                            ]
-                            (Element.text (String.fromInt gosIndex))
-                        , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-                        ]
-                    , Element.column designAttributes
-                        (List.map eventlessDesignSlideView gos)
-                    ]
+                genericGosView Dropped gosModel slideModel offset gosIndex gos
 
             else
-                Element.column
-                    (Element.htmlAttribute (Html.Attributes.id id)
-                        :: designGosAttributes
-                    )
-                    [ Element.row [ Element.width Element.fill ]
-                        [ Element.el
-                            [ Element.padding 10
-                            , Border.color Colors.dangerLight
-                            , Border.rounded 5
-                            , Border.width 1
-                            , Element.centerX
-                            , Font.size 20
-                            ]
-                            (Element.text (String.fromInt gosIndex))
-                        , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-                        ]
-                    , Element.column designAttributes
-                        (List.map eventlessDesignSlideView gos)
-                    ]
+                genericGosView EventLess gosModel slideModel offset gosIndex gos
 
         _ ->
-            Element.column
-                (Element.htmlAttribute (Html.Attributes.id id)
-                    :: designGosAttributes
-                )
-                [ Element.row (Element.width Element.fill :: dragAttributes)
-                    [ Element.el
-                        [ Element.padding 10
-                        , Border.color Colors.dangerDark
-                        , Border.rounded 5
-                        , Border.width 1
-                        , Element.centerX
-                        , Font.size 20
-                        ]
-                        (Element.text (String.fromInt gosIndex))
-                    , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-                    ]
-                , Element.column designAttributes
-                    (List.indexedMap (designSlideView slideModel offset) gos)
-                ]
+            genericGosView Dragged gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : DnDList.Model -> List Api.Slide -> Element Msg
-gosGhostView gosModel slides =
+gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List Api.Slide -> Element Msg
+gosGhostView gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
-            let
-                gosIndex =
-                    Maybe.withDefault 0 (Maybe.map (\x -> x.gos) (List.head s))
-
-                ghostAttributes : List (Element.Attribute Msg)
-                ghostAttributes =
-                    List.map
-                        (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                        (List.map Element.htmlAttribute (gosSystem.ghostStyles gosModel))
-            in
-            Element.column
-                (designGosAttributes ++ ghostAttributes)
-                [ Element.row [ Element.width Element.fill ]
-                    [ Element.el
-                        [ Element.padding 10
-                        , Border.color Colors.dangerDark
-                        , Border.rounded 5
-                        , Border.width 1
-                        , Element.centerX
-                        , Font.size 20
-                        ]
-                        (Element.text (String.fromInt gosIndex))
-                    , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-                    ]
-                , Element.column designAttributes
-                    (List.map eventlessDesignSlideView s)
-                ]
-
-        _ ->
-            Element.none
-
-
-slideGhostView : DnDList.Groups.Model -> List Api.Slide -> Element Msg
-slideGhostView slideModel slides =
-    let
-        ghostAttributes : List (Element.Attribute Msg)
-        ghostAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                (List.map Element.htmlAttribute (slideSystem.ghostStyles slideModel))
-    in
-    case maybeDragSlide slideModel slides of
-        Just s ->
-            Element.row
-                (designSlideAttributes ++ ghostAttributes)
-                [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
-                    [ viewSlideImage s.asset.asset_path
-                    , Element.paragraph [ Element.padding 10, Font.size 18 ]
-                        [ Element.text "Additional Resources "
-                        , Ui.linkButton
-                            (Just (LoggedInMsg NewProjectClicked))
-                            "Click here to Add aditional"
-                        ]
-                    , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt s.id))
-                    , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt s.position))
-                    , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt s.position_in_gos))
-                    , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt s.gos))
-                    , Element.el [ Font.size 8 ] (Element.text (s.asset.uuid ++ "_" ++ s.asset.name))
-                    ]
-                , Element.textColumn
-                    [ Background.color Colors.white
-                    , Element.alignTop
-                    , Element.width
-                        (Element.fill
-                            |> Element.maximum 500
-                            |> Element.minimum 200
-                        )
-                    ]
-                    [ Element.text "Prompteur:"
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
-                    ]
-                ]
+            genericGosView Ghost gosModel slideModel 0 0 s
 
         _ ->
             Element.none
@@ -1339,15 +1210,147 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> Api.sortSlides slides |> List.drop dragIndex |> List.head)
 
 
+genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
+genericGosView options gosModel slideModel offset index gos =
+    let
+        gosId : String
+        gosId =
+            if options == Ghost then
+                "gos-ghost"
+
+            else
+                "gos-" ++ String.fromInt index
+
+        dragAttributes : List (Element.Attribute Msg)
+        dragAttributes =
+            if options == Dragged then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (gosSystem.dragEvents index gosId))
+
+            else
+                []
+
+        dropAttributes : List (Element.Attribute Msg)
+        dropAttributes =
+            if options == Dropped then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (gosSystem.dropEvents index gosId))
+
+            else
+                []
+
+        ghostAttributes : List (Element.Attribute Msg)
+        ghostAttributes =
+            if options == Ghost then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (gosSystem.ghostStyles gosModel))
+
+            else
+                []
+    in
+    Element.column
+        (Element.htmlAttribute (Html.Attributes.id gosId)
+            :: designGosAttributes
+            ++ dropAttributes
+            ++ ghostAttributes
+        )
+        [ Element.row (Element.width Element.fill :: dragAttributes)
+            [ Element.el
+                [ Element.padding 10
+                , Border.color Colors.danger
+                , Border.rounded 5
+                , Border.width 1
+                , Element.centerX
+                , Font.size 20
+                ]
+                (Element.text (String.fromInt index))
+            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+            ]
+        , Element.column designAttributes
+            (List.indexedMap (designSlideView slideModel offset) gos)
+        ]
+
+
+
+-- SLIDES VIEWS
+
+
+slideGhostView : DnDList.Groups.Model -> List Api.Slide -> Element Msg
+slideGhostView slideModel slides =
+    case maybeDragSlide slideModel slides of
+        Just s ->
+            genericDesignSlideView Ghost slideModel 0 0 s
+
+        _ ->
+            Element.none
+
+
+designSlideView : DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
+designSlideView slideModel offset localIndex slide =
+    case ( slideSystem.info slideModel, maybeDragSlide slideModel ) of
+        ( Just { dragIndex }, _ ) ->
+            if offset + localIndex == dragIndex then
+                genericDesignSlideView EventLess slideModel offset localIndex slide
+
+            else
+                genericDesignSlideView Dropped slideModel offset localIndex slide
+
+        _ ->
+            genericDesignSlideView Dragged slideModel offset localIndex slide
+
+
 maybeDragSlide : DnDList.Groups.Model -> List Api.Slide -> Maybe Api.Slide
 maybeDragSlide slideModel slides =
     slideSystem.info slideModel
         |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
 
 
-eventlessDesignSlideView : Api.Slide -> Element Msg
-eventlessDesignSlideView slide =
-    Element.row designSlideAttributes
+genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
+genericDesignSlideView options slideModel offset localIndex slide =
+    let
+        globalIndex : Int
+        globalIndex =
+            offset + localIndex
+
+        slideId : String
+        slideId =
+            "slide-" ++ String.fromInt globalIndex
+
+        dragAttributes : List (Element.Attribute Msg)
+        dragAttributes =
+            if options == Dragged then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (slideSystem.dragEvents globalIndex slideId))
+
+            else
+                []
+
+        dropAttributes : List (Element.Attribute Msg)
+        dropAttributes =
+            if options == Dropped then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (slideSystem.dropEvents globalIndex slideId))
+
+            else
+                []
+
+        ghostAttributes : List (Element.Attribute Msg)
+        ghostAttributes =
+            if options == Ghost then
+                List.map
+                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                    (List.map Element.htmlAttribute (slideSystem.ghostStyles slideModel))
+
+            else
+                []
+    in
+    Element.row
+        (Element.htmlAttribute (Html.Attributes.id slideId) :: designSlideAttributes ++ dragAttributes ++ dropAttributes ++ ghostAttributes)
         [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
             [ viewSlideImage slide.asset.asset_path
             , Element.paragraph [ Element.padding 10, Font.size 18 ]
@@ -1379,134 +1382,13 @@ eventlessDesignSlideView slide =
         ]
 
 
-designSlideView : DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
-designSlideView slideModel offset localIndex slide =
-    let
-        globalIndex : Int
-        globalIndex =
-            offset + localIndex
-
-        slideId : String
-        slideId =
-            "slide-" ++ String.fromInt globalIndex
-
-        dragAttributes : List (Element.Attribute Msg)
-        dragAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                (List.map Element.htmlAttribute (slideSystem.dragEvents globalIndex slideId))
-
-        dropAttributes : List (Element.Attribute Msg)
-        dropAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                (List.map Element.htmlAttribute (slideSystem.dropEvents globalIndex slideId))
-    in
-    case ( slideSystem.info slideModel, maybeDragSlide slideModel ) of
-        ( Just { dragIndex }, _ ) ->
-            if globalIndex == dragIndex then
-                Element.row
-                    (Element.htmlAttribute (Html.Attributes.id slideId) :: designSlideAttributes)
-                    [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
-                        [ viewSlideImage slide.asset.asset_path
-                        , Element.paragraph [ Element.padding 10, Font.size 18 ]
-                            [ Element.text "Additional Resources "
-                            , Ui.linkButton
-                                (Just (LoggedInMsg NewProjectClicked))
-                                "Click here to Add aditional"
-                            ]
-                        , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-                        , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
-                        , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
-                        , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
-                        , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
-                        ]
-                    , Element.textColumn
-                        [ Background.color Colors.white
-                        , Element.alignTop
-                        , Element.width
-                            (Element.fill
-                                |> Element.maximum 500
-                                |> Element.minimum 200
-                            )
-                        ]
-                        [ Element.text "Prompteur:"
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
-                        ]
-                    ]
-
-            else
-                Element.row
-                    (Element.htmlAttribute (Html.Attributes.id slideId) :: designSlideAttributes ++ dropAttributes)
-                    [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
-                        [ viewSlideImage slide.asset.asset_path
-                        , Element.paragraph [ Element.padding 10, Font.size 18 ]
-                            [ Element.text "Additional Resources "
-                            , Ui.linkButton
-                                (Just (LoggedInMsg NewProjectClicked))
-                                "Click here to Add aditional"
-                            ]
-                        , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-                        , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
-                        , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
-                        , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
-                        , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
-                        ]
-                    , Element.textColumn
-                        [ Background.color Colors.white
-                        , Element.alignTop
-                        , Element.width
-                            (Element.fill
-                                |> Element.maximum 500
-                                |> Element.minimum 200
-                            )
-                        ]
-                        [ Element.text "Prompteur:"
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-                        , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
-                        ]
-                    ]
-
-        _ ->
-            Element.row
-                (Element.htmlAttribute (Html.Attributes.id slideId) :: designSlideAttributes ++ dragAttributes)
-                [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
-                    [ viewSlideImage slide.asset.asset_path
-                    , Element.paragraph [ Element.padding 10, Font.size 18 ]
-                        [ Element.text "Additional Resources "
-                        , Ui.linkButton
-                            (Just (LoggedInMsg NewProjectClicked))
-                            "Click here to Add aditional"
-                        ]
-                    , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-                    , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
-                    , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
-                    , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
-                    , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
-                    ]
-                , Element.textColumn
-                    [ Background.color Colors.white
-                    , Element.alignTop
-                    , Element.width
-                        (Element.fill
-                            |> Element.maximum 500
-                            |> Element.minimum 200
-                        )
-                    ]
-                    [ Element.text "Prompteur:"
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-                    , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
-                    ]
-                ]
-
-
 viewSlideImage : String -> Element Msg
 viewSlideImage url =
     Element.image [ Element.width (Element.px 200) ] { src = url, description = "One desc" }
+
+
+
+-- NAVBAR
 
 
 topBar : Model -> Element Msg
@@ -1573,6 +1455,10 @@ nonFull model =
                 [ loginButton, signUpButton ]
             )
         ]
+
+
+
+-- HELPERS
 
 
 homeButton : Element Msg
