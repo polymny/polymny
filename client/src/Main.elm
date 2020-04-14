@@ -1317,7 +1317,11 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
         slideId : String
         slideId =
-            "slide-" ++ String.fromInt globalIndex
+            if options == Ghost then
+                "slide-ghost"
+
+            else
+                "slide-" ++ String.fromInt globalIndex
 
         dragAttributes : List (Element.Attribute Msg)
         dragAttributes =
