@@ -670,8 +670,23 @@ viewContent { global, model } =
 
                 LoggedIn s ->
                     loggedInView global s
+
+        attributes =
+            case model of
+                LoggedIn { page } ->
+                    case page of
+                        CapsulePage capsuleDetails _ slideModel gosModel ->
+                            [ Element.inFront (gosGhostView gosModel slideModel capsuleDetails.slides)
+                            , Element.inFront (slideGhostView slideModel capsuleDetails.slides)
+                            ]
+
+                        _ ->
+                            []
+
+                _ ->
+                    []
     in
-    Element.column [ Element.width Element.fill ] [ topBar model, content ]
+    Element.column (Element.width Element.fill :: attributes) [ topBar model, content ]
 
 
 homeView : Element Msg
@@ -1130,6 +1145,7 @@ designSlideAttributes =
     , Border.width 1
     , Border.color Colors.white
     , Border.dashed
+    , Background.color Colors.grey
     ]
 
 
@@ -1142,12 +1158,17 @@ capsulePageView session capsuleDetails form slideModel gosModel =
     in
     Element.row (Element.scrollbarX :: designAttributes)
         [ capsuleInfoView session capsuleDetails form
-        , Element.column (Element.scrollbarX :: Element.width Element.fill :: Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
+        , Element.column
+            (Element.scrollbarX
+                :: Element.width Element.fill
+                :: Element.centerX
+                :: Element.alignTop
+                :: Background.color Colors.dangerLight
+                :: designAttributes
+            )
             [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
             , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
                 (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
-            , gosGhostView gosModel slideModel capsuleDetails.slides
-            , slideGhostView slideModel capsuleDetails.slides
             ]
         ]
 
