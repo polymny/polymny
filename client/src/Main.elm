@@ -1080,7 +1080,7 @@ capsulePageView session capsuleDetails form editPromptContent =
             [ capsuleInfoView session capsuleDetails form
             , Element.column (Element.centerX :: Element.alignTop :: Background.color Colors.dangerLight :: designAttributes)
                 [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-                , Element.row (Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                , Element.row (Element.spacing 5 :: Background.color Colors.dangerDark :: designAttributes)
                     (List.map capsuleGosView (Api.sortSlides capsuleDetails.slides))
                 ]
             ]
@@ -1109,21 +1109,36 @@ capsuleGosView gos =
                 , Border.color Colors.danger
                 , Border.rounded 5
                 , Border.width 1
+                , Border.dashed
                 , Element.centerX
                 , Font.size 20
                 ]
                 (Element.text (String.fromInt 1))
             , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
             ]
-        , Element.column designAttributes
+        , Element.column
+            [ Element.padding 10
+            , Element.spacing 20
+            , Element.centerX
+            ]
             (List.map designSlideView gos)
         ]
 
 
 designSlideView : Api.Slide -> Element Msg
 designSlideView slide =
-    Element.row (Element.padding 10 :: designSlideAttributes)
-        [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
+    Element.row
+        [ Element.padding 10
+        , Background.color Colors.primary
+        , Border.rounded 5
+        , Border.width 1
+        ]
+        [ Element.column
+            [ Element.padding 10
+            , Element.alignTop
+            , Border.rounded 5
+            , Border.width 1
+            ]
             [ viewSlideImage slide.asset.asset_path
             , Element.paragraph [ Element.padding 10, Font.size 18 ]
                 [ Element.text "Additional Resources "
@@ -1142,16 +1157,24 @@ designSlideView slide =
                 Element.textColumn
                     [ Background.color Colors.white
                     , Element.alignTop
+                    , Element.spacing 10
                     , Element.width
                         (Element.fill
                             |> Element.maximum 500
                             |> Element.minimum 200
                         )
                     ]
-                    [ Element.el [ Font.size 14 ] (Element.text "Prompteur:")
-                    , Element.paragraph [ Font.size 12 ]
-                        [ Element.text slide.prompt
+                    [ Element.el [ Element.centerX, Font.size 14 ] (Element.text "Prompteur")
+                    , Element.el
+                        [ Border.rounded 5
+                        , Border.width 1
+                        , Element.padding 5
+                        , Font.size 12
+                        , Element.scrollbarY
+                        , Element.height (Element.px 150)
+                        , Element.width (Element.px 200)
                         ]
+                        (Element.text slide.prompt)
                     , Ui.editButton (Just (EditPromptOpenDialog slide.id slide.prompt)) "Modifier le prompteur"
                     ]
         ]
@@ -1236,13 +1259,12 @@ configPromptModal editPromptContent =
         [ Background.color Colors.white
         , Border.rounded 5
         , Element.centerX
-        , Element.centerY
         , Element.padding 10
         , Element.spacing 20
-        , Element.width (Element.px 400)
+        , Element.width (Element.px 600)
         ]
     , headerAttributes = [ Font.size 24, Element.padding 5 ]
-    , bodyAttributes = [ Background.color Colors.grey, Element.padding 20 ]
+    , bodyAttributes = [ Background.color Colors.grey, Element.padding 20, Element.width Element.fill ]
     , footerAttributes = []
     , header = Just (Element.text "PROMPTER")
     , body = Just (bodyPromptModal editPromptContent)
@@ -1279,7 +1301,7 @@ bodyPromptModal { status, prompt } =
             Element.row [ Element.centerX ] [ Element.text "Edit prompt" ]
 
         fields =
-            [ Input.multiline []
+            [ Input.multiline [ Element.height (Element.px 400) ]
                 { label = Input.labelAbove [] (Element.text "Prompteur:")
                 , onChange = EditPromptTextChanged
                 , placeholder = Nothing
@@ -1297,7 +1319,12 @@ bodyPromptModal { status, prompt } =
                 Nothing ->
                     header :: fields
     in
-    Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+    Element.column
+        [ Element.centerX
+        , Element.padding 10
+        , Element.spacing 10
+        , Element.width Element.fill
+        ]
         form
 
 
