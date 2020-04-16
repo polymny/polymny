@@ -323,7 +323,7 @@ prepareDnDSlides : List Slide -> List (Maybe Slide)
 prepareDnDSlides slides =
     case slides of
         h :: _ ->
-            List.reverse (prepareDnDSlidesAux slides h.gos [])
+            List.reverse (Nothing :: prepareDnDSlidesAux slides h.gos [])
 
         _ ->
             []
