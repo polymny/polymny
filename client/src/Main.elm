@@ -1271,6 +1271,14 @@ genericGosView options gosModel slideModel offset index gos =
 
             else
                 []
+
+        eventLessAttributes : List (Element.Attribute Msg)
+        eventLessAttributes =
+            if options == EventLess then
+                [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
+
+            else
+                []
     in
     Element.column
         (Element.htmlAttribute (Html.Attributes.id gosId)
@@ -1278,7 +1286,7 @@ genericGosView options gosModel slideModel offset index gos =
             ++ dropAttributes
             ++ ghostAttributes
         )
-        [ Element.row (Element.width Element.fill :: dragAttributes)
+        [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
             [ Element.el
                 [ Element.padding 10
                 , Border.color Colors.danger
@@ -1290,7 +1298,7 @@ genericGosView options gosModel slideModel offset index gos =
                 (Element.text (String.fromInt index))
             , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
             ]
-        , Element.column designAttributes
+        , Element.column (designAttributes ++ eventLessAttributes)
             (List.indexedMap (designSlideView slideModel offset) gos)
         ]
 
@@ -1373,10 +1381,18 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
             else
                 []
+
+        eventLessAttributes : List (Element.Attribute Msg)
+        eventLessAttributes =
+            if options == EventLess then
+                [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
+
+            else
+                []
     in
     Element.row
         (Element.htmlAttribute (Html.Attributes.id slideId) :: designSlideAttributes ++ dragAttributes ++ dropAttributes ++ ghostAttributes)
-        [ Element.column [ Element.padding 10, Element.spacing 10, Element.alignTop ]
+        [ Element.column (Element.padding 10 :: Element.spacing 10 :: Element.alignTop :: eventLessAttributes)
             [ viewSlideImage slide.asset.asset_path
             , Element.paragraph [ Element.padding 10, Font.size 18 ]
                 [ Element.text "Additional Resources "
@@ -1391,14 +1407,15 @@ genericDesignSlideView options slideModel offset localIndex slide =
             , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
             ]
         , Element.textColumn
-            [ Background.color Colors.white
-            , Element.alignTop
-            , Element.width
-                (Element.fill
-                    |> Element.maximum 500
-                    |> Element.minimum 200
-                )
-            ]
+            (Background.color Colors.white
+                :: Element.alignTop
+                :: Element.width
+                    (Element.fill
+                        |> Element.maximum 500
+                        |> Element.minimum 200
+                    )
+                :: eventLessAttributes
+            )
             [ Element.text "Prompteur:"
             , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
             , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
