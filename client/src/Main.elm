@@ -206,10 +206,10 @@ slideComparator : Maybe Api.Slide -> Maybe Api.Slide -> Bool
 slideComparator slide1 slide2 =
     case ( slide1, slide2 ) of
         ( Just s1, Just s2 ) ->
-            s1.gos == s1.gos && s1.position_in_gos == s2.position_in_gos
+            s1.gos == s2.gos
 
         ( Nothing, Nothing ) ->
-            True
+            False
 
         _ ->
             False
