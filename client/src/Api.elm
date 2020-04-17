@@ -18,7 +18,6 @@ module Api exposing
     , login
     , newCapsule
     , newProject
-    , prepareDnDSlides
     , setupConfig
     , signUp
     , sortSlides
@@ -317,30 +316,6 @@ sortSlides input =
                 (Dict.toList (sortSlidesAux input Dict.empty))
             )
         )
-
-
-prepareDnDSlides : List Slide -> List (Maybe Slide)
-prepareDnDSlides slides =
-    case slides of
-        h :: _ ->
-            List.reverse (Nothing :: prepareDnDSlidesAux slides h.gos [])
-
-        _ ->
-            []
-
-
-prepareDnDSlidesAux : List Slide -> Int -> List (Maybe Slide) -> List (Maybe Slide)
-prepareDnDSlidesAux slides currentGosIndex current =
-    case slides of
-        h :: t ->
-            if h.gos == currentGosIndex then
-                prepareDnDSlidesAux t currentGosIndex (Just h :: current)
-
-            else
-                prepareDnDSlidesAux t h.gos (Just h :: Nothing :: current)
-
-        _ ->
-            current
 
 
 type alias CapsuleDetails =
