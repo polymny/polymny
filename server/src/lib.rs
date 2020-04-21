@@ -301,6 +301,7 @@ pub fn main() {
                 routes::capsule::update_capsule,
                 routes::capsule::delete_capsule,
                 routes::capsule::upload_slides,
+                routes::capsule::gos_order,
                 routes::asset::get_asset,
                 routes::asset::all_assets,
                 routes::asset::delete_asset,

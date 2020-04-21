@@ -256,3 +256,42 @@ pub fn upload_slides(
 
     Ok(json!({ "capsule": capsule }))
 }
+
+/// A struct that sever gos_order request
+#[derive(FromForm, Debug)]
+pub struct GosOrderForm {
+    /// Store the gos order
+    pub order: String,
+}
+
+/// order capsule gos and slide
+#[post("/capsule/<id>/gos_order", data = "<gos_form>")]
+pub fn gos_order(
+    db: Database,
+    user: User,
+    id: i32,
+    gos_form: Form<GosOrderForm>,
+) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let goss: Vec<&str> = gos_form.order.split(":").collect();
+
+    for (i, slides) in goss.into_iter().enumerate() {
+        //let ids: Vec<&str> = slides.split(',').collect();
+        let ids: Vec<i32> = slides
+            .split(',')
+            .map(|x| x.parse::<i32>().unwrap())
+            .collect();
+
+        for (id, position) in ids.iter().enumerate() {
+            println!("id = {:#?}", id);
+            //let slide = Slide::get(id, &db)?;
+            //println!("slide = {:#?}", slide);
+        }
+        println!("i= {:#?}", i);
+    }
+    Ok(json!({ "capsule":     capsule,
+               "slide_show":  capsule.get_slide_show(&db)?,
+               "slides":      capsule.get_slides(&db)? ,
+               "projects":    capsule.get_projects(&db)?,
+    }))
+}
