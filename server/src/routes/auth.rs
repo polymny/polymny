@@ -3,11 +3,10 @@
 use std::io::Cursor;
 
 use rocket::http::{Cookie, Cookies};
-use rocket::request::Form;
 use rocket::response::{Redirect, Response};
 use rocket::State;
 
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 
 use crate::db::session::Session;
 use crate::db::user::User;
@@ -15,7 +14,7 @@ use crate::mailer::Mailer;
 use crate::{Database, Result};
 
 /// A struct that serves the purpose of veryifing the form.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct NewUserForm {
     /// The username of the form.
     username: String,
@@ -32,7 +31,7 @@ pub struct NewUserForm {
 pub fn new_user(
     db: Database,
     mailer: State<Option<Mailer>>,
-    user: Form<NewUserForm>,
+    user: Json<NewUserForm>,
 ) -> Result<Response> {
     let user = User::create(&user.username, &user.email, &user.password, mailer.inner())?;
     user.save(&db)?;
@@ -50,7 +49,7 @@ pub fn activate(db: Database, key: String, mut cookies: Cookies) -> Result<Redir
 }
 
 /// A struct that serves for form veryfing.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct LoginForm {
     /// The username in the form.
     username: String,
@@ -61,7 +60,7 @@ pub struct LoginForm {
 
 /// The login page.
 #[post("/login", data = "<login>")]
-pub fn login(db: Database, mut cookies: Cookies, login: Form<LoginForm>) -> Result<JsonValue> {
+pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Result<JsonValue> {
     let user = User::authenticate(&login.username, &login.password, &db)?;
     let session = user.save_session(&db)?;
 

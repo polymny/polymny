@@ -30,18 +30,7 @@ import Dict exposing (Dict)
 import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
-
-
-encode : List ( String, String ) -> String
-encode strings =
-    String.join "&" (List.map (\( x, y ) -> x ++ "=" ++ y) strings)
-
-
-stringBody : String -> Http.Body
-stringBody string =
-    Http.stringBody
-        "application/x-www-form-urlencoded"
-        string
+import Json.Encode as Encode
 
 
 
@@ -182,12 +171,12 @@ type alias SignUpContent a =
     }
 
 
-encodeSignUpContent : SignUpContent a -> String
+encodeSignUpContent : SignUpContent a -> Encode.Value
 encodeSignUpContent { username, password, email } =
-    encode
-        [ ( "username", username )
-        , ( "password", password )
-        , ( "email", email )
+    Encode.object
+        [ ( "username", Encode.string username )
+        , ( "password", Encode.string password )
+        , ( "email", Encode.string email )
         ]
 
 
@@ -196,7 +185,7 @@ signUp responseToMsg content =
     Http.post
         { url = "/api/new-user/"
         , expect = Http.expectWhatever responseToMsg
-        , body = stringBody (encodeSignUpContent content)
+        , body = Http.jsonBody (encodeSignUpContent content)
         }
 
 
@@ -211,11 +200,11 @@ type alias LoginContent a =
     }
 
 
-encodeLoginContent : LoginContent a -> String
+encodeLoginContent : LoginContent a -> Encode.Value
 encodeLoginContent { username, password } =
-    encode
-        [ ( "username", username )
-        , ( "password", password )
+    Encode.object
+        [ ( "username", Encode.string username )
+        , ( "password", Encode.string password )
         ]
 
 
@@ -224,7 +213,7 @@ login resultToMsg content =
     Http.post
         { url = "/api/login"
         , expect = Http.expectJson resultToMsg decodeSession
-        , body = stringBody (encodeLoginContent content)
+        , body = Http.jsonBody (encodeLoginContent content)
         }
 
 
@@ -247,10 +236,10 @@ type alias NewProjectContent a =
     }
 
 
-encodeNewProjectContent : NewProjectContent a -> String
+encodeNewProjectContent : NewProjectContent a -> Encode.Value
 encodeNewProjectContent { name } =
-    encode
-        [ ( "project_name", name )
+    Encode.object
+        [ ( "project_name", Encode.string name )
         ]
 
 
@@ -259,7 +248,7 @@ newProject resultToMsg content =
     Http.post
         { url = "/api/new-project"
         , expect = Http.expectJson resultToMsg (decodeProject [])
-        , body = stringBody (encodeNewProjectContent content)
+        , body = Http.jsonBody (encodeNewProjectContent content)
         }
 
 
@@ -287,13 +276,13 @@ type alias NewCapsuleContent a =
     }
 
 
-encodeNewCapsuleContent : Int -> NewCapsuleContent a -> String
+encodeNewCapsuleContent : Int -> NewCapsuleContent a -> Encode.Value
 encodeNewCapsuleContent projectId { name, title, description } =
-    encode
-        [ ( "name", name )
-        , ( "title", title )
-        , ( "description", description )
-        , ( "project_id", String.fromInt projectId )
+    Encode.object
+        [ ( "name", Encode.string name )
+        , ( "title", Encode.string title )
+        , ( "description", Encode.string description )
+        , ( "project_id", Encode.int projectId )
         ]
 
 
@@ -302,7 +291,7 @@ newCapsule resultToMsg projectId content =
     Http.post
         { url = "/api/new-capsule"
         , expect = Http.expectJson resultToMsg decodeCapsule
-        , body = stringBody (encodeNewCapsuleContent projectId content)
+        , body = Http.jsonBody (encodeNewCapsuleContent projectId content)
         }
 
 
@@ -353,10 +342,10 @@ type alias EditSlideContent a =
     }
 
 
-encodeSlideContent : EditSlideContent a -> String
+encodeSlideContent : EditSlideContent a -> Encode.Value
 encodeSlideContent { prompt } =
-    encode
-        [ ( "prompt", prompt )
+    Encode.object
+        [ ( "prompt", Encode.string prompt )
         ]
 
 
@@ -367,7 +356,7 @@ updateSlide resultToMsg id content =
         , headers = []
         , url = "/api/slide/" ++ String.fromInt id
         , expect = Http.expectJson resultToMsg decodeSlide
-        , body = stringBody (encodeSlideContent content)
+        , body = Http.jsonBody (encodeSlideContent content)
         , timeout = Nothing
         , tracker = Nothing
         }
@@ -386,13 +375,13 @@ type alias DatabaseTestContent a =
     }
 
 
-encodeDatabaseTestContent : DatabaseTestContent a -> String
+encodeDatabaseTestContent : DatabaseTestContent a -> Encode.Value
 encodeDatabaseTestContent { hostname, username, password, name } =
-    encode
-        [ ( "hostname", hostname )
-        , ( "username", username )
-        , ( "password", password )
-        , ( "name", name )
+    Encode.object
+        [ ( "hostname", Encode.string hostname )
+        , ( "username", Encode.string username )
+        , ( "password", Encode.string password )
+        , ( "name", Encode.string name )
         ]
 
 
@@ -401,7 +390,7 @@ testDatabase resultToMsg content =
     Http.post
         { url = "/api/test-database"
         , expect = Http.expectWhatever resultToMsg
-        , body = stringBody (encodeDatabaseTestContent content)
+        , body = Http.jsonBody (encodeDatabaseTestContent content)
         }
 
 
@@ -416,40 +405,28 @@ type alias MailerTestContent a =
     }
 
 
-encodeMailerTestContent : MailerTestContent a -> String
+encodeMailerTestContent : MailerTestContent a -> Encode.Value
 encodeMailerTestContent { hostname, username, password, recipient } =
-    encode
-        [ ( "hostname", hostname )
-        , ( "username", username )
-        , ( "password", password )
-        , ( "recipient", recipient )
+    Encode.object
+        [ ( "hostname", Encode.string hostname )
+        , ( "username", Encode.string username )
+        , ( "password", Encode.string password )
+        , ( "recipient", Encode.string recipient )
         ]
 
 
-encodeConfig : DatabaseTestContent a -> MailerTestContent b -> String
+encodeConfig : DatabaseTestContent a -> MailerTestContent b -> Encode.Value
 encodeConfig database mailer =
-    encode
-        [ ( "database_hostname", database.hostname )
-        , ( "database_username", database.username )
-        , ( "database_password", database.password )
-        , ( "database_name", database.name )
-        , ( "mailer_enabled"
-          , if mailer.enabled then
-                "true"
-
-            else
-                "false"
-          )
-        , ( "mailer_require_email_confirmation"
-          , if mailer.requireMailConfirmation then
-                "true"
-
-            else
-                "false"
-          )
-        , ( "mailer_hostname", mailer.hostname )
-        , ( "mailer_username", mailer.username )
-        , ( "mailer_password", mailer.password )
+    Encode.object
+        [ ( "database_hostname", Encode.string database.hostname )
+        , ( "database_username", Encode.string database.username )
+        , ( "database_password", Encode.string database.password )
+        , ( "database_name", Encode.string database.name )
+        , ( "mailer_enabled", Encode.bool mailer.enabled )
+        , ( "mailer_require_email_confirmation", Encode.bool mailer.requireMailConfirmation )
+        , ( "mailer_hostname", Encode.string mailer.hostname )
+        , ( "mailer_username", Encode.string mailer.username )
+        , ( "mailer_password", Encode.string mailer.password )
         ]
 
 
@@ -458,7 +435,7 @@ testMailer resultToMsg content =
     Http.post
         { url = "/api/test-mailer"
         , expect = Http.expectWhatever resultToMsg
-        , body = stringBody (encodeMailerTestContent content)
+        , body = Http.jsonBody (encodeMailerTestContent content)
         }
 
 
@@ -467,5 +444,5 @@ setupConfig resultToMsg database mailer =
     Http.post
         { url = "/api/setup-config"
         , expect = Http.expectWhatever resultToMsg
-        , body = stringBody (encodeConfig database mailer)
+        , body = Http.jsonBody (encodeConfig database mailer)
         }

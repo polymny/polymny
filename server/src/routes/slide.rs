@@ -3,8 +3,7 @@
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use rocket::request::Form;
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
@@ -12,7 +11,7 @@ use crate::schema::slides;
 use crate::{Database, Result};
 
 /// A struct to  update Slides
-#[derive(FromForm, AsChangeset, Debug)]
+#[derive(Deserialize, AsChangeset, Debug)]
 #[table_name = "slides"]
 pub struct UpdateSlideForm {
     /// The position of the slide in the slide show
@@ -48,7 +47,7 @@ pub fn update_slide(
     db: Database,
     _user: User,
     slide_id: i32,
-    slide_form: Form<UpdateSlideForm>,
+    slide_form: Json<UpdateSlideForm>,
 ) -> Result<JsonValue> {
     println!("slide info to update : {:#?}", slide_form);
 
@@ -67,7 +66,7 @@ pub fn move_slide(
     db: Database,
     _user: User,
     slide_id: i32,
-    move_slide: Form<UpdateSlideForm>,
+    move_slide: Json<UpdateSlideForm>,
 ) -> Result<JsonValue> {
     // let (asset, projects) = Asset::get(id, &db)?;
     // Ok(json!({ "asset": asset, "projects": projects } ))
