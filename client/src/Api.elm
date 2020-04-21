@@ -6,6 +6,7 @@ module Api exposing
     , Session
     , Slide
     , capsuleFromId
+    , capsuleStructure
     , capsuleUploadSlideShow
     , capsulesFromProjectId
     , createProject
@@ -350,6 +351,20 @@ capsuleUploadSlideShow resultToMsg id content =
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
         }
+
+
+capsuleStructure : CapsuleDetails -> String
+capsuleStructure capsule =
+    let
+        slides : List (List Slide)
+        slides =
+            sortSlides capsule.slides
+
+        gosStructure : List Slide -> String
+        gosStructure gos =
+            String.join "," (List.map (\x -> String.fromInt x.id) gos)
+    in
+    String.join ";" (List.map gosStructure slides)
 
 
 
