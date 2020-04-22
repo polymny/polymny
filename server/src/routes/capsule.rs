@@ -10,7 +10,7 @@ use rocket::http::ContentType;
 use rocket::request::Form;
 use rocket::Data;
 
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
@@ -25,7 +25,9 @@ use crate::db::capsule::Capsule;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
+use crate::routes::slide::UpdateSlideForm;
 use crate::schema::capsules;
+use crate::schema::slides;
 use crate::{Database, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -258,7 +260,7 @@ pub fn upload_slides(
 }
 
 /// A struct that sever gos_order request
-#[derive(FromForm, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct GosOrderForm {
     /// Store the gos order
     pub order: String,
@@ -270,24 +272,32 @@ pub fn gos_order(
     db: Database,
     user: User,
     id: i32,
-    gos_form: Form<GosOrderForm>,
+    gos_form: Json<GosOrderForm>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     let goss: Vec<&str> = gos_form.order.split(":").collect();
 
-    for (i, slides) in goss.into_iter().enumerate() {
-        //let ids: Vec<&str> = slides.split(',').collect();
+    let mut position = 1;
+    for (gos, slides) in goss.into_iter().enumerate() {
         let ids: Vec<i32> = slides
             .split(',')
             .map(|x| x.parse::<i32>().unwrap())
             .collect();
 
-        for (id, position) in ids.iter().enumerate() {
-            println!("id = {:#?}", id);
-            //let slide = Slide::get(id, &db)?;
-            //println!("slide = {:#?}", slide);
+        for (position_in_gos, slide_id) in ids.iter().enumerate() {
+            use crate::schema::slides::dsl::id;
+            diesel::update(slides::table)
+                .filter(id.eq(slide_id))
+                .set(&UpdateSlideForm {
+                    position: Some(position),
+                    position_in_gos: Some((position_in_gos + 1) as i32),
+                    gos: Some((gos + 1) as i32),
+                    asset_id: None,
+                    capsule_id: None,
+                })
+                .execute(&db.0)?;
+            position += 1;
         }
-        println!("i= {:#?}", i);
     }
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
