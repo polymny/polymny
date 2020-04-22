@@ -28,7 +28,7 @@ use crate::db::user::User;
 use crate::routes::slide::UpdateSlideForm;
 use crate::schema::capsules;
 use crate::schema::slides;
-use crate::{Database, Result};
+use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(FromForm, Debug)]
@@ -275,16 +275,18 @@ pub fn gos_order(
     gos_form: Json<GosOrderForm>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    let goss: Vec<&str> = gos_form.order.split(":").collect();
+    let goss = gos_form.order.split(";").enumerate();
 
     let mut position = 1;
-    for (gos, slides) in goss.into_iter().enumerate() {
-        let ids: Vec<i32> = slides
-            .split(',')
-            .map(|x| x.parse::<i32>().unwrap())
-            .collect();
+    for (gos, slides) in goss {
+        let ids = slides.split(',').map(|x| x.parse::<i32>()).enumerate();
 
-        for (position_in_gos, slide_id) in ids.iter().enumerate() {
+        for (position_in_gos, slide_id) in ids {
+            let slide_id = match slide_id {
+                Ok(v) => v,
+                Err(_) => return Err(Error::NotFound),
+            };
+
             use crate::schema::slides::dsl::id;
             diesel::update(slides::table)
                 .filter(id.eq(slide_id))
