@@ -1,5 +1,6 @@
 module Colors exposing
-    ( danger
+    ( black
+    , danger
     , dangerDark
     , dangerLight
     , grey
@@ -42,6 +43,11 @@ greyColor =
 whiteColor : Color
 whiteColor =
     Color.fromRGB ( 255, 255, 255 )
+
+
+blackColor : Color
+blackColor =
+    Color.fromRGB ( 0, 0, 0 )
 
 
 primaryColor : Color
@@ -122,6 +128,11 @@ grey =
 white : Element.Color
 white =
     colorToUi whiteColor
+
+
+black : Element.Color
+black =
+    colorToUi blackColor
 
 
 primary : Element.Color

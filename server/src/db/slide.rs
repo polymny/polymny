@@ -28,8 +28,11 @@ pub struct Slide {
     /// The asset associated to slide.
     pub asset_id: i32,
 
-    /// capsule id
+    /// The capsule id
     pub capsule_id: i32,
+
+    /// The prompt text
+    pub prompt: String,
 }
 
 /// A slide that isn't stored into the database yet.
@@ -50,6 +53,9 @@ pub struct NewSlide {
 
     /// capsule id
     pub capsule_id: i32,
+
+    /// The prompt text
+    pub prompt: String,
 }
 
 impl Slide {
@@ -61,6 +67,7 @@ impl Slide {
         gos: i32,
         asset_id: i32,
         capsule_id: i32,
+        prompt: &str,
     ) -> Result<Slide> {
         Ok(NewSlide {
             position,
@@ -68,6 +75,7 @@ impl Slide {
             gos,
             asset_id,
             capsule_id,
+            prompt: String::from(prompt),
         }
         .save(&db)?)
     }
@@ -79,6 +87,7 @@ impl Slide {
         gos: i32,
         asset_id: i32,
         capsule_id: i32,
+        prompt: &str,
     ) -> Result<NewSlide> {
         Ok(NewSlide {
             position,
@@ -86,6 +95,7 @@ impl Slide {
             gos,
             asset_id,
             capsule_id,
+            prompt: String::from(prompt),
         })
     }
 
@@ -146,6 +156,9 @@ pub struct SlideWithAsset {
 
     /// capsule id
     pub capsule_id: i32,
+
+    /// The prompt text
+    pub prompt: String,
 }
 
 impl SlideWithAsset {
@@ -158,6 +171,7 @@ impl SlideWithAsset {
             gos: slide.gos,
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
+            prompt: slide.prompt.clone(),
         })
     }
     /// delete a slide.

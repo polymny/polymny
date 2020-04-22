@@ -7,7 +7,7 @@ use std::process::Command;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 
-use rocket::request::Form;
+use rocket_contrib::json::Json;
 
 use crate::mailer::Mailer;
 use crate::templates::{TEST_EMAIL_HTML, TEST_EMAIL_PLAIN_TEXT};
@@ -15,7 +15,7 @@ use crate::templates::{TEST_EMAIL_HTML, TEST_EMAIL_PLAIN_TEXT};
 use crate::Result;
 
 /// A struct that verifies the form for the database check route.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct DatabaseTestForm {
     /// The hostname of the database.
     hostname: String,
@@ -32,7 +32,7 @@ pub struct DatabaseTestForm {
 
 /// Tests a database connection from its credentials.
 #[post("/test-database", data = "<form>")]
-pub fn test_database(form: Form<DatabaseTestForm>) -> Result<()> {
+pub fn test_database(form: Json<DatabaseTestForm>) -> Result<()> {
     // Build postgres url from credentials
     let url = format!(
         "postgres://{}:{}@{}/{}",
@@ -47,7 +47,7 @@ pub fn test_database(form: Form<DatabaseTestForm>) -> Result<()> {
 }
 
 /// A struct that verifies the form for the mailer check route.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct MailerTestForm {
     /// The hostname of the SMTP server.
     hostname: String,
@@ -64,7 +64,7 @@ pub struct MailerTestForm {
 
 /// Tests the mail configuration.
 #[post("/test-mailer", data = "<form>")]
-pub fn test_mailer(form: Form<MailerTestForm>) -> Result<()> {
+pub fn test_mailer(form: Json<MailerTestForm>) -> Result<()> {
     let mailer = Mailer::new(
         true,
         String::from(""),
@@ -84,7 +84,7 @@ pub fn test_mailer(form: Form<MailerTestForm>) -> Result<()> {
 }
 
 /// A struct that contains the whole configuration.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct ConfigForm {
     /// The hostname of the database.
     database_hostname: String,
@@ -116,7 +116,7 @@ pub struct ConfigForm {
 
 /// The routes that sets the configuration.
 #[post("/setup-config", data = "<form>")]
-pub fn setup_config(form: Form<ConfigForm>) -> Result<()> {
+pub fn setup_config(form: Json<ConfigForm>) -> Result<()> {
     let mut key = String::from_utf8(
         Command::new("openssl")
             .arg("rand")

@@ -61,5 +61,6 @@ CREATE TABLE slides (
     position_in_gos INT NOT NULL,
     gos INT NOT NULL,
     asset_id INT NOT NULL references assets(id),
-    capsule_id INT NOT NULL references capsules(id)
+    capsule_id INT NOT NULL references capsules(id),
+    prompt TEXT NOT NULL
 );
