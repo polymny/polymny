@@ -6,7 +6,6 @@ module Api exposing
     , Session
     , Slide
     , capsuleFromId
-    , capsuleStructure
     , capsuleUploadSlideShow
     , capsulesFromProjectId
     , createProject
@@ -15,6 +14,7 @@ module Api exposing
     , decodeCapsules
     , decodeProject
     , decodeSession
+    , encodeSlideStructure
     , logOut
     , login
     , newCapsule
@@ -25,6 +25,7 @@ module Api exposing
     , testDatabase
     , testMailer
     , updateSlide
+    , updateSlideStructure
     )
 
 import Dict exposing (Dict)
@@ -345,20 +346,6 @@ capsuleUploadSlideShow resultToMsg id content =
         }
 
 
-capsuleStructure : CapsuleDetails -> String
-capsuleStructure capsule =
-    let
-        slides : List (List Slide)
-        slides =
-            sortSlides capsule.slides
-
-        gosStructure : List Slide -> String
-        gosStructure gos =
-            String.join "," (List.map (\x -> String.fromInt x.id) gos)
-    in
-    String.join ";" (List.map gosStructure slides)
-
-
 type alias EditSlideContent a =
     { a
         | prompt : String
@@ -380,6 +367,24 @@ updateSlide resultToMsg id content =
         , url = "/api/slide/" ++ String.fromInt id
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.jsonBody (encodeSlideContent content)
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+encodeSlideStructure : CapsuleDetails -> Encode.Value
+encodeSlideStructure capsule =
+    Encode.list (Encode.list (\x -> Encode.int x.id)) (sortSlides capsule.slides)
+
+
+updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg
+updateSlideStructure resultToMsg content =
+    Http.request
+        { method = "PUT"
+        , headers = []
+        , url = "/api/" ++ String.fromInt content.capsule.id ++ "/gos_order"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.jsonBody (encodeSlideStructure content)
         , timeout = Nothing
         , tracker = Nothing
         }
