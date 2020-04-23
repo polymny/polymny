@@ -16,6 +16,7 @@ import File.Select as Select
 import Html
 import Html.Attributes
 import Json.Decode as Decode
+import Log exposing (debug)
 import Status exposing (Status)
 import Task
 import Time
@@ -498,16 +499,32 @@ updateLoggedIn msg { session, page } =
                 ( data, cmd ) =
                     updateSlideDnD slideMsg { capsule = capsule, slideModel = slideModel, gosModel = gosModel }
 
+                moveCmd =
+                    Cmd.map (\x -> LoggedInMsg (SlideDnD x)) cmd
+
+                syncCmd =
+                    Api.updateSlideStructure resultToMsg5 data.capsule
+
                 newPage =
                     CapsulePage data.capsule form prompt data.slideModel data.gosModel
+
+                cmds =
+                    if Api.compareSlides capsule.slides data.capsule.slides then
+                        moveCmd
+
+                    else
+                        Cmd.batch [ moveCmd, syncCmd ]
             in
-            ( { session = session, page = newPage }, Cmd.map (\x -> LoggedInMsg (SlideDnD x)) cmd )
+            ( { session = session, page = newPage }, cmds )
 
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
 
         ( CapsulesReceived project newCapsules, _ ) ->
             ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
+
+        ( CapsuleReceived capsule, CapsulePage _ form prompt a b ) ->
+            ( LoggedInModel session (CapsulePage capsule form prompt a b), Cmd.none )
 
         ( CapsuleClicked capsule, _ ) ->
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
@@ -1720,19 +1737,3 @@ uploadButton =
     Element.map LoggedInMsg <|
         Element.map UploadSlideShowMsg <|
             Ui.primaryButton (Just UploadSlideShowFormSubmitted) "Upload"
-
-
-
--- Auxliary function debug
-
-
-debug : String -> a -> a
-debug message value =
-    Debug.log message value
-
-
-
--- Release version
--- debug : String -> a -> a
--- debug message value =
---     value

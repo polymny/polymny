@@ -8,6 +8,7 @@ module Api exposing
     , capsuleFromId
     , capsuleUploadSlideShow
     , capsulesFromProjectId
+    , compareSlides
     , createProject
     , decodeCapsule
     , decodeCapsuleDetails
@@ -329,6 +330,24 @@ sortSlides input =
         )
 
 
+compareSlides : List Slide -> List Slide -> Bool
+compareSlides slides1 slides2 =
+    let
+        sl1 =
+            sortSlides slides1
+
+        sl2 =
+            sortSlides slides2
+
+        s1 =
+            List.map (List.map .id) sl1
+
+        s2 =
+            List.map (List.map .id) sl2
+    in
+    s1 == s2
+
+
 capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
 capsuleFromId resultToMsg id =
     Http.get
@@ -380,9 +399,9 @@ encodeSlideStructure capsule =
 updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg
 updateSlideStructure resultToMsg content =
     Http.request
-        { method = "PUT"
+        { method = "POST"
         , headers = []
-        , url = "/api/" ++ String.fromInt content.capsule.id ++ "/gos_order"
+        , url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/gos_order"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.jsonBody (encodeSlideStructure content)
         , timeout = Nothing

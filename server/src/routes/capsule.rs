@@ -258,23 +258,15 @@ pub fn upload_slides(
     Ok(json!({ "capsule": capsule }))
 }
 
-/// A struct that sever gos_order request
-#[derive(Deserialize, Debug)]
-pub struct GosOrderForm {
-    /// Store the gos order
-    pub order: Vec<Vec<i32>>,
-}
-
 /// order capsule gos and slide
-#[post("/capsule/<id>/gos_order", data = "<gos_form>")]
+#[post("/capsule/<id>/gos_order", data = "<goss>")]
 pub fn gos_order(
     db: Database,
     user: User,
     id: i32,
-    gos_form: Json<GosOrderForm>,
+    goss: Json<Vec<Vec<i32>>>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    let goss = &gos_form.order;
 
     let mut position = 1;
     for (gos, slides) in goss.iter().enumerate() {
