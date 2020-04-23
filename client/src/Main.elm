@@ -1466,7 +1466,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
             LoggedInMsg (EditPromptMsg (EditPromptOpenDialog slide.id slide.prompt))
     in
     Element.el
-        (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width Element.fill :: dragAttributes ++ dropAttributes ++ ghostAttributes)
+        (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width Element.fill :: dropAttributes ++ ghostAttributes)
         (Element.row
             [ Element.padding 10
             , Background.color Colors.white
@@ -1479,6 +1479,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
                     :: Border.rounded 5
                     :: Border.width 1
                     :: eventLessAttributes
+                    ++ dragAttributes
                 )
                 [ viewSlideImage slide.asset.asset_path
                 , Element.paragraph [ Element.padding 10, Font.size 18 ]
