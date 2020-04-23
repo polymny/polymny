@@ -3,6 +3,7 @@ module Main exposing (main)
 import Api
 import Browser
 import Colors
+import Dialog
 import DnDList
 import DnDList.Groups
 import Element exposing (Element)
@@ -15,7 +16,6 @@ import File.Select as Select
 import Html
 import Html.Attributes
 import Json.Decode as Decode
-import Lorem
 import Status exposing (Status)
 import Task
 import Time
@@ -74,13 +74,27 @@ emptyNewProjectContent =
 
 
 type alias UploadForm =
-    { file : Maybe File
+    { status : Status () ()
+    , file : Maybe File
     }
 
 
 emptyUploadForm : UploadForm
 emptyUploadForm =
-    UploadForm Nothing
+    UploadForm Status.NotSent Nothing
+
+
+type alias EditPromptContent =
+    { status : Status () ()
+    , showDialog : Bool
+    , prompt : String
+    , slideId : Int
+    }
+
+
+emptyEditPromptContent : EditPromptContent
+emptyEditPromptContent =
+    EditPromptContent Status.NotSent False "" 0
 
 
 type alias NewCapsuleContent =
@@ -98,6 +112,7 @@ emptyNewCapsuleContent =
 
 type alias Global =
     { zone : Time.Zone
+    , dummy : String
     }
 
 
@@ -125,7 +140,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails UploadForm DnDList.Groups.Model DnDList.Model
+    | CapsulePage Api.CapsuleDetails UploadForm EditPromptContent DnDList.Groups.Model DnDList.Model
 
 
 isLoggedIn : Model -> Bool
@@ -142,7 +157,7 @@ init : Decode.Value -> ( FullModel, Cmd Msg )
 init flags =
     let
         global =
-            { zone = Time.utc }
+            { zone = Time.utc, dummy = "" }
 
         initialCommand =
             Task.perform TimeZoneChange Time.here
@@ -164,7 +179,7 @@ modelFromFlags flags =
         Ok "capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm slideSystem.model gosSystem.model))
+                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model))
 
                 ( _, _ ) ->
                     Home
@@ -275,6 +290,7 @@ type LoggedInMsg
     | CapsuleReceived Api.CapsuleDetails
     | SlideDnD SlideDnDMsg
     | UploadSlideShowMsg UploadSlideShowMsg
+    | EditPromptMsg EditPromptMsg
 
 
 type NewProjectMsg
@@ -302,6 +318,14 @@ type UploadSlideShowMsg
     | UploadSlideShowFormSubmitted
 
 
+type EditPromptMsg
+    = EditPromptOpenDialog Int String
+    | EditPromptCloseDialog
+    | EditPromptTextChanged String
+    | EditPromptSubmitted
+    | EditPromptSuccess Api.Slide
+
+
 
 -- SUBSCRIPTIONS
 
@@ -311,7 +335,7 @@ subscriptions { model } =
     case model of
         LoggedIn { page } ->
             case page of
-                CapsulePage _ _ slideModel gosModel ->
+                CapsulePage _ _ _ slideModel gosModel ->
                     Sub.map (\x -> LoggedInMsg (SlideDnD x))
                         (Sub.batch
                             [ slideSystem.subscriptions slideModel
@@ -455,20 +479,27 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
-        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule form _ _ ) ->
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule uploadSlideShowContent editPromptContent a b ) ->
             let
                 ( newSession, newModel, newCmd ) =
-                    updateUploadSlideShow newUploadSlideShowMsg session form capsule.capsule.id
+                    updateUploadSlideShow newUploadSlideShowMsg session uploadSlideShowContent capsule.capsule.id
             in
-            ( { session = newSession, page = CapsulePage capsule newModel slideSystem.model gosSystem.model }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule newModel editPromptContent a b }, newCmd )
 
-        ( SlideDnD slideMsg, CapsulePage capsule form slideModel gosModel ) ->
+        ( EditPromptMsg editPromptMsg, CapsulePage capsule uploadSlideShowContent editPromptContent a b ) ->
+            let
+                ( newSession, newModel, newCmd ) =
+                    updateEditPromptMsg editPromptMsg session editPromptContent
+            in
+            ( { session = newSession, page = CapsulePage capsule uploadSlideShowContent newModel a b }, newCmd )
+
+        ( SlideDnD slideMsg, CapsulePage capsule form prompt slideModel gosModel ) ->
             let
                 ( data, cmd ) =
                     updateSlideDnD slideMsg { capsule = capsule, slideModel = slideModel, gosModel = gosModel }
 
                 newPage =
-                    CapsulePage data.capsule form data.slideModel data.gosModel
+                    CapsulePage data.capsule form prompt data.slideModel data.gosModel
             in
             ( { session = session, page = newPage }, Cmd.map (\x -> LoggedInMsg (SlideDnD x)) cmd )
 
@@ -482,7 +513,7 @@ updateLoggedIn msg { session, page } =
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule emptyUploadForm slideSystem.model gosSystem.model), Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -529,6 +560,31 @@ updateNewCapsuleMsg msg session projectId content =
             ( session
             , { content | status = Status.Success () }
             , Cmd.none
+            )
+
+
+updateEditPromptMsg : EditPromptMsg -> Api.Session -> EditPromptContent -> ( Api.Session, EditPromptContent, Cmd Msg )
+updateEditPromptMsg msg session content =
+    case msg of
+        EditPromptOpenDialog id text ->
+            ( session, { content | showDialog = True, prompt = text, slideId = id }, Cmd.none )
+
+        EditPromptCloseDialog ->
+            ( session, { content | showDialog = False }, Cmd.none )
+
+        EditPromptTextChanged text ->
+            ( session, { content | prompt = text }, Cmd.none )
+
+        EditPromptSubmitted ->
+            ( session
+            , { content | status = Status.Sent }
+            , Api.updateSlide resultToMsg6 content.slideId content
+            )
+
+        EditPromptSuccess slide ->
+            ( session
+            , { content | showDialog = False, status = Status.Success () }
+            , Api.capsuleFromId resultToMsg5 slide.capsule_id
             )
 
 
@@ -647,6 +703,11 @@ resultToMsg5 result =
     resultToMsg (\x -> LoggedInMsg <| CapsuleReceived x) (\_ -> Noop) result
 
 
+resultToMsg6 : Result e Api.Slide -> Msg
+resultToMsg6 result =
+    resultToMsg (\x -> LoggedInMsg <| EditPromptMsg <| EditPromptSuccess <| x) (\_ -> Noop) result
+
+
 
 -- VIEW
 
@@ -677,7 +738,7 @@ viewContent { global, model } =
             case model of
                 LoggedIn { page } ->
                     case page of
-                        CapsulePage capsuleDetails _ slideModel gosModel ->
+                        CapsulePage capsuleDetails _ _ slideModel gosModel ->
                             [ Element.inFront (gosGhostView gosModel slideModel capsuleDetails.slides)
                             , Element.inFront (slideGhostView slideModel capsuleDetails.slides)
                             ]
@@ -857,8 +918,8 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails form slidesModel gosModel ->
-                    capsulePageView session capsuleDetails form slidesModel gosModel
+                CapsulePage capsuleDetails form modal slidesModel gosModel ->
+                    capsulePageView session capsuleDetails form modal slidesModel gosModel
 
         element =
             Element.column
@@ -1139,40 +1200,42 @@ designGosAttributes =
     ]
 
 
-designSlideAttributes : List (Element.Attribute msg)
-designSlideAttributes =
-    [ Element.padding 10
-    , Element.width Element.fill
-    , Border.rounded 5
-    , Border.width 1
-    , Border.color Colors.white
-    , Border.dashed
-    , Background.color Colors.grey
-    ]
-
-
-capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> DnDList.Groups.Model -> DnDList.Model -> Element Msg
-capsulePageView session capsuleDetails form slideModel gosModel =
+capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> EditPromptContent -> DnDList.Groups.Model -> DnDList.Model -> Element Msg
+capsulePageView session capsuleDetails form editPromptContent slideModel gosModel =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
             Api.sortSlides capsuleDetails.slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
+
+        dialogConfig =
+            if editPromptContent.showDialog then
+                Just (configPromptModal editPromptContent)
+
+            else
+                Nothing
     in
-    Element.row (Element.scrollbarX :: designAttributes)
-        [ capsuleInfoView session capsuleDetails form
-        , Element.column
-            (Element.scrollbarX
-                :: Element.width Element.fill
-                :: Element.centerX
-                :: Element.alignTop
-                :: Background.color Colors.dangerLight
-                :: designAttributes
-            )
-            [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-            , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
-            ]
+    Element.el
+        [ Element.padding 10
+        , Element.mapAttribute LoggedInMsg <|
+            Element.mapAttribute EditPromptMsg <|
+                Element.inFront (Dialog.view dialogConfig)
         ]
+        (Element.row (Element.scrollbarX :: designAttributes)
+            [ capsuleInfoView session capsuleDetails form
+            , Element.column
+                (Element.scrollbarX
+                    :: Element.width Element.fill
+                    :: Element.centerX
+                    :: Element.alignTop
+                    :: Background.color Colors.dangerLight
+                    :: designAttributes
+                )
+                [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
+                , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
+                ]
+            ]
+        )
 
 
 capsuleInfoView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
@@ -1288,9 +1351,12 @@ genericGosView options gosModel slideModel offset index gos =
     in
     Element.column
         (Element.htmlAttribute (Html.Attributes.id gosId)
-            :: designGosAttributes
-            ++ dropAttributes
+            :: Element.padding 10
+            :: Element.spacing 20
+            :: Element.centerX
+            :: dropAttributes
             ++ ghostAttributes
+            ++ designGosAttributes
         )
         [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
             [ Element.el
@@ -1394,12 +1460,26 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
             else
                 []
+
+        promptMsg : Msg
+        promptMsg =
+            LoggedInMsg (EditPromptMsg (EditPromptOpenDialog slide.id slide.prompt))
     in
     Element.el
         (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width Element.fill :: dragAttributes ++ dropAttributes ++ ghostAttributes)
         (Element.row
-            designSlideAttributes
-            [ Element.column (Element.padding 10 :: Element.spacing 10 :: Element.alignTop :: eventLessAttributes)
+            [ Element.padding 10
+            , Background.color Colors.white
+            , Border.rounded 5
+            , Border.width 1
+            ]
+            [ Element.column
+                (Element.padding 10
+                    :: Element.alignTop
+                    :: Border.rounded 5
+                    :: Border.width 1
+                    :: eventLessAttributes
+                )
                 [ viewSlideImage slide.asset.asset_path
                 , Element.paragraph [ Element.padding 10, Font.size 18 ]
                     [ Element.text "Additional Resources "
@@ -1416,6 +1496,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
             , Element.textColumn
                 (Background.color Colors.white
                     :: Element.alignTop
+                    :: Element.spacing 10
                     :: Element.width
                         (Element.fill
                             |> Element.maximum 500
@@ -1423,10 +1504,18 @@ genericDesignSlideView options slideModel offset localIndex slide =
                         )
                     :: eventLessAttributes
                 )
-                [ Element.text "Prompteur:"
-                , Element.paragraph [] [ Element.text (Lorem.sentence 20) ]
-                , Element.paragraph [] [ Element.text (Lorem.sentence 30) ]
-                , Element.paragraph [] [ Element.text (Lorem.sentence 15) ]
+                [ Element.el [ Element.centerX, Font.size 14 ] (Element.text "Prompteur")
+                , Element.el
+                    [ Border.rounded 5
+                    , Border.width 1
+                    , Element.padding 5
+                    , Font.size 12
+                    , Element.scrollbarY
+                    , Element.height (Element.px 150)
+                    , Element.width (Element.px 200)
+                    ]
+                    (Element.text slide.prompt)
+                , Ui.editButton (Just promptMsg) "Modifier le prompteur"
                 ]
             ]
         )
@@ -1509,6 +1598,83 @@ nonFull model =
 
 
 -- HELPERS
+
+
+configPromptModal : EditPromptContent -> Dialog.Config EditPromptMsg
+configPromptModal editPromptContent =
+    { closeMessage = Just EditPromptCloseDialog
+    , maskAttributes = []
+    , containerAttributes =
+        [ Background.color Colors.white
+        , Border.rounded 5
+        , Element.centerX
+        , Element.padding 10
+        , Element.spacing 20
+        , Element.width (Element.px 600)
+        ]
+    , headerAttributes = [ Font.size 24, Element.padding 5 ]
+    , bodyAttributes = [ Background.color Colors.grey, Element.padding 20, Element.width Element.fill ]
+    , footerAttributes = []
+    , header = Just (Element.text "PROMPTER")
+    , body = Just (bodyPromptModal editPromptContent)
+    , footer = Nothing
+    }
+
+
+bodyPromptModal : EditPromptContent -> Element EditPromptMsg
+bodyPromptModal { status, prompt } =
+    let
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Updating slide..."
+
+                Status.Success () ->
+                    Ui.primaryButtonDisabled "Slide updated"
+
+                _ ->
+                    Ui.primaryButton (Just EditPromptSubmitted) "Update prompt"
+
+        message =
+            case status of
+                Status.Error () ->
+                    Just (Ui.errorModal "Slide update failed")
+
+                Status.Success () ->
+                    Just (Ui.successModal "Slide prommpt udpdated")
+
+                _ ->
+                    Nothing
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Edit prompt" ]
+
+        fields =
+            [ Input.multiline [ Element.height (Element.px 400) ]
+                { label = Input.labelAbove [] (Element.text "Prompteur:")
+                , onChange = EditPromptTextChanged
+                , placeholder = Nothing
+                , text = prompt
+                , spellcheck = True
+                }
+            , submitButton
+            ]
+
+        form =
+            case message of
+                Just m ->
+                    header :: m :: fields
+
+                Nothing ->
+                    header :: fields
+    in
+    Element.column
+        [ Element.centerX
+        , Element.padding 10
+        , Element.spacing 10
+        , Element.width Element.fill
+        ]
+        form
 
 
 homeButton : Element Msg

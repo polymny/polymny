@@ -7,7 +7,6 @@ use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
 use rocket::http::ContentType;
-use rocket::request::Form;
 use rocket::Data;
 
 use rocket_contrib::json::{Json, JsonValue};
@@ -31,7 +30,7 @@ use crate::schema::slides;
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
-#[derive(FromForm, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct NewCapsuleForm {
     /// The (unique) name of the capsule.
     pub name: String,
@@ -51,7 +50,7 @@ pub struct NewCapsuleForm {
 }
 
 /// A struct/form for update (PUT) operations
-#[derive(FromForm, AsChangeset, Debug)]
+#[derive(Deserialize, AsChangeset, Debug)]
 #[table_name = "capsules"]
 pub struct UpdateCapsuleForm {
     /// The (unique) name of the capsule.
@@ -71,7 +70,7 @@ pub struct UpdateCapsuleForm {
 
 /// The route to register new capsule.
 #[post("/new-capsule", data = "<capsule>")]
-pub fn new_capsule(db: Database, user: User, capsule: Form<NewCapsuleForm>) -> Result<JsonValue> {
+pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> Result<JsonValue> {
     user.get_project_by_id(capsule.project_id, &db)?;
 
     let capsule = Capsule::new(
@@ -109,7 +108,7 @@ pub fn update_capsule(
     db: Database,
     user: User,
     capsule_id: i32,
-    capsule_form: Form<UpdateCapsuleForm>,
+    capsule_form: Json<UpdateCapsuleForm>,
 ) -> Result<JsonValue> {
     user.get_capsule_by_id(capsule_id, &db)?;
 
@@ -230,7 +229,7 @@ pub fn upload_slides(
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
                         // GOS also taje (idx*100)
-                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id)?;
+                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id, "Dummy prompt")?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
@@ -296,6 +295,7 @@ pub fn gos_order(
                     gos: Some((gos + 1) as i32),
                     asset_id: None,
                     capsule_id: None,
+                    prompt: None,
                 })
                 .execute(&db.0)?;
             position += 1;

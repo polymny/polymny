@@ -4,10 +4,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use rocket::http::ContentType;
-use rocket::request::Form;
 use rocket::Data;
 
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
@@ -21,7 +20,7 @@ use crate::db::user::User;
 use crate::{Database, Result};
 
 /// A struct that serves the purpose of veryifing the form.
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct NewProjectForm {
     /// The username of the form.
     project_name: String,
@@ -29,7 +28,7 @@ pub struct NewProjectForm {
 
 /// The route to register new project.
 #[post("/new-project", data = "<project>")]
-pub fn new_project(db: Database, user: User, project: Form<NewProjectForm>) -> Result<JsonValue> {
+pub fn new_project(db: Database, user: User, project: Json<NewProjectForm>) -> Result<JsonValue> {
     let project = Project::create(&project.project_name, user.id)?;
     Ok(json!(project.save(&db)?))
 }
@@ -59,7 +58,7 @@ pub fn update_project(
     db: Database,
     user: User,
     id: i32,
-    project_form: Form<NewProjectForm>,
+    project_form: Json<NewProjectForm>,
 ) -> Result<JsonValue> {
     let project = user.get_project_by_id(id, &db)?;
     Ok(json!(project.update(

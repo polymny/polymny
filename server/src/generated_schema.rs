@@ -60,6 +60,7 @@ table! {
         gos -> Int4,
         asset_id -> Int4,
         capsule_id -> Int4,
+        prompt -> Text,
     }
 }
 
