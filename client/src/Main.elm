@@ -204,7 +204,7 @@ modelFromFlags flags =
 -- Drag n drop
 
 
-slideConfig : DnDList.Groups.Config Api.Slide
+slideConfig : DnDList.Groups.Config (Maybe Api.Slide)
 slideConfig =
     { beforeUpdate = \_ _ list -> list
     , listen = DnDList.Groups.OnDrag
@@ -218,22 +218,38 @@ slideConfig =
     }
 
 
-slideComparator : Api.Slide -> Api.Slide -> Bool
-slideComparator s1 s2 =
-    s1.gos == s2.gos
+slideComparator : Maybe Api.Slide -> Maybe Api.Slide -> Bool
+slideComparator slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( Just s1, Just s2 ) ->
+            s1.gos == s2.gos
+
+        ( Nothing, Nothing ) ->
+            True
+
+        _ ->
+            False
 
 
-slideSetter : Api.Slide -> Api.Slide -> Api.Slide
-slideSetter s1 s2 =
-    { s2 | gos = s1.gos, position_in_gos = s1.position_in_gos }
+slideSetter : Maybe Api.Slide -> Maybe Api.Slide -> Maybe Api.Slide
+slideSetter slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( Just s1, Just s2 ) ->
+            Just { s2 | gos = s1.gos }
+
+        ( Nothing, Just s2 ) ->
+            Just s2
+
+        _ ->
+            Nothing
 
 
-slideSystem : DnDList.Groups.System Api.Slide SlideDnDMsg
+slideSystem : DnDList.Groups.System (Maybe Api.Slide) SlideDnDMsg
 slideSystem =
     DnDList.Groups.create slideConfig SlideMoved
 
 
-gosConfig : DnDList.Config (List Api.Slide)
+gosConfig : DnDList.Config (List (Maybe Api.Slide))
 gosConfig =
     { beforeUpdate = \_ _ list -> list
     , movement = DnDList.Free
@@ -242,7 +258,7 @@ gosConfig =
     }
 
 
-gosSystem : DnDList.System (List Api.Slide) SlideDnDMsg
+gosSystem : DnDList.System (List (Maybe Api.Slide)) SlideDnDMsg
 gosSystem =
     DnDList.create gosConfig GosMoved
 
@@ -644,11 +660,14 @@ updateSlideDnD slideMsg data =
     case slideMsg of
         SlideMoved msg ->
             let
+                s =
+                    List.intersperse [ Nothing ] (List.map (List.map Just) (Api.sortSlides data.capsule.slides))
+
                 ( slideModel, slides ) =
-                    slideSystem.update msg data.slideModel data.capsule.slides
+                    slideSystem.update msg data.slideModel (List.concat s)
 
                 updatedSlides =
-                    List.indexedMap (\i slide -> { slide | position_in_gos = i }) slides
+                    List.indexedMap (\i slide -> { slide | position_in_gos = i }) (List.filterMap (\x -> x) slides)
 
                 capsule =
                     data.capsule
@@ -660,13 +679,16 @@ updateSlideDnD slideMsg data =
 
         GosMoved msg ->
             let
+                s =
+                    List.intersperse [ Nothing ] (List.map (List.map Just) (Api.sortSlides data.capsule.slides))
+
                 ( gosModel, goss ) =
-                    gosSystem.update msg data.gosModel (Api.sortSlides data.capsule.slides)
+                    gosSystem.update msg data.gosModel s
 
                 updatedGoss =
                     List.indexedMap
                         (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
-                        goss
+                        (List.map (\x -> List.filterMap (\y -> y) x) goss)
 
                 capsule =
                     data.capsule
@@ -756,8 +778,15 @@ viewContent { global, model } =
                 LoggedIn { page } ->
                     case page of
                         CapsulePage capsuleDetails _ _ slideModel gosModel ->
-                            [ Element.inFront (gosGhostView gosModel slideModel capsuleDetails.slides)
-                            , Element.inFront (slideGhostView slideModel capsuleDetails.slides)
+                            let
+                                slides =
+                                    List.concat
+                                        (List.intersperse [ Nothing ]
+                                            (List.map (List.map Just) (Api.sortSlides capsuleDetails.slides))
+                                        )
+                            in
+                            [ Element.inFront (gosGhostView gosModel slideModel slides)
+                            , Element.inFront (slideGhostView slideModel slides)
                             ]
 
                         _ ->
@@ -1222,7 +1251,7 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
     let
         calculateOffset : Int -> Int
         calculateOffset index =
-            Api.sortSlides capsuleDetails.slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
+            slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
         dialogConfig =
             if editPromptContent.showDialog then
@@ -1230,6 +1259,9 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
 
             else
                 Nothing
+
+        slides =
+            List.intersperse [ Nothing ] (List.map (List.map Just) (Api.sortSlides capsuleDetails.slides))
     in
     Element.el
         [ Element.padding 10
@@ -1249,7 +1281,7 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
                 )
                 [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
                 , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
-                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
+                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) slides)
                 ]
             ]
         )
@@ -1283,7 +1315,7 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
+capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List (Maybe Api.Slide) -> Element Msg
 capsuleGosView gosModel slideModel offset gosIndex gos =
     case gosSystem.info gosModel of
         Just { dragIndex } ->
@@ -1297,7 +1329,7 @@ capsuleGosView gosModel slideModel offset gosIndex gos =
             genericGosView Dragged gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List Api.Slide -> Element Msg
+gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List (Maybe Api.Slide) -> Element Msg
 gosGhostView gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
@@ -1307,13 +1339,17 @@ gosGhostView gosModel slideModel slides =
             Element.none
 
 
-maybeDragGos : DnDList.Model -> List Api.Slide -> Maybe (List Api.Slide)
+maybeDragGos : DnDList.Model -> List (Maybe Api.Slide) -> Maybe (List (Maybe Api.Slide))
 maybeDragGos gosModel slides =
+    let
+        s =
+            List.intersperse [ Nothing ] (List.map (List.map Just) (Api.sortSlides (List.filterMap (\x -> x) slides)))
+    in
     gosSystem.info gosModel
-        |> Maybe.andThen (\{ dragIndex } -> Api.sortSlides slides |> List.drop dragIndex |> List.head)
+        |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
+genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List (Maybe Api.Slide) -> Element Msg
 genericGosView options gosModel slideModel offset index gos =
     let
         gosId : String
@@ -1326,7 +1362,7 @@ genericGosView options gosModel slideModel offset index gos =
 
         dragAttributes : List (Element.Attribute Msg)
         dragAttributes =
-            if options == Dragged then
+            if options == Dragged && gos /= [ Nothing ] then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (gosSystem.dragEvents index gosId))
@@ -1336,7 +1372,7 @@ genericGosView options gosModel slideModel offset index gos =
 
         dropAttributes : List (Element.Attribute Msg)
         dropAttributes =
-            if options == Dropped then
+            if options == Dropped && gos /= [ Nothing ] then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (gosSystem.dropEvents index gosId))
@@ -1395,17 +1431,17 @@ genericGosView options gosModel slideModel offset index gos =
 -- SLIDES VIEWS
 
 
-slideGhostView : DnDList.Groups.Model -> List Api.Slide -> Element Msg
+slideGhostView : DnDList.Groups.Model -> List (Maybe Api.Slide) -> Element Msg
 slideGhostView slideModel slides =
     case maybeDragSlide slideModel slides of
         Just s ->
-            genericDesignSlideView Ghost slideModel 0 0 s
+            genericDesignSlideView Ghost slideModel 0 0 (Just s)
 
         _ ->
             Element.none
 
 
-designSlideView : DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
+designSlideView : DnDList.Groups.Model -> Int -> Int -> Maybe Api.Slide -> Element Msg
 designSlideView slideModel offset localIndex slide =
     case ( slideSystem.info slideModel, maybeDragSlide slideModel ) of
         ( Just { dragIndex }, _ ) ->
@@ -1419,14 +1455,23 @@ designSlideView slideModel offset localIndex slide =
             genericDesignSlideView Dragged slideModel offset localIndex slide
 
 
-maybeDragSlide : DnDList.Groups.Model -> List Api.Slide -> Maybe Api.Slide
+maybeDragSlide : DnDList.Groups.Model -> List (Maybe Api.Slide) -> Maybe Api.Slide
 maybeDragSlide slideModel slides =
-    slideSystem.info slideModel
-        |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
+    let
+        x =
+            slideSystem.info slideModel
+                |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
+    in
+    case x of
+        Just (Just n) ->
+            Just n
+
+        _ ->
+            Nothing
 
 
-genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
-genericDesignSlideView options slideModel offset localIndex slide =
+genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> Maybe Api.Slide -> Element Msg
+genericDesignSlideView options slideModel offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -1442,7 +1487,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
         dragAttributes : List (Element.Attribute Msg)
         dragAttributes =
-            if options == Dragged then
+            if options == Dragged && s /= Nothing then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (slideSystem.dragEvents globalIndex slideId))
@@ -1477,66 +1522,74 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
             else
                 []
-
-        promptMsg : Msg
-        promptMsg =
-            LoggedInMsg (EditPromptMsg (EditPromptOpenDialog slide.id slide.prompt))
     in
-    Element.el
-        (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width Element.fill :: dropAttributes ++ ghostAttributes)
-        (Element.row
-            [ Element.padding 10
-            , Background.color Colors.white
-            , Border.rounded 5
-            , Border.width 1
-            ]
-            [ Element.column
-                (Element.padding 10
-                    :: Element.alignTop
-                    :: Border.rounded 5
-                    :: Border.width 1
-                    :: eventLessAttributes
-                    ++ dragAttributes
-                )
-                [ viewSlideImage slide.asset.asset_path
-                , Element.paragraph [ Element.padding 10, Font.size 18 ]
-                    [ Element.text "Additional Resources "
-                    , Ui.linkButton
-                        (Just (LoggedInMsg NewProjectClicked))
-                        "Click here to Add aditional"
-                    ]
-                , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-                , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
-                , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
-                , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
-                , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
-                ]
-            , Element.textColumn
-                (Background.color Colors.white
-                    :: Element.alignTop
-                    :: Element.spacing 10
-                    :: Element.width
-                        (Element.fill
-                            |> Element.maximum 500
-                            |> Element.minimum 200
-                        )
-                    :: eventLessAttributes
-                )
-                [ Element.el [ Element.centerX, Font.size 14 ] (Element.text "Prompteur")
-                , Element.el
-                    [ Border.rounded 5
+    case s of
+        Nothing ->
+            Element.el
+                (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width (Element.px 50) :: Element.height (Element.px 300) :: dropAttributes ++ ghostAttributes)
+                Element.none
+
+        Just slide ->
+            let
+                promptMsg : Msg
+                promptMsg =
+                    LoggedInMsg (EditPromptMsg (EditPromptOpenDialog slide.id slide.prompt))
+            in
+            Element.el
+                (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width Element.fill :: dropAttributes ++ ghostAttributes)
+                (Element.row
+                    [ Element.padding 10
+                    , Background.color Colors.white
+                    , Border.rounded 5
                     , Border.width 1
-                    , Element.padding 5
-                    , Font.size 12
-                    , Element.scrollbarY
-                    , Element.height (Element.px 150)
-                    , Element.width (Element.px 200)
                     ]
-                    (Element.text slide.prompt)
-                , Ui.editButton (Just promptMsg) "Modifier le prompteur"
-                ]
-            ]
-        )
+                    [ Element.column
+                        (Element.padding 10
+                            :: Element.alignTop
+                            :: Border.rounded 5
+                            :: Border.width 1
+                            :: eventLessAttributes
+                            ++ dragAttributes
+                        )
+                        [ viewSlideImage slide.asset.asset_path
+                        , Element.paragraph [ Element.padding 10, Font.size 18 ]
+                            [ Element.text "Additional Resources "
+                            , Ui.linkButton
+                                (Just (LoggedInMsg NewProjectClicked))
+                                "Click here to Add aditional"
+                            ]
+                        , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
+                        , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
+                        , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
+                        , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
+                        , Element.el [ Font.size 8 ] (Element.text (slide.asset.uuid ++ "_" ++ slide.asset.name))
+                        ]
+                    , Element.textColumn
+                        (Background.color Colors.white
+                            :: Element.alignTop
+                            :: Element.spacing 10
+                            :: Element.width
+                                (Element.fill
+                                    |> Element.maximum 500
+                                    |> Element.minimum 200
+                                )
+                            :: eventLessAttributes
+                        )
+                        [ Element.el [ Element.centerX, Font.size 14 ] (Element.text "Prompteur")
+                        , Element.el
+                            [ Border.rounded 5
+                            , Border.width 1
+                            , Element.padding 5
+                            , Font.size 12
+                            , Element.scrollbarY
+                            , Element.height (Element.px 150)
+                            , Element.width (Element.px 200)
+                            ]
+                            (Element.text slide.prompt)
+                        , Ui.editButton (Just promptMsg) "Modifier le prompteur"
+                        ]
+                    ]
+                )
 
 
 viewSlideImage : String -> Element Msg
