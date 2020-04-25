@@ -775,39 +775,6 @@ updateSlideDnD slideMsg data =
                             setupSlides updatedSlides
 
                         _ ->
-                            let
-                                _ =
-                                    debug "slides"
-                                        (List.map
-                                            (List.map
-                                                (\x ->
-                                                    case x of
-                                                        GosId id ->
-                                                            "GosId " ++ String.fromInt id
-
-                                                        JustSlide s ->
-                                                            "JustSlide " ++ s.prompt
-                                                )
-                                            )
-                                            data.slidesView
-                                        )
-
-                                _ =
-                                    debug "slidesview"
-                                        (List.map
-                                            (List.map
-                                                (\x ->
-                                                    case x of
-                                                        GosId id ->
-                                                            "GosId " ++ String.fromInt id
-
-                                                        JustSlide s ->
-                                                            "JustSlide " ++ s.prompt
-                                                )
-                                            )
-                                            (regroupSlides slides)
-                                        )
-                            in
                             regroupSlides slides
 
                 capsule =
