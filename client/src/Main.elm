@@ -243,26 +243,12 @@ slideSetter slide1 slide2 =
             JustSlide { s2 | gos = s1.gos }
 
         ( GosId id, JustSlide s2 ) ->
-            let
-                _ =
-                    debug "slide" s2
-
-                _ =
-                    debug "gos id" id
-            in
             JustSlide { s2 | gos = id }
 
         ( JustSlide s1, GosId id ) ->
-            let
-                _ =
-                    debug "slide" s1
-
-                _ =
-                    debug "gos id" id
-            in
             JustSlide { s1 | gos = id }
 
-        ( GosId i1, GosId i2 ) ->
+        ( GosId i1, GosId _ ) ->
             GosId i1
 
 
@@ -615,11 +601,11 @@ updateLoggedIn msg { session, page } =
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
 
-        ( CapsulesReceived project newCapsules, _ ) ->
-            ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
-
         ( CapsuleReceived capsule, CapsulePage _ form prompt a b ) ->
             ( LoggedInModel session (CapsulePage capsule form prompt a b), Cmd.none )
+
+        ( CapsulesReceived project newCapsules, _ ) ->
+            ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
 
         ( CapsuleClicked capsule, _ ) ->
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
@@ -1346,7 +1332,7 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
                     :: designAttributes
                 )
                 [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-                , Element.row (Element.scrollbarX :: Element.spacing 50 :: Background.color Colors.dangerDark :: designAttributes)
+                , Element.row (Element.scrollbarX :: Background.color Colors.dangerDark :: designAttributes)
                     (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) slides)
                 ]
             ]
@@ -1468,29 +1454,39 @@ genericGosView options gosModel slideModel offset index gos =
         slides =
             List.indexedMap (designSlideView slideModel offset) gos
     in
-    Element.column
-        (Element.htmlAttribute (Html.Attributes.id gosId)
-            :: Element.padding 10
-            :: Element.spacing 20
-            :: Element.centerX
-            :: dropAttributes
-            ++ ghostAttributes
-            ++ designGosAttributes
-        )
-        [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
-            [ Element.el
-                [ Element.padding 10
-                , Border.color Colors.danger
-                , Border.rounded 5
-                , Border.width 1
-                , Element.centerX
-                , Font.size 20
+    case gos of
+        [ GosId _ ] ->
+            Element.column
+                [ Element.htmlAttribute (Html.Attributes.id gosId)
+                , Element.height Element.fill
+                , Element.width (Element.px 50)
                 ]
-                (Element.text (String.fromInt index))
-            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
-            ]
-        , Element.column (designAttributes ++ eventLessAttributes) slides
-        ]
+                slides
+
+        _ ->
+            Element.column
+                (Element.htmlAttribute (Html.Attributes.id gosId)
+                    :: Element.padding 10
+                    :: Element.spacing 20
+                    :: Element.centerX
+                    :: dropAttributes
+                    ++ ghostAttributes
+                    ++ designGosAttributes
+                )
+                [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
+                    [ Element.el
+                        [ Element.padding 10
+                        , Border.color Colors.danger
+                        , Border.rounded 5
+                        , Border.width 1
+                        , Element.centerX
+                        , Font.size 20
+                        ]
+                        (Element.text (String.fromInt index))
+                    , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+                    ]
+                , Element.column (designAttributes ++ eventLessAttributes) slides
+                ]
 
 
 
