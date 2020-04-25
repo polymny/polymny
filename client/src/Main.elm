@@ -1528,13 +1528,9 @@ genericGosView options gosModel slideModel offset index gos =
 
         slideDropAttributes : List (Element.Attribute Msg)
         slideDropAttributes =
-            if options == Dropped then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
-                    (List.map Element.htmlAttribute (slideSystem.dropEvents offset slideId))
-
-            else
-                []
+            List.map
+                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                (List.map Element.htmlAttribute (slideSystem.dropEvents offset slideId))
 
         slideId : String
         slideId =
