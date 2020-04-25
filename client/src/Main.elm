@@ -302,7 +302,14 @@ indexedLambda id slide =
 
 setupSlides : List Api.Slide -> List (List MaybeSlide)
 setupSlides slides =
-    List.indexedMap indexedLambda (List.intersperse [ GosId -1 ] (List.map (List.map JustSlide) (Api.sortSlides slides)))
+    let
+        list =
+            List.intersperse [ GosId -1 ] (List.map (List.map JustSlide) (Api.sortSlides slides))
+
+        extremities =
+            [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)
+    in
+    List.indexedMap indexedLambda extremities
 
 
 filterSlide : MaybeSlide -> Maybe Api.Slide
