@@ -1,6 +1,8 @@
 module Core.Updates exposing (..)
 
 import Core.Types as Core
+import LoggedIn.Types as LoggedIn
+import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
 import Login.Updates as Login
 import NewProject.Types as NewProject
@@ -32,7 +34,7 @@ update msg { global, model } =
             ( Core.FullModel global
                 (Core.LoggedIn
                     { session = session
-                    , page = Core.LoggedInNewProject NewProject.init
+                    , page = LoggedIn.NewProject NewProject.init
                     }
                 )
             , Cmd.none
@@ -56,23 +58,9 @@ update msg { global, model } =
         ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, page } ) ->
             let
                 ( m, cmd ) =
-                    updateLoggedIn newProjectMsg (Core.LoggedInModel session page)
+                    LoggedIn.update newProjectMsg (LoggedIn.Model session page)
             in
             ( Core.FullModel global (Core.LoggedIn m), cmd )
 
         _ ->
             ( Core.FullModel global model, Cmd.none )
-
-
-updateLoggedIn : Core.LoggedInMsg -> Core.LoggedInModel -> ( Core.LoggedInModel, Cmd Core.Msg )
-updateLoggedIn msg { session, page } =
-    case ( msg, page ) of
-        ( Core.NewProjectMsg newProjectMsg, Core.LoggedInNewProject newProjectModel ) ->
-            let
-                ( newSession, newModel, cmd ) =
-                    NewProject.update session newProjectMsg newProjectModel
-            in
-            ( Core.LoggedInModel newSession (Core.LoggedInNewProject newModel), cmd )
-
-        _ ->
-            ( Core.LoggedInModel session page, Cmd.none )

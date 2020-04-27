@@ -6,8 +6,9 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Html
+import LoggedIn.Types as LoggedIn
+import LoggedIn.Views as LoggedIn
 import Login.Views as Login
-import NewProject.Views as NewProject
 import SignUp.Views as SignUp
 import Ui
 
@@ -31,13 +32,8 @@ viewContent { global, model } =
                 Core.SignUp signUpModel ->
                     SignUp.view signUpModel
 
-                Core.LoggedIn { page } ->
-                    case page of
-                        Core.LoggedInNewProject newProjectModel ->
-                            NewProject.view newProjectModel
-
-                        _ ->
-                            homeView
+                Core.LoggedIn { session, page } ->
+                    LoggedIn.view global session page
 
         attributes =
             []

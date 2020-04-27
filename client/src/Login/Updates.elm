@@ -2,6 +2,7 @@ module Login.Updates exposing (..)
 
 import Api
 import Core.Types as Core
+import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import Status
 import Utils
@@ -22,7 +23,7 @@ update loginMsg content =
             )
 
         Login.Success s ->
-            ( Core.LoggedIn (Core.LoggedInModel s Core.LoggedInHome), Cmd.none )
+            ( Core.LoggedIn (LoggedIn.Model s LoggedIn.Home), Cmd.none )
 
         Login.Failed ->
             ( Core.Login { content | status = Status.Error () }, Cmd.none )

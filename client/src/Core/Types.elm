@@ -3,6 +3,7 @@ module Core.Types exposing (..)
 import Api
 import Json.Decode as Decode
 import Log exposing (debug)
+import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import NewProject.Types as NewProject
 import SignUp.Types as SignUp
@@ -34,7 +35,7 @@ modelFromFlags flags =
         Ok "index" ->
             case Decode.decodeValue Api.decodeSession flags of
                 Ok session ->
-                    LoggedIn { session = session, page = LoggedInHome }
+                    LoggedIn { session = session, page = LoggedIn.Home }
 
                 Err _ ->
                     Home
@@ -75,7 +76,7 @@ type Model
     = Home
     | Login Login.Model
     | SignUp SignUp.Model
-    | LoggedIn LoggedInModel
+    | LoggedIn LoggedIn.Model
 
 
 initModel : Model
@@ -93,17 +94,6 @@ isLoggedIn model =
             False
 
 
-type alias LoggedInModel =
-    { session : Api.Session
-    , page : LoggedInPage
-    }
-
-
-type LoggedInPage
-    = LoggedInHome
-    | LoggedInNewProject NewProject.Model
-
-
 type Msg
     = Noop
     | HomeClicked
@@ -114,8 +104,4 @@ type Msg
     | TimeZoneChanged Time.Zone
     | LoginMsg Login.Msg
     | SignUpMsg SignUp.Msg
-    | LoggedInMsg LoggedInMsg
-
-
-type LoggedInMsg
-    = NewProjectMsg NewProject.Msg
+    | LoggedInMsg LoggedIn.Msg
