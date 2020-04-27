@@ -4,7 +4,6 @@ import Api
 import Capsule.Types as Capsule
 import Capsule.Updates as Capsule
 import Core.Types as Core
-import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject

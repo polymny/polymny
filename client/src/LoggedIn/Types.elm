@@ -21,6 +21,7 @@ type Page
 type Msg
     = ProjectClicked Api.Project
     | NewProjectMsg NewProject.Msg
+    | NewCapsuleClicked Int
     | CapsulesReceived Api.Project (List Api.Capsule)
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails

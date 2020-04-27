@@ -1,5 +1,7 @@
 module Core.Views exposing (..)
 
+import Capsule.Types as Capsule
+import Capsule.Views as Capsule
 import Colors
 import Core.Types as Core
 import Element exposing (Element)
@@ -11,6 +13,26 @@ import LoggedIn.Views as LoggedIn
 import Login.Views as Login
 import SignUp.Views as SignUp
 import Ui
+
+
+subscriptions : Core.FullModel -> Sub Core.Msg
+subscriptions { model } =
+    case model of
+        Core.LoggedIn { page } ->
+            case page of
+                LoggedIn.Capsule { slideModel, gosModel } ->
+                    Sub.map (\x -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD x)))
+                        (Sub.batch
+                            [ Capsule.slideSystem.subscriptions slideModel
+                            , Capsule.gosSystem.subscriptions gosModel
+                            ]
+                        )
+
+                _ ->
+                    Sub.none
+
+        _ ->
+            Sub.none
 
 
 view : Core.FullModel -> Html.Html Core.Msg
@@ -36,7 +58,19 @@ viewContent { global, model } =
                     LoggedIn.view global session page
 
         attributes =
-            []
+            case model of
+                Core.LoggedIn { page } ->
+                    case page of
+                        LoggedIn.Capsule { slides, slideModel, gosModel } ->
+                            [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
+                            , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
+                            ]
+
+                        _ ->
+                            []
+
+                _ ->
+                    []
     in
     Element.column (Element.width Element.fill :: attributes) [ topBar model, content ]
 
@@ -51,29 +85,32 @@ topBar model =
     case model of
         Core.LoggedIn { page } ->
             case page of
-                -- Core.ProjectPage { id } ->
-                --     Element.row
-                --         [ Background.color Colors.primary
-                --         , Element.width Element.fill
-                --         , Element.spacing 30
-                --         ]
-                --         [ Element.row
-                --             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                --             [ homeButton ]
-                --         , Element.row
-                --             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                --             (if isLoggedIn model then
-                --                 [ newCapsuleButton id ]
-                --              else
-                --                 []
-                --             )
-                --         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
-                --             (if isLoggedIn model then
-                --                 [ logoutButton ]
-                --              else
-                --                 [ loginButton, signUpButton ]
-                --             )
-                --         ]
+                LoggedIn.Project { id } ->
+                    Element.row
+                        [ Background.color Colors.primary
+                        , Element.width Element.fill
+                        , Element.spacing 30
+                        ]
+                        [ Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            [ homeButton ]
+                        , Element.row
+                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                            (if Core.isLoggedIn model then
+                                [ newProjectButton, newCapsuleButton id ]
+
+                             else
+                                []
+                            )
+                        , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                            (if Core.isLoggedIn model then
+                                [ logoutButton ]
+
+                             else
+                                [ loginButton, signUpButton ]
+                            )
+                        ]
+
                 _ ->
                     nonFull model
 
@@ -121,8 +158,7 @@ newProjectButton =
 
 newCapsuleButton : Int -> Element Core.Msg
 newCapsuleButton id =
-    -- Ui.textButton (Just (LoggedInMsg (NewCapsuleClicked id))) "New capsule"
-    Ui.textButton Nothing "New capsule"
+    Ui.textButton (Just (Core.LoggedInMsg (LoggedIn.NewCapsuleClicked id))) "New capsule"
 
 
 loginButton : Element Core.Msg
@@ -142,15 +178,15 @@ signUpButton =
 
 selectFileButton : Element Core.Msg
 selectFileButton =
-    -- Element.map LoggedInMsg <|
-    --     Element.map UploadSlideShowMsg <|
-    --         Ui.simpleButton (Just UploadSlideShowSelectFileRequested) "Select file"
-    Ui.simpleButton Nothing "Select file"
+    Element.map Core.LoggedInMsg <|
+        Element.map LoggedIn.CapsuleMsg <|
+            Element.map Capsule.UploadSlideShowMsg <|
+                Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
 
 
 uploadButton : Element Core.Msg
 uploadButton =
-    -- Element.map LoggedInMsg <|
-    --     Element.map UploadSlideShowMsg <|
-    --         Ui.primaryButton (Just UploadSlideShowFormSubmitted) "Upload"
-    Ui.primaryButton Nothing "Upload"
+    Element.map Core.LoggedInMsg <|
+        Element.map LoggedIn.CapsuleMsg <|
+            Element.map Capsule.UploadSlideShowMsg <|
+                Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
