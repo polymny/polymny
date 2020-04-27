@@ -1,16 +1,22 @@
 module Colors exposing
     ( black
+    , brandeisBlue
+    , brightGreen
     , danger
     , dangerDark
     , dangerLight
     , grey
     , link
+    , menthol
     , primary
     , primaryDark
     , primaryLight
+    , purpleHeart
+    , purplePlum
     , success
     , successDark
     , successLight
+    , vividCerulean
     , warning
     , warningDark
     , warningLight
@@ -198,3 +204,67 @@ dangerDark =
 link : Element.Color
 link =
     Element.rgb255 0 0 255
+
+
+
+-- Try palette : https://www.schemecolor.com/bright-blue-green-and-purple.php
+
+
+brandeisBlueColor : Color
+brandeisBlueColor =
+    Color.fromRGB ( 0, 99, 255 )
+
+
+brandeisBlue : Element.Color
+brandeisBlue =
+    colorToUi brandeisBlueColor
+
+
+vividCeruleanColor : Color
+vividCeruleanColor =
+    Color.fromRGB ( 0, 164, 255 )
+
+
+vividCerulean : Element.Color
+vividCerulean =
+    colorToUi vividCeruleanColor
+
+
+mentholColor : Color
+mentholColor =
+    Color.fromRGB ( 176, 255, 151 )
+
+
+menthol : Element.Color
+menthol =
+    colorToUi mentholColor
+
+
+brightGreenColor : Color
+brightGreenColor =
+    Color.fromRGB ( 99, 252, 1 )
+
+
+brightGreen : Element.Color
+brightGreen =
+    colorToUi brightGreenColor
+
+
+purpleHeartColor : Color
+purpleHeartColor =
+    Color.fromRGB ( 104, 53, 155 )
+
+
+purpleHeart : Element.Color
+purpleHeart =
+    colorToUi purpleHeartColor
+
+
+purplePlumColor : Color
+purplePlumColor =
+    Color.fromRGB ( 153, 79, 179 )
+
+
+purplePlum : Element.Color
+purplePlum =
+    colorToUi purplePlumColor
