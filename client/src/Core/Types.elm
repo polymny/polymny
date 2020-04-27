@@ -1,11 +1,11 @@
 module Core.Types exposing (..)
 
 import Api
+import Capsule.Types as Capsule
 import Json.Decode as Decode
 import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
-import NewProject.Types as NewProject
 import SignUp.Types as SignUp
 import Task
 import Time
@@ -40,12 +40,14 @@ modelFromFlags flags =
                 Err _ ->
                     Home
 
-        -- Ok "capsule" ->
-        --     case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
-        --         ( Ok session, Ok capsule ) ->
-        --             LoggedIn (LoggedInModel session (CapsulePage capsule (setupSlides capsule.slides) emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model))
-        --         ( _, _ ) ->
-        --             Home
+        Ok "capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    LoggedIn (LoggedIn.Model session (LoggedIn.Capsule (Capsule.init capsule)))
+
+                ( _, _ ) ->
+                    Home
+
         Ok ok ->
             let
                 _ =
