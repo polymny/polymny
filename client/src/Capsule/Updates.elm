@@ -37,9 +37,6 @@ update msg page =
                 syncCmd =
                     Api.updateSlideStructure resultToMsg data.details
 
-                newPage =
-                    { model | details = data.details, slides = data.slides }
-
                 cmds =
                     if Api.compareSlides data.details.slides data.details.slides then
                         moveCmd
@@ -47,7 +44,7 @@ update msg page =
                     else
                         Cmd.batch [ moveCmd, syncCmd ]
             in
-            ( newPage, cmds )
+            ( data, cmds )
 
 
 updateEditPromptMsg : Capsule.EditPromptMsg -> Capsule.EditPrompt -> ( Capsule.EditPrompt, Cmd Core.Msg )
