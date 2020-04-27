@@ -13,6 +13,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
+import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Status
@@ -156,9 +157,7 @@ genericGosView options gosModel slideModel offset index gos =
         dragAttributes : List (Element.Attribute Core.Msg)
         dragAttributes =
             if options == Drag && not (Capsule.isJustGosId gos) then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.gosSystem.dragEvents index gosId))
+                convertAttributes (Capsule.gosSystem.dragEvents index gosId)
 
             else
                 []
@@ -166,9 +165,7 @@ genericGosView options gosModel slideModel offset index gos =
         dropAttributes : List (Element.Attribute Core.Msg)
         dropAttributes =
             if options == Drop && not (Capsule.isJustGosId gos) then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.gosSystem.dropEvents index gosId))
+                convertAttributes (Capsule.gosSystem.dropEvents index gosId)
 
             else
                 []
@@ -176,9 +173,7 @@ genericGosView options gosModel slideModel offset index gos =
         ghostAttributes : List (Element.Attribute Core.Msg)
         ghostAttributes =
             if options == Ghost then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.gosSystem.ghostStyles gosModel))
+                convertAttributes (Capsule.gosSystem.ghostStyles gosModel)
 
             else
                 []
@@ -193,9 +188,7 @@ genericGosView options gosModel slideModel offset index gos =
 
         slideDropAttributes : List (Element.Attribute Core.Msg)
         slideDropAttributes =
-            List.map
-                (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                (List.map Element.htmlAttribute (Capsule.slideSystem.dropEvents offset slideId))
+            convertAttributes (Capsule.slideSystem.dropEvents offset slideId)
 
         slideId : String
         slideId =
@@ -308,9 +301,7 @@ genericDesignSlideView options slideModel offset localIndex s =
         dragAttributes : List (Element.Attribute Core.Msg)
         dragAttributes =
             if options == Drag && Capsule.isJustSlide s then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.slideSystem.dragEvents globalIndex slideId))
+                convertAttributes (Capsule.slideSystem.dragEvents globalIndex slideId)
 
             else
                 []
@@ -318,9 +309,7 @@ genericDesignSlideView options slideModel offset localIndex s =
         dropAttributes : List (Element.Attribute Core.Msg)
         dropAttributes =
             if options == Drop then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.slideSystem.dropEvents globalIndex slideId))
+                convertAttributes (Capsule.slideSystem.dropEvents globalIndex slideId)
 
             else
                 []
@@ -328,9 +317,7 @@ genericDesignSlideView options slideModel offset localIndex s =
         ghostAttributes : List (Element.Attribute Core.Msg)
         ghostAttributes =
             if options == Ghost then
-                List.map
-                    (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
-                    (List.map Element.htmlAttribute (Capsule.slideSystem.ghostStyles slideModel))
+                convertAttributes (Capsule.slideSystem.ghostStyles slideModel)
 
             else
                 []
@@ -546,3 +533,10 @@ uploadButton =
         Element.map LoggedIn.CapsuleMsg <|
             Element.map Capsule.UploadSlideShowMsg <|
                 Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
+
+
+convertAttributes : List (Html.Attribute Capsule.DnDMsg) -> List (Element.Attribute Core.Msg)
+convertAttributes attributes =
+    List.map
+        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
+        (List.map Element.htmlAttribute attributes)
