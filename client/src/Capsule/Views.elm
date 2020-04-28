@@ -210,7 +210,11 @@ genericGosView options gosModel slideModel offset index gos =
                 , Element.width (Element.px 50)
                 ]
                 [ Element.el
-                    (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width (Element.px 50) :: Element.height (Element.px 300) :: slideDropAttributes)
+                    (Element.htmlAttribute (Html.Attributes.id slideId)
+                        :: Element.width (Element.px 50)
+                        :: Element.height (Element.px 300)
+                        :: slideDropAttributes
+                    )
                     Element.none
                 ]
 

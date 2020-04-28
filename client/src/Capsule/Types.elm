@@ -78,16 +78,21 @@ init details =
 
 slideConfig : DnDList.Groups.Config MaybeSlide
 slideConfig =
-    { beforeUpdate = \_ _ list -> list
+    { beforeUpdate = slideBeforeUpdate
     , listen = DnDList.Groups.OnDrag
     , operation = DnDList.Groups.Rotate
     , groups =
         { listen = DnDList.Groups.OnDrag
-        , operation = DnDList.Groups.InsertBefore
+        , operation = DnDList.Groups.InsertAfter
         , comparator = slideComparator
         , setter = slideSetter
         }
     }
+
+
+slideBeforeUpdate : Int -> Int -> List MaybeSlide -> List MaybeSlide
+slideBeforeUpdate _ _ list =
+    list
 
 
 slideComparator : MaybeSlide -> MaybeSlide -> Bool

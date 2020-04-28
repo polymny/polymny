@@ -4,6 +4,7 @@ import Api
 import Capsule.Types as Capsule
 import Core.Types as Core
 import File.Select as Select
+import Log
 import LoggedIn.Types as LoggedIn
 import Status
 import Utils
