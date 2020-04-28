@@ -38,7 +38,7 @@ update msg page =
                     Api.updateSlideStructure resultToMsg data.details
 
                 cmds =
-                    if Api.compareSlides data.details.slides data.details.slides then
+                    if Api.compareSlides data.details.slides model.details.slides then
                         moveCmd
 
                     else
