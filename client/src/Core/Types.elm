@@ -103,6 +103,7 @@ type Msg
     | LogoutClicked
     | SignUpClicked
     | NewProjectClicked
+    | NewCapsuleClicked Int
     | TimeZoneChanged Time.Zone
     | LoginMsg Login.Msg
     | SignUpMsg SignUp.Msg

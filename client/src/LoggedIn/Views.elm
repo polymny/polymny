@@ -6,6 +6,7 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import TimeUtils
 import Ui
@@ -19,6 +20,9 @@ view global session page =
 
         LoggedIn.NewProject newProjectModel ->
             NewProject.view newProjectModel
+
+        LoggedIn.NewCapsule _ newProjectModel ->
+            NewCapsule.view newProjectModel
 
         LoggedIn.Project project ->
             projectView project

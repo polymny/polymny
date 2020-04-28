@@ -5,6 +5,8 @@ import Capsule.Types as Capsule
 import Capsule.Updates as Capsule
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Utils
@@ -26,13 +28,20 @@ update msg { session, page } =
         ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
             ( LoggedIn.Model session (LoggedIn.Capsule (Capsule.init capsuleDetails)), Cmd.none )
 
-        -- OTHER MESSAGEs
+        -- OTHER MESSAGES
         ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
             let
                 ( newSession, newModel, cmd ) =
                     NewProject.update session newProjectMsg newProjectModel
             in
             ( LoggedIn.Model newSession (LoggedIn.NewProject newModel), cmd )
+
+        ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.NewCapsule projectId newCapsuleModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    NewCapsule.update session projectId newCapsuleMsg newCapsuleModel
+            in
+            ( LoggedIn.Model newSession (LoggedIn.NewCapsule projectId newModel), cmd )
 
         ( LoggedIn.CapsuleMsg capsuleMsg, LoggedIn.Capsule capsule ) ->
             let

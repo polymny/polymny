@@ -82,7 +82,7 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
         Some(Project::get_by_id(capsule.project_id, &db)?),
     )?;
 
-    Ok(json!({ "capsule": capsule }))
+    Ok(json!(capsule))
 }
 
 /// The route to get a capsule.

@@ -5,6 +5,8 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
 import Login.Updates as Login
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import SignUp.Types as SignUp
@@ -21,6 +23,9 @@ update msg { global, model } =
         ( Core.TimeZoneChanged newTimeZone, _ ) ->
             ( Core.FullModel { global | zone = newTimeZone } model, Cmd.none )
 
+        ( Core.HomeClicked, Core.LoggedIn { session } ) ->
+            ( Core.FullModel global (Core.LoggedIn { session = session, page = LoggedIn.Home }), Cmd.none )
+
         ( Core.LoginClicked, _ ) ->
             ( Core.FullModel global (Core.Login Login.init), Cmd.none )
 
@@ -35,6 +40,16 @@ update msg { global, model } =
                 (Core.LoggedIn
                     { session = session
                     , page = LoggedIn.NewProject NewProject.init
+                    }
+                )
+            , Cmd.none
+            )
+
+        ( Core.NewCapsuleClicked projectId, Core.LoggedIn { session } ) ->
+            ( Core.FullModel global
+                (Core.LoggedIn
+                    { session = session
+                    , page = LoggedIn.NewCapsule projectId NewCapsule.init
                     }
                 )
             , Cmd.none

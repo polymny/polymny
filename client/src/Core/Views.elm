@@ -158,7 +158,7 @@ newProjectButton =
 
 newCapsuleButton : Int -> Element Core.Msg
 newCapsuleButton id =
-    Ui.textButton (Just (Core.LoggedInMsg (LoggedIn.NewCapsuleClicked id))) "New capsule"
+    Ui.textButton (Just (Core.NewCapsuleClicked id)) "New capsule"
 
 
 loginButton : Element Core.Msg
