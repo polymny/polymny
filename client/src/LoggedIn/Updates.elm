@@ -25,6 +25,17 @@ update msg { session, page } =
         ( LoggedIn.CapsuleClicked capsule, _ ) ->
             ( LoggedIn.Model session page, Api.capsuleFromId resultToMsg2 capsule.id )
 
+        ( LoggedIn.CapsuleReceived capsuleDetails, LoggedIn.Capsule capsule ) ->
+            ( LoggedIn.Model session
+                (LoggedIn.Capsule
+                    { capsule
+                        | details = capsuleDetails
+                        , slides = Capsule.setupSlides capsuleDetails.slides
+                    }
+                )
+            , Cmd.none
+            )
+
         ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
             ( LoggedIn.Model session (LoggedIn.Capsule (Capsule.init capsuleDetails)), Cmd.none )
 
