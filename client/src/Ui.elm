@@ -1,7 +1,11 @@
 module Ui exposing
-    ( editButton
+    ( designAttributes
+    , designGosAttributes
+    , designGosTitleAttributes
+    , editButton
     , editIcon
     , errorModal
+    , genericDesignSlideViewAttributes
     , linkButton
     , onEnter
     , primaryButton
@@ -203,3 +207,61 @@ editIcon =
                 []
             ]
         )
+
+
+
+-- design Attributes
+
+
+designAttributes : List (Element.Attribute msg)
+designAttributes =
+    [ Element.padding 10
+    , Element.width Element.fill
+    , Border.rounded 5
+    , Border.width 4
+    ]
+
+
+designGosAttributes : List (Element.Attribute msg)
+designGosAttributes =
+    designAttributes
+        ++ [ Element.spacing 10
+           , Element.width Element.fill
+           , Element.alignTop
+           , Element.centerX
+           , Border.rounded 5
+           , Border.width 2
+           , Background.color Colors.brightGreen
+           ]
+
+
+designGosTitleAttributes : List (Element.Attribute msg)
+designGosTitleAttributes =
+    [ Element.padding 10
+    , Border.color Colors.brandeisBlue
+    , Border.rounded 5
+    , Border.width 2
+    , Element.centerX
+    , Font.size 20
+    ]
+
+
+genericDesignSlideViewAttributes : List (Element.Attribute msg)
+genericDesignSlideViewAttributes =
+    [ Background.color Colors.white
+    , Element.spacing 5
+    , Element.padding 5
+    , Border.rounded 5
+    , Border.dashed
+    , Border.width 3
+    , Element.width
+        (Element.shrink
+            |> Element.minimum 440
+            |> Element.maximum 430
+        )
+    ]
+
+
+scaled : Int -> Float
+scaled =
+    Element.modular 400 1.77
