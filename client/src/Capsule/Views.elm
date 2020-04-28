@@ -53,10 +53,35 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
                 )
                 [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
                 , Element.row (Element.scrollbarX :: Background.color Colors.dangerDark :: designAttributes)
-                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) slides)
+                    (List.map
+                        (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
+                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                    )
                 ]
             ]
         )
+
+
+filterConsecutiveGosIds : List ( Int, List Capsule.MaybeSlide ) -> List ( Int, List Capsule.MaybeSlide )
+filterConsecutiveGosIds slides =
+    List.reverse (filterConsecutiveGosIdsAux False [] slides)
+
+
+filterConsecutiveGosIdsAux : Bool -> List ( Int, List Capsule.MaybeSlide ) -> List ( Int, List Capsule.MaybeSlide ) -> List ( Int, List Capsule.MaybeSlide )
+filterConsecutiveGosIdsAux currentIsGosId current slides =
+    case slides of
+        [] ->
+            current
+
+        ( index, [ Capsule.GosId id ] ) :: t ->
+            if currentIsGosId then
+                filterConsecutiveGosIdsAux True current t
+
+            else
+                filterConsecutiveGosIdsAux True (( index, [ Capsule.GosId id ] ) :: current) t
+
+        ( index, list ) :: t ->
+            filterConsecutiveGosIdsAux False (( index, list ) :: current) t
 
 
 designAttributes : List (Element.Attribute msg)
