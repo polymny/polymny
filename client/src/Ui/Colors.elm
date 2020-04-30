@@ -1,5 +1,9 @@
-module Colors exposing
-    ( black
+module Ui.Colors exposing
+    ( artEvening
+    , artIrises
+    , artStarryNight
+    , artSunFlowers
+    , black
     , brandeisBlue
     , brightGreen
     , danger
@@ -143,7 +147,7 @@ black =
 
 primary : Element.Color
 primary =
-    colorToUi primaryColor
+    colorToUi starryNightColor
 
 
 success : Element.Color
@@ -268,3 +272,47 @@ purplePlumColor =
 purplePlum : Element.Color
 purplePlum =
     colorToUi purplePlumColor
+
+
+
+-- Art history https://www.canva.com/learn/website-color-schemes/
+
+
+sunFlowersColor : Color
+sunFlowersColor =
+    Color.fromRGB ( 255, 204, 0 )
+
+
+artSunFlowers : Element.Color
+artSunFlowers =
+    colorToUi sunFlowersColor
+
+
+starryNightColor : Color
+starryNightColor =
+    Color.fromRGB ( 3, 118, 180 )
+
+
+artStarryNight : Element.Color
+artStarryNight =
+    colorToUi starryNightColor
+
+
+irisesColor : Color
+irisesColor =
+    Color.fromRGB ( 0, 120, 72 )
+
+
+artIrises : Element.Color
+artIrises =
+    colorToUi irisesColor
+
+
+eveningColor : Color
+eveningColor =
+    Color.fromRGB ( 38, 34, 40 )
+
+
+artEvening : Element.Color
+artEvening =
+    colorToUi eveningColor

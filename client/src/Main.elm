@@ -2,7 +2,6 @@ module Main exposing (main)
 
 import Api
 import Browser
-import Colors
 import Dialog
 import DnDList
 import DnDList.Groups
@@ -21,7 +20,9 @@ import Status exposing (Status)
 import Task
 import Time
 import TimeUtils
-import Ui
+import Ui.Attributes as Attributes
+import Ui.Colors as Colors
+import Ui.Ui as Ui
 
 
 main : Program Decode.Value FullModel Msg
@@ -731,7 +732,7 @@ resultToMsg6 result =
 
 view : FullModel -> Html.Html Msg
 view fullModel =
-    Element.layout [ Font.size 15 ] (viewContent fullModel)
+    Element.layout Attributes.fullModelAttributes (viewContent fullModel)
 
 
 viewContent : FullModel -> Element Msg
@@ -1114,7 +1115,7 @@ loggedInUploadSlideShowView _ form =
         , Element.padding 10
         , Border.rounded 5
         , Border.width 1
-        , Border.color Colors.grey
+        , Border.color Colors.artIrises
         ]
         [ Element.text "Choisir une présentation au format PDF"
         , uploadForm form
@@ -1211,23 +1212,31 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
     in
     Element.el
         [ Element.padding 10
+        , Element.spacing 20
         , Element.width Element.fill
+        , Background.color Colors.white
         , Element.mapAttribute LoggedInMsg <|
             Element.mapAttribute EditPromptMsg <|
                 Element.inFront (Dialog.view dialogConfig)
         ]
-        (Element.row (Element.scrollbarX :: Ui.designAttributes)
+        (Element.row (Element.scrollbarX :: Attributes.designAttributes)
             [ capsuleInfoView session capsuleDetails form
             , Element.column
-                (Element.scrollbarX
-                    :: Element.width Element.fill
-                    :: Element.centerX
-                    :: Element.alignTop
-                    :: Background.color Colors.vividCerulean
-                    :: Ui.designAttributes
-                )
-                [ Element.el [ Element.centerX ] (Element.text "Timeline présentation")
-                , Element.row (Element.scrollbarX :: Element.spacing 50 :: Ui.designAttributes)
+                [ Element.scrollbarX
+                , Element.centerX
+                , Element.alignTop
+                ]
+                [ Element.el
+                    [ Element.centerX
+                    , Font.color Colors.artEvening
+                    , Font.size 20
+                    ]
+                    (Element.text "Slide timeline")
+                , Element.row
+                    (Element.scrollbarX
+                        :: Background.color Colors.white
+                        :: Attributes.designAttributes
+                    )
                     (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
                 ]
             ]
@@ -1236,7 +1245,7 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
 
 capsuleInfoView : Api.Session -> Api.CapsuleDetails -> UploadForm -> Element Msg
 capsuleInfoView session capsuleDetails form =
-    Element.column [ Element.centerX, Element.alignTop, Element.spacing 10, Element.padding 10 ]
+    Element.column Attributes.capsuleInfoViewAttributes
         [ Element.column []
             [ Element.el [ Font.size 20 ] (Element.text "Infos sur la capsule")
             , Element.el [ Font.size 14 ] (Element.text ("Loaded capsule is  " ++ capsuleDetails.capsule.name))
@@ -1349,15 +1358,15 @@ genericGosView options gosModel slideModel offset index gos =
         (Element.htmlAttribute (Html.Attributes.id gosId)
             :: dropAttributes
             ++ ghostAttributes
-            ++ Ui.designGosAttributes
+            ++ Attributes.designGosAttributes
         )
         [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
             [ Element.el
-                Ui.designGosTitleAttributes
+                Attributes.designGosTitleAttributes
                 (Element.text (String.fromInt index))
-            , Element.row [ Element.alignRight ] [ Ui.trashIcon ]
+            , Element.row [ Element.alignRight ] [ Ui.trashButton Nothing "" ]
             ]
-        , Element.column (Element.spacing 10 :: Ui.designAttributes ++ eventLessAttributes) slides
+        , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
         ]
 
 
@@ -1451,7 +1460,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
     Element.el
         (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
         (Element.column
-            Ui.genericDesignSlideViewAttributes
+            Attributes.genericDesignSlideViewAttributes
             [ Element.el
                 (Element.height
                     (Element.shrink
@@ -1466,7 +1475,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
                 Element.el
                     [ Font.size 22
                     , Element.centerX
-                    , Font.color Colors.white
+                    , Font.color Colors.artEvening
                     ]
                     (Element.text <| "Slide #" ++ String.fromInt slide.position)
             , Element.row
@@ -1494,9 +1503,9 @@ genrericDesignSlide1stColumnView eventLessAttributes slide =
             [ Element.column [ Element.padding 4 ]
                 [ Element.el [ Element.paddingXY 0 4 ] <| Element.text "Additional Resources :"
                 , Element.el [ Element.spacingXY 2 4 ] <|
-                    Ui.linkButton
-                        (Just (LoggedInMsg NewProjectClicked))
-                        "Click here to Add aditional"
+                    Ui.addButton
+                        Nothing
+                        " Ajouter des ressources"
                 ]
             , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
             , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
@@ -1544,7 +1553,10 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
             , Font.color Colors.white
             ]
             (Element.text slide.prompt)
-        , Ui.editButton (Just promptMsg) "Modifier le prompteur"
+        , Element.row []
+            [ Ui.editButton (Just promptMsg) "Modifier"
+            , Ui.clearButton Nothing "Effacer"
+            ]
         ]
 
 
