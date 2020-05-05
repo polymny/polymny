@@ -1,4 +1,4 @@
-module NewCapsule.Updates exposing (..)
+module NewCapsule.Updates exposing (update)
 
 import Api
 import Core.Types as Core

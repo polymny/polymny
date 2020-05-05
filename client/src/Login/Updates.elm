@@ -1,4 +1,4 @@
-module Login.Updates exposing (..)
+module Login.Updates exposing (update)
 
 import Api
 import Core.Types as Core

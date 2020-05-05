@@ -1,4 +1,4 @@
-module SignUp.Types exposing (..)
+module SignUp.Types exposing (Model, Msg(..), init)
 
 import Status exposing (Status)
 

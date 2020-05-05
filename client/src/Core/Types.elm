@@ -1,4 +1,11 @@
-module Core.Types exposing (..)
+module Core.Types exposing
+    ( FullModel
+    , Global
+    , Model(..)
+    , Msg(..)
+    , init
+    , isLoggedIn
+    )
 
 import Api
 import Capsule.Types as Capsule
@@ -69,21 +76,11 @@ type alias Global =
     }
 
 
-initGlobal : Global
-initGlobal =
-    Global Time.utc ""
-
-
 type Model
     = Home
     | Login Login.Model
     | SignUp SignUp.Model
     | LoggedIn LoggedIn.Model
-
-
-initModel : Model
-initModel =
-    Home
 
 
 isLoggedIn : Model -> Bool

@@ -1,4 +1,22 @@
-module Capsule.Types exposing (..)
+module Capsule.Types exposing
+    ( DnDMsg(..)
+    , EditPrompt
+    , EditPromptMsg(..)
+    , MaybeSlide(..)
+    , Model
+    , Msg(..)
+    , UploadForm
+    , UploadSlideShowMsg(..)
+    , filterSlide
+    , gosConfig
+    , gosSystem
+    , init
+    , isJustGosId
+    , isJustSlide
+    , regroupSlides
+    , setupSlides
+    , slideSystem
+    )
 
 import Api
 import DnDList

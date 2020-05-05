@@ -1,4 +1,4 @@
-module Capsule.Views exposing (..)
+module Capsule.Views exposing (gosGhostView, slideGhostView, view)
 
 import Api
 import Capsule.Types as Capsule

@@ -1,4 +1,4 @@
-module LoggedIn.Views exposing (..)
+module LoggedIn.Views exposing (view)
 
 import Api
 import Capsule.Views as Capsule

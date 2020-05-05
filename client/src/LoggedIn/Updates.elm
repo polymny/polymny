@@ -1,4 +1,4 @@
-module LoggedIn.Updates exposing (..)
+module LoggedIn.Updates exposing (update)
 
 import Api
 import Capsule.Types as Capsule

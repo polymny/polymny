@@ -1,4 +1,4 @@
-module SignUp.Updates exposing (..)
+module SignUp.Updates exposing (update)
 
 import Api
 import Core.Types as Core

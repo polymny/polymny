@@ -1,4 +1,4 @@
-module NewCapsule.Types exposing (..)
+module NewCapsule.Types exposing (Model, Msg(..), init)
 
 import Api
 import Status exposing (Status)

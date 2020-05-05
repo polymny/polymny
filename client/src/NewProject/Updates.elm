@@ -1,4 +1,4 @@
-module NewProject.Updates exposing (..)
+module NewProject.Updates exposing (update)
 
 import Api
 import Core.Types as Core

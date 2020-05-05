@@ -1,4 +1,4 @@
-module NewProject.Views exposing (..)
+module NewProject.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)

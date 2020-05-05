@@ -1,4 +1,4 @@
-module Core.Updates exposing (..)
+module Core.Updates exposing (update)
 
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn

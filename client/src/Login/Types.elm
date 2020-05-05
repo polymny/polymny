@@ -1,4 +1,4 @@
-module Login.Types exposing (..)
+module Login.Types exposing (Model, Msg(..), init)
 
 import Api
 import Status exposing (Status)

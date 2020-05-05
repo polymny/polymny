@@ -1,4 +1,4 @@
-module NewCapsule.Views exposing (..)
+module NewCapsule.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)

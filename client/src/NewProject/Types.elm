@@ -1,4 +1,4 @@
-module NewProject.Types exposing (..)
+module NewProject.Types exposing (Model, Msg(..), init)
 
 import Api
 import Status exposing (Status)

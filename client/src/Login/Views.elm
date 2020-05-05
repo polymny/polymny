@@ -1,4 +1,4 @@
-module Login.Views exposing (..)
+module Login.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)

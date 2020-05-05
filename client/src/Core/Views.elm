@@ -1,4 +1,4 @@
-module Core.Views exposing (..)
+module Core.Views exposing (subscriptions, view)
 
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule

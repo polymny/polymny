@@ -1,4 +1,4 @@
-module LoggedIn.Types exposing (..)
+module LoggedIn.Types exposing (Model, Msg(..), Page(..))
 
 import Api
 import Capsule.Types as Capsule
