@@ -14,21 +14,39 @@ import Ui
 
 view : Core.Global -> Api.Session -> LoggedIn.Page -> Element Core.Msg
 view global session page =
-    case page of
-        LoggedIn.Home ->
-            homeView global session
+    let
+        mainPage =
+            case page of
+                LoggedIn.Home ->
+                    homeView global session
 
-        LoggedIn.NewProject newProjectModel ->
-            NewProject.view newProjectModel
+                LoggedIn.NewProject newProjectModel ->
+                    NewProject.view newProjectModel
 
-        LoggedIn.NewCapsule _ newProjectModel ->
-            NewCapsule.view newProjectModel
+                LoggedIn.NewCapsule _ newProjectModel ->
+                    NewCapsule.view newProjectModel
 
-        LoggedIn.Project project ->
-            projectView project
+                LoggedIn.Project project ->
+                    projectView project
 
-        LoggedIn.Capsule capsule ->
-            Capsule.view session capsule
+                LoggedIn.Capsule capsule ->
+                    Capsule.view session capsule
+
+        element =
+            Element.column
+                [ Element.alignTop
+                , Element.padding 10
+                , Element.width Element.fill
+                , Element.scrollbarX
+                ]
+                [ mainPage ]
+    in
+    Element.row
+        [ Element.height Element.fill
+        , Element.width Element.fill
+        , Element.spacing 20
+        ]
+        [ element ]
 
 
 homeView : Core.Global -> Api.Session -> Element Core.Msg
