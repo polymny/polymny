@@ -33,26 +33,24 @@ fullModelAttributes =
 
 capsuleInfoViewAttributes : List (Element.Attribute msg)
 capsuleInfoViewAttributes =
-    designAttributes
-        ++ [ Element.centerX
-           , Element.alignTop
-           , Element.spacing 10
-           , Font.color Colors.artEvening
-           , Element.width Element.shrink
-           ]
+    Element.centerX
+        :: Element.alignTop
+        :: Element.spacing 10
+        :: Font.color Colors.artEvening
+        :: Element.width Element.shrink
+        :: designAttributes
 
 
 designGosAttributes : List (Element.Attribute msg)
 designGosAttributes =
-    designAttributes
-        ++ [ Element.spacing 9
-           , Element.width Element.fill
-           , Element.alignTop
-           , Element.centerX
-           , Border.rounded 5
-           , Border.width 2
-           , Background.color Colors.white
-           ]
+    Element.spacing 9
+        :: Element.width Element.fill
+        :: Element.alignTop
+        :: Element.centerX
+        :: Border.rounded 5
+        :: Border.width 2
+        :: Background.color Colors.white
+        :: designAttributes
 
 
 designGosTitleAttributes : List (Element.Attribute msg)
