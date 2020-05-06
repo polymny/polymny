@@ -55,7 +55,7 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
                     , Font.size 20
                     ]
                     (Element.text "Slide timeline")
-                , Element.row (Element.scrollbarX :: Background.color Colors.white :: Attributes.designAttributes)
+                , Element.row (Background.color Colors.black :: Attributes.designAttributes)
                     (List.map
                         (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
                         (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
