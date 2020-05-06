@@ -142,7 +142,7 @@ type LoggedInPage
     | LoggedInNewProject NewProjectContent
     | LoggedInNewCapsule Int NewCapsuleContent
     | ProjectPage Api.Project
-    | CapsulePage Api.CapsuleDetails UploadForm EditPromptContent DnDList.Groups.Model DnDList.Model
+    | CapsulePage Api.CapsuleDetails (List (List MaybeSlide)) UploadForm EditPromptContent DnDList.Groups.Model DnDList.Model
 
 
 isLoggedIn : Model -> Bool
@@ -181,7 +181,7 @@ modelFromFlags flags =
         Ok "capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model))
+                    LoggedIn (LoggedInModel session (CapsulePage capsule (setupSlides capsule.slides) emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model))
 
                 ( _, _ ) ->
                     Home
@@ -205,7 +205,12 @@ modelFromFlags flags =
 -- Drag n drop
 
 
-slideConfig : DnDList.Groups.Config Api.Slide
+type MaybeSlide
+    = JustSlide Api.Slide
+    | GosId Int
+
+
+slideConfig : DnDList.Groups.Config MaybeSlide
 slideConfig =
     { beforeUpdate = \_ _ list -> list
     , listen = DnDList.Groups.OnDrag
@@ -219,22 +224,41 @@ slideConfig =
     }
 
 
-slideComparator : Api.Slide -> Api.Slide -> Bool
-slideComparator s1 s2 =
-    s1.gos == s2.gos
+slideComparator : MaybeSlide -> MaybeSlide -> Bool
+slideComparator slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( JustSlide s1, JustSlide s2 ) ->
+            s1.gos == s2.gos
+
+        ( GosId a, GosId b ) ->
+            a == b
+
+        _ ->
+            False
 
 
-slideSetter : Api.Slide -> Api.Slide -> Api.Slide
-slideSetter s1 s2 =
-    { s2 | gos = s1.gos, position_in_gos = s1.position_in_gos }
+slideSetter : MaybeSlide -> MaybeSlide -> MaybeSlide
+slideSetter slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( JustSlide s1, JustSlide s2 ) ->
+            JustSlide { s2 | gos = s1.gos }
+
+        ( GosId id, JustSlide s2 ) ->
+            JustSlide { s2 | gos = id }
+
+        ( JustSlide s1, GosId id ) ->
+            JustSlide { s1 | gos = id }
+
+        ( GosId i1, GosId _ ) ->
+            GosId i1
 
 
-slideSystem : DnDList.Groups.System Api.Slide SlideDnDMsg
+slideSystem : DnDList.Groups.System MaybeSlide SlideDnDMsg
 slideSystem =
     DnDList.Groups.create slideConfig SlideMoved
 
 
-gosConfig : DnDList.Config (List Api.Slide)
+gosConfig : DnDList.Config (List MaybeSlide)
 gosConfig =
     { beforeUpdate = \_ _ list -> list
     , movement = DnDList.Free
@@ -243,9 +267,92 @@ gosConfig =
     }
 
 
-gosSystem : DnDList.System (List Api.Slide) SlideDnDMsg
+gosSystem : DnDList.System (List MaybeSlide) SlideDnDMsg
 gosSystem =
     DnDList.create gosConfig GosMoved
+
+
+updateGosId : Int -> MaybeSlide -> MaybeSlide
+updateGosId id slide =
+    case slide of
+        GosId _ ->
+            GosId id
+
+        JustSlide s ->
+            JustSlide { s | gos = id }
+
+
+indexedLambda : Int -> List MaybeSlide -> List MaybeSlide
+indexedLambda id slide =
+    List.map (updateGosId id) slide
+
+
+setupSlides : List Api.Slide -> List (List MaybeSlide)
+setupSlides slides =
+    let
+        list =
+            List.intersperse [ GosId -1 ] (List.map (\x -> GosId -1 :: List.map JustSlide x) (Api.sortSlides slides))
+
+        extremities =
+            [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)
+    in
+    List.indexedMap indexedLambda extremities
+
+
+regroupSlidesAux : List MaybeSlide -> List MaybeSlide -> List (List MaybeSlide) -> List (List MaybeSlide)
+regroupSlidesAux slides currentList total =
+    case slides of
+        [] ->
+            if currentList == [] then
+                total
+
+            else
+                currentList :: total
+
+        (JustSlide s) :: t ->
+            regroupSlidesAux t (JustSlide s :: currentList) total
+
+        (GosId id) :: t ->
+            if currentList == [] then
+                regroupSlidesAux t [ GosId id ] total
+
+            else
+                regroupSlidesAux t [ GosId id ] (currentList :: total)
+
+
+regroupSlides : List MaybeSlide -> List (List MaybeSlide)
+regroupSlides slides =
+    List.reverse (List.map List.reverse (regroupSlidesAux slides [] []))
+
+
+filterSlide : MaybeSlide -> Maybe Api.Slide
+filterSlide slide =
+    case slide of
+        JustSlide s ->
+            Just s
+
+        _ ->
+            Nothing
+
+
+isJustSlide : MaybeSlide -> Bool
+isJustSlide slide =
+    case slide of
+        JustSlide _ ->
+            True
+
+        _ ->
+            False
+
+
+isJustGosId : List MaybeSlide -> Bool
+isJustGosId slides =
+    case slides of
+        [ GosId _ ] ->
+            True
+
+        _ ->
+            False
 
 
 
@@ -337,7 +444,7 @@ subscriptions { model } =
     case model of
         LoggedIn { page } ->
             case page of
-                CapsulePage _ _ _ slideModel gosModel ->
+                CapsulePage _ _ _ _ slideModel gosModel ->
                     Sub.map (\x -> LoggedInMsg (SlideDnD x))
                         (Sub.batch
                             [ slideSystem.subscriptions slideModel
@@ -481,24 +588,24 @@ updateLoggedIn msg { session, page } =
             in
             ( { session = newSession, page = LoggedInNewCapsule projectId newModel }, newCmd )
 
-        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule uploadSlideShowContent editPromptContent a b ) ->
+        ( UploadSlideShowMsg newUploadSlideShowMsg, CapsulePage capsule _ uploadSlideShowContent editPromptContent a b ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateUploadSlideShow newUploadSlideShowMsg session uploadSlideShowContent capsule.capsule.id
             in
-            ( { session = newSession, page = CapsulePage capsule newModel editPromptContent a b }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule (setupSlides capsule.slides) newModel editPromptContent a b }, newCmd )
 
-        ( EditPromptMsg editPromptMsg, CapsulePage capsule uploadSlideShowContent editPromptContent a b ) ->
+        ( EditPromptMsg editPromptMsg, CapsulePage capsule _ uploadSlideShowContent editPromptContent a b ) ->
             let
                 ( newSession, newModel, newCmd ) =
                     updateEditPromptMsg editPromptMsg session editPromptContent
             in
-            ( { session = newSession, page = CapsulePage capsule uploadSlideShowContent newModel a b }, newCmd )
+            ( { session = newSession, page = CapsulePage capsule (setupSlides capsule.slides) uploadSlideShowContent newModel a b }, newCmd )
 
-        ( SlideDnD slideMsg, CapsulePage capsule form prompt slideModel gosModel ) ->
+        ( SlideDnD slideMsg, CapsulePage capsule c form prompt slideModel gosModel ) ->
             let
                 ( data, cmd ) =
-                    updateSlideDnD slideMsg { capsule = capsule, slideModel = slideModel, gosModel = gosModel }
+                    updateSlideDnD slideMsg { capsule = capsule, slidesView = c, slideModel = slideModel, gosModel = gosModel }
 
                 moveCmd =
                     Cmd.map (\x -> LoggedInMsg (SlideDnD x)) cmd
@@ -507,7 +614,7 @@ updateLoggedIn msg { session, page } =
                     Api.updateSlideStructure resultToMsg5 data.capsule
 
                 newPage =
-                    CapsulePage data.capsule form prompt data.slideModel data.gosModel
+                    CapsulePage data.capsule data.slidesView form prompt data.slideModel data.gosModel
 
                 cmds =
                     if Api.compareSlides capsule.slides data.capsule.slides then
@@ -521,17 +628,17 @@ updateLoggedIn msg { session, page } =
         ( ProjectClicked project, _ ) ->
             ( LoggedInModel session page, Api.capsulesFromProjectId (resultToMsg3 project) project.id )
 
+        ( CapsuleReceived capsule, CapsulePage _ _ form prompt a b ) ->
+            ( LoggedInModel session (CapsulePage capsule (setupSlides capsule.slides) form prompt a b), Cmd.none )
+
         ( CapsulesReceived project newCapsules, _ ) ->
             ( LoggedInModel session (ProjectPage { project | capsules = newCapsules }), Cmd.none )
-
-        ( CapsuleReceived capsule, CapsulePage _ form prompt a b ) ->
-            ( LoggedInModel session (CapsulePage capsule form prompt a b), Cmd.none )
 
         ( CapsuleClicked capsule, _ ) ->
             ( LoggedInModel session page, Api.capsuleFromId resultToMsg5 capsule.id )
 
         ( CapsuleReceived capsule, _ ) ->
-            ( LoggedInModel session (CapsulePage capsule emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model), Cmd.none )
+            ( LoggedInModel session (CapsulePage capsule (setupSlides capsule.slides) emptyUploadForm emptyEditPromptContent slideSystem.model gosSystem.model), Cmd.none )
 
         ( _, _ ) ->
             ( { session = session, page = page }, Cmd.none )
@@ -637,6 +744,7 @@ type alias CapsulePageData a =
         | capsule : Api.CapsuleDetails
         , slideModel : DnDList.Groups.Model
         , gosModel : DnDList.Model
+        , slidesView : List (List MaybeSlide)
     }
 
 
@@ -645,11 +753,30 @@ updateSlideDnD slideMsg data =
     case slideMsg of
         SlideMoved msg ->
             let
+                pre =
+                    slideSystem.info data.slideModel
+
                 ( slideModel, slides ) =
-                    slideSystem.update msg data.slideModel data.capsule.slides
+                    slideSystem.update msg data.slideModel (List.concat data.slidesView)
+
+                post =
+                    slideSystem.info slideModel
 
                 updatedSlides =
-                    List.indexedMap (\i slide -> { slide | position_in_gos = i }) slides
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            List.indexedMap (\i slide -> { slide | position_in_gos = i }) (List.filterMap filterSlide slides)
+
+                        _ ->
+                            capsule.slides
+
+                updatedSlidesView =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            setupSlides updatedSlides
+
+                        _ ->
+                            regroupSlides slides
 
                 capsule =
                     data.capsule
@@ -657,17 +784,17 @@ updateSlideDnD slideMsg data =
                 newCapsule =
                     { capsule | slides = updatedSlides }
             in
-            ( { data | capsule = newCapsule, slideModel = slideModel }, slideSystem.commands slideModel )
+            ( { data | capsule = newCapsule, slideModel = slideModel, slidesView = updatedSlidesView }, slideSystem.commands slideModel )
 
         GosMoved msg ->
             let
                 ( gosModel, goss ) =
-                    gosSystem.update msg data.gosModel (Api.sortSlides data.capsule.slides)
+                    gosSystem.update msg data.gosModel (setupSlides data.capsule.slides)
 
                 updatedGoss =
                     List.indexedMap
                         (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
-                        goss
+                        (List.map (\x -> List.filterMap filterSlide x) goss)
 
                 capsule =
                     data.capsule
@@ -756,9 +883,9 @@ viewContent { global, model } =
             case model of
                 LoggedIn { page } ->
                     case page of
-                        CapsulePage capsuleDetails _ _ slideModel gosModel ->
-                            [ Element.inFront (gosGhostView gosModel slideModel capsuleDetails.slides)
-                            , Element.inFront (slideGhostView slideModel capsuleDetails.slides)
+                        CapsulePage _ slidesView _ _ slideModel gosModel ->
+                            [ Element.inFront (gosGhostView gosModel slideModel (List.concat slidesView))
+                            , Element.inFront (slideGhostView slideModel (List.concat slidesView))
                             ]
 
                         _ ->
@@ -936,8 +1063,8 @@ loggedInView global { session, page } =
                 LoggedInNewCapsule _ content ->
                     loggedInNewCapsuleView session content
 
-                CapsulePage capsuleDetails form modal slidesModel gosModel ->
-                    capsulePageView session capsuleDetails form modal slidesModel gosModel
+                CapsulePage capsuleDetails slides form modal slidesModel gosModel ->
+                    capsulePageView session capsuleDetails slides form modal slidesModel gosModel
 
         element =
             Element.column
@@ -1196,12 +1323,12 @@ capsuleView capsule =
         ]
 
 
-capsulePageView : Api.Session -> Api.CapsuleDetails -> UploadForm -> EditPromptContent -> DnDList.Groups.Model -> DnDList.Model -> Element Msg
-capsulePageView session capsuleDetails form editPromptContent slideModel gosModel =
+capsulePageView : Api.Session -> Api.CapsuleDetails -> List (List MaybeSlide) -> UploadForm -> EditPromptContent -> DnDList.Groups.Model -> DnDList.Model -> Element Msg
+capsulePageView session capsuleDetails slides form editPromptContent slideModel gosModel =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
-            Api.sortSlides capsuleDetails.slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
+            slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
         dialogConfig =
             if editPromptContent.showDialog then
@@ -1212,9 +1339,6 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
     in
     Element.el
         [ Element.padding 10
-        , Element.spacing 20
-        , Element.width Element.fill
-        , Background.color Colors.white
         , Element.mapAttribute LoggedInMsg <|
             Element.mapAttribute EditPromptMsg <|
                 Element.inFront (Dialog.view dialogConfig)
@@ -1232,12 +1356,8 @@ capsulePageView session capsuleDetails form editPromptContent slideModel gosMode
                     , Font.size 20
                     ]
                     (Element.text "Slide timeline")
-                , Element.row
-                    (Element.scrollbarX
-                        :: Background.color Colors.white
-                        :: Attributes.designAttributes
-                    )
-                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) (Api.sortSlides capsuleDetails.slides))
+                , Element.row (Element.scrollbarX :: Background.color Colors.white :: Attributes.designAttributes)
+                    (List.indexedMap (\i -> capsuleGosView gosModel slideModel (calculateOffset i) i) slides)
                 ]
             ]
         )
@@ -1271,7 +1391,7 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
+capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List MaybeSlide -> Element Msg
 capsuleGosView gosModel slideModel offset gosIndex gos =
     case gosSystem.info gosModel of
         Just { dragIndex } ->
@@ -1285,7 +1405,7 @@ capsuleGosView gosModel slideModel offset gosIndex gos =
             genericGosView Dragged gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List Api.Slide -> Element Msg
+gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List MaybeSlide -> Element Msg
 gosGhostView gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
@@ -1295,13 +1415,17 @@ gosGhostView gosModel slideModel slides =
             Element.none
 
 
-maybeDragGos : DnDList.Model -> List Api.Slide -> Maybe (List Api.Slide)
+maybeDragGos : DnDList.Model -> List MaybeSlide -> Maybe (List MaybeSlide)
 maybeDragGos gosModel slides =
+    let
+        s =
+            regroupSlides slides
+    in
     gosSystem.info gosModel
-        |> Maybe.andThen (\{ dragIndex } -> Api.sortSlides slides |> List.drop dragIndex |> List.head)
+        |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Api.Slide -> Element Msg
+genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List MaybeSlide -> Element Msg
 genericGosView options gosModel slideModel offset index gos =
     let
         gosId : String
@@ -1314,7 +1438,7 @@ genericGosView options gosModel slideModel offset index gos =
 
         dragAttributes : List (Element.Attribute Msg)
         dragAttributes =
-            if options == Dragged then
+            if options == Dragged && not (isJustGosId gos) then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (gosSystem.dragEvents index gosId))
@@ -1324,7 +1448,7 @@ genericGosView options gosModel slideModel offset index gos =
 
         dropAttributes : List (Element.Attribute Msg)
         dropAttributes =
-            if options == Dropped then
+            if options == Dropped && not (isJustGosId gos) then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (gosSystem.dropEvents index gosId))
@@ -1350,41 +1474,67 @@ genericGosView options gosModel slideModel offset index gos =
             else
                 []
 
+        slideDropAttributes : List (Element.Attribute Msg)
+        slideDropAttributes =
+            List.map
+                (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
+                (List.map Element.htmlAttribute (slideSystem.dropEvents offset slideId))
+
+        slideId : String
+        slideId =
+            if options == Ghost then
+                "slide-ghost"
+
+            else
+                "slide-" ++ String.fromInt offset
+
         slides : List (Element Msg)
         slides =
             List.indexedMap (designSlideView slideModel offset) gos
     in
-    Element.column
-        (Element.htmlAttribute (Html.Attributes.id gosId)
-            :: dropAttributes
-            ++ ghostAttributes
-            ++ Attributes.designGosAttributes
-        )
-        [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
-            [ Element.el
-                Attributes.designGosTitleAttributes
-                (Element.text (String.fromInt index))
-            , Element.row [ Element.alignRight ] [ Ui.trashButton Nothing "" ]
-            ]
-        , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
-        ]
+    case gos of
+        [ GosId _ ] ->
+            Element.column
+                [ Element.htmlAttribute (Html.Attributes.id gosId)
+                , Element.height Element.fill
+                , Element.width (Element.px 50)
+                ]
+                [ Element.el
+                    (Element.htmlAttribute (Html.Attributes.id slideId) :: Element.width (Element.px 50) :: Element.height (Element.px 300) :: slideDropAttributes)
+                    Element.none
+                ]
+
+        _ ->
+            Element.column
+                (Element.htmlAttribute (Html.Attributes.id gosId)
+                    :: dropAttributes
+                    ++ ghostAttributes
+                    ++ Attributes.designGosAttributes
+                )
+                [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
+                    [ Element.el Attributes.designGosTitleAttributes
+                        (Element.text (String.fromInt index))
+                    , Element.row [ Element.alignRight ] [ Ui.trashButton Nothing "" ]
+                    ]
+                , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
+                ]
 
 
 
 -- SLIDES VIEWS
 
 
-slideGhostView : DnDList.Groups.Model -> List Api.Slide -> Element Msg
+slideGhostView : DnDList.Groups.Model -> List MaybeSlide -> Element Msg
 slideGhostView slideModel slides =
     case maybeDragSlide slideModel slides of
-        Just s ->
-            genericDesignSlideView Ghost slideModel 0 0 s
+        JustSlide s ->
+            genericDesignSlideView Ghost slideModel 0 0 (JustSlide s)
 
         _ ->
             Element.none
 
 
-designSlideView : DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
+designSlideView : DnDList.Groups.Model -> Int -> Int -> MaybeSlide -> Element Msg
 designSlideView slideModel offset localIndex slide =
     case ( slideSystem.info slideModel, maybeDragSlide slideModel ) of
         ( Just { dragIndex }, _ ) ->
@@ -1398,14 +1548,23 @@ designSlideView slideModel offset localIndex slide =
             genericDesignSlideView Dragged slideModel offset localIndex slide
 
 
-maybeDragSlide : DnDList.Groups.Model -> List Api.Slide -> Maybe Api.Slide
+maybeDragSlide : DnDList.Groups.Model -> List MaybeSlide -> MaybeSlide
 maybeDragSlide slideModel slides =
-    slideSystem.info slideModel
-        |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
+    let
+        x =
+            slideSystem.info slideModel
+                |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
+    in
+    case x of
+        Just (JustSlide n) ->
+            JustSlide n
+
+        _ ->
+            GosId -1
 
 
-genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> Api.Slide -> Element Msg
-genericDesignSlideView options slideModel offset localIndex slide =
+genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> MaybeSlide -> Element Msg
+genericDesignSlideView options slideModel offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -1421,7 +1580,7 @@ genericDesignSlideView options slideModel offset localIndex slide =
 
         dragAttributes : List (Element.Attribute Msg)
         dragAttributes =
-            if options == Dragged then
+            if options == Dragged && isJustSlide s then
                 List.map
                     (\x -> Element.mapAttribute (\y -> LoggedInMsg (SlideDnD y)) x)
                     (List.map Element.htmlAttribute (slideSystem.dragEvents globalIndex slideId))
@@ -1457,34 +1616,39 @@ genericDesignSlideView options slideModel offset localIndex slide =
             else
                 []
     in
-    Element.el
-        (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
-        (Element.column
-            Attributes.genericDesignSlideViewAttributes
-            [ Element.el
-                (Element.height
-                    (Element.shrink
-                        |> Element.maximum 40
-                        |> Element.minimum 20
-                    )
-                    :: Element.width Element.fill
-                    :: eventLessAttributes
-                    ++ dragAttributes
-                )
-              <|
-                Element.el
-                    [ Font.size 22
-                    , Element.centerX
-                    , Font.color Colors.artEvening
+    case s of
+        GosId _ ->
+            Element.none
+
+        JustSlide slide ->
+            Element.el
+                (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
+                (Element.column
+                    Attributes.genericDesignSlideViewAttributes
+                    [ Element.el
+                        (Element.height
+                            (Element.shrink
+                                |> Element.maximum 40
+                                |> Element.minimum 20
+                            )
+                            :: Element.width Element.fill
+                            :: eventLessAttributes
+                            ++ dragAttributes
+                        )
+                      <|
+                        Element.el
+                            [ Font.size 22
+                            , Element.centerX
+                            , Font.color Colors.artEvening
+                            ]
+                            (Element.text <| "Slide #" ++ String.fromInt slide.position)
+                    , Element.row
+                        [ Element.spacingXY 2 0 ]
+                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
+                        , genrericDesignSlide2ndColumnView eventLessAttributes slide
+                        ]
                     ]
-                    (Element.text <| "Slide #" ++ String.fromInt slide.position)
-            , Element.row
-                [ Element.spacingXY 2 0 ]
-                [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
-                , genrericDesignSlide2ndColumnView eventLessAttributes slide
-                ]
-            ]
-        )
+                )
 
 
 genrericDesignSlide1stColumnView : List (Element.Attribute Msg) -> Api.Slide -> Element Msg
@@ -1562,12 +1726,7 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
 
 viewSlideImage : String -> Element Msg
 viewSlideImage url =
-    Element.image
-        [ Element.width (Element.px 190)
-        , Element.centerX
-        , Element.paddingXY 1 4
-        ]
-        { src = url, description = "One desc" }
+    Element.image [ Element.width (Element.px 200) ] { src = url, description = "One desc" }
 
 
 
