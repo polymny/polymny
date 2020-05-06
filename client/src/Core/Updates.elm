@@ -9,6 +9,7 @@ import NewCapsule.Types as NewCapsule
 import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
+import Preparation.Types as Preparation
 import SignUp.Types as SignUp
 import SignUp.Updates as SignUp
 
@@ -24,7 +25,18 @@ update msg { global, model } =
             ( Core.FullModel { global | zone = newTimeZone } model, Cmd.none )
 
         ( Core.HomeClicked, Core.LoggedIn { session } ) ->
-            ( Core.FullModel global (Core.LoggedIn { session = session, page = LoggedIn.Home }), Cmd.none )
+            ( Core.FullModel global
+                (Core.LoggedIn
+                    { session = session
+                    , tab =
+                        LoggedIn.Preparation
+                            { session = session
+                            , page = Preparation.Home
+                            }
+                    }
+                )
+            , Cmd.none
+            )
 
         ( Core.LoginClicked, _ ) ->
             ( Core.FullModel global (Core.Login Login.init), Cmd.none )
@@ -39,7 +51,11 @@ update msg { global, model } =
             ( Core.FullModel global
                 (Core.LoggedIn
                     { session = session
-                    , page = LoggedIn.NewProject NewProject.init
+                    , tab =
+                        LoggedIn.Preparation
+                            { session = session
+                            , page = Preparation.NewProject NewProject.init
+                            }
                     }
                 )
             , Cmd.none
@@ -49,7 +65,11 @@ update msg { global, model } =
             ( Core.FullModel global
                 (Core.LoggedIn
                     { session = session
-                    , page = LoggedIn.NewCapsule projectId NewCapsule.init
+                    , tab =
+                        LoggedIn.Preparation
+                            { session = session
+                            , page = Preparation.NewCapsule projectId NewCapsule.init
+                            }
                     }
                 )
             , Cmd.none
@@ -70,10 +90,10 @@ update msg { global, model } =
             in
             ( Core.FullModel global (Core.SignUp m), cmd )
 
-        ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, page } ) ->
+        ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
             let
                 ( m, cmd ) =
-                    LoggedIn.update newProjectMsg (LoggedIn.Model session page)
+                    LoggedIn.update newProjectMsg (LoggedIn.Model session tab)
             in
             ( Core.FullModel global (Core.LoggedIn m), cmd )
 

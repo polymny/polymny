@@ -5,6 +5,7 @@ import Element exposing (Element)
 import Element.Input as Input
 import LoggedIn.Types as LoggedIn
 import NewProject.Types as NewProject
+import Preparation.Types as Preparation
 import Status
 import Ui.Ui as Ui
 
@@ -67,6 +68,7 @@ view { status, name } =
                     header :: fields
     in
     Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.NewProjectMsg <|
-            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
-                form
+        Element.map LoggedIn.PreparationMsg <|
+            Element.map Preparation.NewProjectMsg <|
+                Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+                    form

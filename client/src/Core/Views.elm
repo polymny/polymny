@@ -10,6 +10,7 @@ import Html
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
+import Preparation.Types as Preparation
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -19,15 +20,23 @@ import Ui.Ui as Ui
 subscriptions : Core.FullModel -> Sub Core.Msg
 subscriptions { model } =
     case model of
-        Core.LoggedIn { page } ->
-            case page of
-                LoggedIn.Capsule { slideModel, gosModel } ->
-                    Sub.map (\x -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD x)))
-                        (Sub.batch
-                            [ Capsule.slideSystem.subscriptions slideModel
-                            , Capsule.gosSystem.subscriptions gosModel
-                            ]
-                        )
+        Core.LoggedIn { tab } ->
+            case tab of
+                LoggedIn.Preparation { page } ->
+                    case page of
+                        Preparation.Capsule { slideModel, gosModel } ->
+                            Sub.map
+                                (\x ->
+                                    Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD x)))
+                                )
+                                (Sub.batch
+                                    [ Capsule.slideSystem.subscriptions slideModel
+                                    , Capsule.gosSystem.subscriptions gosModel
+                                    ]
+                                )
+
+                        _ ->
+                            Sub.none
 
                 _ ->
                     Sub.none
@@ -55,17 +64,22 @@ viewContent { global, model } =
                 Core.SignUp signUpModel ->
                     SignUp.view signUpModel
 
-                Core.LoggedIn { session, page } ->
-                    LoggedIn.view global session page
+                Core.LoggedIn { session, tab } ->
+                    LoggedIn.view global session tab
 
         attributes =
             case model of
-                Core.LoggedIn { page } ->
-                    case page of
-                        LoggedIn.Capsule { slides, slideModel, gosModel } ->
-                            [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
-                            , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
-                            ]
+                Core.LoggedIn { tab } ->
+                    case tab of
+                        LoggedIn.Preparation { page } ->
+                            case page of
+                                Preparation.Capsule { slides, slideModel, gosModel } ->
+                                    [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
+                                    , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
+                                    ]
+
+                                _ ->
+                                    []
 
                         _ ->
                             []
@@ -84,33 +98,38 @@ homeView =
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { page } ->
-            case page of
-                LoggedIn.Project { id } ->
-                    Element.row
-                        [ Background.color Colors.primary
-                        , Element.width Element.fill
-                        , Element.spacing 30
-                        ]
-                        [ Element.row
-                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                            [ homeButton ]
-                        , Element.row
-                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                            (if Core.isLoggedIn model then
-                                [ newProjectButton, newCapsuleButton id ]
+        Core.LoggedIn { tab } ->
+            case tab of
+                LoggedIn.Preparation { page } ->
+                    case page of
+                        Preparation.Project { id } ->
+                            Element.row
+                                [ Background.color Colors.primary
+                                , Element.width Element.fill
+                                , Element.spacing 30
+                                ]
+                                [ Element.row
+                                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                                    [ homeButton ]
+                                , Element.row
+                                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                                    (if Core.isLoggedIn model then
+                                        [ newProjectButton, newCapsuleButton id ]
 
-                             else
-                                []
-                            )
-                        , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
-                            (if Core.isLoggedIn model then
-                                [ logoutButton ]
+                                     else
+                                        []
+                                    )
+                                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                                    (if Core.isLoggedIn model then
+                                        [ logoutButton ]
 
-                             else
-                                [ loginButton, signUpButton ]
-                            )
-                        ]
+                                     else
+                                        [ loginButton, signUpButton ]
+                                    )
+                                ]
+
+                        _ ->
+                            nonFull model
 
                 _ ->
                     nonFull model

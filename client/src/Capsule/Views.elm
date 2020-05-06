@@ -15,6 +15,7 @@ import File exposing (File)
 import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Preparation.Types as Preparation
 import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -38,9 +39,10 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
     Element.el
         [ Element.padding 10
         , Element.mapAttribute Core.LoggedInMsg <|
-            Element.mapAttribute LoggedIn.CapsuleMsg <|
-                Element.mapAttribute Capsule.EditPromptMsg <|
-                    Element.inFront (Dialog.view dialogConfig)
+            Element.mapAttribute LoggedIn.PreparationMsg <|
+                Element.mapAttribute Preparation.CapsuleMsg <|
+                    Element.mapAttribute Capsule.EditPromptMsg <|
+                        Element.inFront (Dialog.view dialogConfig)
         ]
         (Element.row (Element.scrollbarX :: Attributes.designAttributes)
             [ capsuleInfoView session details uploadForm
@@ -399,7 +401,11 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
     let
         promptMsg : Core.Msg
         promptMsg =
-            Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.EditPromptMsg (Capsule.EditPromptOpenDialog slide.id slide.prompt)))
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.CapsuleMsg <|
+                        Capsule.EditPromptMsg <|
+                            Capsule.EditPromptOpenDialog slide.id slide.prompt
     in
     Element.column
         (Element.alignTop
@@ -564,21 +570,23 @@ fileNameElement file =
 selectFileButton : Element Core.Msg
 selectFileButton =
     Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
+        Element.map LoggedIn.PreparationMsg <|
+            Element.map Preparation.CapsuleMsg <|
+                Element.map Capsule.UploadSlideShowMsg <|
+                    Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
 
 
 uploadButton : Element Core.Msg
 uploadButton =
     Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
+        Element.map LoggedIn.PreparationMsg <|
+            Element.map Preparation.CapsuleMsg <|
+                Element.map Capsule.UploadSlideShowMsg <|
+                    Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
 
 
 convertAttributes : List (Html.Attribute Capsule.DnDMsg) -> List (Element.Attribute Core.Msg)
 convertAttributes attributes =
     List.map
-        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
+        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD y)))) x)
         (List.map Element.htmlAttribute attributes)

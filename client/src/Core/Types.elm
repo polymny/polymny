@@ -13,6 +13,7 @@ import Json.Decode as Decode
 import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
+import Preparation.Types as Preparation
 import SignUp.Types as SignUp
 import Task
 import Time
@@ -42,17 +43,9 @@ modelFromFlags flags =
         Ok "index" ->
             case Decode.decodeValue Api.decodeSession flags of
                 Ok session ->
-                    LoggedIn { session = session, page = LoggedIn.Home }
+                    LoggedIn { session = session, tab = LoggedIn.Home }
 
                 Err _ ->
-                    Home
-
-        Ok "capsule" ->
-            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
-                ( Ok session, Ok capsule ) ->
-                    LoggedIn (LoggedIn.Model session (LoggedIn.Capsule (Capsule.init capsule)))
-
-                ( _, _ ) ->
                     Home
 
         Ok ok ->

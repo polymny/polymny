@@ -4,6 +4,7 @@ import Api
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
+import Preparation.Types as Preparation
 import Status
 import Utils exposing (resultToMsg)
 
@@ -35,4 +36,13 @@ update session projectId msg model =
 
 resultToMsg : Result e Api.Capsule -> Core.Msg
 resultToMsg result =
-    Utils.resultToMsg (\x -> Core.LoggedInMsg <| LoggedIn.NewCapsuleMsg <| NewCapsule.Success <| x) (\_ -> Core.Noop) result
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.NewCapsuleMsg <|
+                        NewCapsule.Success <|
+                            x
+        )
+        (\_ -> Core.Noop)
+        result
