@@ -5,7 +5,7 @@ import Element exposing (Element)
 import Element.Input as Input
 import SignUp.Types as SignUp
 import Status
-import Ui
+import Ui.Ui as Ui
 
 
 view : SignUp.Model -> Element Core.Msg

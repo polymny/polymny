@@ -6,7 +6,7 @@ import Element.Input as Input
 import LoggedIn.Types as LoggedIn
 import NewProject.Types as NewProject
 import Status
-import Ui
+import Ui.Ui as Ui
 
 
 view : NewProject.Model -> Element Core.Msg

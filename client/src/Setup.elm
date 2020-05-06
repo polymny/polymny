@@ -2,7 +2,6 @@ module Setup exposing (main)
 
 import Api
 import Browser
-import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -11,7 +10,8 @@ import Element.Input as Input
 import Html
 import Http
 import Status exposing (Status)
-import Ui
+import Ui.Colors as Colors
+import Ui.Ui as Ui
 
 
 main : Program () FullModel Msg

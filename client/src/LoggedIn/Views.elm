@@ -9,7 +9,7 @@ import LoggedIn.Types as LoggedIn
 import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import TimeUtils
-import Ui
+import Ui.Ui as Ui
 
 
 view : Core.Global -> Api.Session -> LoggedIn.Page -> Element Core.Msg

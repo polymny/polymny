@@ -6,7 +6,7 @@ import Element.Input as Input
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import Status
-import Ui
+import Ui.Ui as Ui
 
 
 view : NewCapsule.Model -> Element Core.Msg

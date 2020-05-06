@@ -2,7 +2,6 @@ module Core.Views exposing (subscriptions, view)
 
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule
-import Colors
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
@@ -12,7 +11,9 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
 import SignUp.Views as SignUp
-import Ui
+import Ui.Attributes as Attributes
+import Ui.Colors as Colors
+import Ui.Ui as Ui
 
 
 subscriptions : Core.FullModel -> Sub Core.Msg
@@ -37,7 +38,7 @@ subscriptions { model } =
 
 view : Core.FullModel -> Html.Html Core.Msg
 view fullModel =
-    Element.layout [ Font.size 15 ] (viewContent fullModel)
+    Element.layout Attributes.fullModelAttributes (viewContent fullModel)
 
 
 viewContent : Core.FullModel -> Element Core.Msg
@@ -174,19 +175,3 @@ logoutButton =
 signUpButton : Element Core.Msg
 signUpButton =
     Ui.successButton Nothing "Sign up"
-
-
-selectFileButton : Element Core.Msg
-selectFileButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
-
-
-uploadButton : Element Core.Msg
-uploadButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
