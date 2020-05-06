@@ -1,16 +1,26 @@
-module Colors exposing
-    ( black
+module Ui.Colors exposing
+    ( artEvening
+    , artIrises
+    , artStarryNight
+    , artSunFlowers
+    , black
+    , brandeisBlue
+    , brightGreen
     , danger
     , dangerDark
     , dangerLight
     , grey
     , link
+    , menthol
     , primary
     , primaryDark
     , primaryLight
+    , purpleHeart
+    , purplePlum
     , success
     , successDark
     , successLight
+    , vividCerulean
     , warning
     , warningDark
     , warningLight
@@ -137,7 +147,7 @@ black =
 
 primary : Element.Color
 primary =
-    colorToUi primaryColor
+    colorToUi starryNightColor
 
 
 success : Element.Color
@@ -198,3 +208,111 @@ dangerDark =
 link : Element.Color
 link =
     Element.rgb255 0 0 255
+
+
+
+-- Try palette : https://www.schemecolor.com/bright-blue-green-and-purple.php
+
+
+brandeisBlueColor : Color
+brandeisBlueColor =
+    Color.fromRGB ( 0, 99, 255 )
+
+
+brandeisBlue : Element.Color
+brandeisBlue =
+    colorToUi brandeisBlueColor
+
+
+vividCeruleanColor : Color
+vividCeruleanColor =
+    Color.fromRGB ( 0, 164, 255 )
+
+
+vividCerulean : Element.Color
+vividCerulean =
+    colorToUi vividCeruleanColor
+
+
+mentholColor : Color
+mentholColor =
+    Color.fromRGB ( 176, 255, 151 )
+
+
+menthol : Element.Color
+menthol =
+    colorToUi mentholColor
+
+
+brightGreenColor : Color
+brightGreenColor =
+    Color.fromRGB ( 99, 252, 1 )
+
+
+brightGreen : Element.Color
+brightGreen =
+    colorToUi brightGreenColor
+
+
+purpleHeartColor : Color
+purpleHeartColor =
+    Color.fromRGB ( 104, 53, 155 )
+
+
+purpleHeart : Element.Color
+purpleHeart =
+    colorToUi purpleHeartColor
+
+
+purplePlumColor : Color
+purplePlumColor =
+    Color.fromRGB ( 153, 79, 179 )
+
+
+purplePlum : Element.Color
+purplePlum =
+    colorToUi purplePlumColor
+
+
+
+-- Art history https://www.canva.com/learn/website-color-schemes/
+
+
+sunFlowersColor : Color
+sunFlowersColor =
+    Color.fromRGB ( 255, 204, 0 )
+
+
+artSunFlowers : Element.Color
+artSunFlowers =
+    colorToUi sunFlowersColor
+
+
+starryNightColor : Color
+starryNightColor =
+    Color.fromRGB ( 3, 118, 180 )
+
+
+artStarryNight : Element.Color
+artStarryNight =
+    colorToUi starryNightColor
+
+
+irisesColor : Color
+irisesColor =
+    Color.fromRGB ( 0, 120, 72 )
+
+
+artIrises : Element.Color
+artIrises =
+    colorToUi irisesColor
+
+
+eveningColor : Color
+eveningColor =
+    Color.fromRGB ( 38, 34, 40 )
+
+
+artEvening : Element.Color
+artEvening =
+    colorToUi eveningColor

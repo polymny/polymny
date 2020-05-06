@@ -1,6 +1,7 @@
-module Ui exposing
-    ( editButton
-    , editIcon
+module Ui.Ui exposing
+    ( addButton
+    , clearButton
+    , editButton
     , errorModal
     , linkButton
     , onEnter
@@ -11,19 +12,18 @@ module Ui exposing
     , successButton
     , successModal
     , textButton
-    , trashIcon
+    , trashButton
     )
 
-import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import FontAwesome
-import Html
 import Html.Events
 import Json.Decode as Decode
+import Ui.Colors as Colors
+import Ui.Icons as Icons
 
 
 onEnter : msg -> Element.Attribute msg
@@ -48,6 +48,8 @@ buttonAttributes =
     [ Element.centerX
     , Element.padding 10
     , Border.rounded 5
+    , Background.color Colors.artStarryNight
+    , Font.color Colors.artEvening
     ]
 
 
@@ -122,12 +124,48 @@ primaryButton onPress content =
 editButton : Maybe msg -> String -> Element msg
 editButton onPress content =
     Input.button
+        (Background.color Colors.artEvening
+            :: Font.color Colors.artSunFlowers
+            :: buttonAttributes
+        )
+        { onPress = onPress
+        , label = Element.row [] [ Icons.edit, Element.text content ]
+        }
+
+
+trashButton : Maybe msg -> String -> Element msg
+trashButton onPress content =
+    Input.button
         (Background.color Colors.primary
             :: Font.color Colors.white
             :: buttonAttributes
         )
         { onPress = onPress
-        , label = Element.row [] [ editIcon, Element.text content ]
+        , label = Element.row [] [ Icons.trash, Element.text content ]
+        }
+
+
+addButton : Maybe msg -> String -> Element msg
+addButton onPress content =
+    Input.button
+        (Background.color Colors.primary
+            :: Font.color Colors.white
+            :: buttonAttributes
+        )
+        { onPress = onPress
+        , label = Element.row [] [ Icons.add, Element.text content ]
+        }
+
+
+clearButton : Maybe msg -> String -> Element msg
+clearButton onPress content =
+    Input.button
+        (Background.color Colors.primary
+            :: Font.color Colors.white
+            :: buttonAttributes
+        )
+        { onPress = onPress
+        , label = Element.row [] [ Icons.clear, Element.text content ]
         }
 
 
@@ -171,35 +209,3 @@ successModal text =
             :: modalAttributes
         )
         [ Element.text text ]
-
-
-
--- Icons
-
-
-trashIcon : Element msg
-trashIcon =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.trash
-                FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 2) ]
-                []
-            ]
-        )
-
-
-editIcon : Element msg
-editIcon =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.edit
-                FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 1) ]
-                []
-            ]
-        )
