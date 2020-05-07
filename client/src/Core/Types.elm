@@ -48,6 +48,21 @@ modelFromFlags flags =
                 Err _ ->
                     Home
 
+        Ok "preparation/capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    LoggedIn
+                        { session = session
+                        , tab =
+                            LoggedIn.Preparation
+                                { session = session
+                                , page = Preparation.Capsule (Capsule.init capsule)
+                                }
+                        }
+
+                ( _, _ ) ->
+                    Home
+
         Ok ok ->
             let
                 _ =
