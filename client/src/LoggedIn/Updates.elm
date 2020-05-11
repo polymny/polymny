@@ -1,5 +1,7 @@
 module LoggedIn.Updates exposing (update)
 
+import Acquisition.Types as Acquisition
+import Acquisition.Updates as Acquisition
 import Api
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
@@ -21,6 +23,18 @@ update msg { session, tab } =
         ( LoggedIn.PreparationMsg (Preparation.ProjectClicked project), _ ) ->
             ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project }
             , Api.capsulesFromProjectId (resultToMsg project) project.id
+            )
+
+        ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    Acquisition.update session acquisitionMsg model
+            in
+            ( LoggedIn.Model newSession (LoggedIn.Acquisition newModel), cmd )
+
+        ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
+            ( { session = session, tab = LoggedIn.Acquisition Acquisition.Home }
+            , Cmd.none
             )
 
         _ ->
