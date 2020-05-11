@@ -13,11 +13,11 @@ import TimeUtils
 import Ui.Ui as Ui
 
 
-view : Core.Global -> Api.Session -> Preparation.Page -> Element Core.Msg
-view global session page =
+view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
+view global session preparationModel =
     let
         mainPage =
-            case page of
+            case preparationModel of
                 Preparation.Home ->
                     homeView global session
 

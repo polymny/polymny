@@ -54,10 +54,9 @@ modelFromFlags flags =
                     LoggedIn
                         { session = session
                         , tab =
-                            LoggedIn.Preparation
-                                { session = session
-                                , page = Preparation.Capsule (Capsule.init capsule)
-                                }
+                            LoggedIn.Preparation <|
+                                Preparation.Capsule
+                                    (Capsule.init capsule)
                         }
 
                 ( _, _ ) ->

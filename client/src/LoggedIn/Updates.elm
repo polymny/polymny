@@ -13,13 +13,13 @@ update msg { session, tab } =
     case ( msg, tab ) of
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
-                ( newModel, cmd ) =
-                    Preparation.update preparationMsg model
+                ( newSession, newModel, cmd ) =
+                    Preparation.update session preparationMsg model
             in
-            ( LoggedIn.Model session (LoggedIn.Preparation newModel), cmd )
+            ( LoggedIn.Model newSession (LoggedIn.Preparation newModel), cmd )
 
         ( LoggedIn.PreparationMsg (Preparation.ProjectClicked project), _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation (Preparation.Model session (Preparation.Project project)) }
+            ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project }
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 

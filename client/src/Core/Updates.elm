@@ -29,10 +29,7 @@ update msg { global, model } =
                 (Core.LoggedIn
                     { session = session
                     , tab =
-                        LoggedIn.Preparation
-                            { session = session
-                            , page = Preparation.Home
-                            }
+                        LoggedIn.Preparation Preparation.Home
                     }
                 )
             , Cmd.none
@@ -52,10 +49,8 @@ update msg { global, model } =
                 (Core.LoggedIn
                     { session = session
                     , tab =
-                        LoggedIn.Preparation
-                            { session = session
-                            , page = Preparation.NewProject NewProject.init
-                            }
+                        LoggedIn.Preparation <|
+                            Preparation.NewProject NewProject.init
                     }
                 )
             , Cmd.none
@@ -66,10 +61,8 @@ update msg { global, model } =
                 (Core.LoggedIn
                     { session = session
                     , tab =
-                        LoggedIn.Preparation
-                            { session = session
-                            , page = Preparation.NewCapsule projectId NewCapsule.init
-                            }
+                        LoggedIn.Preparation <|
+                            Preparation.NewCapsule projectId NewCapsule.init
                     }
                 )
             , Cmd.none

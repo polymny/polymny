@@ -11,8 +11,8 @@ import Utils
 
 
 update : Capsule.Msg -> Capsule.Model -> ( Capsule.Model, Cmd Core.Msg )
-update msg page =
-    case ( msg, page ) of
+update msg capsuleModel =
+    case ( msg, capsuleModel ) of
         ( Capsule.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
                 ( newModel, newCmd ) =

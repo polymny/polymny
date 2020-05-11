@@ -22,8 +22,8 @@ subscriptions { model } =
     case model of
         Core.LoggedIn { tab } ->
             case tab of
-                LoggedIn.Preparation { page } ->
-                    case page of
+                LoggedIn.Preparation preparationModel ->
+                    case preparationModel of
                         Preparation.Capsule { slideModel, gosModel } ->
                             Sub.map
                                 (\x ->
@@ -71,8 +71,8 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation { page } ->
-                            case page of
+                        LoggedIn.Preparation preparationModel ->
+                            case preparationModel of
                                 Preparation.Capsule { slides, slideModel, gosModel } ->
                                     [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
                                     , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
@@ -100,8 +100,8 @@ topBar model =
     case model of
         Core.LoggedIn { tab } ->
             case tab of
-                LoggedIn.Preparation { page } ->
-                    case page of
+                LoggedIn.Preparation preparationModel ->
+                    case preparationModel of
                         Preparation.Project { id } ->
                             Element.row
                                 [ Background.color Colors.primary

@@ -16,8 +16,8 @@ view global session tab =
                 LoggedIn.Home ->
                     Preparation.view global session Preparation.Home
 
-                LoggedIn.Preparation preparation ->
-                    Preparation.view global session preparation.page
+                LoggedIn.Preparation preparationModel ->
+                    Preparation.view global session preparationModel
 
                 LoggedIn.Acquisition ->
                     Preparation.view global session Preparation.Home

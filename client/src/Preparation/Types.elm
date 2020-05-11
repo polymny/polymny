@@ -1,4 +1,4 @@
-module Preparation.Types exposing (Model, Msg(..), Page(..))
+module Preparation.Types exposing (Model(..), Msg(..))
 
 import Api
 import Capsule.Types as Capsule
@@ -6,13 +6,7 @@ import NewCapsule.Types as NewCapsule
 import NewProject.Types as NewProject
 
 
-type alias Model =
-    { session : Api.Session
-    , page : Page
-    }
-
-
-type Page
+type Model
     = Home
     | NewProject NewProject.Model
     | NewCapsule Int NewCapsule.Model
