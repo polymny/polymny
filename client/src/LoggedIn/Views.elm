@@ -31,23 +31,39 @@ view global session tab =
                 LoggedIn.Publication ->
                     Preparation.view global session Preparation.Home
 
+        preparationClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.PreparationClicked
+
+        acquisitionClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.AcquisitionMsg <|
+                        Acquisition.AcquisitionClicked
+
         menuTab =
-            Element.row []
-                [ Ui.linkButton
-                    (Just <|
-                        Core.LoggedInMsg <|
-                            LoggedIn.PreparationMsg <|
-                                Preparation.PreparationClicked
-                    )
-                    "Préparation |"
-                , Ui.linkButton
-                    (Just <|
-                        Core.LoggedInMsg <|
-                            LoggedIn.AcquisitionMsg <|
-                                Acquisition.AcquisitionClicked
-                    )
-                    "Acquisition |"
-                , Element.el [] <| Element.text "Edition"
+            Element.row Ui.menuTabAttributes
+                [ (if LoggedIn.isPreparation tab then
+                    Ui.tabButtonActive
+
+                   else
+                    Ui.tabButton
+                        preparationClickedMsg
+                  )
+                  <|
+                    "Préparation"
+                , (if LoggedIn.isAcquisition tab then
+                    Ui.tabButtonActive
+
+                   else
+                    Ui.tabButton
+                        acquisitionClickedMsg
+                  )
+                  <|
+                    "Acquisition"
+                , Ui.tabButton Nothing "Edition"
                 ]
 
         element =

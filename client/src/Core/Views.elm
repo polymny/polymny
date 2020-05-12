@@ -168,7 +168,7 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Preparation")
+    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Polymny")
 
 
 newProjectButton : Element Core.Msg

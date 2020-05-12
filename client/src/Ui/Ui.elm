@@ -4,6 +4,7 @@ module Ui.Ui exposing
     , editButton
     , errorModal
     , linkButton
+    , menuTabAttributes
     , onEnter
     , primaryButton
     , primaryButtonDisabled
@@ -11,6 +12,8 @@ module Ui.Ui exposing
     , simpleButtonDisabled
     , successButton
     , successModal
+    , tabButton
+    , tabButtonActive
     , textButton
     , trashButton
     )
@@ -78,8 +81,12 @@ linkButton onPress content =
 
 simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
+    let
+        attr =
+            Background.color Colors.grey :: Border.color Colors.grey :: Border.rounded 5 :: Border.width 1 :: buttonAttributes
+    in
     Input.button
-        (Background.color Colors.white :: Border.color Colors.grey :: Border.rounded 5 :: Border.width 1 :: buttonAttributes)
+        attr
         { onPress = onPress
         , label = Element.text content
         }
@@ -90,7 +97,7 @@ simpleButtonDisabled content =
     Input.button
         (Background.color Colors.white
             :: Font.color Colors.grey
-            :: buttonAttributes
+            :: []
         )
         { onPress = Nothing
         , label = Element.text content
@@ -176,6 +183,39 @@ primaryButtonDisabled content =
             :: Font.color Colors.grey
             :: buttonAttributes
         )
+        { onPress = Nothing
+        , label = Element.text content
+        }
+
+
+menuTabAttributes : List (Element.Attribute msg)
+menuTabAttributes =
+    [ Element.padding 10
+    , Background.color Colors.grey
+    , Element.width Element.fill
+    ]
+
+
+tabButtonAttributes : List (Element.Attribute msg)
+tabButtonAttributes =
+    [ Element.spacing 5
+    , Element.padding 10
+    ]
+
+
+tabButton : Maybe msg -> String -> Element msg
+tabButton onPress content =
+    Input.button
+        tabButtonAttributes
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
+tabButtonActive : String -> Element msg
+tabButtonActive content =
+    Input.button
+        (Font.bold :: tabButtonAttributes)
         { onPress = Nothing
         , label = Element.text content
         }
