@@ -15,7 +15,8 @@ type Model
 
 
 type Msg
-    = ProjectClicked Api.Project
+    = PreparationClicked
+    | ProjectClicked Api.Project
     | NewProjectMsg NewProject.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | CapsulesReceived Api.Project (List Api.Capsule)

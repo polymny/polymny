@@ -25,6 +25,11 @@ update msg { session, tab } =
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 
+        ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
+            ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
+            , Cmd.none
+            )
+
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
             let
                 ( newSession, newModel, cmd ) =

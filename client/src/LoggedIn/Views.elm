@@ -33,7 +33,13 @@ view global session tab =
 
         menuTab =
             Element.row []
-                [ Element.el [] <| Element.text "Preparation | "
+                [ Ui.linkButton
+                    (Just <|
+                        Core.LoggedInMsg <|
+                            LoggedIn.PreparationMsg <|
+                                Preparation.PreparationClicked
+                    )
+                    "Préparation |"
                 , Ui.linkButton
                     (Just <|
                         Core.LoggedInMsg <|
