@@ -5,6 +5,7 @@ import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Font as Font
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
@@ -73,7 +74,8 @@ view global session tab =
                 , Element.width Element.fill
                 , Element.scrollbarX
                 ]
-                [ menuTab
+                [ welcomeHeading session.username
+                , menuTab
                 , mainTab
                 ]
     in
@@ -83,3 +85,8 @@ view global session tab =
         , Element.spacing 20
         ]
         [ element ]
+
+
+welcomeHeading : String -> Element Core.Msg
+welcomeHeading name =
+    Element.el [ Font.size 20, Element.padding 10 ] (Element.text ("Welcome " ++ name ++ "!"))

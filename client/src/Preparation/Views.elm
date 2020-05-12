@@ -53,14 +53,12 @@ view global session preparationModel =
 homeView : Core.Global -> Api.Session -> Element Core.Msg
 homeView global session =
     Element.column []
-        [ welcomeHeading session.username
-        , projectsView global session.projects
+        [ Element.el [] <|
+            Element.text "Preparation tab"
+        , projectsView
+            global
+            session.projects
         ]
-
-
-welcomeHeading : String -> Element Core.Msg
-welcomeHeading name =
-    Element.el [ Font.size 20, Element.padding 10 ] (Element.text ("Welcome " ++ name ++ "!"))
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg
