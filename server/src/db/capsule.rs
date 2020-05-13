@@ -138,13 +138,10 @@ impl Capsule {
     }
 
     /// get the slide show associated to capsule
-    pub fn get_slide_show(&self, db: &PgConnection) -> Result<Asset> {
+    pub fn get_slide_show(&self, db: &PgConnection) -> Result<Option<Asset>> {
         match self.slide_show_id {
-            Some(asset_id) => Ok(Asset::get(asset_id, &db)?),
-            None => Err(Error::DatabaseRequestEmptyError(format!(
-                "No slide show ref in capsule {}",
-                self.id,
-            ))),
+            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
+            None => Ok(None),
         }
     }
 

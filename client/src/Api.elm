@@ -149,7 +149,7 @@ type alias CapsuleDetails =
     { capsule : Capsule
     , slides : List Slide
     , projects : List Project
-    , slide_show : Asset
+    , slide_show : Maybe Asset
     }
 
 
@@ -159,7 +159,7 @@ decodeCapsuleDetails =
         (Decode.field "capsule" decodeCapsule)
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "slide_show" decodeAsset)
+        (Decode.field "slide_show" (Decode.maybe decodeAsset))
 
 
 
