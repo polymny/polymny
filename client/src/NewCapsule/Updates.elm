@@ -9,28 +9,26 @@ import Status
 import Utils exposing (resultToMsg)
 
 
-update : Api.Session -> Int -> NewCapsule.Msg -> NewCapsule.Model -> ( Api.Session, NewCapsule.Model, Cmd Core.Msg )
-update session projectId msg model =
+update : Api.Project -> NewCapsule.Msg -> NewCapsule.Model -> ( Preparation.Model, Cmd Core.Msg )
+update project msg model =
     case msg of
         NewCapsule.NameChanged newCapsuleName ->
-            ( session, { model | name = newCapsuleName }, Cmd.none )
+            ( Preparation.NewCapsule project { model | name = newCapsuleName }, Cmd.none )
 
         NewCapsule.TitleChanged newTitleName ->
-            ( session, { model | title = newTitleName }, Cmd.none )
+            ( Preparation.NewCapsule project { model | title = newTitleName }, Cmd.none )
 
         NewCapsule.DescriptionChanged newDescriptionName ->
-            ( session, { model | description = newDescriptionName }, Cmd.none )
+            ( Preparation.NewCapsule project { model | description = newDescriptionName }, Cmd.none )
 
         NewCapsule.Submitted ->
-            ( session
-            , { model | status = Status.Sent }
-            , Api.newCapsule resultToMsg projectId model
+            ( Preparation.NewCapsule project { model | status = Status.Sent }
+            , Api.newCapsule resultToMsg project.id model
             )
 
         NewCapsule.Success _ ->
-            ( session
-            , { model | status = Status.Success () }
-            , Cmd.none
+            ( Preparation.Project project
+            , Api.capsulesFromProjectId (resultToMsg1 project) project.id
             )
 
 
@@ -43,6 +41,18 @@ resultToMsg result =
                     Preparation.NewCapsuleMsg <|
                         NewCapsule.Success <|
                             x
+        )
+        (\_ -> Core.Noop)
+        result
+
+
+resultToMsg1 : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
+resultToMsg1 project result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.CapsulesReceived project x
         )
         (\_ -> Core.Noop)
         result

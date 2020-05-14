@@ -47,12 +47,12 @@ update session msg preparationModel =
             in
             ( newSession, Preparation.NewProject newModel, cmd )
 
-        ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.NewCapsule projectId newCapsuleModel ) ->
+        ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.NewCapsule project newCapsuleModel ) ->
             let
-                ( newSession, newModel, cmd ) =
-                    NewCapsule.update session projectId newCapsuleMsg newCapsuleModel
+                ( newModel, cmd ) =
+                    NewCapsule.update project newCapsuleMsg newCapsuleModel
             in
-            ( newSession, Preparation.NewCapsule projectId newModel, cmd )
+            ( session, newModel, cmd )
 
         ( Preparation.CapsuleMsg capsuleMsg, Preparation.Capsule capsule ) ->
             let

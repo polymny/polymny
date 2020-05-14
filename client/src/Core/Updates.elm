@@ -56,13 +56,13 @@ update msg { global, model } =
             , Cmd.none
             )
 
-        ( Core.NewCapsuleClicked projectId, Core.LoggedIn { session } ) ->
+        ( Core.NewCapsuleClicked project, Core.LoggedIn { session } ) ->
             ( Core.FullModel global
                 (Core.LoggedIn
                     { session = session
                     , tab =
                         LoggedIn.Preparation <|
-                            Preparation.NewCapsule projectId NewCapsule.init
+                            Preparation.NewCapsule project NewCapsule.init
                     }
                 )
             , Cmd.none

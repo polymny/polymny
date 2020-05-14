@@ -1,5 +1,6 @@
 module Core.Views exposing (subscriptions, view)
 
+import Api
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule
 import Core.Types as Core
@@ -102,7 +103,7 @@ topBar model =
             case tab of
                 LoggedIn.Preparation preparationModel ->
                     case preparationModel of
-                        Preparation.Project { id } ->
+                        Preparation.Project m ->
                             Element.row
                                 [ Background.color Colors.primary
                                 , Element.width Element.fill
@@ -114,7 +115,7 @@ topBar model =
                                 , Element.row
                                     [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
                                     (if Core.isLoggedIn model then
-                                        [ newProjectButton, newCapsuleButton id ]
+                                        [ newProjectButton, newCapsuleButton m ]
 
                                      else
                                         []
@@ -176,9 +177,9 @@ newProjectButton =
     Ui.textButton (Just Core.NewProjectClicked) "New project"
 
 
-newCapsuleButton : Int -> Element Core.Msg
-newCapsuleButton id =
-    Ui.textButton (Just (Core.NewCapsuleClicked id)) "New capsule"
+newCapsuleButton : Api.Project -> Element Core.Msg
+newCapsuleButton project =
+    Ui.textButton (Just (Core.NewCapsuleClicked project)) "New capsule"
 
 
 loginButton : Element Core.Msg
