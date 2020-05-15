@@ -174,14 +174,6 @@ nonFull model =
         [ Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             [ homeButton ]
-        , Element.row
-            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-            (if Core.isLoggedIn model then
-                [ newProjectButton ]
-
-             else
-                []
-            )
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if Core.isLoggedIn model then
                 [ logoutButton ]
@@ -195,11 +187,6 @@ nonFull model =
 homeButton : Element Core.Msg
 homeButton =
     Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Polymny")
-
-
-newProjectButton : Element Core.Msg
-newProjectButton =
-    Ui.textButton (Just Core.NewProjectClicked) "New project"
 
 
 newCapsuleButton : Api.Project -> Element Core.Msg

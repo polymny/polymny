@@ -95,10 +95,9 @@ simpleButton onPress content =
 simpleButtonDisabled : String -> Element msg
 simpleButtonDisabled content =
     Input.button
-        (Background.color Colors.white
-            :: Font.color Colors.grey
-            :: []
-        )
+        [ Background.color Colors.white
+        , Font.color Colors.grey
+        ]
         { onPress = Nothing
         , label = Element.text content
         }

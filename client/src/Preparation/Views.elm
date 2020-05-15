@@ -60,12 +60,15 @@ view global session preparationModel =
         [ element ]
 
 
+newProjectButton : Element Core.Msg
+newProjectButton =
+    Ui.primaryButton (Just Core.NewProjectClicked) "New project"
+
+
 homeView : Core.Global -> Api.Session -> Element Core.Msg
 homeView global session =
     Element.column []
-        [ projectsView
-            global
-            session.projects
+        [ projectsView global session.projects
         ]
 
 
@@ -96,7 +99,8 @@ projectsView global projects =
                     List.sortBy (\x -> -x.lastVisited) projects
             in
             Element.column [ Element.padding 10 ]
-                [ Element.el [ Font.size 18 ] (Element.text "Your projects:")
+                [ newProjectButton
+                , Element.el [ Font.size 18 ] (Element.text "Your projects:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map (projectHeader global) sortedProjects)
                 ]
@@ -117,6 +121,11 @@ projectHeader global project =
         ]
 
 
+newCapsuleButton : Api.Project -> Element Core.Msg
+newCapsuleButton project =
+    Ui.primaryButton (Just (Core.NewCapsuleClicked project)) "New capsule"
+
+
 projectView : Api.Project -> List (Element Core.Msg) -> Element Core.Msg
 projectView project header =
     let
@@ -126,7 +135,8 @@ projectView project header =
     Element.column []
         [ Element.row [ Font.size 18 ] <| headers
         , Element.column [ Element.padding 10 ]
-            [ Element.column [ Element.padding 10, Element.spacing 10 ]
+            [ newCapsuleButton project
+            , Element.column [ Element.padding 10, Element.spacing 10 ]
                 (List.map capsuleView project.capsules)
             ]
         ]
