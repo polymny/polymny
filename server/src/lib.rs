@@ -219,6 +219,7 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
             "page": "index",
             "username": user.username,
             "projects": projects,
+            "active_project":"",
         })
     });
 
@@ -251,6 +252,7 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
             "capsule" :   capsule,
             "slide_show": slide_show,
             "slides":     slides,
+            "active_project":"",
         })
     });
 
