@@ -49,8 +49,7 @@ view global session preparationModel =
                 , Element.width Element.fill
                 , Element.scrollbarX
                 ]
-                [ Element.el [] <| Element.text "Preparation tab"
-                , mainPage
+                [ mainPage
                 ]
     in
     Element.row

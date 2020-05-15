@@ -32,41 +32,6 @@ view global session tab =
                 LoggedIn.Publication ->
                     Preparation.view global session Preparation.Home
 
-        preparationClickedMsg =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.PreparationClicked
-
-        acquisitionClickedMsg =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionMsg <|
-                        Acquisition.AcquisitionClicked
-
-        menuTab =
-            Element.row Ui.menuTabAttributes
-                [ (if LoggedIn.isPreparation tab then
-                    Ui.tabButtonActive
-
-                   else
-                    Ui.tabButton
-                        preparationClickedMsg
-                  )
-                  <|
-                    "Préparation"
-                , (if LoggedIn.isAcquisition tab then
-                    Ui.tabButtonActive
-
-                   else
-                    Ui.tabButton
-                        acquisitionClickedMsg
-                  )
-                  <|
-                    "Acquisition"
-                , Ui.tabButton Nothing "Edition"
-                ]
-
         element =
             Element.column
                 [ Element.alignTop
@@ -74,9 +39,7 @@ view global session tab =
                 , Element.width Element.fill
                 , Element.scrollbarX
                 ]
-                [ welcomeHeading session.username
-                , menuTab
-                , mainTab
+                [ mainTab
                 ]
     in
     Element.row

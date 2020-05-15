@@ -191,7 +191,6 @@ primaryButtonDisabled content =
 menuTabAttributes : List (Element.Attribute msg)
 menuTabAttributes =
     [ Element.padding 10
-    , Background.color Colors.grey
     , Element.width Element.fill
     ]
 

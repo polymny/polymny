@@ -1,5 +1,6 @@
 module Core.Views exposing (subscriptions, view)
 
+import Acquisition.Types as Acquisition
 import Api
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule
@@ -96,44 +97,68 @@ homeView =
     Element.column [ Element.alignTop, Element.padding 10, Element.width Element.fill ] [ Element.text "Home" ]
 
 
+menuTab : LoggedIn.Tab -> Element Core.Msg
+menuTab tab =
+    let
+        preparationClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.PreparationClicked
+
+        acquisitionClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.AcquisitionMsg <|
+                        Acquisition.AcquisitionClicked
+    in
+    Element.row Ui.menuTabAttributes
+        [ (if LoggedIn.isPreparation tab then
+            Ui.tabButtonActive
+
+           else
+            Ui.tabButton
+                preparationClickedMsg
+          )
+          <|
+            "Préparation"
+        , (if LoggedIn.isAcquisition tab then
+            Ui.tabButtonActive
+
+           else
+            Ui.tabButton
+                acquisitionClickedMsg
+          )
+          <|
+            "Acquisition"
+        , Ui.tabButton Nothing "Edition"
+        ]
+
+
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { tab } ->
-            case tab of
-                LoggedIn.Preparation preparationModel ->
-                    case preparationModel of
-                        Preparation.Project m ->
-                            Element.row
-                                [ Background.color Colors.primary
-                                , Element.width Element.fill
-                                , Element.spacing 30
-                                ]
-                                [ Element.row
-                                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                                    [ homeButton ]
-                                , Element.row
-                                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                                    (if Core.isLoggedIn model then
-                                        [ newProjectButton, newCapsuleButton m ]
+        Core.LoggedIn { session, tab } ->
+            Element.row
+                [ Background.color Colors.primary
+                , Element.width Element.fill
+                , Element.spacing 30
+                ]
+                [ Element.row
+                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                    [ homeButton ]
+                , Element.row
+                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                    [ menuTab tab
+                    ]
+                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                    (if Core.isLoggedIn model then
+                        [ Element.el [] (Element.text session.username), logoutButton ]
 
-                                     else
-                                        []
-                                    )
-                                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
-                                    (if Core.isLoggedIn model then
-                                        [ logoutButton ]
-
-                                     else
-                                        [ loginButton, signUpButton ]
-                                    )
-                                ]
-
-                        _ ->
-                            nonFull model
-
-                _ ->
-                    nonFull model
+                     else
+                        [ loginButton, signUpButton ]
+                    )
+                ]
 
         _ ->
             nonFull model
