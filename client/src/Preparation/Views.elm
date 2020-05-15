@@ -16,6 +16,15 @@ import Ui.Ui as Ui
 view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
 view global session preparationModel =
     let
+        preparationClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.PreparationClicked
+
+        clicktab =
+            headerView [] <| Ui.linkButton preparationClickedMsg "Préparation"
+
         mainPage =
             case preparationModel of
                 Preparation.Home ->
@@ -28,10 +37,10 @@ view global session preparationModel =
                     NewCapsule.view newProjectModel
 
                 Preparation.Project project ->
-                    projectView project
+                    projectView project clicktab
 
                 Preparation.Capsule capsule ->
-                    Capsule.view session capsule
+                    Capsule.view session capsule clicktab
 
         element =
             Element.column
@@ -40,7 +49,9 @@ view global session preparationModel =
                 , Element.width Element.fill
                 , Element.scrollbarX
                 ]
-                [ mainPage ]
+                [ Element.el [] <| Element.text "Preparation tab"
+                , mainPage
+                ]
     in
     Element.row
         [ Element.height Element.fill
@@ -53,12 +64,20 @@ view global session preparationModel =
 homeView : Core.Global -> Api.Session -> Element Core.Msg
 homeView global session =
     Element.column []
-        [ Element.el [] <|
-            Element.text "Preparation tab"
-        , projectsView
+        [ projectsView
             global
             session.projects
         ]
+
+
+headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)
+headerView header el =
+    case List.length header of
+        0 ->
+            [ el ]
+
+        _ ->
+            header ++ [ el ]
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg
@@ -99,12 +118,18 @@ projectHeader global project =
         ]
 
 
-projectView : Api.Project -> Element Core.Msg
-projectView project =
-    Element.column [ Element.padding 10 ]
-        [ Element.el [ Font.size 18 ] (Element.text ("Capsules for project " ++ project.name))
-        , Element.column [ Element.padding 10, Element.spacing 10 ]
-            (List.map capsuleView project.capsules)
+projectView : Api.Project -> List (Element Core.Msg) -> Element Core.Msg
+projectView project header =
+    let
+        headers =
+            headerView header <| Element.text (" / " ++ project.name)
+    in
+    Element.column []
+        [ Element.row [ Font.size 18 ] <| headers
+        , Element.column [ Element.padding 10 ]
+            [ Element.column [ Element.padding 10, Element.spacing 10 ]
+                (List.map capsuleView project.capsules)
+            ]
         ]
 
 

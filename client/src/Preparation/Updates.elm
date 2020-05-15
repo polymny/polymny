@@ -17,11 +17,17 @@ update : Api.Session -> Preparation.Msg -> Preparation.Model -> ( Api.Session, P
 update session msg preparationModel =
     case ( msg, preparationModel ) of
         -- INNER MESSAGES
+        ( Preparation.PreparationClicked, _ ) ->
+            ( session, Preparation.Home, Cmd.none )
+
         ( Preparation.ProjectClicked project, _ ) ->
             ( session, Preparation.Project project, Api.capsulesFromProjectId (resultToMsg1 project) project.id )
 
         ( Preparation.CapsulesReceived project capsules, _ ) ->
-            ( session, Preparation.Project { project | capsules = capsules }, Cmd.none )
+            ( { session | active_project = Just project }
+            , Preparation.Project { project | capsules = capsules }
+            , Cmd.none
+            )
 
         ( Preparation.CapsuleClicked capsule, _ ) ->
             ( session, preparationModel, Api.capsuleFromId resultToMsg2 capsule.id )

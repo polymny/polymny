@@ -91,14 +91,16 @@ decodeProject capsules =
 type alias Session =
     { username : String
     , projects : List Project
+    , active_project : Maybe Project
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map2 Session
+    Decode.map3 Session
         (Decode.field "username" Decode.string)
         (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
 
 
 type alias Asset =

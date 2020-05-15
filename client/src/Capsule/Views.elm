@@ -22,9 +22,42 @@ import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
-view : Api.Session -> Capsule.Model -> Element Core.Msg
-view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
+headerView : List (Element Core.Msg) -> List (Element Core.Msg) -> List (Element Core.Msg)
+headerView header el =
+    case List.length header of
+        0 ->
+            el
+
+        _ ->
+            header ++ el
+
+
+view : Api.Session -> Capsule.Model -> List (Element Core.Msg) -> Element Core.Msg
+view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } header =
     let
+        project_header =
+            case session.active_project of
+                Just x ->
+                    Ui.linkButton
+                        (Just
+                            (Core.LoggedInMsg <|
+                                LoggedIn.PreparationMsg <|
+                                    Preparation.ProjectClicked x
+                            )
+                        )
+                        x.name
+
+                Nothing ->
+                    Element.none
+
+        headers =
+            headerView header
+                [ Element.text " / "
+                , project_header
+                , Element.text " / "
+                , Element.text details.capsule.name
+                ]
+
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
@@ -36,35 +69,38 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
             else
                 Nothing
     in
-    Element.el
-        [ Element.padding 10
-        , Element.mapAttribute Core.LoggedInMsg <|
-            Element.mapAttribute LoggedIn.PreparationMsg <|
-                Element.mapAttribute Preparation.CapsuleMsg <|
-                    Element.mapAttribute Capsule.EditPromptMsg <|
-                        Element.inFront (Dialog.view dialogConfig)
-        ]
-        (Element.row (Element.scrollbarX :: Attributes.designAttributes)
-            [ capsuleInfoView session details uploadForm
-            , Element.column
-                [ Element.scrollbarX
-                , Element.centerX
-                , Element.alignTop
-                ]
-                [ Element.el
-                    [ Element.centerX
-                    , Font.color Colors.artEvening
-                    , Font.size 20
-                    ]
-                    (Element.text "Slide timeline")
-                , Element.row (Background.color Colors.white :: Attributes.designAttributes)
-                    (List.map
-                        (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
-                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
-                    )
-                ]
+    Element.column []
+        [ Element.row [ Font.size 18 ] <| headers
+        , Element.el
+            [ Element.padding 10
+            , Element.mapAttribute Core.LoggedInMsg <|
+                Element.mapAttribute LoggedIn.PreparationMsg <|
+                    Element.mapAttribute Preparation.CapsuleMsg <|
+                        Element.mapAttribute Capsule.EditPromptMsg <|
+                            Element.inFront (Dialog.view dialogConfig)
             ]
-        )
+            (Element.row (Element.scrollbarX :: Attributes.designAttributes)
+                [ capsuleInfoView session details uploadForm
+                , Element.column
+                    [ Element.scrollbarX
+                    , Element.centerX
+                    , Element.alignTop
+                    ]
+                    [ Element.el
+                        [ Element.centerX
+                        , Font.color Colors.artEvening
+                        , Font.size 20
+                        ]
+                        (Element.text "Slide timeline")
+                    , Element.row (Background.color Colors.white :: Attributes.designAttributes)
+                        (List.map
+                            (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
+                            (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                        )
+                    ]
+                ]
+            )
+        ]
 
 
 filterConsecutiveGosIds : List ( Int, List Capsule.MaybeSlide ) -> List ( Int, List Capsule.MaybeSlide )
