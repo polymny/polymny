@@ -6,6 +6,7 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
 import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import Preparation.Types as Preparation
@@ -36,8 +37,8 @@ view global session preparationModel =
                 Preparation.NewCapsule _ newProjectModel ->
                     NewCapsule.view newProjectModel
 
-                Preparation.Project project ->
-                    projectView project clicktab
+                Preparation.Project project showNewCapsule ->
+                    projectView project clicktab showNewCapsule
 
                 Preparation.Capsule capsule ->
                     Capsule.view session capsule clicktab
@@ -126,8 +127,8 @@ newCapsuleButton project =
     Ui.primaryButton (Just (Core.NewCapsuleClicked project)) "New capsule"
 
 
-projectView : Api.Project -> List (Element Core.Msg) -> Element Core.Msg
-projectView project header =
+projectView : Api.Project -> List (Element Core.Msg) -> Bool -> Element Core.Msg
+projectView project header showNewCapsule =
     let
         headers =
             headerView header <| Element.text (" / " ++ project.name)
@@ -139,6 +140,11 @@ projectView project header =
             , Element.column [ Element.padding 10, Element.spacing 10 ]
                 (List.map capsuleView project.capsules)
             ]
+        , if showNewCapsule == True then
+            NewCapsule.view NewCapsule.init
+
+          else
+            Element.none
         ]
 
 

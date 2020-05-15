@@ -27,7 +27,7 @@ update project msg model =
             )
 
         NewCapsule.Success _ ->
-            ( Preparation.Project project
+            ( Preparation.Project project False
             , Api.capsulesFromProjectId (resultToMsg1 project) project.id
             )
 

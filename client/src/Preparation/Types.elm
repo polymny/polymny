@@ -10,7 +10,7 @@ type Model
     = Home
     | NewProject NewProject.Model
     | NewCapsule Api.Project NewCapsule.Model
-    | Project Api.Project
+    | Project Api.Project Bool
     | Capsule Capsule.Model
 
 
