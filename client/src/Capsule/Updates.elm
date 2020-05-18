@@ -5,13 +5,14 @@ import Capsule.Types as Capsule
 import Core.Types as Core
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
+import Preparation.Types as Preparation
 import Status
 import Utils
 
 
 update : Capsule.Msg -> Capsule.Model -> ( Capsule.Model, Cmd Core.Msg )
-update msg page =
-    case ( msg, page ) of
+update msg capsuleModel =
+    case ( msg, capsuleModel ) of
         ( Capsule.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
                 ( newModel, newCmd ) =
@@ -32,7 +33,7 @@ update msg page =
                     updateDnD slideMsg model
 
                 moveCmd =
-                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD x))) cmd
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD x)))) cmd
 
                 syncCmd =
                     Api.updateSlideStructure resultToMsg data.details
@@ -77,7 +78,13 @@ updateUploadSlideShow msg model capsuleId =
             ( model
             , Select.file
                 [ "application/pdf" ]
-                (\x -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.UploadSlideShowMsg (Capsule.UploadSlideShowFileReady x))))
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.CapsuleMsg <|
+                                Capsule.UploadSlideShowMsg <|
+                                    Capsule.UploadSlideShowFileReady x
+                )
             )
 
         ( Capsule.UploadSlideShowFileReady file, form ) ->
@@ -156,9 +163,24 @@ updateDnD slideMsg data =
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg result =
-    Utils.resultToMsg (\x -> Core.LoggedInMsg <| LoggedIn.CapsuleReceived x) (\_ -> Core.Noop) result
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.CapsuleReceived x
+        )
+        (\_ -> Core.Noop)
+        result
 
 
 resultToMsg2 : Result e Api.Slide -> Core.Msg
 resultToMsg2 result =
-    Utils.resultToMsg (\x -> Core.LoggedInMsg <| LoggedIn.CapsuleMsg <| Capsule.EditPromptMsg <| Capsule.EditPromptSuccess <| x) (\_ -> Core.Noop) result
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.CapsuleMsg <|
+                        Capsule.EditPromptMsg <|
+                            Capsule.EditPromptSuccess <|
+                                x
+        )
+        (\_ -> Core.Noop)
+        result

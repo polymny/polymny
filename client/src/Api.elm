@@ -91,14 +91,16 @@ decodeProject capsules =
 type alias Session =
     { username : String
     , projects : List Project
+    , active_project : Maybe Project
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map2 Session
+    Decode.map3 Session
         (Decode.field "username" Decode.string)
         (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
 
 
 type alias Asset =
@@ -149,7 +151,7 @@ type alias CapsuleDetails =
     { capsule : Capsule
     , slides : List Slide
     , projects : List Project
-    , slide_show : Asset
+    , slide_show : Maybe Asset
     }
 
 
@@ -159,7 +161,7 @@ decodeCapsuleDetails =
         (Decode.field "capsule" decodeCapsule)
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "slide_show" decodeAsset)
+        (Decode.field "slide_show" (Decode.maybe decodeAsset))
 
 
 

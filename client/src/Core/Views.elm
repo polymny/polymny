@@ -1,5 +1,7 @@
 module Core.Views exposing (subscriptions, view)
 
+import Acquisition.Types as Acquisition
+import Api
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule
 import Core.Types as Core
@@ -10,6 +12,7 @@ import Html
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
+import Preparation.Types as Preparation
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -19,15 +22,23 @@ import Ui.Ui as Ui
 subscriptions : Core.FullModel -> Sub Core.Msg
 subscriptions { model } =
     case model of
-        Core.LoggedIn { page } ->
-            case page of
-                LoggedIn.Capsule { slideModel, gosModel } ->
-                    Sub.map (\x -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD x)))
-                        (Sub.batch
-                            [ Capsule.slideSystem.subscriptions slideModel
-                            , Capsule.gosSystem.subscriptions gosModel
-                            ]
-                        )
+        Core.LoggedIn { tab } ->
+            case tab of
+                LoggedIn.Preparation preparationModel ->
+                    case preparationModel of
+                        Preparation.Capsule { slideModel, gosModel } ->
+                            Sub.map
+                                (\x ->
+                                    Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD x)))
+                                )
+                                (Sub.batch
+                                    [ Capsule.slideSystem.subscriptions slideModel
+                                    , Capsule.gosSystem.subscriptions gosModel
+                                    ]
+                                )
+
+                        _ ->
+                            Sub.none
 
                 _ ->
                     Sub.none
@@ -55,17 +66,22 @@ viewContent { global, model } =
                 Core.SignUp signUpModel ->
                     SignUp.view signUpModel
 
-                Core.LoggedIn { session, page } ->
-                    LoggedIn.view global session page
+                Core.LoggedIn { session, tab } ->
+                    LoggedIn.view global session tab
 
         attributes =
             case model of
-                Core.LoggedIn { page } ->
-                    case page of
-                        LoggedIn.Capsule { slides, slideModel, gosModel } ->
-                            [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
-                            , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
-                            ]
+                Core.LoggedIn { tab } ->
+                    case tab of
+                        LoggedIn.Preparation preparationModel ->
+                            case preparationModel of
+                                Preparation.Capsule { slides, slideModel, gosModel } ->
+                                    [ Element.inFront (Capsule.gosGhostView gosModel slideModel (List.concat slides))
+                                    , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
+                                    ]
+
+                                _ ->
+                                    []
 
                         _ ->
                             []
@@ -81,39 +97,68 @@ homeView =
     Element.column [ Element.alignTop, Element.padding 10, Element.width Element.fill ] [ Element.text "Home" ]
 
 
+menuTab : LoggedIn.Tab -> Element Core.Msg
+menuTab tab =
+    let
+        preparationClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.PreparationClicked
+
+        acquisitionClickedMsg =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.AcquisitionMsg <|
+                        Acquisition.AcquisitionClicked
+    in
+    Element.row Ui.menuTabAttributes
+        [ (if LoggedIn.isPreparation tab then
+            Ui.tabButtonActive
+
+           else
+            Ui.tabButton
+                preparationClickedMsg
+          )
+          <|
+            "Préparation"
+        , (if LoggedIn.isAcquisition tab then
+            Ui.tabButtonActive
+
+           else
+            Ui.tabButton
+                acquisitionClickedMsg
+          )
+          <|
+            "Acquisition"
+        , Ui.tabButton Nothing "Edition"
+        ]
+
+
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { page } ->
-            case page of
-                LoggedIn.Project { id } ->
-                    Element.row
-                        [ Background.color Colors.primary
-                        , Element.width Element.fill
-                        , Element.spacing 30
-                        ]
-                        [ Element.row
-                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                            [ homeButton ]
-                        , Element.row
-                            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                            (if Core.isLoggedIn model then
-                                [ newProjectButton, newCapsuleButton id ]
+        Core.LoggedIn { session, tab } ->
+            Element.row
+                [ Background.color Colors.primary
+                , Element.width Element.fill
+                , Element.spacing 30
+                ]
+                [ Element.row
+                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                    [ homeButton ]
+                , Element.row
+                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                    [ menuTab tab
+                    ]
+                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                    (if Core.isLoggedIn model then
+                        [ Element.el [] (Element.text session.username), logoutButton ]
 
-                             else
-                                []
-                            )
-                        , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
-                            (if Core.isLoggedIn model then
-                                [ logoutButton ]
-
-                             else
-                                [ loginButton, signUpButton ]
-                            )
-                        ]
-
-                _ ->
-                    nonFull model
+                     else
+                        [ loginButton, signUpButton ]
+                    )
+                ]
 
         _ ->
             nonFull model
@@ -129,14 +174,6 @@ nonFull model =
         [ Element.row
             [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
             [ homeButton ]
-        , Element.row
-            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-            (if Core.isLoggedIn model then
-                [ newProjectButton ]
-
-             else
-                []
-            )
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if Core.isLoggedIn model then
                 [ logoutButton ]
@@ -149,17 +186,12 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Preparation")
+    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Polymny")
 
 
-newProjectButton : Element Core.Msg
-newProjectButton =
-    Ui.textButton (Just Core.NewProjectClicked) "New project"
-
-
-newCapsuleButton : Int -> Element Core.Msg
-newCapsuleButton id =
-    Ui.textButton (Just (Core.NewCapsuleClicked id)) "New capsule"
+newCapsuleButton : Api.Project -> Element Core.Msg
+newCapsuleButton project =
+    Ui.textButton (Just (Core.NewCapsuleClicked project)) "New capsule"
 
 
 loginButton : Element Core.Msg

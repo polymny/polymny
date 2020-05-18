@@ -15,15 +15,49 @@ import File exposing (File)
 import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Preparation.Types as Preparation
 import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
-view : Api.Session -> Capsule.Model -> Element Core.Msg
-view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
+headerView : List (Element Core.Msg) -> List (Element Core.Msg) -> List (Element Core.Msg)
+headerView header el =
+    case List.length header of
+        0 ->
+            el
+
+        _ ->
+            header ++ el
+
+
+view : Api.Session -> Capsule.Model -> List (Element Core.Msg) -> Element Core.Msg
+view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } header =
     let
+        project_header =
+            case session.active_project of
+                Just x ->
+                    Ui.linkButton
+                        (Just
+                            (Core.LoggedInMsg <|
+                                LoggedIn.PreparationMsg <|
+                                    Preparation.ProjectClicked x
+                            )
+                        )
+                        x.name
+
+                Nothing ->
+                    Element.none
+
+        headers =
+            headerView header
+                [ Element.text " / "
+                , project_header
+                , Element.text " / "
+                , Element.text details.capsule.name
+                ]
+
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
@@ -35,34 +69,38 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } =
             else
                 Nothing
     in
-    Element.el
-        [ Element.padding 10
-        , Element.mapAttribute Core.LoggedInMsg <|
-            Element.mapAttribute LoggedIn.CapsuleMsg <|
-                Element.mapAttribute Capsule.EditPromptMsg <|
-                    Element.inFront (Dialog.view dialogConfig)
-        ]
-        (Element.row (Element.scrollbarX :: Attributes.designAttributes)
-            [ capsuleInfoView session details uploadForm
-            , Element.column
-                [ Element.scrollbarX
-                , Element.centerX
-                , Element.alignTop
-                ]
-                [ Element.el
-                    [ Element.centerX
-                    , Font.color Colors.artEvening
-                    , Font.size 20
-                    ]
-                    (Element.text "Slide timeline")
-                , Element.row (Background.color Colors.white :: Attributes.designAttributes)
-                    (List.map
-                        (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
-                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
-                    )
-                ]
+    Element.column []
+        [ Element.row [ Font.size 18 ] <| headers
+        , Element.el
+            [ Element.padding 10
+            , Element.mapAttribute Core.LoggedInMsg <|
+                Element.mapAttribute LoggedIn.PreparationMsg <|
+                    Element.mapAttribute Preparation.CapsuleMsg <|
+                        Element.mapAttribute Capsule.EditPromptMsg <|
+                            Element.inFront (Dialog.view dialogConfig)
             ]
-        )
+            (Element.row (Element.scrollbarX :: Attributes.designAttributes)
+                [ capsuleInfoView session details uploadForm
+                , Element.column
+                    [ Element.scrollbarX
+                    , Element.centerX
+                    , Element.alignTop
+                    ]
+                    [ Element.el
+                        [ Element.centerX
+                        , Font.color Colors.artEvening
+                        , Font.size 20
+                        ]
+                        (Element.text "Slide timeline")
+                    , Element.row (Background.color Colors.white :: Attributes.designAttributes)
+                        (List.map
+                            (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
+                            (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                        )
+                    ]
+                ]
+            )
+        ]
 
 
 filterConsecutiveGosIds : List ( Int, List Capsule.MaybeSlide ) -> List ( Int, List Capsule.MaybeSlide )
@@ -399,7 +437,11 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
     let
         promptMsg : Core.Msg
         promptMsg =
-            Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.EditPromptMsg (Capsule.EditPromptOpenDialog slide.id slide.prompt)))
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.CapsuleMsg <|
+                        Capsule.EditPromptMsg <|
+                            Capsule.EditPromptOpenDialog slide.id slide.prompt
     in
     Element.column
         (Element.alignTop
@@ -564,21 +606,23 @@ fileNameElement file =
 selectFileButton : Element Core.Msg
 selectFileButton =
     Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
+        Element.map LoggedIn.PreparationMsg <|
+            Element.map Preparation.CapsuleMsg <|
+                Element.map Capsule.UploadSlideShowMsg <|
+                    Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
 
 
 uploadButton : Element Core.Msg
 uploadButton =
     Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.CapsuleMsg <|
-            Element.map Capsule.UploadSlideShowMsg <|
-                Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
+        Element.map LoggedIn.PreparationMsg <|
+            Element.map Preparation.CapsuleMsg <|
+                Element.map Capsule.UploadSlideShowMsg <|
+                    Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
 
 
 convertAttributes : List (Html.Attribute Capsule.DnDMsg) -> List (Element.Attribute Core.Msg)
 convertAttributes attributes =
     List.map
-        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.CapsuleMsg (Capsule.DnD y))) x)
+        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD y)))) x)
         (List.map Element.htmlAttribute attributes)

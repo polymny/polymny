@@ -219,6 +219,7 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
             "page": "index",
             "username": user.username,
             "projects": projects,
+            "active_project":"",
         })
     });
 
@@ -231,7 +232,7 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
 }
 
 /// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>")]
+#[get("/preparation/capsule/<id>")]
 pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
@@ -245,12 +246,13 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
 
     let flags = user_and_projects.map(|(user, projects)| {
         json!({
-            "page":       "capsule",
+            "page":       "preparation/capsule",
             "username":   user.username,
             "projects":   projects,
             "capsule" :   capsule,
             "slide_show": slide_show,
             "slides":     slides,
+            "active_project":"",
         })
     });
 

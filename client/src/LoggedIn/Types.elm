@@ -1,30 +1,52 @@
-module LoggedIn.Types exposing (Model, Msg(..), Page(..))
+module LoggedIn.Types exposing
+    ( Model
+    , Msg(..)
+    , Tab(..)
+    , isAcquisition
+    , isPreparation
+    )
 
+import Acquisition.Types as Acquisition
 import Api
-import Capsule.Types as Capsule
-import NewCapsule.Types as NewCapsule
-import NewProject.Types as NewProject
+import Preparation.Types as Preparation
 
 
 type alias Model =
     { session : Api.Session
-    , page : Page
+    , tab : Tab
     }
 
 
-type Page
+type Tab
     = Home
-    | NewProject NewProject.Model
-    | NewCapsule Int NewCapsule.Model
-    | Project Api.Project
-    | Capsule Capsule.Model
+    | Preparation Preparation.Model
+    | Acquisition Acquisition.Model
+    | Edition
+    | Publication
 
 
 type Msg
-    = ProjectClicked Api.Project
-    | NewProjectMsg NewProject.Msg
-    | NewCapsuleMsg NewCapsule.Msg
-    | CapsulesReceived Api.Project (List Api.Capsule)
-    | CapsuleClicked Api.Capsule
-    | CapsuleReceived Api.CapsuleDetails
-    | CapsuleMsg Capsule.Msg
+    = PreparationMsg Preparation.Msg
+    | AcquisitionMsg Acquisition.Msg
+    | EditionMsg
+    | PublicationMsg
+
+
+isPreparation : Tab -> Bool
+isPreparation tab =
+    case tab of
+        Preparation _ ->
+            True
+
+        _ ->
+            False
+
+
+isAcquisition : Tab -> Bool
+isAcquisition tab =
+    case tab of
+        Acquisition _ ->
+            True
+
+        _ ->
+            False
