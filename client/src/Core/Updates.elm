@@ -62,7 +62,7 @@ update msg { global, model } =
                     { session = session
                     , tab =
                         LoggedIn.Preparation <|
-                            Preparation.Project project True
+                            Preparation.Project project (Just NewCapsule.init)
                     }
                 )
             , Cmd.none

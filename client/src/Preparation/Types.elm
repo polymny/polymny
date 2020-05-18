@@ -9,8 +9,7 @@ import NewProject.Types as NewProject
 type Model
     = Home
     | NewProject NewProject.Model
-    | NewCapsule Api.Project NewCapsule.Model
-    | Project Api.Project Bool
+    | Project Api.Project (Maybe NewCapsule.Model)
     | Capsule Capsule.Model
 
 

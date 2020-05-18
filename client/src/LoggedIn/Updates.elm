@@ -21,7 +21,7 @@ update msg { session, tab } =
             ( LoggedIn.Model newSession (LoggedIn.Preparation newModel), cmd )
 
         ( LoggedIn.PreparationMsg (Preparation.ProjectClicked project), _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project False }
+            ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project Nothing }
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 
