@@ -5,8 +5,6 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
 import Login.Updates as Login
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
@@ -51,18 +49,6 @@ update msg { global, model } =
                     , tab =
                         LoggedIn.Preparation <|
                             Preparation.NewProject NewProject.init
-                    }
-                )
-            , Cmd.none
-            )
-
-        ( Core.NewCapsuleClicked project, Core.LoggedIn { session } ) ->
-            ( Core.FullModel global
-                (Core.LoggedIn
-                    { session = session
-                    , tab =
-                        LoggedIn.Preparation <|
-                            Preparation.Project project (Just NewCapsule.init)
                     }
                 )
             , Cmd.none

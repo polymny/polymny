@@ -4,7 +4,6 @@ import Api
 import Capsule.Views as Capsule
 import Core.Types as Core
 import Element exposing (Element)
-import Element.Background as Background
 import Element.Font as Font
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
@@ -12,7 +11,6 @@ import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import TimeUtils
-import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -123,7 +121,14 @@ projectHeader global project =
 
 newCapsuleButton : Api.Project -> Element Core.Msg
 newCapsuleButton project =
-    Ui.primaryButton (Just (Core.NewCapsuleClicked project)) "New capsule"
+    Ui.primaryButton
+        (Just
+            (Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.NewCapsuleClicked project
+            )
+        )
+        "New capsule"
 
 
 projectView : Api.Project -> List (Element Core.Msg) -> Maybe NewCapsule.Model -> Element Core.Msg

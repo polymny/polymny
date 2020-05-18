@@ -45,6 +45,9 @@ update session msg preparationModel =
         ( Preparation.CapsuleReceived capsuleDetails, _ ) ->
             ( session, Preparation.Capsule (Capsule.init capsuleDetails), Cmd.none )
 
+        ( Preparation.NewCapsuleClicked project, _ ) ->
+            ( session, Preparation.Project project (Just NewCapsule.init), Cmd.none )
+
         -- OTHER MESSAGES
         ( Preparation.NewProjectMsg newProjectMsg, Preparation.NewProject newProjectModel ) ->
             let

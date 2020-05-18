@@ -19,6 +19,7 @@ type Msg
     | NewProjectMsg NewProject.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | CapsulesReceived Api.Project (List Api.Capsule)
+    | NewCapsuleClicked Api.Project
     | CapsuleClicked Api.Capsule
     | CapsuleReceived Api.CapsuleDetails
     | CapsuleMsg Capsule.Msg
