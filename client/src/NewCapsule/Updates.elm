@@ -31,6 +31,11 @@ update project msg model =
             , Api.capsulesFromProjectId (resultToMsg1 project) project.id
             )
 
+        NewCapsule.Cancel ->
+            ( Preparation.Project project Nothing
+            , Cmd.none
+            )
+
 
 resultToMsg : Result e Api.Capsule -> Core.Msg
 resultToMsg result =
