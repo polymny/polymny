@@ -152,16 +152,20 @@ type alias CapsuleDetails =
     , slides : List Slide
     , projects : List Project
     , slide_show : Maybe Asset
+    , background : Maybe Asset
+    , logo : Maybe Asset
     }
 
 
 decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
-    Decode.map4 CapsuleDetails
+    Decode.map6 CapsuleDetails
         (Decode.field "capsule" decodeCapsule)
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "slide_show" (Decode.maybe decodeAsset))
+        (Decode.field "background" (Decode.maybe decodeAsset))
+        (Decode.field "logo" (Decode.maybe decodeAsset))
 
 
 

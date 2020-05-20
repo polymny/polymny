@@ -27,7 +27,7 @@ use crate::db::user::User;
 use crate::routes::slide::UpdateSlideForm;
 use crate::schema::capsules;
 use crate::schema::slides;
-use crate::{Database, Result};
+use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(Deserialize, Debug)]
@@ -47,6 +47,12 @@ pub struct NewCapsuleForm {
 
     /// the project associated to the capsule.
     pub project_id: i32,
+
+    /// Reference to capsule background image
+    pub background_id: Option<i32>,
+
+    /// Reference to  capsule logo
+    pub logo_id: Option<i32>,
 }
 
 /// A struct/form for update (PUT) operations
@@ -60,12 +66,27 @@ pub struct UpdateCapsuleForm {
     pub title: Option<String>,
 
     /// Reference to pdf file of caspusle
-    // TODO: add reference to asset table
     pub slide_show_id: Option<Option<i32>>,
 
     /// The description of the capsule.
     pub description: Option<String>,
-    // TODO: allow update of project id ?
+
+    /// Reference to capsule background image
+    pub background_id: Option<Option<i32>>,
+
+    /// Reference to  capsule logo
+    pub logo_id: Option<Option<i32>>,
+}
+
+/// internal function for data format
+fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
+    Ok(json!({ "capsule":     capsule,
+               "slide_show":  capsule.get_slide_show(&db)?,
+               "slides":      capsule.get_slides(&db)? ,
+               "projects":    capsule.get_projects(&db)?,
+               "background":  capsule.get_background(&db)?,
+               "logo":        capsule.get_logo(&db)?,
+    }))
 }
 
 /// The route to register new capsule.
@@ -79,6 +100,8 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
         &capsule.title,
         capsule.slide_show_id,
         &capsule.description,
+        capsule.background_id,
+        capsule.logo_id,
         Some(Project::get_by_id(capsule.project_id, &db)?),
     )?;
 
@@ -89,11 +112,7 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
 #[get("/capsule/<id>")]
 pub fn get_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    Ok(json!({ "capsule":     capsule,
-               "slide_show":  capsule.get_slide_show(&db)?,
-               "slides":      capsule.get_slides(&db)? ,
-               "projects":    capsule.get_projects(&db)?,
-    }))
+    format_capsule_data(&db, &capsule)
 }
 
 /// Get all the capsules .
@@ -228,8 +247,7 @@ pub fn upload_slides(
                             &format!("/{}", server_path.to_str().unwrap()),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
-                        // GOS also taje (idx*100)
-                        Slide::new(&db, idx * 100, 1, idx * 100, asset.id, id, "Dummy prompt")?;
+                        Slide::new(&db, idx, 1, idx, asset.id, id, "Dummy prompt")?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
@@ -238,12 +256,7 @@ pub fn upload_slides(
                     }
                     dir.close()?;
                     // TODO: return capsule details like get_capsule
-                    return Ok(json!({
-                        "capsule":     capsule,
-                        "slide_show":  capsule.get_slide_show(&db)?,
-                        "slides":      capsule.get_slides(&db)? ,
-                        "projects":    capsule.get_projects(&db)?,
-                    }));
+                    return format_capsule_data(&db, &capsule);
                 }
             }
             FileField::Multiple(_files) => {
@@ -258,6 +271,99 @@ pub fn upload_slides(
     Ok(json!({ "capsule": capsule }))
 }
 
+fn upload_file(
+    db: &Database,
+    user: &User,
+    capsule: &Capsule,
+    content_type: &ContentType,
+    data: Data,
+) -> Result<Asset> {
+    let mut options = MultipartFormDataOptions::new();
+    options
+        .allowed_fields
+        .push(MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024));
+    let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
+    //TODO: handle errors from multipart form dat ?
+    // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
+
+    let file = multipart_form_data.files.get("file");
+
+    if let Some(file) = file {
+        match file {
+            FileField::Single(file) => {
+                let file_name = &file.file_name;
+                let path = &file.path;
+                if let Some(file_name) = file_name {
+                    let mut server_path = PathBuf::from(&user.username);
+                    let uuid = Uuid::new_v4();
+                    server_path.push(format!("{}_{}", uuid, file_name));
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        &format!("/{}", server_path.to_str().unwrap()),
+                    )?;
+                    AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
+
+                    let mut output_path = PathBuf::from("dist");
+                    output_path.push(server_path);
+
+                    println!("output_path {:#?}", output_path);
+                    create_dir(output_path.parent().unwrap()).ok();
+                    fs::copy(path, &output_path)?;
+                    return Ok(asset);
+                }
+            }
+            FileField::Multiple(_files) => {
+                // TODO: handle mutlile files
+                todo!()
+            }
+        };
+    } else {
+        todo!();
+    }
+    return Err(Error::NotFound);
+}
+
+/// Upload a background
+#[post("/capsule/<id>/upload_background", data = "<data>")]
+pub fn upload_background(
+    db: Database,
+    user: User,
+    content_type: &ContentType,
+    id: i32,
+    data: Data,
+) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let asset = upload_file(&db, &user, &capsule, content_type, data)?;
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::slide_show_id.eq(asset.id))
+        .execute(&db.0)?;
+
+    format_capsule_data(&db, &user.get_capsule_by_id(id, &db)?)
+}
+
+/// Upload logo
+#[post("/capsule/<id>/upload_logo", data = "<data>")]
+pub fn upload_logo(
+    db: Database,
+    user: User,
+    content_type: &ContentType,
+    id: i32,
+    data: Data,
+) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let asset = upload_file(&db, &user, &capsule, content_type, data)?;
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::logo_id.eq(asset.id))
+        .execute(&db.0)?;
+
+    format_capsule_data(&db, &user.get_capsule_by_id(id, &db)?)
+}
 /// order capsule gos and slide
 #[post("/capsule/<id>/gos_order", data = "<goss>")]
 pub fn gos_order(
@@ -286,9 +392,5 @@ pub fn gos_order(
             position += 1;
         }
     }
-    Ok(json!({ "capsule":     capsule,
-               "slide_show":  capsule.get_slide_show(&db)?,
-               "slides":      capsule.get_slides(&db)? ,
-               "projects":    capsule.get_projects(&db)?,
-    }))
+    format_capsule_data(&db, &capsule)
 }
