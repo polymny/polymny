@@ -15,10 +15,42 @@ update msg capsuleModel =
     case ( msg, capsuleModel ) of
         ( Capsule.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
-                ( newModel, newCmd ) =
-                    updateUploadSlideShow newUploadSlideShowMsg model.uploadForm model.details.capsule.id
+                ( newFormModel, newCmd ) =
+                    updateUploadSlideShow newUploadSlideShowMsg model.uploadForms.slideShow model.details.capsule.id
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | slideShow = newFormModel }
             in
-            ( { model | uploadForm = newModel }, newCmd )
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Capsule.UploadBackgroundMsg newUploadBackgroundMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadBackground newUploadBackgroundMsg model.uploadForms.background model.details.capsule.id
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | background = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Capsule.UploadLogoMsg newUploadLogoMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadLogo newUploadLogoMsg model.uploadForms.logo model.details.capsule.id
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | logo = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
 
         ( Capsule.EditPromptMsg editPromptMsg, model ) ->
             let
@@ -99,6 +131,66 @@ updateUploadSlideShow msg model capsuleId =
 
                 Just file ->
                     ( form, Api.capsuleUploadSlideShow resultToMsg capsuleId file )
+
+
+updateUploadBackground : Capsule.UploadBackgroundMsg -> Capsule.UploadForm -> Int -> ( Capsule.UploadForm, Cmd Core.Msg )
+updateUploadBackground msg model capsuleId =
+    case ( msg, model ) of
+        ( Capsule.UploadBackgroundSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "image/jpeg", "image/png" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.CapsuleMsg <|
+                                Capsule.UploadBackgroundMsg <|
+                                    Capsule.UploadBackgroundFileReady x
+                )
+            )
+
+        ( Capsule.UploadBackgroundFileReady file, form ) ->
+            ( { form | file = Just file }
+            , Cmd.none
+            )
+
+        ( Capsule.UploadBackgroundFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( form, Cmd.none )
+
+                Just file ->
+                    ( form, Api.capsuleUploadBackground resultToMsg capsuleId file )
+
+
+updateUploadLogo : Capsule.UploadLogoMsg -> Capsule.UploadForm -> Int -> ( Capsule.UploadForm, Cmd Core.Msg )
+updateUploadLogo msg model capsuleId =
+    case ( msg, model ) of
+        ( Capsule.UploadLogoSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "image/jpeg", "image/png", "image/svg+xml" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.CapsuleMsg <|
+                                Capsule.UploadLogoMsg <|
+                                    Capsule.UploadLogoFileReady x
+                )
+            )
+
+        ( Capsule.UploadLogoFileReady file, form ) ->
+            ( { form | file = Just file }
+            , Cmd.none
+            )
+
+        ( Capsule.UploadLogoFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( form, Cmd.none )
+
+                Just file ->
+                    ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
 updateDnD : Capsule.DnDMsg -> Capsule.Model -> ( Capsule.Model, Cmd Capsule.DnDMsg )

@@ -33,7 +33,7 @@ headerView header el =
 
 
 view : Api.Session -> Capsule.Model -> List (Element Core.Msg) -> Element Core.Msg
-view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } header =
+view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } header =
     let
         project_header =
             case session.active_project of
@@ -80,7 +80,7 @@ view session { details, slides, uploadForm, editPrompt, slideModel, gosModel } h
                             Element.inFront (Dialog.view dialogConfig)
             ]
             (Element.row (Element.scrollbarX :: Attributes.designAttributes)
-                [ capsuleInfoView session details uploadForm
+                [ capsuleInfoView session details uploadForms
                 , Element.column
                     [ Element.scrollbarX
                     , Element.centerX
@@ -125,8 +125,25 @@ filterConsecutiveGosIdsAux currentIsGosId current slides =
             filterConsecutiveGosIdsAux False (( index, list ) :: current) t
 
 
-capsuleInfoView : Api.Session -> Api.CapsuleDetails -> Capsule.UploadForm -> Element Core.Msg
-capsuleInfoView session capsuleDetails form =
+capsuleInfoView : Api.Session -> Api.CapsuleDetails -> Capsule.Forms -> Element Core.Msg
+capsuleInfoView session capsuleDetails forms =
+    let
+        backgroundImgView =
+            case capsuleDetails.background of
+                Just m ->
+                    viewSlideImage m.asset_path
+
+                Nothing ->
+                    Element.none
+
+        logoImgView =
+            case capsuleDetails.logo of
+                Just m ->
+                    viewSlideImage m.asset_path
+
+                Nothing ->
+                    Element.none
+    in
     Element.column Attributes.capsuleInfoViewAttributes
         [ Element.column []
             [ Element.el [ Font.size 20 ] (Element.text "Infos sur la capsule")
@@ -134,7 +151,16 @@ capsuleInfoView session capsuleDetails form =
             , Element.el [ Font.size 14 ] (Element.text ("Title :   " ++ capsuleDetails.capsule.title))
             , Element.el [ Font.size 14 ] (Element.text ("Desritpion:  " ++ capsuleDetails.capsule.description))
             ]
-        , loggedInUploadSlideShowView session form
+        , Element.column Attributes.uploadViewAttributes
+            [ uploadView forms.slideShow Capsule.SlideShow ]
+        , Element.column Attributes.uploadViewAttributes
+            [ uploadView forms.background Capsule.Background
+            , Element.el [ Element.centerX ] backgroundImgView
+            ]
+        , Element.column Attributes.uploadViewAttributes
+            [ uploadView forms.logo Capsule.Logo
+            , Element.el [ Element.centerX ] logoImgView
+            ]
         ]
 
 
@@ -563,31 +589,39 @@ bodyPromptModal { status, prompt } =
         form
 
 
-loggedInUploadSlideShowView : Api.Session -> Capsule.UploadForm -> Element Core.Msg
-loggedInUploadSlideShowView _ form =
+uploadView : Capsule.UploadForm -> Capsule.UploadModel -> Element Core.Msg
+uploadView form model =
+    let
+        text =
+            case model of
+                Capsule.SlideShow ->
+                    "Choisir une présentation au format PDF"
+
+                Capsule.Background ->
+                    "Choisir un fond "
+
+                Capsule.Logo ->
+                    "Choisir un logo"
+    in
     Element.column
-        [ Element.centerX
+        [ Element.padding 10
         , Element.spacing 10
-        , Element.padding 10
-        , Border.rounded 5
-        , Border.width 1
-        , Border.color Colors.artIrises
         ]
-        [ Element.text "Choisir une présentation au format PDF"
-        , uploadFormView form
+        [ Element.text text
+        , uploadFormView form model
         ]
 
 
-uploadFormView : Capsule.UploadForm -> Element Core.Msg
-uploadFormView form =
+uploadFormView : Capsule.UploadForm -> Capsule.UploadModel -> Element Core.Msg
+uploadFormView form model =
     Element.column [ Element.centerX, Element.spacing 20 ]
         [ Element.row
             [ Element.spacing 20
             , Element.centerX
             ]
-            [ selectFileButton
+            [ selectFileButton model
             , fileNameElement form.file
-            , uploadButton
+            , uploadButton model
             ]
         ]
 
@@ -603,22 +637,48 @@ fileNameElement file =
                 File.name realFile
 
 
-selectFileButton : Element Core.Msg
-selectFileButton =
+selectFileButton : Capsule.UploadModel -> Element Core.Msg
+selectFileButton model =
+    let
+        msg =
+            case model of
+                Capsule.SlideShow ->
+                    Element.map Capsule.UploadSlideShowMsg <|
+                        Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select slide show"
+
+                Capsule.Background ->
+                    Element.map Capsule.UploadBackgroundMsg <|
+                        Ui.simpleButton (Just Capsule.UploadBackgroundSelectFileRequested) "Select backgound"
+
+                Capsule.Logo ->
+                    Element.map Capsule.UploadLogoMsg <|
+                        Ui.simpleButton (Just Capsule.UploadLogoSelectFileRequested) "Select logo"
+    in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.PreparationMsg <|
-            Element.map Preparation.CapsuleMsg <|
-                Element.map Capsule.UploadSlideShowMsg <|
-                    Ui.simpleButton (Just Capsule.UploadSlideShowSelectFileRequested) "Select file"
+            Element.map Preparation.CapsuleMsg msg
 
 
-uploadButton : Element Core.Msg
-uploadButton =
+uploadButton : Capsule.UploadModel -> Element Core.Msg
+uploadButton model =
+    let
+        msg =
+            case model of
+                Capsule.SlideShow ->
+                    Element.map Capsule.UploadSlideShowMsg <|
+                        Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload slide show"
+
+                Capsule.Background ->
+                    Element.map Capsule.UploadBackgroundMsg <|
+                        Ui.primaryButton (Just Capsule.UploadBackgroundFormSubmitted) "Upload backgound"
+
+                Capsule.Logo ->
+                    Element.map Capsule.UploadLogoMsg <|
+                        Ui.primaryButton (Just Capsule.UploadLogoFormSubmitted) "Upload logo"
+    in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.PreparationMsg <|
-            Element.map Preparation.CapsuleMsg <|
-                Element.map Capsule.UploadSlideShowMsg <|
-                    Ui.primaryButton (Just Capsule.UploadSlideShowFormSubmitted) "Upload"
+            Element.map Preparation.CapsuleMsg msg
 
 
 convertAttributes : List (Html.Attribute Capsule.DnDMsg) -> List (Element.Attribute Core.Msg)

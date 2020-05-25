@@ -2,10 +2,14 @@ module Capsule.Types exposing
     ( DnDMsg(..)
     , EditPrompt
     , EditPromptMsg(..)
+    , Forms
     , MaybeSlide(..)
     , Model
     , Msg(..)
+    , UploadBackgroundMsg(..)
     , UploadForm
+    , UploadLogoMsg(..)
+    , UploadModel(..)
     , UploadSlideShowMsg(..)
     , filterSlide
     , gosConfig
@@ -28,7 +32,7 @@ import Status exposing (Status)
 type alias Model =
     { details : Api.CapsuleDetails
     , slides : List (List MaybeSlide)
-    , uploadForm : UploadForm
+    , uploadForms : Forms
     , editPrompt : EditPrompt
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
@@ -46,9 +50,24 @@ type alias UploadForm =
     }
 
 
+type alias Forms =
+    { slideShow : UploadForm
+    , background : UploadForm
+    , logo : UploadForm
+    }
+
+
 initUploadForm : UploadForm
 initUploadForm =
     UploadForm Status.NotSent Nothing
+
+
+initForms : Forms
+initForms =
+    { slideShow = initUploadForm
+    , background = initUploadForm
+    , logo = initUploadForm
+    }
 
 
 type alias EditPrompt =
@@ -68,6 +87,8 @@ type Msg
     = DnD DnDMsg
     | EditPromptMsg EditPromptMsg
     | UploadSlideShowMsg UploadSlideShowMsg
+    | UploadBackgroundMsg UploadBackgroundMsg
+    | UploadLogoMsg UploadLogoMsg
 
 
 type DnDMsg
@@ -89,9 +110,27 @@ type UploadSlideShowMsg
     | UploadSlideShowFormSubmitted
 
 
+type UploadBackgroundMsg
+    = UploadBackgroundSelectFileRequested
+    | UploadBackgroundFileReady File
+    | UploadBackgroundFormSubmitted
+
+
+type UploadLogoMsg
+    = UploadLogoSelectFileRequested
+    | UploadLogoFileReady File
+    | UploadLogoFormSubmitted
+
+
+type UploadModel
+    = SlideShow
+    | Background
+    | Logo
+
+
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details.slides) initUploadForm initEditPrompt slideSystem.model gosSystem.model
+    Model details (setupSlides details.slides) initForms initEditPrompt slideSystem.model gosSystem.model
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide

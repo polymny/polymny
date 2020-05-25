@@ -6,6 +6,8 @@ module Api exposing
     , Session
     , Slide
     , capsuleFromId
+    , capsuleUploadBackground
+    , capsuleUploadLogo
     , capsuleUploadSlideShow
     , capsulesFromProjectId
     , compareSlides
@@ -366,6 +368,24 @@ capsuleUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> Int -> Fil
 capsuleUploadSlideShow resultToMsg id content =
     Http.post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_slides"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+capsuleUploadBackground : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
+capsuleUploadBackground resultToMsg id content =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_background"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+capsuleUploadLogo : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
+capsuleUploadLogo resultToMsg id content =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_logo"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
         }
