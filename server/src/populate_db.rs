@@ -137,6 +137,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             asset_id,
             &sample_capsule.description,
             None,
+            None,
+            None,
         )?;
     }
 

@@ -7,7 +7,7 @@ use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::{Error, Result};
+use crate::Result;
 
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
@@ -27,6 +27,12 @@ pub struct Capsule {
 
     /// The description of the capsule.
     pub description: String,
+
+    /// Reference to capsule backgound image
+    pub background_id: Option<i32>,
+
+    /// Reference to capsule logo
+    pub logo_id: Option<i32>,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -45,6 +51,12 @@ pub struct NewCapsule {
 
     /// The description of the capsule.
     pub description: String,
+
+    /// Reference to capsule backgound image
+    pub background_id: Option<Option<i32>>,
+
+    /// Reference to capsule logo
+    pub logo_id: Option<Option<i32>>,
 }
 
 /// A link between a capsule and a project.
@@ -81,6 +93,8 @@ impl Capsule {
         title: &str,
         slide_show_id: Option<i32>,
         description: &str,
+        background_id: Option<i32>,
+        logo_id: Option<i32>,
         project: Option<Project>,
     ) -> Result<Capsule> {
         let capsule = NewCapsule {
@@ -88,6 +102,8 @@ impl Capsule {
             title: String::from(title),
             slide_show_id: Some(slide_show_id),
             description: String::from(description),
+            background_id: Some(background_id),
+            logo_id: Some(logo_id),
         }
         .save(&database)?;
 
@@ -106,12 +122,16 @@ impl Capsule {
         title: &str,
         slide_show_id: Option<i32>,
         description: &str,
+        background_id: Option<i32>,
+        logo_id: Option<i32>,
     ) -> Result<NewCapsule> {
         Ok(NewCapsule {
             name: String::from(name),
             title: String::from(title),
             slide_show_id: Some(slide_show_id),
             description: String::from(description),
+            background_id: Some(background_id),
+            logo_id: Some(logo_id),
         })
     }
     /// Gets a capsule from its id.
@@ -140,6 +160,26 @@ impl Capsule {
     /// get the slide show associated to capsule
     pub fn get_slide_show(&self, db: &PgConnection) -> Result<Option<Asset>> {
         match self.slide_show_id {
+            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
+            None => Ok(None),
+        }
+    }
+
+    /// get the background associated to capsule
+    pub fn get_background(&self, db: &PgConnection) -> Result<Option<Asset>> {
+        // TODO return default background instead of none ?
+        // --> implement default backgound ?
+        match self.background_id {
+            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
+            None => Ok(None),
+        }
+    }
+
+    /// get the logo associated to capsule
+    pub fn get_logo(&self, db: &PgConnection) -> Result<Option<Asset>> {
+        // TODO return default logo instead of none ?
+        // --> implement default logo ?
+        match self.logo_id {
             Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
             None => Ok(None),
         }

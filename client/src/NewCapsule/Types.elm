@@ -22,4 +22,5 @@ type Msg
     | TitleChanged String
     | DescriptionChanged String
     | Submitted
+    | Cancel
     | Success Api.Capsule

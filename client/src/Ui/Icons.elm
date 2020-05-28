@@ -1,5 +1,6 @@
 module Ui.Icons exposing
     ( add
+    , cancel
     , clear
     , edit
     , trash
@@ -60,6 +61,20 @@ add =
             [ FontAwesome.iconWithOptions
                 FontAwesome.plus
                 FontAwesome.Solid
+                [ FontAwesome.Size (FontAwesome.Mult 1) ]
+                []
+            ]
+        )
+
+
+cancel : Element msg
+cancel =
+    Element.html
+        (Html.div
+            []
+            [ FontAwesome.iconWithOptions
+                FontAwesome.windowClose
+                FontAwesome.Regular
                 [ FontAwesome.Size (FontAwesome.Mult 1) ]
                 []
             ]

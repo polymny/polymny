@@ -5,6 +5,7 @@ module Ui.Attributes exposing
     , designGosTitleAttributes
     , fullModelAttributes
     , genericDesignSlideViewAttributes
+    , uploadViewAttributes
     )
 
 import Element
@@ -77,4 +78,16 @@ genericDesignSlideViewAttributes =
             |> Element.minimum 440
             |> Element.maximum 430
         )
+    ]
+
+
+uploadViewAttributes : List (Element.Attribute msg)
+uploadViewAttributes =
+    [ Element.alignLeft
+    , Element.width Element.fill
+    , Element.spacing 10
+    , Element.padding 10
+    , Border.rounded 5
+    , Border.width 1
+    , Border.color Colors.artIrises
     ]

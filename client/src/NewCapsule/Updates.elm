@@ -13,22 +13,27 @@ update : Api.Project -> NewCapsule.Msg -> NewCapsule.Model -> ( Preparation.Mode
 update project msg model =
     case msg of
         NewCapsule.NameChanged newCapsuleName ->
-            ( Preparation.NewCapsule project { model | name = newCapsuleName }, Cmd.none )
+            ( Preparation.Project project (Just { model | name = newCapsuleName }), Cmd.none )
 
         NewCapsule.TitleChanged newTitleName ->
-            ( Preparation.NewCapsule project { model | title = newTitleName }, Cmd.none )
+            ( Preparation.Project project (Just { model | title = newTitleName }), Cmd.none )
 
         NewCapsule.DescriptionChanged newDescriptionName ->
-            ( Preparation.NewCapsule project { model | description = newDescriptionName }, Cmd.none )
+            ( Preparation.Project project (Just { model | description = newDescriptionName }), Cmd.none )
 
         NewCapsule.Submitted ->
-            ( Preparation.NewCapsule project { model | status = Status.Sent }
+            ( Preparation.Project project (Just { model | status = Status.Sent })
             , Api.newCapsule resultToMsg project.id model
             )
 
         NewCapsule.Success _ ->
-            ( Preparation.Project project
+            ( Preparation.Project project Nothing
             , Api.capsulesFromProjectId (resultToMsg1 project) project.id
+            )
+
+        NewCapsule.Cancel ->
+            ( Preparation.Project project Nothing
+            , Cmd.none
             )
 
 

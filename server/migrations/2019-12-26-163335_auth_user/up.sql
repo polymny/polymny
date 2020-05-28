@@ -35,7 +35,9 @@ CREATE TABLE capsules (
     name VARCHAR NOT NULL UNIQUE,
     title VARCHAR NOT NULL ,
     slide_show_id INT REFERENCES assets(id),
-    description TEXT NOT NULL
+    description TEXT NOT NULL,
+    background_id INT REFERENCES assets(id),
+    logo_id INT REFERENCES assets(id)
 );
 
 CREATE TABLE capsules_projects (

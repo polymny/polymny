@@ -6,6 +6,7 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
 import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import Preparation.Types as Preparation
@@ -33,11 +34,8 @@ view global session preparationModel =
                 Preparation.NewProject newProjectModel ->
                     NewProject.view newProjectModel
 
-                Preparation.NewCapsule _ newProjectModel ->
-                    NewCapsule.view newProjectModel
-
-                Preparation.Project project ->
-                    projectView project clicktab
+                Preparation.Project project newCapsuleForm ->
+                    projectView project clicktab newCapsuleForm
 
                 Preparation.Capsule capsule ->
                     Capsule.view session capsule clicktab
@@ -123,21 +121,41 @@ projectHeader global project =
 
 newCapsuleButton : Api.Project -> Element Core.Msg
 newCapsuleButton project =
-    Ui.primaryButton (Just (Core.NewCapsuleClicked project)) "New capsule"
+    Ui.primaryButton
+        (Just
+            (Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.NewCapsuleClicked project
+            )
+        )
+        "New capsule"
 
 
-projectView : Api.Project -> List (Element Core.Msg) -> Element Core.Msg
-projectView project header =
+projectView : Api.Project -> List (Element Core.Msg) -> Maybe NewCapsule.Model -> Element Core.Msg
+projectView project header newCapsuleModel =
     let
         headers =
             headerView header <| Element.text (" / " ++ project.name)
+
+        newCapsuleForm =
+            case newCapsuleModel of
+                Just m ->
+                    NewCapsule.view m
+
+                Nothing ->
+                    Element.none
     in
-    Element.column []
+    Element.column
+        [ Element.width (Element.fill |> Element.maximum 800)
+        ]
         [ Element.row [ Font.size 18 ] <| headers
-        , Element.column [ Element.padding 10 ]
-            [ newCapsuleButton project
-            , Element.column [ Element.padding 10, Element.spacing 10 ]
-                (List.map capsuleView project.capsules)
+        , Element.row [ Element.width Element.fill, Element.alignTop, Element.padding 20, Element.spacing 30 ]
+            [ Element.column [ Element.alignLeft, Element.width Element.fill, Element.alignTop, Element.padding 10 ]
+                [ Element.el [ Element.alignLeft ] <| newCapsuleButton project
+                , Element.column [ Element.padding 10, Element.spacing 10 ]
+                    (List.map capsuleView project.capsules)
+                ]
+            , Element.el [ Element.alignRight ] newCapsuleForm
             ]
         ]
 

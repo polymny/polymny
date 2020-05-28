@@ -35,6 +35,9 @@ view { status, name, title, description } =
                 _ ->
                     Ui.primaryButton (Just NewCapsule.Submitted) "Create capsule"
 
+        cancelButton =
+            Ui.cancelButton (Just NewCapsule.Cancel) ""
+
         message =
             case status of
                 Status.Error () ->
@@ -47,7 +50,10 @@ view { status, name, title, description } =
                     Nothing
 
         header =
-            Element.row [ Element.centerX ] [ Element.text "New capsule" ]
+            Element.row [ Element.width Element.fill ]
+                [ Element.el [ Element.alignLeft ] (Element.text "Nouvelle Capsule")
+                , Element.el [ Element.alignRight ] cancelButton
+                ]
 
         fields =
             [ Input.text submitOnEnter

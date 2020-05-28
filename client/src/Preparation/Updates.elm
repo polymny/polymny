@@ -21,11 +21,11 @@ update session msg preparationModel =
             ( session, Preparation.Home, Cmd.none )
 
         ( Preparation.ProjectClicked project, _ ) ->
-            ( session, Preparation.Project project, Api.capsulesFromProjectId (resultToMsg1 project) project.id )
+            ( session, Preparation.Project project Nothing, Api.capsulesFromProjectId (resultToMsg1 project) project.id )
 
         ( Preparation.CapsulesReceived project capsules, _ ) ->
             ( { session | active_project = Just project }
-            , Preparation.Project { project | capsules = capsules }
+            , Preparation.Project { project | capsules = capsules } Nothing
             , Cmd.none
             )
 
@@ -45,6 +45,9 @@ update session msg preparationModel =
         ( Preparation.CapsuleReceived capsuleDetails, _ ) ->
             ( session, Preparation.Capsule (Capsule.init capsuleDetails), Cmd.none )
 
+        ( Preparation.NewCapsuleClicked project, _ ) ->
+            ( session, Preparation.Project project (Just NewCapsule.init), Cmd.none )
+
         -- OTHER MESSAGES
         ( Preparation.NewProjectMsg newProjectMsg, Preparation.NewProject newProjectModel ) ->
             let
@@ -53,7 +56,7 @@ update session msg preparationModel =
             in
             ( newSession, Preparation.NewProject newModel, cmd )
 
-        ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.NewCapsule project newCapsuleModel ) ->
+        ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.Project project (Just newCapsuleModel) ) ->
             let
                 ( newModel, cmd ) =
                     NewCapsule.update project newCapsuleMsg newCapsuleModel

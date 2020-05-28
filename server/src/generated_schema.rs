@@ -16,6 +16,8 @@ table! {
         title -> Varchar,
         slide_show_id -> Nullable<Int4>,
         description -> Text,
+        background_id -> Nullable<Int4>,
+        logo_id -> Nullable<Int4>,
     }
 }
 
@@ -24,14 +26,6 @@ table! {
         id -> Int4,
         capsule_id -> Int4,
         project_id -> Int4,
-    }
-}
-
-table! {
-    goss (id) {
-        id -> Int4,
-        position -> Int4,
-        capsule_id -> Int4,
     }
 }
 
@@ -75,7 +69,6 @@ table! {
     }
 }
 
-joinable!(capsules -> assets (slide_show_id));
 joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
 joinable!(projects -> users (user_id));
@@ -87,7 +80,6 @@ allow_tables_to_appear_in_same_query!(
     assets,
     capsules,
     capsules_projects,
-    goss,
     projects,
     sessions,
     slides,

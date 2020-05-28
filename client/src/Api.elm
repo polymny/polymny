@@ -6,6 +6,8 @@ module Api exposing
     , Session
     , Slide
     , capsuleFromId
+    , capsuleUploadBackground
+    , capsuleUploadLogo
     , capsuleUploadSlideShow
     , capsulesFromProjectId
     , compareSlides
@@ -152,16 +154,20 @@ type alias CapsuleDetails =
     , slides : List Slide
     , projects : List Project
     , slide_show : Maybe Asset
+    , background : Maybe Asset
+    , logo : Maybe Asset
     }
 
 
 decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
-    Decode.map4 CapsuleDetails
+    Decode.map6 CapsuleDetails
         (Decode.field "capsule" decodeCapsule)
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "slide_show" (Decode.maybe decodeAsset))
+        (Decode.field "background" (Decode.maybe decodeAsset))
+        (Decode.field "logo" (Decode.maybe decodeAsset))
 
 
 
@@ -362,6 +368,24 @@ capsuleUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> Int -> Fil
 capsuleUploadSlideShow resultToMsg id content =
     Http.post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_slides"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+capsuleUploadBackground : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
+capsuleUploadBackground resultToMsg id content =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_background"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+capsuleUploadLogo : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
+capsuleUploadLogo resultToMsg id content =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_logo"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
         }

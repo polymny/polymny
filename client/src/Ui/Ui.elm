@@ -1,5 +1,6 @@
 module Ui.Ui exposing
     ( addButton
+    , cancelButton
     , clearButton
     , editButton
     , errorModal
@@ -172,6 +173,19 @@ clearButton onPress content =
         )
         { onPress = onPress
         , label = Element.row [] [ Icons.clear, Element.text content ]
+        }
+
+
+cancelButton : Maybe msg -> String -> Element msg
+cancelButton onPress content =
+    Input.button
+        (buttonAttributes
+            ++ [ Background.color Colors.white
+               , Font.color Colors.grey
+               ]
+        )
+        { onPress = onPress
+        , label = Element.row [] [ Icons.cancel, Element.text content ]
         }
 
 

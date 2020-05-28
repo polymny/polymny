@@ -189,11 +189,6 @@ homeButton =
     Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Polymny")
 
 
-newCapsuleButton : Api.Project -> Element Core.Msg
-newCapsuleButton project =
-    Ui.textButton (Just (Core.NewCapsuleClicked project)) "New capsule"
-
-
 loginButton : Element Core.Msg
 loginButton =
     Ui.simpleButton (Just Core.LoginClicked) "Log in"
