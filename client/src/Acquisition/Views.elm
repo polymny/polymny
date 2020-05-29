@@ -4,15 +4,17 @@ import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Element exposing (Element)
+import Html
+import Html.Attributes
+import LoggedIn.Types as LoggedIn
+import Ui.Ui as Ui
 
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
-view global session preparationModel =
+view _ _ model =
     let
         mainPage =
-            case preparationModel of
-                Acquisition.Home ->
-                    homeView global session
+            mainView model
 
         element =
             Element.column
@@ -31,8 +33,62 @@ view global session preparationModel =
         [ element ]
 
 
-homeView : Core.Global -> Api.Session -> Element Core.Msg
-homeView _ session =
+mainView : Acquisition.Model -> Element Core.Msg
+mainView model =
+    Element.column [ Element.spacing 10 ]
+        [ videoView, recordingButton model.recording, recordingsView model.recordingsNumber model.currentStream ]
+
+
+videoView : Element Core.Msg
+videoView =
+    Element.html (Html.video [ Html.Attributes.id elementId ] [])
+
+
+recordingButton : Bool -> Element Core.Msg
+recordingButton recording =
+    let
+        ( text, msg ) =
+            if recording then
+                ( "Stop recording", Acquisition.StopRecording )
+
+            else
+                ( "Start recording", Acquisition.StartRecording )
+    in
+    Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg msg))) text
+
+
+recordingsView : Int -> Int -> Element Core.Msg
+recordingsView n current =
+    let
+        texts : List String
+        texts =
+            "Webcam" :: List.map (\x -> "Video " ++ String.fromInt x) (List.range 1 n)
+
+        msg : Int -> Core.Msg
+        msg i =
+            Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i))
+    in
     Element.column []
-        [ Element.el [] <| Element.text "Welcome on acquisition Tab !"
+        [ Element.text "Available streams:"
+        , Element.row [ Element.spacing 10 ]
+            (List.indexedMap
+                (\i ->
+                    \x ->
+                        if current == i then
+                            Ui.successButton (Just (msg i)) x
+
+                        else
+                            Ui.simpleButton (Just (msg i)) x
+                )
+                texts
+            )
         ]
+
+
+
+-- CONSTANTS
+
+
+elementId : String
+elementId =
+    "video"

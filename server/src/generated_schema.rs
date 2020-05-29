@@ -30,6 +30,14 @@ table! {
 }
 
 table! {
+    goss (id) {
+        id -> Int4,
+        position -> Int4,
+        capsule_id -> Int4,
+    }
+}
+
+table! {
     projects (id) {
         id -> Int4,
         user_id -> Int4,
@@ -80,6 +88,7 @@ allow_tables_to_appear_in_same_query!(
     assets,
     capsules,
     capsules_projects,
+    goss,
     projects,
     sessions,
     slides,

@@ -52,7 +52,6 @@ buttonAttributes =
     [ Element.centerX
     , Element.padding 10
     , Border.rounded 5
-    , Background.color Colors.artStarryNight
     , Font.color Colors.artEvening
     ]
 
@@ -63,6 +62,7 @@ textButton onPress content =
         [ Font.color Colors.white
         , Element.centerX
         , Element.padding 10
+        , Background.color Colors.artStarryNight
         ]
         { onPress = onPress
         , label = Element.text content
@@ -84,7 +84,11 @@ simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
     let
         attr =
-            Background.color Colors.grey :: Border.color Colors.grey :: Border.rounded 5 :: Border.width 1 :: buttonAttributes
+            Background.color Colors.artStarryNight
+                :: Border.color Colors.grey
+                :: Border.rounded 5
+                :: Border.width 1
+                :: buttonAttributes
     in
     Input.button
         attr

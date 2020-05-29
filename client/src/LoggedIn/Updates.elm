@@ -38,8 +38,15 @@ update msg { session, tab } =
             ( LoggedIn.Model newSession (LoggedIn.Acquisition newModel), cmd )
 
         ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-            ( { session = session, tab = LoggedIn.Acquisition Acquisition.Home }
-            , Cmd.none
+            let
+                ( model, cmd ) =
+                    Acquisition.init
+
+                coreCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+            in
+            ( { session = session, tab = LoggedIn.Acquisition model }
+            , coreCmd
             )
 
         _ ->

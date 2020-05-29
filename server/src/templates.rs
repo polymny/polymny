@@ -37,6 +37,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/main.js"></script>
+        <script src="/ports.js"></script>
         <script>
             var app = Elm.Main.init({
 "#;
@@ -44,6 +45,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
 const INDEX_HTML_AFTER_FLAGS: &str = r#"
                 node: document.getElementById('root')
             });
+            setupPorts(app);
         </script>
     </body>
 </html>

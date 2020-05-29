@@ -1,7 +1,7 @@
 module Core.Views exposing (subscriptions, view)
 
+import Acquisition.Ports
 import Acquisition.Types as Acquisition
-import Api
 import Capsule.Types as Capsule
 import Capsule.Views as Capsule
 import Core.Types as Core
@@ -39,6 +39,10 @@ subscriptions { model } =
 
                         _ ->
                             Sub.none
+
+                LoggedIn.Acquisition _ ->
+                    Acquisition.Ports.recordingsNumber
+                        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.RecordingsNumber x)))
 
                 _ ->
                     Sub.none
