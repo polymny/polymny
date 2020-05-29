@@ -34,9 +34,29 @@ view _ _ model =
 
 
 mainView : Acquisition.Model -> Element Core.Msg
-mainView { recordingsNumber, recording, currentStream } =
+mainView model =
     Element.column [ Element.spacing 10 ]
-        [ videoView (currentStream /= 0), recordingButton recording, recordingsView recordingsNumber currentStream ]
+        [ topView model
+        , recordingButton model.recording
+        , recordingsView model.recordingsNumber model.currentStream
+        ]
+
+
+topView : Acquisition.Model -> Element Core.Msg
+topView model =
+    Element.row []
+        [ videoView (model.currentStream /= 0)
+        , case model.slides of
+            Just (h :: _) ->
+                Element.image
+                    [ Element.width (Element.px 640)
+                    , Element.height (Element.px 480)
+                    ]
+                    { src = h.asset.asset_path, description = "Slide" }
+
+            _ ->
+                Element.none
+        ]
 
 
 videoView : Bool -> Element Core.Msg

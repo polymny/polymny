@@ -25,6 +25,13 @@ update msg { session, tab } =
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 
+        ( LoggedIn.Record slides, _ ) ->
+            let
+                ( t, cmd ) =
+                    Acquisition.withSlides slides
+            in
+            ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
+
         ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
             , Cmd.none

@@ -136,7 +136,7 @@ primaryButton onPress content =
 editButton : Maybe msg -> String -> Element msg
 editButton onPress content =
     Input.button
-        (Background.color Colors.artEvening
+        (Background.color Colors.artStarryNight
             :: Font.color Colors.artSunFlowers
             :: buttonAttributes
         )
