@@ -1,5 +1,6 @@
 module Ui.Icons exposing
     ( add
+    , camera
     , cancel
     , clear
     , edit
@@ -11,13 +12,13 @@ import FontAwesome
 import Html
 
 
-trash : Element msg
-trash =
+buttonFromIcon : FontAwesome.Icon -> Element msg
+buttonFromIcon icon =
     Element.html
         (Html.div
             []
             [ FontAwesome.iconWithOptions
-                FontAwesome.trash
+                icon
                 FontAwesome.Solid
                 [ FontAwesome.Size (FontAwesome.Mult 2) ]
                 []
@@ -25,57 +26,31 @@ trash =
         )
 
 
+trash : Element msg
+trash =
+    buttonFromIcon FontAwesome.trash
+
+
 edit : Element msg
 edit =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.edit
-                FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 1) ]
-                []
-            ]
-        )
+    buttonFromIcon FontAwesome.edit
 
 
 clear : Element msg
 clear =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.eraser
-                FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 1) ]
-                []
-            ]
-        )
+    buttonFromIcon FontAwesome.eraser
 
 
 add : Element msg
 add =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.plus
-                FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 1) ]
-                []
-            ]
-        )
+    buttonFromIcon FontAwesome.plus
 
 
 cancel : Element msg
 cancel =
-    Element.html
-        (Html.div
-            []
-            [ FontAwesome.iconWithOptions
-                FontAwesome.windowClose
-                FontAwesome.Regular
-                [ FontAwesome.Size (FontAwesome.Mult 1) ]
-                []
-            ]
-        )
+    buttonFromIcon FontAwesome.windowClose
+
+
+camera : Element msg
+camera =
+    buttonFromIcon FontAwesome.video

@@ -1,5 +1,6 @@
 module Ui.Ui exposing
     ( addButton
+    , cameraButton
     , cancelButton
     , clearButton
     , editButton
@@ -144,53 +145,41 @@ editButton onPress content =
         }
 
 
-trashButton : Maybe msg -> String -> Element msg
-trashButton onPress content =
+iconButton : Element msg -> Maybe msg -> String -> Element msg
+iconButton icon onPress content =
     Input.button
         (Background.color Colors.primary
             :: Font.color Colors.white
             :: buttonAttributes
         )
         { onPress = onPress
-        , label = Element.row [] [ Icons.trash, Element.text content ]
+        , label = Element.row [] [ icon, Element.text content ]
         }
+
+
+trashButton : Maybe msg -> String -> Element msg
+trashButton onPress content =
+    iconButton Icons.trash onPress content
 
 
 addButton : Maybe msg -> String -> Element msg
 addButton onPress content =
-    Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
-        )
-        { onPress = onPress
-        , label = Element.row [] [ Icons.add, Element.text content ]
-        }
+    iconButton Icons.add onPress content
 
 
 clearButton : Maybe msg -> String -> Element msg
 clearButton onPress content =
-    Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
-        )
-        { onPress = onPress
-        , label = Element.row [] [ Icons.clear, Element.text content ]
-        }
+    iconButton Icons.clear onPress content
 
 
 cancelButton : Maybe msg -> String -> Element msg
 cancelButton onPress content =
-    Input.button
-        (buttonAttributes
-            ++ [ Background.color Colors.white
-               , Font.color Colors.grey
-               ]
-        )
-        { onPress = onPress
-        , label = Element.row [] [ Icons.cancel, Element.text content ]
-        }
+    iconButton Icons.cancel onPress content
+
+
+cameraButton : Maybe msg -> String -> Element msg
+cameraButton onPress content =
+    iconButton Icons.camera onPress content
 
 
 primaryButtonDisabled : String -> Element msg

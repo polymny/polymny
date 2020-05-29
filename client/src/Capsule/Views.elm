@@ -296,7 +296,8 @@ genericGosView options gosModel slideModel offset index gos =
                     ++ Attributes.designGosAttributes
                 )
                 [ Element.row (Element.width Element.fill :: dragAttributes ++ eventLessAttributes)
-                    [ Element.el
+                    [ Element.el [ Element.alignLeft ] (Ui.cameraButton Nothing "")
+                    , Element.el
                         Attributes.designGosTitleAttributes
                         (Element.text (String.fromInt index))
                     , Element.row [ Element.alignRight ] [ Ui.trashButton Nothing "" ]
