@@ -34,14 +34,14 @@ view _ _ model =
 
 
 mainView : Acquisition.Model -> Element Core.Msg
-mainView model =
+mainView { recordingsNumber, recording, currentStream } =
     Element.column [ Element.spacing 10 ]
-        [ videoView, recordingButton model.recording, recordingsView model.recordingsNumber model.currentStream ]
+        [ videoView (currentStream /= 0), recordingButton recording, recordingsView recordingsNumber currentStream ]
 
 
-videoView : Element Core.Msg
-videoView =
-    Element.html (Html.video [ Html.Attributes.id elementId ] [])
+videoView : Bool -> Element Core.Msg
+videoView controls =
+    Element.html (Html.video [ Html.Attributes.id elementId, Html.Attributes.controls controls ] [])
 
 
 recordingButton : Bool -> Element Core.Msg
