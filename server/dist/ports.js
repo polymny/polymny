@@ -1,18 +1,23 @@
 function setupPorts(app) {
 
-    let = {};
+    let stream, recorder, recording, blobs;
 
-    let stream, recorder, recording = false;
-    let blobs = [];
-
-    function reset() {
-        blobs = [];
-        recording = false;
+    function initVariables() {
+        stream = null;
         recorder = null;
+        recording = false;
+        blobs = [];
+    }
+
+    function init(elementId) {
+        initVariables();
+        setupUserMedia(() => {
+            bindWebcam(elementId);
+        });
     }
 
     function setupUserMedia(callback) {
-        if (stream != undefined) {
+        if (stream !== null) {
             callback(stream);
         } else {
             navigator.mediaDevices.getUserMedia({audio: true, video: true})
@@ -60,7 +65,6 @@ function setupPorts(app) {
     }
 
     function goToStream(id, n) {
-        let source;
         if (n === 0) {
             bindWebcam(id);
         } else {
@@ -72,28 +76,46 @@ function setupPorts(app) {
         }
     }
 
-    // app.ports.reset.subscribe(function() {
-    //     reset();
-    // });
+    function exit() {
+        stream.getTracks().forEach(function(track) {
+            track.stop();
+        });
 
-    app.ports.bindWebcam.subscribe(function(id) {
+        initVariables();
+    }
+
+    function subscribe(object, fun) {
+        if (object !== undefined) {
+            object.subscribe(fun);
+        }
+    }
+
+    subscribe(app.ports.init, function(id) {
+        init(id);
+    });
+
+    subscribe(app.ports.bindWebcam, function(id) {
         setupUserMedia(() => {
             bindWebcam(id);
         });
     });
 
-    app.ports.startRecording.subscribe(function() {
+    subscribe(app.ports.startRecording, function() {
         startRecording(function(n) {
             app.ports.recordingsNumber.send(n);
         });
     });
 
-    app.ports.stopRecording.subscribe(function() {
+    subscribe(app.ports.stopRecording, function() {
         stopRecording();
     });
 
-    app.ports.goToStream.subscribe(function(attr) {
+    subscribe(app.ports.goToStream, function(attr) {
         goToStream(attr[0], attr[1]);
+    });
+
+    subscribe(app.ports.exit, function() {
+        exit();
     });
 
 }

@@ -1,14 +1,15 @@
 port module Acquisition.Ports exposing
     ( bindWebcam
+    , exit
     , goToStream
+    , init
     , recordingsNumber
-    , reset
     , startRecording
     , stopRecording
     )
 
 
-port reset : () -> Cmd msg
+port init : String -> Cmd msg
 
 
 port bindWebcam : String -> Cmd msg
@@ -24,3 +25,6 @@ port goToStream : ( String, Int ) -> Cmd msg
 
 
 port recordingsNumber : (Int -> msg) -> Sub msg
+
+
+port exit : () -> Cmd msg

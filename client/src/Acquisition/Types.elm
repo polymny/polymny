@@ -19,7 +19,7 @@ init =
       , currentStream = 0
       , slides = Nothing
       }
-    , Ports.bindWebcam "video"
+    , Ports.init "video"
     )
 
 
@@ -30,7 +30,7 @@ withSlides slides =
       , currentStream = 0
       , slides = Just slides
       }
-    , Ports.bindWebcam "video"
+    , Ports.init "video"
     )
 
 
