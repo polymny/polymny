@@ -30,6 +30,7 @@ CREATE TABLE assets (
     asset_type VARCHAR NOT NULL,
     upload_date TIMESTAMP NOT NULL
 );
+
 CREATE TABLE capsules (
     id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL UNIQUE,
@@ -37,7 +38,8 @@ CREATE TABLE capsules (
     slide_show_id INT REFERENCES assets(id),
     description TEXT NOT NULL,
     background_id INT REFERENCES assets(id),
-    logo_id INT REFERENCES assets(id)
+    logo_id INT REFERENCES assets(id),
+    structure JSON NOT NULL
 );
 
 CREATE TABLE capsules_projects (
@@ -45,8 +47,6 @@ CREATE TABLE capsules_projects (
     capsule_id INT NOT NULL references capsules(id),
     project_id INT NOT NULL references projects(id)
 );
-
-
 
 CREATE TYPE asset_type AS ENUM ('project', 'capsule', 'slide');
 

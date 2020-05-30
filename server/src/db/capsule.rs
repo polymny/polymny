@@ -1,5 +1,7 @@
 //! This module contains the structures to manipulate capsules.
 
+use serde_json::{json, Value as Json};
+
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
@@ -33,6 +35,9 @@ pub struct Capsule {
 
     /// Reference to capsule logo
     pub logo_id: Option<i32>,
+
+    /// The structure of the capsule.
+    pub structure: Json,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -57,6 +62,9 @@ pub struct NewCapsule {
 
     /// Reference to capsule logo
     pub logo_id: Option<Option<i32>>,
+
+    /// The structure of the capsule.
+    pub structure: Json,
 }
 
 /// A link between a capsule and a project.
@@ -104,6 +112,7 @@ impl Capsule {
             description: String::from(description),
             background_id: Some(background_id),
             logo_id: Some(logo_id),
+            structure: json!({}),
         }
         .save(&database)?;
 
@@ -132,6 +141,7 @@ impl Capsule {
             description: String::from(description),
             background_id: Some(background_id),
             logo_id: Some(logo_id),
+            structure: json!({}),
         })
     }
     /// Gets a capsule from its id.
