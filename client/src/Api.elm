@@ -419,7 +419,12 @@ updateSlide resultToMsg id content =
 
 encodeSlideStructure : CapsuleDetails -> Encode.Value
 encodeSlideStructure capsule =
-    Encode.list (Encode.list (\x -> Encode.int x.id)) (sortSlides capsule.slides)
+    let
+        encodeList : List Slide -> Encode.Value
+        encodeList x =
+            Encode.object [ ( "slides", Encode.list (\y -> Encode.int y.id) x ) ]
+    in
+    Encode.list (\i -> i) (List.map encodeList (sortSlides capsule.slides))
 
 
 updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg

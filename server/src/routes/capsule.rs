@@ -3,6 +3,8 @@ use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+use serde_json::json as serde_json;
+
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
@@ -25,8 +27,7 @@ use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::routes::slide::UpdateSlideForm;
-use crate::schema::capsules;
-use crate::schema::slides;
+use crate::schema::{capsules, slides};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -231,6 +232,8 @@ pub fn upload_slides(
 
                     //TODO : use enumerate  instead of idx ?
                     let mut idx = 1;
+                    let mut capsule_structure = vec![];
+
                     for e in entries {
                         // Create one GOS and associated per image
                         // one slide per GOS
@@ -247,14 +250,28 @@ pub fn upload_slides(
                             &format!("/{}", server_path.to_str().unwrap()),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
-                        Slide::new(&db, idx, 1, idx, asset.id, id, "Dummy prompt")?;
+                        let slide = Slide::new(&db, idx, 1, idx, asset.id, idx, "Dummy prompt")?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
                         fs::copy(e, &output_path)?;
                         idx += 1;
+                        capsule_structure.push(GosStructure {
+                            record_path: None,
+                            slides: vec![slide.id],
+                        });
                     }
+
                     dir.close()?;
+
+                    {
+                        use crate::schema::capsules::dsl::{id as cid, structure};
+                        diesel::update(capsules::table)
+                            .filter(cid.eq(id))
+                            .set(structure.eq(serde_json!(capsule_structure)))
+                            .execute(&db.0)?;
+                    }
+
                     // TODO: return capsule details like get_capsule
                     return format_capsule_data(&db, &capsule);
                 }
@@ -364,19 +381,30 @@ pub fn upload_logo(
 
     format_capsule_data(&db, &user.get_capsule_by_id(id, &db)?)
 }
+
+/// The structure of a gos.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GosStructure {
+    /// The ids of the slides of the gos.
+    pub slides: Vec<i32>,
+
+    /// The path to the record if any.
+    pub record_path: Option<String>,
+}
+
 /// order capsule gos and slide
 #[post("/capsule/<id>/gos_order", data = "<goss>")]
 pub fn gos_order(
     db: Database,
     user: User,
     id: i32,
-    goss: Json<Vec<Vec<i32>>>,
+    goss: Json<Vec<GosStructure>>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
 
     let mut position = 1;
     for (gos, slides) in goss.iter().enumerate() {
-        for (position_in_gos, slide_id) in slides.iter().enumerate() {
+        for (position_in_gos, slide_id) in slides.slides.iter().enumerate() {
             use crate::schema::slides::dsl::id;
             diesel::update(slides::table)
                 .filter(id.eq(slide_id))
@@ -392,5 +420,14 @@ pub fn gos_order(
             position += 1;
         }
     }
+
+    {
+        use crate::schema::capsules::dsl::{id as cid, structure};
+        diesel::update(capsules::table)
+            .filter(cid.eq(id))
+            .set(structure.eq(serde_json!(goss.into_inner())))
+            .execute(&db.0)?;
+    }
+
     format_capsule_data(&db, &capsule)
 }

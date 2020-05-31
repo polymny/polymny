@@ -37,6 +37,12 @@ pub struct Capsule {
     pub logo_id: Option<i32>,
 
     /// The structure of the capsule.
+    ///
+    /// This json should be of the form
+    /// [ {
+    ///     path: Option<String>,
+    ///     slides: Vec<i32>,
+    /// } ]
     pub structure: Json,
 }
 
@@ -112,7 +118,7 @@ impl Capsule {
             description: String::from(description),
             background_id: Some(background_id),
             logo_id: Some(logo_id),
-            structure: json!({}),
+            structure: json!([]),
         }
         .save(&database)?;
 
@@ -141,7 +147,7 @@ impl Capsule {
             description: String::from(description),
             background_id: Some(background_id),
             logo_id: Some(logo_id),
-            structure: json!({}),
+            structure: json!([]),
         })
     }
     /// Gets a capsule from its id.
@@ -198,14 +204,32 @@ impl Capsule {
     /// get the slide show associated to capsule
     pub fn get_slides(&self, db: &PgConnection) -> Result<Vec<SlideWithAsset>> {
         //TODO : Verify if gest slide is correct without GOS
-        use crate::schema::slides::dsl as dsl_slides;
-        let slides = Slide::belonging_to(self)
-            .order(dsl_slides::position.asc())
-            .load::<Slide>(db)?;
-        Ok(slides
-            .iter()
-            .map(|x| SlideWithAsset::new(&x, db))
-            .collect::<Result<Vec<SlideWithAsset>>>()?)
+        //TODO : This is ugly as fuck, it would be cool to have something better
+        let all_slides = self
+            .structure
+            .as_array()
+            .unwrap()
+            .into_iter()
+            .map(|g| {
+                g["slides"]
+                    .as_array()
+                    .unwrap()
+                    .clone()
+                    .into_iter()
+                    .map(|s| s.as_i64().unwrap() as i32)
+                    .collect::<Vec<i32>>()
+            })
+            .collect::<Vec<Vec<i32>>>()
+            .into_iter()
+            .flatten();
+
+        let mut ret = vec![];
+
+        for i in all_slides {
+            ret.push(SlideWithAsset::new(&Slide::get(i, db)?, db)?);
+        }
+
+        Ok(ret)
     }
 
     /// Retrieves all capsules
