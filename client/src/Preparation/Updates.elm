@@ -37,7 +37,7 @@ update session msg preparationModel =
             , Preparation.Capsule
                 { capsule
                     | details = capsuleDetails
-                    , slides = Capsule.setupSlides capsuleDetails.slides
+                    , slides = Capsule.setupSlides capsuleDetails
                 }
             , Cmd.none
             )

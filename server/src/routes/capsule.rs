@@ -87,6 +87,7 @@ fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
                "projects":    capsule.get_projects(&db)?,
                "background":  capsule.get_background(&db)?,
                "logo":        capsule.get_logo(&db)?,
+               "structure":   capsule.structure,
     }))
 }
 

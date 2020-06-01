@@ -130,7 +130,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details.slides) initForms initEditPrompt slideSystem.model gosSystem.model
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide
@@ -215,11 +215,14 @@ indexedLambda id slide =
     List.map (updateGosId id) slide
 
 
-setupSlides : List Api.Slide -> List (List MaybeSlide)
-setupSlides slides =
+setupSlides : Api.CapsuleDetails -> List (List MaybeSlide)
+setupSlides capsule =
     let
+        slides =
+            Api.detailsSortSlides capsule
+
         list =
-            List.intersperse [ GosId -1 ] (List.map (\x -> GosId -1 :: List.map JustSlide x) (Api.sortSlides slides))
+            List.intersperse [ GosId -1 ] (List.map (\x -> GosId -1 :: List.map JustSlide x) slides)
 
         extremities =
             [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)

@@ -216,10 +216,16 @@ updateDnD slideMsg data =
                         _ ->
                             capsule.slides
 
+                details =
+                    data.details
+
+                updatedDetails =
+                    { details | slides = updatedSlides }
+
                 updatedSlidesView =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
-                            Capsule.setupSlides updatedSlides
+                            Capsule.setupSlides updatedDetails
 
                         _ ->
                             Capsule.regroupSlides slides
@@ -237,7 +243,7 @@ updateDnD slideMsg data =
         Capsule.GosMoved msg ->
             let
                 ( gosModel, goss ) =
-                    Capsule.gosSystem.update msg data.gosModel (Capsule.setupSlides data.details.slides)
+                    Capsule.gosSystem.update msg data.gosModel (Capsule.setupSlides data.details)
 
                 updatedGoss =
                     List.indexedMap

@@ -257,6 +257,7 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
             "background":  background,
             "logo":        logo,
             "active_project":"",
+           "structure":   capsule.structure,
         })
     });
 

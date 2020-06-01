@@ -17,6 +17,7 @@ module Api exposing
     , decodeCapsules
     , decodeProject
     , decodeSession
+    , detailsSortSlides
     , encodeSlideStructure
     , logOut
     , login
@@ -149,6 +150,36 @@ decodeSlide =
         (Decode.field "prompt" Decode.string)
 
 
+type alias InnerGos =
+    { slides : List Int
+    , record : Maybe String
+    }
+
+
+decodeInnerGos : Decoder InnerGos
+decodeInnerGos =
+    Decode.map2 InnerGos
+        (Decode.field "slides" (Decode.list Decode.int))
+        (Decode.field "record_path" (Decode.nullable Decode.string))
+
+
+type alias Gos =
+    { slides : List Slide
+    , record : Maybe String
+    }
+
+
+type alias InnerCapsuleDetails =
+    { capsule : Capsule
+    , slides : List Slide
+    , projects : List Project
+    , slide_show : Maybe Asset
+    , background : Maybe Asset
+    , logo : Maybe Asset
+    , structure : List InnerGos
+    }
+
+
 type alias CapsuleDetails =
     { capsule : Capsule
     , slides : List Slide
@@ -156,18 +187,61 @@ type alias CapsuleDetails =
     , slide_show : Maybe Asset
     , background : Maybe Asset
     , logo : Maybe Asset
+    , structure : List Gos
+    }
+
+
+toGosAux : List Slide -> List Int -> List (Maybe Slide) -> List (Maybe Slide)
+toGosAux slides ids current =
+    let
+        output =
+            case ids of
+                [] ->
+                    current
+
+                h :: t ->
+                    toGosAux (Maybe.withDefault [] (List.tail slides)) t (List.head slides :: current)
+    in
+    output
+
+
+toGos : List Slide -> InnerGos -> Gos
+toGos slides gos =
+    -- TODO implement the function
+    { slides = List.filterMap (\x -> x) (toGosAux slides (List.reverse gos.slides) []), record = gos.record }
+
+
+toCapsuleDetails : InnerCapsuleDetails -> CapsuleDetails
+toCapsuleDetails innerDetails =
+    { capsule = innerDetails.capsule
+    , slides = innerDetails.slides
+    , projects = innerDetails.projects
+    , slide_show = innerDetails.slide_show
+    , background = innerDetails.background
+    , logo = innerDetails.logo
+    , structure = List.map (toGos innerDetails.slides) innerDetails.structure
     }
 
 
 decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
-    Decode.map6 CapsuleDetails
-        (Decode.field "capsule" decodeCapsule)
-        (Decode.field "slides" (Decode.list decodeSlide))
-        (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "slide_show" (Decode.maybe decodeAsset))
-        (Decode.field "background" (Decode.maybe decodeAsset))
-        (Decode.field "logo" (Decode.maybe decodeAsset))
+    let
+        innerDecoder =
+            Decode.map7 InnerCapsuleDetails
+                (Decode.field "capsule" decodeCapsule)
+                (Decode.field "slides" (Decode.list decodeSlide))
+                (Decode.field "projects" (Decode.list (decodeProject [])))
+                (Decode.field "slide_show" (Decode.maybe decodeAsset))
+                (Decode.field "background" (Decode.maybe decodeAsset))
+                (Decode.field "logo" (Decode.maybe decodeAsset))
+                (Decode.field "structure" (Decode.list decodeInnerGos))
+    in
+    Decode.map toCapsuleDetails innerDecoder
+
+
+detailsSortSlides : CapsuleDetails -> List (List Slide)
+detailsSortSlides details =
+    List.map .slides details.structure
 
 
 
