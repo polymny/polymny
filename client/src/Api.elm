@@ -200,7 +200,7 @@ toGosAux slides ids current =
                     current
 
                 h :: t ->
-                    toGosAux (Maybe.withDefault [] (List.tail slides)) t (List.head slides :: current)
+                    toGosAux slides t (List.head (List.take h slides) :: current)
     in
     output
 
