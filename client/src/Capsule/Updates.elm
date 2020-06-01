@@ -207,6 +207,7 @@ updateDnD slideMsg data =
                 post =
                     Capsule.slideSystem.info slideModel
 
+                updatedSlides : List Api.Slide
                 updatedSlides =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
@@ -216,11 +217,14 @@ updateDnD slideMsg data =
                         _ ->
                             capsule.slides
 
+                updatedStructure =
+                    Api.extractStructureFromSlides updatedSlides
+
                 details =
                     data.details
 
                 updatedDetails =
-                    { details | slides = updatedSlides }
+                    { details | slides = updatedSlides, structure = updatedStructure }
 
                 updatedSlidesView =
                     case ( pre, post ) of

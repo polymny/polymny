@@ -401,8 +401,6 @@ pub fn gos_order(
     id: i32,
     goss: Json<Vec<GosStructure>>,
 ) -> Result<JsonValue> {
-    let capsule = user.get_capsule_by_id(id, &db)?;
-
     let mut position = 1;
     for (gos, slides) in goss.iter().enumerate() {
         for (position_in_gos, slide_id) in slides.slides.iter().enumerate() {
@@ -430,5 +428,6 @@ pub fn gos_order(
             .execute(&db.0)?;
     }
 
+    let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
 }

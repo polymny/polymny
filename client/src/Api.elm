@@ -19,6 +19,7 @@ module Api exposing
     , decodeSession
     , detailsSortSlides
     , encodeSlideStructure
+    , extractStructureFromSlides
     , logOut
     , login
     , newCapsule
@@ -191,7 +192,7 @@ type alias CapsuleDetails =
     }
 
 
-toGosAux : List Slide -> List Int -> List (Maybe Slide) -> List (Maybe Slide)
+toGosAux : Dict Int Slide -> List Int -> List (Maybe Slide) -> List (Maybe Slide)
 toGosAux slides ids current =
     let
         output =
@@ -200,15 +201,19 @@ toGosAux slides ids current =
                     current
 
                 h :: t ->
-                    toGosAux slides t (List.head (List.take h slides) :: current)
+                    toGosAux slides t (Dict.get h slides :: current)
     in
     output
 
 
-toGos : List Slide -> InnerGos -> Gos
+toGos : Dict Int Slide -> InnerGos -> Gos
 toGos slides gos =
-    -- TODO implement the function
     { slides = List.filterMap (\x -> x) (toGosAux slides (List.reverse gos.slides) []), record = gos.record }
+
+
+slidesAsDict : List Slide -> Dict Int Slide
+slidesAsDict slides =
+    Dict.fromList (List.map (\x -> ( x.id, x )) slides)
 
 
 toCapsuleDetails : InnerCapsuleDetails -> CapsuleDetails
@@ -219,7 +224,7 @@ toCapsuleDetails innerDetails =
     , slide_show = innerDetails.slide_show
     , background = innerDetails.background
     , logo = innerDetails.logo
-    , structure = List.map (toGos innerDetails.slides) innerDetails.structure
+    , structure = List.map (toGos (slidesAsDict innerDetails.slides)) innerDetails.structure
     }
 
 
@@ -242,6 +247,11 @@ decodeCapsuleDetails =
 detailsSortSlides : CapsuleDetails -> List (List Slide)
 detailsSortSlides details =
     List.map .slides details.structure
+
+
+extractStructureFromSlides : List Slide -> List Gos
+extractStructureFromSlides slides =
+    List.map (\x -> { slides = x, record = Nothing }) (sortSlides slides)
 
 
 
