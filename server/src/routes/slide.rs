@@ -14,15 +14,6 @@ use crate::{Database, Result};
 #[derive(Deserialize, AsChangeset, Debug)]
 #[table_name = "slides"]
 pub struct UpdateSlideForm {
-    /// The position of the slide in the slide show
-    pub position: Option<i32>,
-
-    /// The position of the slide in the GOS.
-    pub position_in_gos: Option<i32>,
-
-    /// The GOS associated to slide.
-    pub gos: Option<i32>,
-
     /// The asset associated to slide.
     pub asset_id: Option<i32>,
 

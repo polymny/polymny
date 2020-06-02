@@ -67,9 +67,6 @@ table! {
 table! {
     slides (id) {
         id -> Int4,
-        position -> Int4,
-        position_in_gos -> Int4,
-        gos -> Int4,
         asset_id -> Int4,
         capsule_id -> Int4,
         prompt -> Text,

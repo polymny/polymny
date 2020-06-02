@@ -16,15 +16,6 @@ pub struct Slide {
     /// The id of the slide.
     pub id: i32,
 
-    /// The position of the slide in the slide show
-    pub position: i32,
-
-    /// The position of the slide in the GOS.
-    pub position_in_gos: i32,
-
-    /// The GOS associated to slide.
-    pub gos: i32,
-
     /// The asset associated to slide.
     pub asset_id: i32,
 
@@ -39,15 +30,6 @@ pub struct Slide {
 #[derive(Debug, Insertable)]
 #[table_name = "slides"]
 pub struct NewSlide {
-    /// The position of the slide in the slide show
-    pub position: i32,
-
-    /// The position of the slide in the GOS.
-    pub position_in_gos: i32,
-
-    /// The GOS associated to slide.
-    pub gos: i32,
-
     /// The asset associated to slide.
     pub asset_id: i32,
 
@@ -60,19 +42,8 @@ pub struct NewSlide {
 
 impl Slide {
     /// Creates a new slide and store i tin database
-    pub fn new(
-        db: &PgConnection,
-        position: i32,
-        position_in_gos: i32,
-        gos: i32,
-        asset_id: i32,
-        capsule_id: i32,
-        prompt: &str,
-    ) -> Result<Slide> {
+    pub fn new(db: &PgConnection, asset_id: i32, capsule_id: i32, prompt: &str) -> Result<Slide> {
         Ok(NewSlide {
-            position,
-            position_in_gos,
-            gos,
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
@@ -81,18 +52,8 @@ impl Slide {
     }
 
     /// Creates a new slide.
-    pub fn create(
-        position: i32,
-        position_in_gos: i32,
-        gos: i32,
-        asset_id: i32,
-        capsule_id: i32,
-        prompt: &str,
-    ) -> Result<NewSlide> {
+    pub fn create(asset_id: i32, capsule_id: i32, prompt: &str) -> Result<NewSlide> {
         Ok(NewSlide {
-            position,
-            position_in_gos,
-            gos,
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
@@ -142,15 +103,6 @@ pub struct SlideWithAsset {
     /// The id of the slide.
     pub id: i32,
 
-    /// The position of the slide in the slide show
-    pub position: i32,
-
-    /// The position of the slide in the GOS.
-    pub position_in_gos: i32,
-
-    /// The GOS associated to slide.
-    pub gos: i32,
-
     /// The asset associated to slide.
     pub asset: Asset,
 
@@ -166,9 +118,6 @@ impl SlideWithAsset {
     pub fn new(slide: &Slide, db: &PgConnection) -> Result<SlideWithAsset> {
         Ok(SlideWithAsset {
             id: slide.id,
-            position: slide.position,
-            position_in_gos: slide.position_in_gos,
-            gos: slide.gos,
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),

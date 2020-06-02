@@ -26,8 +26,7 @@ use crate::db::capsule::Capsule;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
-use crate::routes::slide::UpdateSlideForm;
-use crate::schema::{capsules, slides};
+use crate::schema::capsules;
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -251,7 +250,7 @@ pub fn upload_slides(
                             &format!("/{}", server_path.to_str().unwrap()),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
-                        let slide = Slide::new(&db, idx, 1, idx, asset.id, idx, "Dummy prompt")?;
+                        let slide = Slide::new(&db, asset.id, idx, "Dummy prompt")?;
                         let mut output_path = PathBuf::from("dist");
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
@@ -402,32 +401,11 @@ pub fn gos_order(
     id: i32,
     goss: Json<Vec<GosStructure>>,
 ) -> Result<JsonValue> {
-    let mut position = 1;
-    for (gos, slides) in goss.iter().enumerate() {
-        for (position_in_gos, slide_id) in slides.slides.iter().enumerate() {
-            use crate::schema::slides::dsl::id;
-            diesel::update(slides::table)
-                .filter(id.eq(slide_id))
-                .set(&UpdateSlideForm {
-                    position: Some(position),
-                    position_in_gos: Some((position_in_gos + 1) as i32),
-                    gos: Some((gos + 1) as i32),
-                    asset_id: None,
-                    capsule_id: None,
-                    prompt: None,
-                })
-                .execute(&db.0)?;
-            position += 1;
-        }
-    }
-
-    {
-        use crate::schema::capsules::dsl::{id as cid, structure};
-        diesel::update(capsules::table)
-            .filter(cid.eq(id))
-            .set(structure.eq(serde_json!(goss.into_inner())))
-            .execute(&db.0)?;
-    }
+    use crate::schema::capsules::dsl::{id as cid, structure};
+    diesel::update(capsules::table)
+        .filter(cid.eq(id))
+        .set(structure.eq(serde_json!(goss.into_inner())))
+        .execute(&db.0)?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)

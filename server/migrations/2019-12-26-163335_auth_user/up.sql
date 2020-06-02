@@ -59,9 +59,6 @@ CREATE TABLE assets_objects (
 
 CREATE TABLE slides (
     id SERIAL PRIMARY KEY,
-    position INT NOT NULL,
-    position_in_gos INT NOT NULL,
-    gos INT NOT NULL,
     asset_id INT NOT NULL references assets(id),
     capsule_id INT NOT NULL references capsules(id),
     prompt TEXT NOT NULL
