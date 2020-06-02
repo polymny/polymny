@@ -11,6 +11,7 @@ module Capsule.Types exposing
     , UploadLogoMsg(..)
     , UploadModel(..)
     , UploadSlideShowMsg(..)
+    , extractStructure
     , filterSlide
     , gosConfig
     , gosSystem
@@ -276,6 +277,11 @@ isJustSlide slide =
             False
 
 
+isGosId : MaybeSlide -> Bool
+isGosId slide =
+    not (isJustSlide slide)
+
+
 isJustGosId : List MaybeSlide -> Bool
 isJustGosId slides =
     case slides of
@@ -284,3 +290,48 @@ isJustGosId slides =
 
         _ ->
             False
+
+
+extractStructure : List MaybeSlide -> List Api.Gos
+extractStructure slides =
+    extractStructureAux (List.reverse slides) [] Nothing
+
+
+extractStructureAux : List MaybeSlide -> List Api.Gos -> Maybe Api.Gos -> List Api.Gos
+extractStructureAux slides current currentGos =
+    case ( slides, currentGos ) of
+        ( [], Nothing ) ->
+            current
+
+        ( [], Just gos ) ->
+            gos :: current
+
+        ( h :: t, _ ) ->
+            let
+                newCurrent =
+                    case ( isGosId h, currentGos ) of
+                        ( True, Just gos ) ->
+                            gos :: current
+
+                        ( True, Nothing ) ->
+                            current
+
+                        ( False, _ ) ->
+                            current
+
+                newGos =
+                    case ( h, currentGos ) of
+                        ( JustSlide s, Nothing ) ->
+                            { record = Nothing, slides = [ s ] }
+
+                        ( JustSlide s, Just gos ) ->
+                            let
+                                newSlides =
+                                    s :: gos.slides
+                            in
+                            { gos | slides = newSlides }
+
+                        ( GosId _, _ ) ->
+                            { record = Nothing, slides = [] }
+            in
+            extractStructureAux t newCurrent (Just newGos)

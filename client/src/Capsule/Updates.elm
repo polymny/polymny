@@ -218,7 +218,7 @@ updateDnD slideMsg data =
                             capsule.slides
 
                 updatedStructure =
-                    Api.extractStructureFromSlides updatedSlides
+                    Capsule.extractStructure slides
 
                 details =
                     data.details
