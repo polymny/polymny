@@ -254,6 +254,7 @@ updateDnD slideMsg data =
                 ( gosModel, goss ) =
                     Capsule.gosSystem.update msg data.gosModel (Capsule.setupSlides data.details)
 
+                -- TODO fix goss update
                 -- updatedGoss =
                 --     List.indexedMap
                 --         (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
