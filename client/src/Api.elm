@@ -128,7 +128,6 @@ decodeAsset =
 
 type alias Slide =
     { id : Int
-    , gos : Int
     , asset : Asset
     , capsule_id : Int
     , prompt : String
@@ -137,9 +136,8 @@ type alias Slide =
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map5 Slide
+    Decode.map4 Slide
         (Decode.field "id" Decode.int)
-        (Decode.field "gos" Decode.int)
         (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
         (Decode.field "prompt" Decode.string)

@@ -243,11 +243,8 @@ updateDnD slideMsg data =
 
                 capsule =
                     data.details
-
-                newCapsule =
-                    { capsule | slides = updatedSlides }
             in
-            ( { data | details = newCapsule, slideModel = slideModel, slides = updatedSlidesView }
+            ( { data | details = updatedDetails, slideModel = slideModel, slides = updatedSlidesView }
             , Capsule.slideSystem.commands slideModel
             , shouldSync
             )
@@ -257,16 +254,16 @@ updateDnD slideMsg data =
                 ( gosModel, goss ) =
                     Capsule.gosSystem.update msg data.gosModel (Capsule.setupSlides data.details)
 
-                updatedGoss =
-                    List.indexedMap
-                        (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
-                        (List.map (\x -> List.filterMap Capsule.filterSlide x) goss)
-
-                capsule =
-                    data.details
-
+                -- updatedGoss =
+                --     List.indexedMap
+                --         (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
+                --         (List.map (\x -> List.filterMap Capsule.filterSlide x) goss)
+                -- capsule =
+                --     data.details
+                -- newCapsule =
+                --     { capsule | slides = List.concat updatedGoss }
                 newCapsule =
-                    { capsule | slides = List.concat updatedGoss }
+                    data.details
             in
             ( { data | details = newCapsule, gosModel = gosModel }, Capsule.gosSystem.commands gosModel, False )
 

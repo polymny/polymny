@@ -452,7 +452,6 @@ genrericDesignSlide1stColumnView eventLessAttributes slide =
                         " Ajouter des ressources"
                 ]
             , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-            , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
             ]
         ]
 
