@@ -211,8 +211,7 @@ updateDnD slideMsg data =
                 updatedSlides =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
-                            List.indexedMap (\i slide -> { slide | position_in_gos = i })
-                                (List.filterMap Capsule.filterSlide slides)
+                            List.filterMap Capsule.filterSlide slides
 
                         _ ->
                             capsule.slides

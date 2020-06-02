@@ -313,8 +313,8 @@ genericGosView options gosModel slideModel offset index gos =
 slideGhostView : DnDList.Groups.Model -> List Capsule.MaybeSlide -> Element Core.Msg
 slideGhostView slideModel slides =
     case maybeDragSlide slideModel slides of
-        Capsule.JustSlide s ->
-            genericDesignSlideView Ghost slideModel 0 0 (Capsule.JustSlide s)
+        Capsule.JustSlide s _ ->
+            genericDesignSlideView Ghost slideModel 0 0 (Capsule.JustSlide s -1)
 
         _ ->
             Element.none
@@ -342,8 +342,8 @@ maybeDragSlide slideModel slides =
                 |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
     in
     case x of
-        Just (Capsule.JustSlide n) ->
-            Capsule.JustSlide n
+        Just (Capsule.JustSlide n id) ->
+            Capsule.JustSlide n id
 
         _ ->
             Capsule.GosId -1
@@ -400,7 +400,7 @@ genericDesignSlideView options slideModel offset localIndex s =
         Capsule.GosId _ ->
             Element.none
 
-        Capsule.JustSlide slide ->
+        Capsule.JustSlide slide _ ->
             Element.el
                 (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
                 (Element.column
@@ -421,7 +421,7 @@ genericDesignSlideView options slideModel offset localIndex s =
                             , Element.centerX
                             , Font.color Colors.artEvening
                             ]
-                            (Element.text <| "Slide #" ++ String.fromInt slide.position)
+                            (Element.text <| "Slide #" ++ String.fromInt globalIndex)
                     , Element.row
                         [ Element.spacingXY 2 0 ]
                         [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
@@ -452,8 +452,6 @@ genrericDesignSlide1stColumnView eventLessAttributes slide =
                         " Ajouter des ressources"
                 ]
             , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
-            , Element.el [] (Element.text ("DEBUG: Slide position  = " ++ String.fromInt slide.position))
-            , Element.el [] (Element.text ("DEBUG: position in gos = " ++ String.fromInt slide.position_in_gos))
             , Element.el [] (Element.text ("DEBUG: gos = " ++ String.fromInt slide.gos))
             ]
         ]

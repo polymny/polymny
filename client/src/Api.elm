@@ -11,7 +11,6 @@ module Api exposing
     , capsuleUploadLogo
     , capsuleUploadSlideShow
     , capsulesFromProjectId
-    , compareSlides
     , createProject
     , decodeCapsule
     , decodeCapsuleDetails
@@ -20,14 +19,12 @@ module Api exposing
     , decodeSession
     , detailsSortSlides
     , encodeSlideStructure
-    , extractStructureFromSlides
     , logOut
     , login
     , newCapsule
     , newProject
     , setupConfig
     , signUp
-    , sortSlides
     , testDatabase
     , testMailer
     , updateSlide
@@ -131,8 +128,6 @@ decodeAsset =
 
 type alias Slide =
     { id : Int
-    , position : Int
-    , position_in_gos : Int
     , gos : Int
     , asset : Asset
     , capsule_id : Int
@@ -142,10 +137,8 @@ type alias Slide =
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map7 Slide
+    Decode.map5 Slide
         (Decode.field "id" Decode.int)
-        (Decode.field "position" Decode.int)
-        (Decode.field "position_in_gos" Decode.int)
         (Decode.field "gos" Decode.int)
         (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
@@ -248,11 +241,6 @@ decodeCapsuleDetails =
 detailsSortSlides : CapsuleDetails -> List (List Slide)
 detailsSortSlides details =
     List.map .slides details.structure
-
-
-extractStructureFromSlides : List Slide -> List Gos
-extractStructureFromSlides slides =
-    List.map (\x -> { slides = x, record = Nothing }) (sortSlides slides)
 
 
 
@@ -395,52 +383,6 @@ newCapsule resultToMsg projectId content =
 -- Capsule Details
 
 
-sortSlidesAux : List Slide -> Dict Int (List Slide) -> Dict Int (List Slide)
-sortSlidesAux input current =
-    case input of
-        [] ->
-            current
-
-        h :: t ->
-            case Dict.get h.gos current of
-                Nothing ->
-                    sortSlidesAux t (Dict.insert h.gos [ h ] current)
-
-                Just _ ->
-                    sortSlidesAux t (Dict.update h.gos (Maybe.map (\x -> h :: x)) current)
-
-
-sortSlides : List Slide -> List (List Slide)
-sortSlides input =
-    List.map Tuple.second
-        (List.sortBy Tuple.first
-            (List.map
-                (Tuple.mapSecond
-                    (List.sortBy (\x -> x.position_in_gos))
-                )
-                (Dict.toList (sortSlidesAux input Dict.empty))
-            )
-        )
-
-
-compareSlides : List Slide -> List Slide -> Bool
-compareSlides slides1 slides2 =
-    let
-        sl1 =
-            sortSlides slides1
-
-        sl2 =
-            sortSlides slides2
-
-        s1 =
-            List.map (List.map .id) sl1
-
-        s2 =
-            List.map (List.map .id) sl2
-    in
-    s1 == s2
-
-
 capsuleFromId : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
 capsuleFromId resultToMsg id =
     Http.get
@@ -505,11 +447,14 @@ updateSlide resultToMsg id content =
 encodeSlideStructure : CapsuleDetails -> Encode.Value
 encodeSlideStructure capsule =
     let
-        encodeList : List Slide -> Encode.Value
-        encodeList x =
-            Encode.object [ ( "slides", Encode.list (\y -> Encode.int y.id) x ) ]
+        encodeGos : Gos -> Encode.Value
+        encodeGos gos =
+            Encode.object
+                [ ( "record", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
+                ]
     in
-    Encode.list (\i -> i) (List.map encodeList (sortSlides capsule.slides))
+    Encode.list encodeGos capsule.structure
 
 
 updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg

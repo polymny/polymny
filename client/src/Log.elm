@@ -26,7 +26,7 @@ debugSlides message slides =
                             Capsule.GosId id ->
                                 "GosId " ++ String.fromInt id
 
-                            Capsule.JustSlide s ->
+                            Capsule.JustSlide s _ ->
                                 "JustSlide " ++ s.prompt
                     )
                     slides

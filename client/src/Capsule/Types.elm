@@ -41,7 +41,7 @@ type alias Model =
 
 
 type MaybeSlide
-    = JustSlide Api.Slide
+    = JustSlide Api.Slide Int
     | GosId Int
 
 
@@ -156,8 +156,8 @@ slideBeforeUpdate _ _ list =
 slideComparator : MaybeSlide -> MaybeSlide -> Bool
 slideComparator slide1 slide2 =
     case ( slide1, slide2 ) of
-        ( JustSlide s1, JustSlide s2 ) ->
-            s1.gos == s2.gos
+        ( JustSlide _ gos1, JustSlide _ gos2 ) ->
+            gos1 == gos2
 
         ( GosId a, GosId b ) ->
             a == b
@@ -169,14 +169,14 @@ slideComparator slide1 slide2 =
 slideSetter : MaybeSlide -> MaybeSlide -> MaybeSlide
 slideSetter slide1 slide2 =
     case ( slide1, slide2 ) of
-        ( JustSlide s1, JustSlide s2 ) ->
-            JustSlide { s2 | gos = s1.gos }
+        ( JustSlide _ gos1, JustSlide s2 _ ) ->
+            JustSlide s2 gos1
 
-        ( GosId id, JustSlide s2 ) ->
-            JustSlide { s2 | gos = id }
+        ( GosId id, JustSlide s2 _ ) ->
+            JustSlide s2 id
 
-        ( JustSlide s1, GosId id ) ->
-            JustSlide { s1 | gos = id }
+        ( JustSlide s1 _, GosId id ) ->
+            JustSlide s1 id
 
         ( GosId i1, GosId _ ) ->
             GosId i1
@@ -207,8 +207,8 @@ updateGosId id slide =
         GosId _ ->
             GosId id
 
-        JustSlide s ->
-            JustSlide { s | gos = id }
+        JustSlide s _ ->
+            JustSlide s id
 
 
 indexedLambda : Int -> List MaybeSlide -> List MaybeSlide
@@ -219,11 +219,11 @@ indexedLambda id slide =
 setupSlides : Api.CapsuleDetails -> List (List MaybeSlide)
 setupSlides capsule =
     let
-        slides =
-            Api.detailsSortSlides capsule
+        gos =
+            List.indexedMap (\id x -> ( id, x )) (Api.detailsSortSlides capsule)
 
         list =
-            List.intersperse [ GosId -1 ] (List.map (\x -> GosId -1 :: List.map JustSlide x) slides)
+            List.intersperse [ GosId -1 ] (List.map (\( id, x ) -> GosId -1 :: List.map (\y -> JustSlide y id) x) gos)
 
         extremities =
             [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)
@@ -241,8 +241,8 @@ regroupSlidesAux slides currentList total =
             else
                 currentList :: total
 
-        (JustSlide s) :: t ->
-            regroupSlidesAux t (JustSlide s :: currentList) total
+        (JustSlide s gos) :: t ->
+            regroupSlidesAux t (JustSlide s gos :: currentList) total
 
         (GosId id) :: t ->
             if currentList == [] then
@@ -260,7 +260,7 @@ regroupSlides slides =
 filterSlide : MaybeSlide -> Maybe Api.Slide
 filterSlide slide =
     case slide of
-        JustSlide s ->
+        JustSlide s _ ->
             Just s
 
         _ ->
@@ -270,7 +270,7 @@ filterSlide slide =
 isJustSlide : MaybeSlide -> Bool
 isJustSlide slide =
     case slide of
-        JustSlide _ ->
+        JustSlide _ _ ->
             True
 
         _ ->
@@ -321,10 +321,10 @@ extractStructureAux slides current currentGos =
 
                 newGos =
                     case ( h, currentGos ) of
-                        ( JustSlide s, Nothing ) ->
+                        ( JustSlide s _, Nothing ) ->
                             { record = Nothing, slides = [ s ] }
 
-                        ( JustSlide s, Just gos ) ->
+                        ( JustSlide s _, Just gos ) ->
                             let
                                 newSlides =
                                     s :: gos.slides
