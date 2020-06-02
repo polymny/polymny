@@ -214,14 +214,14 @@ updateDnD slideMsg data =
                             List.filterMap Capsule.filterSlide slides
 
                         _ ->
-                            capsule.slides
+                            data.details.slides
 
                 updatedStructure =
                     Capsule.extractStructure slides
 
                 shouldSync =
                     case ( pre, post, data.details.structure /= updatedStructure ) of
-                        ( Just _, Nothing, True ) ->
+                        ( Just _, Nothing, _ ) ->
                             True
 
                         _ ->
@@ -240,9 +240,6 @@ updateDnD slideMsg data =
 
                         _ ->
                             Capsule.regroupSlides slides
-
-                capsule =
-                    data.details
             in
             ( { data | details = updatedDetails, slideModel = slideModel, slides = updatedSlidesView }
             , Capsule.slideSystem.commands slideModel
@@ -251,22 +248,47 @@ updateDnD slideMsg data =
 
         Capsule.GosMoved msg ->
             let
+                pre =
+                    Capsule.gosSystem.info data.gosModel
+
                 ( gosModel, goss ) =
                     Capsule.gosSystem.update msg data.gosModel (Capsule.setupSlides data.details)
 
-                -- TODO fix goss update
-                -- updatedGoss =
-                --     List.indexedMap
-                --         (\i gos -> List.map (\slide -> { slide | gos = i }) gos)
-                --         (List.map (\x -> List.filterMap Capsule.filterSlide x) goss)
-                -- capsule =
-                --     data.details
-                -- newCapsule =
-                --     { capsule | slides = List.concat updatedGoss }
-                newCapsule =
+                post =
+                    Capsule.gosSystem.info gosModel
+
+                concat =
+                    List.concat goss
+
+                updatedStructure =
+                    Capsule.extractStructure concat
+
+                shouldSync =
+                    case ( pre, post, data.details.structure /= updatedStructure ) of
+                        ( Just _, Nothing, _ ) ->
+                            True
+
+                        _ ->
+                            False
+
+                updatedSlides =
+                    List.filterMap Capsule.filterSlide concat
+
+                details =
                     data.details
+
+                updatedDetails =
+                    { details | slides = updatedSlides, structure = updatedStructure }
+
+                updatedSlidesView =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            Capsule.setupSlides updatedDetails
+
+                        _ ->
+                            Capsule.regroupSlides concat
             in
-            ( { data | details = newCapsule, gosModel = gosModel }, Capsule.gosSystem.commands gosModel, False )
+            ( { data | details = updatedDetails, gosModel = gosModel, slides = updatedSlidesView }, Capsule.gosSystem.commands gosModel, shouldSync )
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg

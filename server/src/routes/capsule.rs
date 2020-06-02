@@ -274,6 +274,7 @@ pub fn upload_slides(
                     }
 
                     // TODO: return capsule details like get_capsule
+                    let capsule = user.get_capsule_by_id(id, &db)?;
                     return format_capsule_data(&db, &capsule);
                 }
             }
