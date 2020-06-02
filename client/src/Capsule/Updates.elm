@@ -61,7 +61,7 @@ update msg capsuleModel =
 
         ( Capsule.DnD slideMsg, model ) ->
             let
-                ( data, cmd ) =
+                ( data, cmd, shouldSync ) =
                     updateDnD slideMsg model
 
                 moveCmd =
@@ -71,11 +71,11 @@ update msg capsuleModel =
                     Api.updateSlideStructure resultToMsg data.details
 
                 cmds =
-                    if Api.compareSlides data.details.slides model.details.slides then
-                        moveCmd
+                    if shouldSync then
+                        Cmd.batch [ moveCmd, syncCmd ]
 
                     else
-                        Cmd.batch [ moveCmd, syncCmd ]
+                        moveCmd
             in
             ( data, cmds )
 
@@ -193,7 +193,7 @@ updateUploadLogo msg model capsuleId =
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
-updateDnD : Capsule.DnDMsg -> Capsule.Model -> ( Capsule.Model, Cmd Capsule.DnDMsg )
+updateDnD : Capsule.DnDMsg -> Capsule.Model -> ( Capsule.Model, Cmd Capsule.DnDMsg, Bool )
 updateDnD slideMsg data =
     case slideMsg of
         Capsule.SlideMoved msg ->
@@ -220,6 +220,14 @@ updateDnD slideMsg data =
                 updatedStructure =
                     Capsule.extractStructure slides
 
+                shouldSync =
+                    case ( pre, post, data.details.structure /= updatedStructure ) of
+                        ( Just _, Nothing, True ) ->
+                            True
+
+                        _ ->
+                            False
+
                 details =
                     data.details
 
@@ -242,6 +250,7 @@ updateDnD slideMsg data =
             in
             ( { data | details = newCapsule, slideModel = slideModel, slides = updatedSlidesView }
             , Capsule.slideSystem.commands slideModel
+            , shouldSync
             )
 
         Capsule.GosMoved msg ->
@@ -260,7 +269,7 @@ updateDnD slideMsg data =
                 newCapsule =
                     { capsule | slides = List.concat updatedGoss }
             in
-            ( { data | details = newCapsule, gosModel = gosModel }, Capsule.gosSystem.commands gosModel )
+            ( { data | details = newCapsule, gosModel = gosModel }, Capsule.gosSystem.commands gosModel, False )
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg

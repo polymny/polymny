@@ -294,7 +294,7 @@ isJustGosId slides =
 
 extractStructure : List MaybeSlide -> List Api.Gos
 extractStructure slides =
-    extractStructureAux (List.reverse slides) [] Nothing
+    List.filter (\x -> x.slides /= []) (extractStructureAux (List.reverse slides) [] Nothing)
 
 
 extractStructureAux : List MaybeSlide -> List Api.Gos -> Maybe Api.Gos -> List Api.Gos
