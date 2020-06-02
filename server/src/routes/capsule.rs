@@ -1,5 +1,5 @@
 //! This module contains all the routes related to capsules.
-use std::fs::{self, create_dir};
+use std::fs::{self, create_dir, File};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -297,9 +297,9 @@ fn upload_file(
     data: Data,
 ) -> Result<Asset> {
     let mut options = MultipartFormDataOptions::new();
-    options
-        .allowed_fields
-        .push(MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024));
+    options.allowed_fields.push(
+        MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
+    );
     let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
     //TODO: handle errors from multipart form dat ?
     // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
@@ -408,5 +408,50 @@ pub fn gos_order(
         .execute(&db.0)?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
+    format_capsule_data(&db, &capsule)
+}
+
+/// Route to upload a record.
+#[post("/capsule/<capsule_id>/<gos>/upload_record", data = "<data>")]
+pub fn upload_record(
+    db: Database,
+    user: User,
+    capsule_id: i32,
+    gos: usize,
+    data: Data,
+) -> Result<JsonValue> {
+    let mut capsule = user.get_capsule_by_id(capsule_id, &db)?;
+
+    let file_name = &format!("record-{}.webm", gos);
+
+    let mut server_path = PathBuf::from(&user.username);
+    let uuid = Uuid::new_v4();
+    server_path.push(format!("{}_{}", uuid, file_name));
+    let asset = Asset::new(
+        &db,
+        uuid,
+        file_name,
+        &format!("/{}", server_path.to_str().unwrap()),
+    )?;
+    AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
+
+    let mut output_path = PathBuf::from("dist");
+    output_path.push(server_path);
+
+    println!("output_path {:#?}", output_path);
+    create_dir(output_path.parent().unwrap()).ok();
+    // fs::copy(path, &output_path)?;
+    data.stream_to(&mut File::create(output_path)?)?;
+
+    *capsule.structure.as_array_mut().unwrap()[gos]
+        .get_mut("record_path")
+        .unwrap() = serde_json!(asset.asset_path);
+
+    use crate::schema::capsules::dsl::{id as cid, structure};
+    diesel::update(capsules::table)
+        .filter(cid.eq(capsule_id))
+        .set(structure.eq(serde_json!(capsule.structure)))
+        .execute(&db.0)?;
+
     format_capsule_data(&db, &capsule)
 }

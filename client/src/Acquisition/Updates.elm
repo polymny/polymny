@@ -11,15 +11,16 @@ update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( Api.Session, A
 update session msg model =
     case msg of
         -- INNER MESSAGES
+        -- TODO Fix acquisition button
+        -- let
+        --     ( newModel, cmd ) =
+        --         Acquisition.init
+        --     coreCmd =
+        --         Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+        -- in
+        -- ( session, newModel, coreCmd )
         Acquisition.AcquisitionClicked ->
-            let
-                ( newModel, cmd ) =
-                    Acquisition.init
-
-                coreCmd =
-                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-            in
-            ( session, newModel, coreCmd )
+            ( session, model, Cmd.none )
 
         Acquisition.StartRecording ->
             let
@@ -44,6 +45,9 @@ update session msg model =
 
             else
                 ( session, { model | currentStream = n }, Ports.goToStream ( elementId, n ) )
+
+        Acquisition.UploadStream url stream ->
+            ( session, model, Ports.uploadStream ( url, stream ) )
 
 
 elementId : String

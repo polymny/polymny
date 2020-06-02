@@ -40,7 +40,7 @@ pub struct Capsule {
     ///
     /// This json should be of the form
     /// [ {
-    ///     path: Option<String>,
+    ///     record_path: Option<String>,
     ///     slides: Vec<i32>,
     /// } ]
     pub structure: Json,

@@ -6,6 +6,7 @@ port module Acquisition.Ports exposing
     , recordingsNumber
     , startRecording
     , stopRecording
+    , uploadStream
     )
 
 
@@ -22,6 +23,9 @@ port stopRecording : () -> Cmd msg
 
 
 port goToStream : ( String, Int ) -> Cmd msg
+
+
+port uploadStream : ( String, Int ) -> Cmd msg
 
 
 port recordingsNumber : (Int -> msg) -> Sub msg

@@ -76,6 +76,15 @@ function setupPorts(app) {
         }
     }
 
+    function uploadStream(url, n) {
+        let streamToUpload = blobs[n-1];
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "video/webm");
+        xhr.send(streamToUpload);
+    }
+
     function exit() {
         stream.getTracks().forEach(function(track) {
             track.stop();
@@ -112,6 +121,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.goToStream, function(attr) {
         goToStream(attr[0], attr[1]);
+    });
+
+    subscribe(app.ports.uploadStream, function(attr) {
+        uploadStream(attr[0], attr[1]);
     });
 
     subscribe(app.ports.exit, function() {

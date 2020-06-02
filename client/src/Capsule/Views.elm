@@ -94,7 +94,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                         (Element.text "Slide timeline")
                     , Element.row (Background.color Colors.white :: Attributes.designAttributes)
                         (List.map
-                            (\( i, slide ) -> capsuleGosView gosModel slideModel (calculateOffset i) i slide)
+                            (\( i, slide ) -> capsuleGosView details.capsule gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     ]
@@ -179,25 +179,25 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
-capsuleGosView gosModel slideModel offset gosIndex gos =
+capsuleGosView : Api.Capsule -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
+capsuleGosView capsule gosModel slideModel offset gosIndex gos =
     case Capsule.gosSystem.info gosModel of
         Just { dragIndex } ->
             if dragIndex /= gosIndex then
-                genericGosView Drop gosModel slideModel offset gosIndex gos
+                genericGosView capsule Drop gosModel slideModel offset gosIndex gos
 
             else
-                genericGosView EventLess gosModel slideModel offset gosIndex gos
+                genericGosView capsule EventLess gosModel slideModel offset gosIndex gos
 
         _ ->
-            genericGosView Drag gosModel slideModel offset gosIndex gos
+            genericGosView capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : DnDList.Model -> DnDList.Groups.Model -> List Capsule.MaybeSlide -> Element Core.Msg
-gosGhostView gosModel slideModel slides =
+gosGhostView : Api.Capsule -> DnDList.Model -> DnDList.Groups.Model -> List Capsule.MaybeSlide -> Element Core.Msg
+gosGhostView capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
-            genericGosView Ghost gosModel slideModel 0 0 s
+            genericGosView capsule Ghost gosModel slideModel 0 0 s
 
         _ ->
             Element.none
@@ -213,8 +213,8 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
-genericGosView options gosModel slideModel offset index gos =
+genericGosView : Api.Capsule -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
+genericGosView capsule options gosModel slideModel offset index gos =
     let
         gosId : String
         gosId =
@@ -296,7 +296,16 @@ genericGosView options gosModel slideModel offset index gos =
                     ++ Attributes.designGosAttributes
                 )
                 [ Element.row (Element.width Element.fill :: eventLessAttributes)
-                    [ Element.el [ Element.alignLeft ] (Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record (List.filterMap Capsule.filterSlide gos)))) "")
+                    [ Element.el [ Element.alignLeft ]
+                        (Ui.cameraButton
+                            (Just
+                                (Core.LoggedInMsg
+                                    -- TODO computing the gosid this way is ugly af
+                                    (LoggedIn.Record capsule ((index + 1) // 2) (List.filterMap Capsule.filterSlide gos))
+                                )
+                            )
+                            ""
+                        )
                     , Element.el
                         (Attributes.designGosTitleAttributes ++ dragAttributes)
                         (Element.text (String.fromInt index))

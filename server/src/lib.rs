@@ -311,6 +311,7 @@ pub fn main() {
                 routes::capsule::upload_background,
                 routes::capsule::upload_logo,
                 routes::capsule::gos_order,
+                routes::capsule::upload_record,
                 routes::asset::get_asset,
                 routes::asset::all_assets,
                 routes::asset::delete_asset,

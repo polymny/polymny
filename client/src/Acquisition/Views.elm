@@ -35,22 +35,24 @@ view _ _ model =
 
 mainView : Acquisition.Model -> Element Core.Msg
 mainView model =
-    Element.column [ Element.spacing 10 ]
+    Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ topView model
         , recordingButton model.recording
         , recordingsView model.recordingsNumber model.currentStream
+        , uploadView model.capsule.id model.gos model.currentStream
         ]
 
 
 topView : Acquisition.Model -> Element Core.Msg
 topView model =
-    Element.row []
+    Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
         [ videoView (model.currentStream /= 0)
         , case model.slides of
             Just (h :: _) ->
                 Element.image
                     [ Element.width (Element.px 640)
                     , Element.height (Element.px 480)
+                    , Element.centerX
                     ]
                     { src = h.asset.asset_path, description = "Slide" }
 
@@ -61,7 +63,7 @@ topView model =
 
 videoView : Bool -> Element Core.Msg
 videoView controls =
-    Element.html (Html.video [ Html.Attributes.id elementId, Html.Attributes.controls controls ] [])
+    Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId, Html.Attributes.controls controls ] []))
 
 
 recordingButton : Bool -> Element Core.Msg
@@ -105,8 +107,24 @@ recordingsView n current =
         ]
 
 
+uploadView : Int -> Int -> Int -> Element Core.Msg
+uploadView capsuleId gosId stream =
+    if stream == 0 then
+        Element.none
+
+    else
+        Ui.primaryButton (Just (Acquisition.UploadStream (url capsuleId gosId) stream)) "Valider"
+            |> Element.map LoggedIn.AcquisitionMsg
+            |> Element.map Core.LoggedInMsg
+
+
 
 -- CONSTANTS
+
+
+url : Int -> Int -> String
+url capsuleId gosId =
+    "/api/capsule/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt gosId ++ "/upload_record"
 
 
 elementId : String

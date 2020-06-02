@@ -25,10 +25,10 @@ update msg { session, tab } =
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 
-        ( LoggedIn.Record slides, _ ) ->
+        ( LoggedIn.Record capsule gos slides, _ ) ->
             let
                 ( t, cmd ) =
-                    Acquisition.withSlides slides
+                    Acquisition.withSlides capsule gos slides
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
@@ -44,17 +44,19 @@ update msg { session, tab } =
             in
             ( LoggedIn.Model newSession (LoggedIn.Acquisition newModel), cmd )
 
+        -- TODO Fix acquisition button
+        -- ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
+        --     let
+        --         ( model, cmd ) =
+        --             Acquisition.init
+        --         coreCmd =
+        --             Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+        --     in
+        --     ( { session = session, tab = LoggedIn.Acquisition model }
+        --     , coreCmd
+        --     )
         ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-            let
-                ( model, cmd ) =
-                    Acquisition.init
-
-                coreCmd =
-                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-            in
-            ( { session = session, tab = LoggedIn.Acquisition model }
-            , coreCmd
-            )
+            ( LoggedIn.Model session tab, Cmd.none )
 
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
