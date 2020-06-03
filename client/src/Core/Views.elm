@@ -41,8 +41,12 @@ subscriptions { model } =
                             Sub.none
 
                 LoggedIn.Acquisition _ ->
-                    Acquisition.Ports.recordingsNumber
-                        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.RecordingsNumber x)))
+                    Sub.batch
+                        [ Acquisition.Ports.recordingsNumber Acquisition.RecordingsNumber
+                        , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
+                        ]
+                        |> Sub.map LoggedIn.AcquisitionMsg
+                        |> Sub.map Core.LoggedInMsg
 
                 _ ->
                     Sub.none

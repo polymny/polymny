@@ -82,6 +82,11 @@ function setupPorts(app) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-Type", "video/webm");
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                app.ports.streamUploaded.send(JSON.parse(xhr.responseText));
+            }
+        }
         xhr.send(streamToUpload);
     }
 

@@ -38,11 +38,7 @@ update msg { session, tab } =
             )
 
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
-            let
-                ( newSession, newModel, cmd ) =
-                    Acquisition.update session acquisitionMsg model
-            in
-            ( LoggedIn.Model newSession (LoggedIn.Acquisition newModel), cmd )
+            Acquisition.update session acquisitionMsg model
 
         -- TODO Fix acquisition button
         -- ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->

@@ -3,12 +3,21 @@ module Acquisition.Updates exposing (update)
 import Acquisition.Ports as Ports
 import Acquisition.Types as Acquisition
 import Api
+import Capsule.Types as Capsule
 import Core.Types as Core
+import Json.Decode
+import Log
 import LoggedIn.Types as LoggedIn
+import Preparation.Types as Preparation
 
 
-update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( Api.Session, Acquisition.Model, Cmd Core.Msg )
+update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
 update session msg model =
+    let
+        makeModel : Acquisition.Model -> LoggedIn.Model
+        makeModel m =
+            { session = session, tab = LoggedIn.Acquisition m }
+    in
     case msg of
         -- INNER MESSAGES
         -- TODO Fix acquisition button
@@ -20,7 +29,7 @@ update session msg model =
         -- in
         -- ( session, newModel, coreCmd )
         Acquisition.AcquisitionClicked ->
-            ( session, model, Cmd.none )
+            ( makeModel model, Cmd.none )
 
         Acquisition.StartRecording ->
             let
@@ -31,23 +40,39 @@ update session msg model =
                     else
                         Cmd.batch [ Ports.goToStream ( elementId, 0 ), Ports.startRecording () ]
             in
-            ( session, { model | recording = True, currentStream = 0 }, cmd )
+            ( makeModel { model | recording = True, currentStream = 0 }, cmd )
 
         Acquisition.StopRecording ->
-            ( session, { model | recording = False }, Ports.stopRecording () )
+            ( makeModel { model | recording = False }, Ports.stopRecording () )
 
         Acquisition.RecordingsNumber n ->
-            ( session, { model | recordingsNumber = n }, Cmd.none )
+            ( makeModel { model | recordingsNumber = n }, Cmd.none )
 
         Acquisition.GoToStream n ->
             if model.currentStream == n then
-                ( session, model, Cmd.none )
+                ( makeModel model, Cmd.none )
 
             else
-                ( session, { model | currentStream = n }, Ports.goToStream ( elementId, n ) )
+                ( makeModel { model | currentStream = n }, Ports.goToStream ( elementId, n ) )
 
         Acquisition.UploadStream url stream ->
-            ( session, model, Ports.uploadStream ( url, stream ) )
+            ( makeModel model, Ports.uploadStream ( url, stream ) )
+
+        Acquisition.StreamUploaded value ->
+            let
+                newModel =
+                    case Json.Decode.decodeValue Api.decodeCapsuleDetails value of
+                        Ok v ->
+                            { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
+
+                        Err e ->
+                            let
+                                _ =
+                                    Log.debug "Error decoding capsule details" e
+                            in
+                            makeModel model
+            in
+            ( newModel, Cmd.none )
 
 
 elementId : String

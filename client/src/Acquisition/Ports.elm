@@ -6,8 +6,11 @@ port module Acquisition.Ports exposing
     , recordingsNumber
     , startRecording
     , stopRecording
+    , streamUploaded
     , uploadStream
     )
+
+import Json.Encode
 
 
 port init : String -> Cmd msg
@@ -29,6 +32,9 @@ port uploadStream : ( String, Int ) -> Cmd msg
 
 
 port recordingsNumber : (Int -> msg) -> Sub msg
+
+
+port streamUploaded : (Json.Encode.Value -> msg) -> Sub msg
 
 
 port exit : () -> Cmd msg

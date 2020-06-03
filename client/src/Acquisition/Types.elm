@@ -2,6 +2,7 @@ module Acquisition.Types exposing (Model, Msg(..), init, withSlides)
 
 import Acquisition.Ports as Ports
 import Api
+import Json.Encode
 
 
 type alias Model =
@@ -47,3 +48,4 @@ type Msg
     | GoToStream Int
     | RecordingsNumber Int
     | UploadStream String Int
+    | StreamUploaded Json.Encode.Value
