@@ -4,6 +4,7 @@ module Ui.Icons exposing
     , cancel
     , clear
     , edit
+    , movie
     , trash
     )
 
@@ -54,3 +55,8 @@ cancel =
 camera : Element msg
 camera =
     buttonFromIcon FontAwesome.video
+
+
+movie : Element msg
+movie =
+    buttonFromIcon FontAwesome.film

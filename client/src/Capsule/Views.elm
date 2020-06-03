@@ -287,11 +287,15 @@ genericGosView capsule options gosModel slideModel offset index gos =
                 )
                 ""
 
+        movieButton : Element Core.Msg
+        movieButton =
+            Ui.movieButton Nothing ""
+
         leftButtons : List (Element Core.Msg)
         leftButtons =
             case Maybe.map .record (List.head (List.drop gosIndex capsule.structure)) of
                 Just (Just _) ->
-                    [ cameraButton, cameraButton ]
+                    [ movieButton, cameraButton ]
 
                 _ ->
                     [ cameraButton ]

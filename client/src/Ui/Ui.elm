@@ -7,6 +7,7 @@ module Ui.Ui exposing
     , errorModal
     , linkButton
     , menuTabAttributes
+    , movieButton
     , onEnter
     , primaryButton
     , primaryButtonDisabled
@@ -180,6 +181,11 @@ cancelButton onPress content =
 cameraButton : Maybe msg -> String -> Element msg
 cameraButton onPress content =
     iconButton Icons.camera onPress content
+
+
+movieButton : Maybe msg -> String -> Element msg
+movieButton onPress content =
+    iconButton Icons.movie onPress content
 
 
 primaryButtonDisabled : String -> Element msg
