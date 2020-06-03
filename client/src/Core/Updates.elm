@@ -30,7 +30,7 @@ update msg { global, model } =
                         (Core.LoggedIn
                             { session = session
                             , tab =
-                                LoggedIn.Preparation Preparation.Home
+                                LoggedIn.Preparation (Preparation.Home Preparation.initUploadForm)
                             }
                         )
                     , Cmd.none

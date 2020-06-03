@@ -18,7 +18,7 @@ view global session tab =
         mainTab =
             case tab of
                 LoggedIn.Home ->
-                    Preparation.view global session Preparation.Home
+                    Preparation.view global session (Preparation.Home Preparation.initUploadForm)
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
@@ -27,10 +27,10 @@ view global session tab =
                     Acquisition.view global session acquisitionModel
 
                 LoggedIn.Edition ->
-                    Preparation.view global session Preparation.Home
+                    Preparation.view global session (Preparation.Home Preparation.initUploadForm)
 
                 LoggedIn.Publication ->
-                    Preparation.view global session Preparation.Home
+                    Preparation.view global session (Preparation.Home Preparation.initUploadForm)
 
         element =
             Element.column

@@ -33,7 +33,7 @@ update msg { session, tab } =
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
         ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.Home Preparation.initUploadForm) }
             , Cmd.none
             )
 
