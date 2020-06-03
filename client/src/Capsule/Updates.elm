@@ -305,11 +305,16 @@ fixStructure : List Api.Gos -> List Api.Gos -> List Api.Gos
 fixStructure old new =
     let
         dict =
-            Dict.fromList (List.map (\x -> ( List.map .id x.slides, x.record )) old)
+            Dict.fromList (List.map (\x -> ( List.map .id x.slides, x )) old)
 
         fix : Api.Gos -> Api.Gos
         fix gos =
-            { gos | record = Maybe.withDefault Nothing (Dict.get (List.map .id gos.slides) dict) }
+            case Dict.get (List.map .id gos.slides) dict of
+                Nothing ->
+                    gos
+
+                Just x ->
+                    x
 
         ret =
             List.map fix new
