@@ -259,6 +259,7 @@ pub fn upload_slides(
                         capsule_structure.push(GosStructure {
                             record_path: None,
                             slides: vec![slide.id],
+                            locked: false,
                         });
                     }
 
@@ -391,6 +392,9 @@ pub struct GosStructure {
 
     /// The path to the record if any.
     pub record_path: Option<String>,
+
+    /// Whether the gos is locked or not.
+    pub locked: bool,
 }
 
 /// order capsule gos and slide

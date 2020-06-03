@@ -3,12 +3,14 @@ module Ui.Ui exposing
     , cameraButton
     , cancelButton
     , clearButton
+    , closeLockButton
     , editButton
     , errorModal
     , linkButton
     , menuTabAttributes
     , movieButton
     , onEnter
+    , openLockButton
     , primaryButton
     , primaryButtonDisabled
     , simpleButton
@@ -186,6 +188,16 @@ cameraButton onPress content =
 movieButton : Maybe msg -> String -> Element msg
 movieButton onPress content =
     iconButton Icons.movie onPress content
+
+
+openLockButton : Maybe msg -> String -> Element msg
+openLockButton onPress content =
+    iconButton Icons.openLock onPress content
+
+
+closeLockButton : Maybe msg -> String -> Element msg
+closeLockButton onPress content =
+    iconButton Icons.closeLock onPress content
 
 
 primaryButtonDisabled : String -> Element msg

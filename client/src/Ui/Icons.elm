@@ -3,8 +3,10 @@ module Ui.Icons exposing
     , camera
     , cancel
     , clear
+    , closeLock
     , edit
     , movie
+    , openLock
     , trash
     )
 
@@ -60,3 +62,13 @@ camera =
 movie : Element msg
 movie =
     buttonFromIcon FontAwesome.film
+
+
+openLock : Element msg
+openLock =
+    buttonFromIcon FontAwesome.lockOpen
+
+
+closeLock : Element msg
+closeLock =
+    buttonFromIcon FontAwesome.lock

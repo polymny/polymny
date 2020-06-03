@@ -39,10 +39,13 @@ pub struct Capsule {
     /// The structure of the capsule.
     ///
     /// This json should be of the form
+    /// ```
     /// [ {
     ///     record_path: Option<String>,
     ///     slides: Vec<i32>,
+    ///     locked: bool,
     /// } ]
+    /// ```
     pub structure: Json,
 }
 

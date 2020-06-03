@@ -86,6 +86,7 @@ initEditPrompt =
 
 type Msg
     = DnD DnDMsg
+    | SwitchLock Int
     | EditPromptMsg EditPromptMsg
     | UploadSlideShowMsg UploadSlideShowMsg
     | UploadBackgroundMsg UploadBackgroundMsg
@@ -322,7 +323,7 @@ extractStructureAux slides current currentGos =
                 newGos =
                     case ( h, currentGos ) of
                         ( JustSlide s _, Nothing ) ->
-                            { record = Nothing, slides = [ s ] }
+                            { record = Nothing, slides = [ s ], locked = False }
 
                         ( JustSlide s _, Just gos ) ->
                             let
@@ -332,6 +333,6 @@ extractStructureAux slides current currentGos =
                             { gos | slides = newSlides }
 
                         ( GosId _, _ ) ->
-                            { record = Nothing, slides = [] }
+                            { record = Nothing, slides = [], locked = False }
             in
             extractStructureAux t newCurrent (Just newGos)

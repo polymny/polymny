@@ -80,6 +80,36 @@ update msg capsuleModel =
             in
             ( data, cmds )
 
+        ( Capsule.SwitchLock i, _ ) ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop i capsuleModel.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map (\x -> { x | locked = not x.locked }) gosStructure
+
+                newStructure : List Api.Gos
+                newStructure =
+                    case gosUpdatedStructure of
+                        Just new ->
+                            List.take i capsuleModel.details.structure
+                                ++ (new :: List.drop (i + 1) capsuleModel.details.structure)
+
+                        _ ->
+                            capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Cmd.none )
+
 
 updateEditPromptMsg : Capsule.EditPromptMsg -> Capsule.EditPrompt -> ( Capsule.EditPrompt, Cmd Core.Msg )
 updateEditPromptMsg msg content =

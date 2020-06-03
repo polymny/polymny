@@ -173,6 +173,7 @@ type DragOptions
     | Drop
     | Ghost
     | EventLess
+    | Locked
 
 
 
@@ -275,7 +276,11 @@ genericGosView capsule options gosModel slideModel offset index gos =
 
         slides : List (Element Core.Msg)
         slides =
-            List.indexedMap (designSlideView slideModel offset) gos
+            List.indexedMap (designSlideView (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
+
+        structure : Maybe Api.Gos
+        structure =
+            List.head (List.drop gosIndex capsule.structure)
 
         cameraButton : Element Core.Msg
         cameraButton =
@@ -291,9 +296,21 @@ genericGosView capsule options gosModel slideModel offset index gos =
         movieButton =
             Ui.movieButton Nothing ""
 
+        lockButton : Element Core.Msg
+        lockButton =
+            (if Maybe.withDefault False (Maybe.map .locked structure) then
+                Ui.closeLockButton (Just (Capsule.SwitchLock gosIndex)) ""
+
+             else
+                Ui.openLockButton (Just (Capsule.SwitchLock gosIndex)) ""
+            )
+                |> Element.map Preparation.CapsuleMsg
+                |> Element.map LoggedIn.PreparationMsg
+                |> Element.map Core.LoggedInMsg
+
         leftButtons : List (Element Core.Msg)
         leftButtons =
-            case Maybe.map .record (List.head (List.drop gosIndex capsule.structure)) of
+            case Maybe.map .record structure of
                 Just (Just _) ->
                     [ movieButton, cameraButton ]
 
@@ -328,7 +345,7 @@ genericGosView capsule options gosModel slideModel offset index gos =
                     , Element.el
                         (Attributes.designGosTitleAttributes ++ dragAttributes)
                         (Element.text (String.fromInt index))
-                    , Element.row [ Element.alignRight ] [ Ui.trashButton Nothing "" ]
+                    , Element.row [ Element.alignRight, Element.spacing 10 ] [ lockButton, Ui.trashButton Nothing "" ]
                     ]
                 , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
                 ]
@@ -348,18 +365,25 @@ slideGhostView slideModel slides =
             Element.none
 
 
-designSlideView : DnDList.Groups.Model -> Int -> Int -> Capsule.MaybeSlide -> Element Core.Msg
-designSlideView slideModel offset localIndex slide =
-    case ( Capsule.slideSystem.info slideModel, maybeDragSlide slideModel ) of
-        ( Just { dragIndex }, _ ) ->
-            if offset + localIndex == dragIndex then
-                genericDesignSlideView EventLess slideModel offset localIndex slide
+designSlideView : Bool -> DnDList.Groups.Model -> Int -> Int -> Capsule.MaybeSlide -> Element Core.Msg
+designSlideView enabled slideModel offset localIndex slide =
+    let
+        t =
+            case ( enabled, Capsule.slideSystem.info slideModel, maybeDragSlide slideModel ) of
+                ( False, _, _ ) ->
+                    Locked
 
-            else
-                genericDesignSlideView Drop slideModel offset localIndex slide
+                ( _, Just { dragIndex }, _ ) ->
+                    if offset + localIndex == dragIndex then
+                        EventLess
 
-        _ ->
-            genericDesignSlideView Drag slideModel offset localIndex slide
+                    else
+                        Drop
+
+                _ ->
+                    Drag
+    in
+    genericDesignSlideView t slideModel offset localIndex slide
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Capsule.MaybeSlide -> Capsule.MaybeSlide
