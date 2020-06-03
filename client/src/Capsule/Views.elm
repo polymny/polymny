@@ -94,7 +94,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                         (Element.text "Slide timeline")
                     , Element.row (Background.color Colors.white :: Attributes.designAttributes)
                         (List.map
-                            (\( i, slide ) -> capsuleGosView details.capsule gosModel slideModel (calculateOffset i) i slide)
+                            (\( i, slide ) -> capsuleGosView details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     ]
@@ -179,7 +179,7 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Api.Capsule -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
+capsuleGosView : Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
 capsuleGosView capsule gosModel slideModel offset gosIndex gos =
     case Capsule.gosSystem.info gosModel of
         Just { dragIndex } ->
@@ -193,7 +193,7 @@ capsuleGosView capsule gosModel slideModel offset gosIndex gos =
             genericGosView capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : Api.Capsule -> DnDList.Model -> DnDList.Groups.Model -> List Capsule.MaybeSlide -> Element Core.Msg
+gosGhostView : Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Capsule.MaybeSlide -> Element Core.Msg
 gosGhostView capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
@@ -213,7 +213,7 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : Api.Capsule -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
+genericGosView : Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Capsule.MaybeSlide -> Element Core.Msg
 genericGosView capsule options gosModel slideModel offset index gos =
     let
         gosId : String
@@ -223,6 +223,11 @@ genericGosView capsule options gosModel slideModel offset index gos =
 
             else
                 "gos-" ++ String.fromInt index
+
+        -- TODO computing the gosid this way is ugly af
+        gosIndex : Int
+        gosIndex =
+            (index - 1) // 2
 
         dragAttributes : List (Element.Attribute Core.Msg)
         dragAttributes =
@@ -271,6 +276,25 @@ genericGosView capsule options gosModel slideModel offset index gos =
         slides : List (Element Core.Msg)
         slides =
             List.indexedMap (designSlideView slideModel offset) gos
+
+        cameraButton : Element Core.Msg
+        cameraButton =
+            Ui.cameraButton
+                (Just
+                    (Core.LoggedInMsg
+                        (LoggedIn.Record capsule gosIndex (List.filterMap Capsule.filterSlide gos))
+                    )
+                )
+                ""
+
+        leftButtons : List (Element Core.Msg)
+        leftButtons =
+            case Maybe.map .record (List.head (List.drop gosIndex capsule.structure)) of
+                Just (Just _) ->
+                    [ cameraButton, cameraButton ]
+
+                _ ->
+                    [ cameraButton ]
     in
     case gos of
         [ Capsule.GosId _ ] ->
@@ -296,16 +320,7 @@ genericGosView capsule options gosModel slideModel offset index gos =
                     ++ Attributes.designGosAttributes
                 )
                 [ Element.row (Element.width Element.fill :: eventLessAttributes)
-                    [ Element.el [ Element.alignLeft ]
-                        (Ui.cameraButton
-                            (Just
-                                (Core.LoggedInMsg
-                                    -- TODO computing the gosid this way is ugly af
-                                    (LoggedIn.Record capsule ((index + 1) // 2) (List.filterMap Capsule.filterSlide gos))
-                                )
-                            )
-                            ""
-                        )
+                    [ Element.row [ Element.alignLeft, Element.spacing 10 ] leftButtons
                     , Element.el
                         (Attributes.designGosTitleAttributes ++ dragAttributes)
                         (Element.text (String.fromInt index))

@@ -80,7 +80,7 @@ viewContent { global, model } =
                         LoggedIn.Preparation preparationModel ->
                             case preparationModel of
                                 Preparation.Capsule { slides, slideModel, gosModel, details } ->
-                                    [ Element.inFront (Capsule.gosGhostView details.capsule gosModel slideModel (List.concat slides))
+                                    [ Element.inFront (Capsule.gosGhostView details gosModel slideModel (List.concat slides))
                                     , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
                                     ]
 

@@ -9,31 +9,31 @@ type alias Model =
     , recording : Bool
     , currentStream : Int
     , slides : Maybe (List Api.Slide)
-    , capsule : Api.Capsule
+    , details : Api.CapsuleDetails
     , gos : Int
     }
 
 
-init : Api.Capsule -> Int -> ( Model, Cmd Msg )
-init capsule gos =
+init : Api.CapsuleDetails -> Int -> ( Model, Cmd Msg )
+init details gos =
     ( { recordingsNumber = 0
       , recording = False
       , currentStream = 0
       , slides = Nothing
-      , capsule = capsule
+      , details = details
       , gos = gos
       }
     , Ports.init "video"
     )
 
 
-withSlides : Api.Capsule -> Int -> List Api.Slide -> ( Model, Cmd Msg )
-withSlides capsule gos slides =
+withSlides : Api.CapsuleDetails -> Int -> List Api.Slide -> ( Model, Cmd Msg )
+withSlides details gos slides =
     ( { recordingsNumber = 0
       , recording = False
       , currentStream = 0
       , slides = Just slides
-      , capsule = capsule
+      , details = details
       , gos = gos
       }
     , Ports.init "video"

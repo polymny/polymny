@@ -448,7 +448,7 @@ encodeSlideStructure capsule =
         encodeGos : Gos -> Encode.Value
         encodeGos gos =
             Encode.object
-                [ ( "record", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
                 , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
                 ]
     in

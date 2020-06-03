@@ -39,7 +39,7 @@ mainView model =
         [ topView model
         , recordingButton model.recording
         , recordingsView model.recordingsNumber model.currentStream
-        , uploadView model.capsule.id model.gos model.currentStream
+        , uploadView model.details.capsule.id model.gos model.currentStream
         ]
 
 

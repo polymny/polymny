@@ -3,6 +3,7 @@ module Capsule.Updates exposing (update)
 import Api
 import Capsule.Types as Capsule
 import Core.Types as Core
+import Dict
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
@@ -207,7 +208,6 @@ updateDnD slideMsg data =
                 post =
                     Capsule.slideSystem.info slideModel
 
-                updatedSlides : List Api.Slide
                 updatedSlides =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
@@ -217,7 +217,12 @@ updateDnD slideMsg data =
                             data.details.slides
 
                 updatedStructure =
-                    Capsule.extractStructure slides
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            fixStructure data.details.structure (Capsule.extractStructure slides)
+
+                        _ ->
+                            data.details.structure
 
                 shouldSync =
                     case ( pre, post, data.details.structure /= updatedStructure ) of
@@ -260,8 +265,16 @@ updateDnD slideMsg data =
                 concat =
                     List.concat goss
 
+                updatedSlides =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            List.filterMap Capsule.filterSlide concat
+
+                        _ ->
+                            data.details.slides
+
                 updatedStructure =
-                    Capsule.extractStructure concat
+                    fixStructure data.details.structure (Capsule.extractStructure concat)
 
                 shouldSync =
                     case ( pre, post, data.details.structure /= updatedStructure ) of
@@ -270,9 +283,6 @@ updateDnD slideMsg data =
 
                         _ ->
                             False
-
-                updatedSlides =
-                    List.filterMap Capsule.filterSlide concat
 
                 details =
                     data.details
@@ -289,6 +299,22 @@ updateDnD slideMsg data =
                             Capsule.regroupSlides concat
             in
             ( { data | details = updatedDetails, gosModel = gosModel, slides = updatedSlidesView }, Capsule.gosSystem.commands gosModel, shouldSync )
+
+
+fixStructure : List Api.Gos -> List Api.Gos -> List Api.Gos
+fixStructure old new =
+    let
+        dict =
+            Dict.fromList (List.map (\x -> ( List.map .id x.slides, x.record )) old)
+
+        fix : Api.Gos -> Api.Gos
+        fix gos =
+            { gos | record = Maybe.withDefault Nothing (Dict.get (List.map .id gos.slides) dict) }
+
+        ret =
+            List.map fix new
+    in
+    ret
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
