@@ -451,6 +451,10 @@ pub fn upload_record(
         .get_mut("record_path")
         .unwrap() = serde_json!(asset.asset_path);
 
+    *capsule.structure.as_array_mut().unwrap()[gos]
+        .get_mut("locked")
+        .unwrap() = serde_json!(true);
+
     use crate::schema::capsules::dsl::{id as cid, structure};
     diesel::update(capsules::table)
         .filter(cid.eq(capsule_id))
