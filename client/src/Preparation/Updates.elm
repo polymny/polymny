@@ -4,7 +4,6 @@ import Api
 import Capsule.Types as Capsule
 import Capsule.Updates as Capsule
 import Core.Types as Core
-import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Updates as NewCapsule
@@ -19,7 +18,7 @@ update session msg preparationModel =
     case ( msg, preparationModel ) of
         -- INNER MESSAGES
         ( Preparation.PreparationClicked, _ ) ->
-            ( session, Preparation.Home Preparation.initUploadForm, Cmd.none )
+            ( session, Preparation.Home, Cmd.none )
 
         ( Preparation.ProjectClicked project, _ ) ->
             ( session, Preparation.Project project Nothing, Api.capsulesFromProjectId (resultToMsg1 project) project.id )
@@ -71,13 +70,6 @@ update session msg preparationModel =
             in
             ( session, Preparation.Capsule newModel, cmd )
 
-        ( Preparation.UploadSlideShowMsg uploadSlideShowMsg, Preparation.Home model ) ->
-            let
-                ( newModel, cmd ) =
-                    updateUploadSlideShow uploadSlideShowMsg model
-            in
-            ( session, Preparation.Home newModel, cmd )
-
         _ ->
             ( session, preparationModel, Cmd.none )
 
@@ -104,42 +96,3 @@ resultToMsg2 result =
         )
         (\_ -> Core.Noop)
         result
-
-
-resultToMsg3 : Result e Api.CapsuleDetails -> Core.Msg
-resultToMsg3 result =
-    Utils.resultToMsg
-        (\x ->
-            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.CapsuleReceived x
-        )
-        (\_ -> Core.Noop)
-        result
-
-
-updateUploadSlideShow : Preparation.UploadSlideShowMsg -> Preparation.UploadForm -> ( Preparation.UploadForm, Cmd Core.Msg )
-updateUploadSlideShow msg model =
-    case ( msg, model ) of
-        ( Preparation.UploadSlideShowSelectFileRequested, _ ) ->
-            ( model
-            , Select.file
-                [ "application/pdf" ]
-                (\x ->
-                    Core.LoggedInMsg <|
-                        LoggedIn.PreparationMsg <|
-                            Preparation.UploadSlideShowMsg <|
-                                Preparation.UploadSlideShowFileReady x
-                )
-            )
-
-        ( Preparation.UploadSlideShowFileReady file, form ) ->
-            ( { form | file = Just file }
-            , Cmd.none
-            )
-
-        ( Preparation.UploadSlideShowFormSubmitted, form ) ->
-            case form.file of
-                Nothing ->
-                    ( form, Cmd.none )
-
-                Just file ->
-                    ( form, Api.capsuleUploadSlideShow resultToMsg3 0 file )

@@ -5,7 +5,6 @@ import Capsule.Views as Capsule
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
-import File exposing (File)
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Views as NewCapsule
@@ -29,8 +28,8 @@ view global session preparationModel =
 
         mainPage =
             case preparationModel of
-                Preparation.Home uploadForm ->
-                    homeView global session uploadForm
+                Preparation.Home ->
+                    homeView global session
 
                 Preparation.NewProject newProjectModel ->
                     NewProject.view newProjectModel
@@ -64,57 +63,15 @@ newProjectButton =
     Ui.primaryButton (Just Core.NewProjectClicked) "New project"
 
 
-homeView : Core.Global -> Api.Session -> Preparation.UploadForm -> Element Core.Msg
-homeView global session uploadForm =
+homeView : Core.Global -> Api.Session -> Element Core.Msg
+homeView global session =
     Element.column []
         [ Element.el []
             (Element.text "Welcome")
-        , uploadFormView uploadForm
         , projectsView
             global
             session.projects
         ]
-
-
-uploadFormView : Preparation.UploadForm -> Element Core.Msg
-uploadFormView form =
-    Element.column [ Element.centerX, Element.spacing 20 ]
-        [ Element.row
-            [ Element.spacing 20
-            , Element.centerX
-            ]
-            [ selectFileButton
-            , fileNameElement form.file
-            , uploadButton
-            ]
-        ]
-
-
-fileNameElement : Maybe File -> Element Core.Msg
-fileNameElement file =
-    Element.text <|
-        case file of
-            Nothing ->
-                "No file selected"
-
-            Just realFile ->
-                File.name realFile
-
-
-selectFileButton : Element Core.Msg
-selectFileButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.PreparationMsg <|
-            Element.map Preparation.UploadSlideShowMsg <|
-                Ui.simpleButton (Just Preparation.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
-
-
-uploadButton : Element Core.Msg
-uploadButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.PreparationMsg <|
-            Element.map Preparation.UploadSlideShowMsg <|
-                Ui.primaryButton (Just Preparation.UploadSlideShowFormSubmitted) "Upload slide show"
 
 
 headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)

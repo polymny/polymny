@@ -2,13 +2,18 @@ module LoggedIn.Types exposing
     ( Model
     , Msg(..)
     , Tab(..)
+    , UploadForm
+    , UploadSlideShowMsg(..)
+    , initUploadForm
     , isAcquisition
     , isPreparation
     )
 
 import Acquisition.Types as Acquisition
 import Api
+import File exposing (File)
 import Preparation.Types as Preparation
+import Status exposing (Status)
 
 
 type alias Model =
@@ -18,7 +23,7 @@ type alias Model =
 
 
 type Tab
-    = Home
+    = Home UploadForm
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition
@@ -31,6 +36,24 @@ type Msg
     | EditionMsg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
+    | UploadSlideShowMsg UploadSlideShowMsg
+
+
+type UploadSlideShowMsg
+    = UploadSlideShowSelectFileRequested
+    | UploadSlideShowFileReady File
+    | UploadSlideShowFormSubmitted
+
+
+type alias UploadForm =
+    { status : Status () ()
+    , file : Maybe File
+    }
+
+
+initUploadForm : UploadForm
+initUploadForm =
+    UploadForm Status.NotSent Nothing
 
 
 isPreparation : Tab -> Bool
