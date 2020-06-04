@@ -8,6 +8,7 @@ import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Status
 import Utils
 
 
@@ -91,7 +92,10 @@ updateUploadSlideShow msg model =
                     ( form, Cmd.none )
 
                 Just file ->
-                    ( form, Api.capsuleUploadSlideShow resultToMsg1 0 file )
+                    ( { form | status = Status.Sent }, Api.quickUploadSlideShow resultToMsg1 file )
+
+        ( LoggedIn.UploadSlideShowSuccess capsule, form ) ->
+            ( { form | status = Status.Success () }, Cmd.none )
 
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
@@ -110,7 +114,7 @@ resultToMsg1 : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg1 result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.CapsuleReceived x
+            Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess x
         )
         (\_ -> Core.Noop)
         result

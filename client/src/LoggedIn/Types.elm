@@ -43,6 +43,7 @@ type UploadSlideShowMsg
     = UploadSlideShowSelectFileRequested
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
+    | UploadSlideShowSuccess Api.CapsuleDetails
 
 
 type alias UploadForm =

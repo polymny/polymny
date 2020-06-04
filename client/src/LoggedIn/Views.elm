@@ -5,10 +5,13 @@ import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Font as Font
 import File exposing (File)
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
+import Status
+import TimeUtils
 import Ui.Ui as Ui
 
 
@@ -52,22 +55,57 @@ view global session tab =
 
 homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 homeView global session uploadForm =
-    Element.column []
+    Element.column
+        [ Element.width
+            Element.fill
+        ]
         [ Element.el [] (Element.text "Welcome in LoggedIn")
-        , uploadFormView uploadForm
-        , Preparation.view global session Preparation.Home
+        , Element.row
+            [ Element.spacing 20
+            , Element.padding 20
+            , Element.width Element.fill
+            ]
+            [ Element.el
+                [ Element.width Element.fill
+                ]
+              <|
+                uploadFormView uploadForm
+            , Element.el
+                [ Element.width Element.shrink
+                ]
+              <|
+                projectsView
+                    global
+                    session.projects
+            ]
         ]
 
 
 uploadFormView : LoggedIn.UploadForm -> Element Core.Msg
-uploadFormView form =
-    Element.column [ Element.centerX, Element.spacing 20 ]
-        [ Element.row
+uploadFormView { status, file } =
+    let
+        message =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "Creating project..."
+
+                Status.Error () ->
+                    Ui.errorModal "Echec upload pdf"
+
+                Status.Success () ->
+                    Ui.successModal "L Upload du pdf a réussis"
+
+                _ ->
+                    Element.none
+    in
+    Element.row [ Element.centerX, Element.spacing 20 ]
+        [ Element.column
             [ Element.spacing 20
             , Element.centerX
             ]
-            [ selectFileButton
-            , fileNameElement form.file
+            [ message
+            , selectFileButton
+            , fileNameElement file
             , uploadButton
             ]
         ]
@@ -96,3 +134,47 @@ uploadButton =
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.UploadSlideShowMsg <|
             Ui.primaryButton (Just LoggedIn.UploadSlideShowFormSubmitted) "Upload slide show"
+
+
+projectsView : Core.Global -> List Api.Project -> Element Core.Msg
+projectsView global projects =
+    case projects of
+        [] ->
+            Element.paragraph [ Element.padding 10, Font.size 18 ]
+                [ Element.text "You have no projects yet. "
+                , Ui.linkButton
+                    (Just Core.NewProjectClicked)
+                    "Click here to create a new project!"
+                ]
+
+        _ ->
+            let
+                sortedProjects =
+                    List.sortBy (\x -> -x.lastVisited) projects
+            in
+            Element.column [ Element.padding 10 ]
+                [ Element.el [ Font.size 18 ] (Element.text "Vos projets:")
+                , Element.column [ Element.padding 10, Element.spacing 10 ]
+                    (List.map (projectHeader global) sortedProjects)
+                , newProjectButton
+                ]
+
+
+newProjectButton : Element Core.Msg
+newProjectButton =
+    Ui.primaryButton (Just Core.NewProjectClicked) "Créer un nouveau projet"
+
+
+projectHeader : Core.Global -> Api.Project -> Element Core.Msg
+projectHeader global project =
+    Element.row [ Element.spacing 10 ]
+        [ Ui.linkButton
+            (Just
+                (Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.ProjectClicked project
+                )
+            )
+            project.name
+        , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
+        ]

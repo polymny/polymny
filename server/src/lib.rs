@@ -317,6 +317,7 @@ pub fn main() {
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
                 routes::slide::update_slide,
+                routes::loggedin::quick_upload_slides,
             ],
         )
         .launch()

@@ -23,6 +23,7 @@ module Api exposing
     , login
     , newCapsule
     , newProject
+    , quickUploadSlideShow
     , setupConfig
     , signUp
     , testDatabase
@@ -315,6 +316,19 @@ logOut resultToMsg =
         { url = "/api/logout"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.emptyBody
+        }
+
+
+
+-- New project form
+
+
+quickUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> File.File -> Cmd msg
+quickUploadSlideShow resultToMsg content =
+    Http.post
+        { url = "/api/quick_upload_slides"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" content ]
         }
 
 
