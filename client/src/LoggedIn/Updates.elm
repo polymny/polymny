@@ -3,6 +3,7 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
+import Capsule.Types as Capsule
 import Core.Types as Core
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
@@ -56,22 +57,22 @@ update msg { session, tab } =
         ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
             ( LoggedIn.Model session tab, Cmd.none )
 
-        ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home model ) ->
+        ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form ) ->
             let
                 ( newModel, cmd ) =
-                    updateUploadSlideShow uploadSlideShowMsg model
+                    updateUploadSlideShow uploadSlideShowMsg { session = session, tab = tab } form
             in
-            ( LoggedIn.Model session (LoggedIn.Home newModel), cmd )
+            ( newModel, cmd )
 
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
 
 
-updateUploadSlideShow : LoggedIn.UploadSlideShowMsg -> LoggedIn.UploadForm -> ( LoggedIn.UploadForm, Cmd Core.Msg )
-updateUploadSlideShow msg model =
-    case ( msg, model ) of
-        ( LoggedIn.UploadSlideShowSelectFileRequested, _ ) ->
-            ( model
+updateUploadSlideShow : LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> ( LoggedIn.Model, Cmd Core.Msg )
+updateUploadSlideShow msg { session } form =
+    case msg of
+        LoggedIn.UploadSlideShowSelectFileRequested ->
+            ( LoggedIn.Model session (LoggedIn.Home form)
             , Select.file
                 [ "application/pdf" ]
                 (\x ->
@@ -81,21 +82,26 @@ updateUploadSlideShow msg model =
                 )
             )
 
-        ( LoggedIn.UploadSlideShowFileReady file, form ) ->
-            ( { form | file = Just file }
+        LoggedIn.UploadSlideShowFileReady file ->
+            ( LoggedIn.Model session
+                (LoggedIn.Home { form | file = Just file })
             , Cmd.none
             )
 
-        ( LoggedIn.UploadSlideShowFormSubmitted, form ) ->
+        LoggedIn.UploadSlideShowFormSubmitted ->
             case form.file of
                 Nothing ->
-                    ( form, Cmd.none )
+                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
                 Just file ->
-                    ( { form | status = Status.Sent }, Api.quickUploadSlideShow resultToMsg1 file )
+                    ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent })
+                    , Api.quickUploadSlideShow resultToMsg1 file
+                    )
 
-        ( LoggedIn.UploadSlideShowSuccess capsule, form ) ->
-            ( { form | status = Status.Success () }, Cmd.none )
+        LoggedIn.UploadSlideShowSuccess capsule ->
+            ( LoggedIn.Model session (LoggedIn.Preparation <| Preparation.Capsule <| Capsule.init capsule)
+            , Cmd.none
+            )
 
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg

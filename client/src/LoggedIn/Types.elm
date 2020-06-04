@@ -22,6 +22,12 @@ type alias Model =
     }
 
 
+type alias UploadForm =
+    { status : Status () ()
+    , file : Maybe File
+    }
+
+
 type Tab
     = Home UploadForm
     | Preparation Preparation.Model
@@ -44,12 +50,6 @@ type UploadSlideShowMsg
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
     | UploadSlideShowSuccess Api.CapsuleDetails
-
-
-type alias UploadForm =
-    { status : Status () ()
-    , file : Maybe File
-    }
 
 
 initUploadForm : UploadForm
