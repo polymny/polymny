@@ -30,7 +30,7 @@ type Msg
     | AcquisitionMsg Acquisition.Msg
     | EditionMsg
     | PublicationMsg
-    | Record Api.CapsuleDetails Int (List Api.Slide)
+    | Record Api.CapsuleDetails Int
 
 
 isPreparation : Tab -> Bool

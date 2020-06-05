@@ -25,10 +25,10 @@ update msg { session, tab } =
             , Api.capsulesFromProjectId (resultToMsg project) project.id
             )
 
-        ( LoggedIn.Record capsule gos slides, _ ) ->
+        ( LoggedIn.Record capsule gos, _ ) ->
             let
                 ( t, cmd ) =
-                    Acquisition.withSlides capsule gos slides
+                    Acquisition.init capsule gos
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 

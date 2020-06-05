@@ -284,13 +284,7 @@ genericGosView capsule options gosModel slideModel offset index gos =
 
         cameraButton : Element Core.Msg
         cameraButton =
-            Ui.cameraButton
-                (Just
-                    (Core.LoggedInMsg
-                        (LoggedIn.Record capsule gosIndex (List.filterMap Capsule.filterSlide gos))
-                    )
-                )
-                ""
+            Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record capsule gosIndex))) ""
 
         movieButton : Element Core.Msg
         movieButton =
