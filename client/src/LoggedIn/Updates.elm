@@ -99,8 +99,15 @@ updateUploadSlideShow msg { session } form =
                     )
 
         LoggedIn.UploadSlideShowSuccess capsule ->
-            ( LoggedIn.Model session (LoggedIn.Preparation <| Preparation.Capsule <| Capsule.init capsule)
-            , Cmd.none
+            let
+                ( model, cmd ) =
+                    Acquisition.init capsule 0
+
+                coreCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+            in
+            ( LoggedIn.Model session (LoggedIn.Acquisition model)
+            , coreCmd
             )
 
 
