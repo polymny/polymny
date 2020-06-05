@@ -12,6 +12,7 @@ type alias Model =
     , slides : Maybe (List Api.Slide)
     , details : Api.CapsuleDetails
     , gos : Int
+    , currentSlide : Int
     }
 
 
@@ -23,6 +24,7 @@ init details gos =
       , slides = List.head (List.drop gos (Api.detailsSortSlides details))
       , details = details
       , gos = gos
+      , currentSlide = 0
       }
     , Ports.init "video"
     )
@@ -33,6 +35,7 @@ type Msg
     | StartRecording
     | StopRecording
     | GoToStream Int
+    | NextSlide
     | RecordingsNumber Int
     | UploadStream String Int
     | StreamUploaded Json.Encode.Value

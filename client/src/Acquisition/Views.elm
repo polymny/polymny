@@ -37,7 +37,7 @@ mainView : Acquisition.Model -> Element Core.Msg
 mainView model =
     Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ topView model
-        , recordingButton model.recording
+        , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextSlideButton ]
         , recordingsView model.recordingsNumber model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream
         ]
@@ -47,8 +47,8 @@ topView : Acquisition.Model -> Element Core.Msg
 topView model =
     Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
         [ videoView (model.currentStream /= 0)
-        , case model.slides of
-            Just (h :: _) ->
+        , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
+            Just h ->
                 Element.image
                     [ Element.width (Element.px 640)
                     , Element.height (Element.px 480)
@@ -77,6 +77,11 @@ recordingButton recording =
                 ( "Start recording", Acquisition.StartRecording )
     in
     Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg msg))) text
+
+
+nextSlideButton : Element Core.Msg
+nextSlideButton =
+    Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.NextSlide))) "Next slide"
 
 
 recordingsView : Int -> Int -> Element Core.Msg

@@ -40,7 +40,7 @@ update session msg model =
                     else
                         Cmd.batch [ Ports.goToStream ( elementId, 0 ), Ports.startRecording () ]
             in
-            ( makeModel { model | recording = True, currentStream = 0 }, cmd )
+            ( makeModel { model | recording = True, currentStream = 0, currentSlide = 0 }, cmd )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
@@ -73,6 +73,13 @@ update session msg model =
                             makeModel model
             in
             ( newModel, Cmd.none )
+
+        Acquisition.NextSlide ->
+            let
+                newSlide =
+                    min (model.currentSlide + 1) (List.length (Maybe.withDefault [] model.slides) - 1)
+            in
+            ( makeModel { model | currentSlide = newSlide }, Cmd.none )
 
 
 elementId : String
