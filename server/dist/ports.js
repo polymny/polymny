@@ -1,12 +1,13 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs;
+    let stream, recorder, recording, blobs, nextSlideCallbacks;
 
     function initVariables() {
         stream = null;
         recorder = null;
         recording = false;
         blobs = [];
+        nextSlideCallbacks = [];
     }
 
     function init(elementId) {
@@ -65,6 +66,11 @@ function setupPorts(app) {
     }
 
     function goToStream(id, n, nextSlides) {
+        for (let callback of nextSlideCallbacks) {
+            clearTimeout(callback);
+        }
+        nextSlideCallbacks = [];
+
         if (n === 0) {
             bindWebcam(id);
         } else {
@@ -74,7 +80,7 @@ function setupPorts(app) {
             video.muted = false;
             video.play();
             for (let time of nextSlides) {
-                setTimeout(() => app.ports.goToNextSlide.send(null), time);
+                nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
             }
         }
     }
