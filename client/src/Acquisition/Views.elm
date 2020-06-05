@@ -46,7 +46,7 @@ mainView model =
 topView : Acquisition.Model -> Element Core.Msg
 topView model =
     Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
-        [ videoView (model.currentStream /= 0)
+        [ videoView
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
                 Element.image
@@ -61,9 +61,9 @@ topView model =
         ]
 
 
-videoView : Bool -> Element Core.Msg
-videoView controls =
-    Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId, Html.Attributes.controls controls ] []))
+videoView : Element Core.Msg
+videoView =
+    Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
 
 recordingButton : Bool -> Element Core.Msg
