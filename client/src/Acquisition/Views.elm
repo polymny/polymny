@@ -81,7 +81,7 @@ recordingButton recording =
 
 nextSlideButton : Element Core.Msg
 nextSlideButton =
-    Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.NextSlide))) "Next slide"
+    Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.NextSlide True)))) "Next slide"
 
 
 recordingsView : List Acquisition.Record -> Int -> Element Core.Msg

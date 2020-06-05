@@ -2,6 +2,13 @@ function setupPorts(app) {
 
     let stream, recorder, recording, blobs, nextSlideCallbacks;
 
+    function clearCallbacks() {
+        for (let callback of nextSlideCallbacks) {
+            clearTimeout(callback);
+        }
+        nextSlideCallbacks = [];
+    }
+
     function initVariables() {
         stream = null;
         recorder = null;
@@ -66,10 +73,7 @@ function setupPorts(app) {
     }
 
     function goToStream(id, n, nextSlides) {
-        for (let callback of nextSlideCallbacks) {
-            clearTimeout(callback);
-        }
-        nextSlideCallbacks = [];
+        clearCallbacks();
 
         if (n === 0) {
             bindWebcam(id);

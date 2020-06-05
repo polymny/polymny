@@ -145,6 +145,7 @@ decodeSlide =
 
 type alias InnerGos =
     { slides : List Int
+    , transitions : List Float
     , record : Maybe String
     , locked : Bool
     }
@@ -152,14 +153,16 @@ type alias InnerGos =
 
 decodeInnerGos : Decoder InnerGos
 decodeInnerGos =
-    Decode.map3 InnerGos
+    Decode.map4 InnerGos
         (Decode.field "slides" (Decode.list Decode.int))
+        (Decode.field "transitions" (Decode.list Decode.float))
         (Decode.field "record_path" (Decode.nullable Decode.string))
         (Decode.field "locked" Decode.bool)
 
 
 type alias Gos =
     { slides : List Slide
+    , transitions : List Float
     , record : Maybe String
     , locked : Bool
     }
@@ -203,7 +206,11 @@ toGosAux slides ids current =
 
 toGos : Dict Int Slide -> InnerGos -> Gos
 toGos slides gos =
-    { slides = List.filterMap (\x -> x) (toGosAux slides (List.reverse gos.slides) []), record = gos.record, locked = gos.locked }
+    { slides = List.filterMap (\x -> x) (toGosAux slides (List.reverse gos.slides) [])
+    , transitions = gos.transitions
+    , record = gos.record
+    , locked = gos.locked
+    }
 
 
 slidesAsDict : List Slide -> Dict Int Slide
@@ -452,6 +459,7 @@ encodeSlideStructure capsule =
         encodeGos gos =
             Encode.object
                 [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                , ( "transitions", Encode.list Encode.float gos.transitions )
                 , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
                 , ( "locked", Encode.bool gos.locked )
                 ]

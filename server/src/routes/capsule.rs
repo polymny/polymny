@@ -259,6 +259,7 @@ pub fn upload_slides(
                         capsule_structure.push(GosStructure {
                             record_path: None,
                             slides: vec![slide.id],
+                            transitions: vec![],
                             locked: false,
                         });
                     }
@@ -389,6 +390,9 @@ pub fn upload_logo(
 pub struct GosStructure {
     /// The ids of the slides of the gos.
     pub slides: Vec<i32>,
+
+    /// The moments when the user went to the next slides, in milliseconds.
+    pub transitions: Vec<f64>,
 
     /// The path to the record if any.
     pub record_path: Option<String>,

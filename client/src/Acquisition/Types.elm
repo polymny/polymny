@@ -46,7 +46,7 @@ type Msg
     | StartRecording
     | StopRecording
     | GoToStream Int
-    | NextSlide
+    | NextSlide Bool
     | UploadStream String Int
     | StreamUploaded Json.Encode.Value
     | NextSlideReceived Float
