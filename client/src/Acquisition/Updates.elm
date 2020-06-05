@@ -38,7 +38,7 @@ update session msg model =
                         Ports.startRecording ()
 
                     else
-                        Cmd.batch [ Ports.goToStream ( elementId, 0 ), Ports.startRecording () ]
+                        Cmd.batch [ Ports.goToStream ( elementId, 0, Nothing ), Ports.startRecording () ]
             in
             ( makeModel { model | recording = True, currentStream = 0, currentSlide = 0 }, cmd )
 
@@ -49,11 +49,18 @@ update session msg model =
             ( makeModel { model | records = Acquisition.newRecord n :: model.records }, Cmd.none )
 
         Acquisition.GoToStream n ->
-            if model.currentStream == n then
+            if model.currentStream == n && n == 0 then
                 ( makeModel model, Cmd.none )
 
             else
-                ( makeModel { model | currentStream = n }, Ports.goToStream ( elementId, n ) )
+                case List.head (List.drop (n - 1) (List.reverse model.records)) of
+                    Just { started, nextSlides } ->
+                        ( makeModel { model | currentStream = n, currentSlide = 0 }
+                        , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
+                        )
+
+                    _ ->
+                        ( makeModel model, Cmd.none )
 
         Acquisition.UploadStream url stream ->
             ( makeModel model, Ports.uploadStream ( url, stream ) )
@@ -75,11 +82,11 @@ update session msg model =
             ( newModel, Cmd.none )
 
         Acquisition.NextSlide ->
-            let
-                newSlide =
-                    min (model.currentSlide + 1) (List.length (Maybe.withDefault [] model.slides) - 1)
-            in
-            ( makeModel { model | currentSlide = newSlide }, Cmd.none )
+            if model.currentSlide + 1 >= List.length (Maybe.withDefault [] model.slides) then
+                ( makeModel model, Cmd.none )
+
+            else
+                ( makeModel { model | currentSlide = model.currentSlide + 1 }, Ports.askNextSlide () )
 
         Acquisition.NextSlideReceived time ->
             let

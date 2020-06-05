@@ -45,6 +45,7 @@ subscriptions { model } =
                         [ Acquisition.Ports.newRecord Acquisition.NewRecord
                         , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
                         , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
+                        , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide)
                         ]
                         |> Sub.map LoggedIn.AcquisitionMsg
                         |> Sub.map Core.LoggedInMsg

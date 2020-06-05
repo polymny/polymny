@@ -54,9 +54,9 @@ function setupPorts(app) {
         recorder = new MediaRecorder(stream, options);
         recorder.ondataavailable = (data) => {
             blobs.push(data.data);
-            callback(performance.now());
         };
 
+        callback(performance.now());
         recorder.start();
     }
 
@@ -64,7 +64,7 @@ function setupPorts(app) {
         recorder.stop();
     }
 
-    function goToStream(id, n) {
+    function goToStream(id, n, nextSlides) {
         if (n === 0) {
             bindWebcam(id);
         } else {
@@ -73,6 +73,9 @@ function setupPorts(app) {
             video.src = URL.createObjectURL(blobs[n-1]);
             video.muted = false;
             video.play();
+            for (let time of nextSlides) {
+                setTimeout(() => app.ports.goToNextSlide.send(null), time);
+            }
         }
     }
 
@@ -125,7 +128,7 @@ function setupPorts(app) {
     });
 
     subscribe(app.ports.goToStream, function(attr) {
-        goToStream(attr[0], attr[1]);
+        goToStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.uploadStream, function(attr) {
