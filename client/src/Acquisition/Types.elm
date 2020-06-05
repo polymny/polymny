@@ -1,12 +1,23 @@
-module Acquisition.Types exposing (Model, Msg(..), init)
+module Acquisition.Types exposing (Model, Msg(..), Record, init, newRecord)
 
 import Acquisition.Ports as Ports
 import Api
 import Json.Encode
 
 
+type alias Record =
+    { started : Float
+    , nextSlides : List Float
+    }
+
+
+newRecord : Float -> Record
+newRecord started =
+    { started = started, nextSlides = [] }
+
+
 type alias Model =
-    { recordingsNumber : Int
+    { records : List Record
     , recording : Bool
     , currentStream : Int
     , slides : Maybe (List Api.Slide)
@@ -18,7 +29,7 @@ type alias Model =
 
 init : Api.CapsuleDetails -> Int -> ( Model, Cmd Msg )
 init details gos =
-    ( { recordingsNumber = 0
+    ( { records = []
       , recording = False
       , currentStream = 0
       , slides = List.head (List.drop gos (Api.detailsSortSlides details))
@@ -36,6 +47,7 @@ type Msg
     | StopRecording
     | GoToStream Int
     | NextSlide
-    | RecordingsNumber Int
+    | NewRecord Float
     | UploadStream String Int
     | StreamUploaded Json.Encode.Value
+    | NextSlideReceived Float

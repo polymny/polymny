@@ -45,8 +45,8 @@ update session msg model =
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
 
-        Acquisition.RecordingsNumber n ->
-            ( makeModel { model | recordingsNumber = n }, Cmd.none )
+        Acquisition.NewRecord n ->
+            ( makeModel { model | records = Acquisition.newRecord n :: model.records }, Cmd.none )
 
         Acquisition.GoToStream n ->
             if model.currentStream == n then
@@ -80,6 +80,18 @@ update session msg model =
                     min (model.currentSlide + 1) (List.length (Maybe.withDefault [] model.slides) - 1)
             in
             ( makeModel { model | currentSlide = newSlide }, Cmd.none )
+
+        Acquisition.NextSlideReceived time ->
+            let
+                records =
+                    case model.records of
+                        h :: t ->
+                            { h | nextSlides = time :: h.nextSlides } :: t
+
+                        t ->
+                            t
+            in
+            ( makeModel { model | records = records }, Cmd.none )
 
 
 elementId : String

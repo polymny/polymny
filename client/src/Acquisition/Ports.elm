@@ -1,9 +1,11 @@
 port module Acquisition.Ports exposing
-    ( bindWebcam
+    ( askNextSlide
+    , bindWebcam
     , exit
     , goToStream
     , init
-    , recordingsNumber
+    , newRecord
+    , nextSlideReceived
     , startRecording
     , stopRecording
     , streamUploaded
@@ -31,10 +33,16 @@ port goToStream : ( String, Int ) -> Cmd msg
 port uploadStream : ( String, Int ) -> Cmd msg
 
 
-port recordingsNumber : (Int -> msg) -> Sub msg
+port newRecord : (Float -> msg) -> Sub msg
 
 
 port streamUploaded : (Json.Encode.Value -> msg) -> Sub msg
+
+
+port askNextSlide : () -> Cmd msg
+
+
+port nextSlideReceived : (Float -> msg) -> Sub msg
 
 
 port exit : () -> Cmd msg

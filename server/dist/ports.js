@@ -54,7 +54,7 @@ function setupPorts(app) {
         recorder = new MediaRecorder(stream, options);
         recorder.ondataavailable = (data) => {
             blobs.push(data.data);
-            callback(blobs.length);
+            callback(performance.now());
         };
 
         recorder.start();
@@ -116,7 +116,7 @@ function setupPorts(app) {
 
     subscribe(app.ports.startRecording, function() {
         startRecording(function(n) {
-            app.ports.recordingsNumber.send(n);
+            app.ports.newRecord.send(n);
         });
     });
 
@@ -134,6 +134,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.exit, function() {
         exit();
+    });
+
+    subscribe(app.ports.askNextSlide, function() {
+        app.ports.nextSlideReceived.send(performance.now());
     });
 
 }

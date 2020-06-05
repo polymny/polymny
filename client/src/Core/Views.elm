@@ -42,8 +42,9 @@ subscriptions { model } =
 
                 LoggedIn.Acquisition _ ->
                     Sub.batch
-                        [ Acquisition.Ports.recordingsNumber Acquisition.RecordingsNumber
+                        [ Acquisition.Ports.newRecord Acquisition.NewRecord
                         , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
+                        , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
                         ]
                         |> Sub.map LoggedIn.AcquisitionMsg
                         |> Sub.map Core.LoggedInMsg

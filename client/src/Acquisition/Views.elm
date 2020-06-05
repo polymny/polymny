@@ -38,7 +38,7 @@ mainView model =
     Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ topView model
         , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextSlideButton ]
-        , recordingsView model.recordingsNumber model.currentStream
+        , recordingsView model.records model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream
         ]
 
@@ -84,12 +84,12 @@ nextSlideButton =
     Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.NextSlide))) "Next slide"
 
 
-recordingsView : Int -> Int -> Element Core.Msg
+recordingsView : List Acquisition.Record -> Int -> Element Core.Msg
 recordingsView n current =
     let
         texts : List String
         texts =
-            "Webcam" :: List.map (\x -> "Video " ++ String.fromInt x) (List.range 1 n)
+            "Webcam" :: List.map (\x -> "Video " ++ String.fromInt x) (List.range 1 (List.length n))
 
         msg : Int -> Core.Msg
         msg i =
