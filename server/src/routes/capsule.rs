@@ -392,7 +392,7 @@ pub struct GosStructure {
     pub slides: Vec<i32>,
 
     /// The moments when the user went to the next slides, in milliseconds.
-    pub transitions: Vec<f64>,
+    pub transitions: Vec<i32>,
 
     /// The path to the record if any.
     pub record_path: Option<String>,

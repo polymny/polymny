@@ -6,12 +6,12 @@ import Json.Encode
 
 
 type alias Record =
-    { started : Float
-    , nextSlides : List Float
+    { started : Int
+    , nextSlides : List Int
     }
 
 
-newRecord : Float -> Record
+newRecord : Int -> Record
 newRecord started =
     { started = started, nextSlides = [] }
 
@@ -49,5 +49,5 @@ type Msg
     | NextSlide Bool
     | UploadStream String Int
     | StreamUploaded Json.Encode.Value
-    | NextSlideReceived Float
-    | NewRecord Float
+    | NextSlideReceived Int
+    | NewRecord Int
