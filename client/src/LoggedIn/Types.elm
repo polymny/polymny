@@ -1,9 +1,11 @@
 module LoggedIn.Types exposing
     ( Model
     , Msg(..)
+    , ShowMenuMsg(..)
     , Tab(..)
     , UploadForm
     , UploadSlideShowMsg(..)
+    , init
     , initUploadForm
     , isAcquisition
     , isPreparation
@@ -29,7 +31,7 @@ type alias UploadForm =
 
 
 type Tab
-    = Home UploadForm
+    = Home UploadForm Bool
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition
@@ -43,6 +45,7 @@ type Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
+    | ShowMenuMsg ShowMenuMsg
 
 
 type UploadSlideShowMsg
@@ -52,9 +55,19 @@ type UploadSlideShowMsg
     | UploadSlideShowSuccess Api.CapsuleDetails
 
 
+type ShowMenuMsg
+    = ShowMenuDisplay
+    | ShowMenuHide
+
+
 initUploadForm : UploadForm
 initUploadForm =
     UploadForm Status.NotSent Nothing
+
+
+init : Tab
+init =
+    Home initUploadForm False
 
 
 isPreparation : Tab -> Bool

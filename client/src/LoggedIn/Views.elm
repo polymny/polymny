@@ -20,8 +20,8 @@ view global session tab =
     let
         mainTab =
             case tab of
-                LoggedIn.Home uploadForm ->
-                    homeView global session uploadForm
+                LoggedIn.Home uploadForm showMenu ->
+                    homeView global session uploadForm showMenu
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
@@ -53,8 +53,18 @@ view global session tab =
         [ element ]
 
 
-homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
-homeView global session uploadForm =
+homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Bool -> Element Core.Msg
+homeView global session uploadForm showMenu =
+    let
+        projects =
+            if showMenu then
+                projectsView global session.projects
+
+            else
+                Element.map Core.LoggedInMsg <|
+                    Element.map LoggedIn.ShowMenuMsg <|
+                        Ui.menuPointButton (Just LoggedIn.ShowMenuDisplay) ""
+    in
     Element.column
         [ Element.width
             Element.fill
@@ -73,10 +83,7 @@ homeView global session uploadForm =
             , Element.el
                 [ Element.width Element.shrink
                 ]
-              <|
-                projectsView
-                    global
-                    session.projects
+                projects
             ]
         ]
 

@@ -43,7 +43,10 @@ modelFromFlags flags =
         Ok "index" ->
             case Decode.decodeValue Api.decodeSession flags of
                 Ok session ->
-                    LoggedIn { session = session, tab = LoggedIn.Home LoggedIn.initUploadForm }
+                    LoggedIn
+                        { session = session
+                        , tab = LoggedIn.init
+                        }
 
                 Err _ ->
                     Home

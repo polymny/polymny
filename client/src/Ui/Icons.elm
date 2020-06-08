@@ -5,6 +5,7 @@ module Ui.Icons exposing
     , clear
     , closeLock
     , edit
+    , menuPoint
     , movie
     , openLock
     , trash
@@ -72,3 +73,8 @@ openLock =
 closeLock : Element msg
 closeLock =
     buttonFromIcon FontAwesome.lock
+
+
+menuPoint : Element msg
+menuPoint =
+    buttonFromIcon FontAwesome.ellipsisVertical
