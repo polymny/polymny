@@ -1,8 +1,13 @@
-module Acquisition.Types exposing (Model, Msg(..), Record, init, newRecord)
+module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, newRecord)
 
 import Acquisition.Ports as Ports
 import Api
 import Json.Encode
+
+
+type Mode
+    = Single
+    | All
 
 
 type alias Record =
@@ -24,11 +29,12 @@ type alias Model =
     , details : Api.CapsuleDetails
     , gos : Int
     , currentSlide : Int
+    , mode : Mode
     }
 
 
-init : Api.CapsuleDetails -> Int -> ( Model, Cmd Msg )
-init details gos =
+init : Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
+init details mode gos =
     ( { records = []
       , recording = False
       , currentStream = 0
@@ -36,6 +42,7 @@ init details gos =
       , details = details
       , gos = gos
       , currentSlide = 0
+      , mode = mode
       }
     , Ports.init "video"
     )

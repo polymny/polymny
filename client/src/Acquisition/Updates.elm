@@ -98,19 +98,38 @@ update session msg model =
 
         Acquisition.StreamUploaded value ->
             let
-                newModel =
-                    case Json.Decode.decodeValue Api.decodeCapsuleDetails value of
-                        Ok v ->
-                            { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
+                ( newModel, newCmd ) =
+                    case
+                        ( Json.Decode.decodeValue Api.decodeCapsuleDetails value
+                        , model.mode
+                        , model.gos + 1 == List.length model.details.structure
+                        )
+                    of
+                        ( Ok v, Acquisition.Single, _ ) ->
+                            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
+                            , Cmd.none
+                            )
 
-                        Err e ->
+                        ( Ok v, Acquisition.All, True ) ->
+                            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
+                            , Cmd.none
+                            )
+
+                        ( Ok v, Acquisition.All, False ) ->
+                            let
+                                ( m, c ) =
+                                    Acquisition.init v model.mode (model.gos + 1)
+                            in
+                            ( makeModel m, c |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
+
+                        ( Err e, _, _ ) ->
                             let
                                 _ =
                                     Log.debug "Error decoding capsule details" e
                             in
-                            makeModel model
+                            ( makeModel model, Cmd.none )
             in
-            ( newModel, Cmd.none )
+            ( newModel, newCmd )
 
         Acquisition.NextSlide record ->
             if model.currentSlide + 1 >= List.length (Maybe.withDefault [] model.slides) then

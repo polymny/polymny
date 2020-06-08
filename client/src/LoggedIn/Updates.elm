@@ -28,7 +28,7 @@ update msg { session, tab } =
         ( LoggedIn.Record capsule gos, _ ) ->
             let
                 ( t, cmd ) =
-                    Acquisition.init capsule gos
+                    Acquisition.init capsule Acquisition.Single gos
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
