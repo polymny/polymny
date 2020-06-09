@@ -63,6 +63,9 @@ update msg { session, tab } =
             in
             ( newModel, cmd )
 
+        ( LoggedIn.ShowMenuToggleMsg, LoggedIn.Home form showMenu ) ->
+            ( { session = session, tab = LoggedIn.Home form (not showMenu) }, Cmd.none )
+
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
 
@@ -100,7 +103,7 @@ updateUploadSlideShow msg { session } form showMenu =
         LoggedIn.UploadSlideShowSuccess capsule ->
             let
                 ( model, cmd ) =
-                    Acquisition.init capsule 0
+                    Acquisition.init capsule Acquisition.All 0
 
                 coreCmd =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd

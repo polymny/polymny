@@ -62,8 +62,7 @@ homeView global session uploadForm showMenu =
 
             else
                 Element.map Core.LoggedInMsg <|
-                    Element.map LoggedIn.ShowMenuMsg <|
-                        Ui.menuPointButton (Just LoggedIn.ShowMenuDisplay) ""
+                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) ""
     in
     Element.column
         [ Element.width
@@ -160,7 +159,9 @@ projectsView global projects =
                     List.sortBy (\x -> -x.lastVisited) projects
             in
             Element.column [ Element.padding 10 ]
-                [ Element.el [ Font.size 18 ] (Element.text "Vos projets:")
+                [ Element.map Core.LoggedInMsg <|
+                    Ui.cancelButton (Just LoggedIn.ShowMenuToggleMsg) ""
+                , Element.el [ Font.size 18 ] (Element.text "Vos projets:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map (projectHeader global) sortedProjects)
                 , newProjectButton

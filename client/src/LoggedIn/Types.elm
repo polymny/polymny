@@ -1,7 +1,6 @@
 module LoggedIn.Types exposing
     ( Model
     , Msg(..)
-    , ShowMenuMsg(..)
     , Tab(..)
     , UploadForm
     , UploadSlideShowMsg(..)
@@ -45,7 +44,7 @@ type Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
-    | ShowMenuMsg ShowMenuMsg
+    | ShowMenuToggleMsg
 
 
 type UploadSlideShowMsg
@@ -53,11 +52,6 @@ type UploadSlideShowMsg
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
     | UploadSlideShowSuccess Api.CapsuleDetails
-
-
-type ShowMenuMsg
-    = ShowMenuDisplay
-    | ShowMenuHide
 
 
 initUploadForm : UploadForm

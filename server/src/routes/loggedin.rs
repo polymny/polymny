@@ -152,6 +152,7 @@ pub fn quick_upload_slides(
                         capsule_structure.push(GosStructure {
                             record_path: None,
                             slides: vec![slide.id],
+                            transitions: vec![],
                             locked: false,
                         });
                     }
