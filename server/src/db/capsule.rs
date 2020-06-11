@@ -36,6 +36,9 @@ pub struct Capsule {
     /// Reference to capsule logo
     pub logo_id: Option<i32>,
 
+    /// Reference to generated video for this capsule
+    pub video_id: Option<i32>,
+
     /// The structure of the capsule.
     ///
     /// This json should be of the form

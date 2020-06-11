@@ -77,6 +77,9 @@ pub struct UpdateCapsuleForm {
 
     /// Reference to  capsule logo
     pub logo_id: Option<Option<i32>>,
+
+    /// Reference to generated video for this capsule
+    pub video_id: Option<Option<i32>>,
 }
 
 /// internal function for data format
@@ -555,6 +558,13 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
             &format!("/{}", server_path.to_str().unwrap()),
         )?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
+
+        // Add video_id to capsule
+        use crate::schema::capsules::dsl;
+        diesel::update(capsules::table)
+            .filter(dsl::id.eq(capsule.id))
+            .set(dsl::video_id.eq(asset.id))
+            .execute(&db.0)?;
     } else {
         // for debug pupose if needed
         //
@@ -563,5 +573,7 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
         io::stderr().write_all(&child.stderr).unwrap();
         return Err(Error::TranscodeError);
     }
+
+    let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
 }
