@@ -24,7 +24,7 @@ use tempfile::tempdir;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
 use crate::db::project::Project;
-use crate::db::slide::Slide;
+use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
 use crate::{Database, Error, Result};
@@ -465,5 +465,81 @@ pub fn upload_record(
         .set(structure.eq(serde_json!(capsule.structure)))
         .execute(&db.0)?;
 
+    format_capsule_data(&db, &capsule)
+}
+
+/// order capsule gos and slide
+#[post("/capsule/<id>/edition")]
+pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    println!("{:#?}", capsule.structure);
+    let pip_list = "/tmp/pipList.txt";
+    let mut file = File::create(pip_list)?;
+
+    for (idx, gos) in capsule
+        .structure
+        .as_array()
+        .unwrap()
+        .into_iter()
+        .enumerate()
+    {
+        let record_path = gos.as_object().unwrap()["record_path"].as_str().unwrap();
+        // TODO : only fist slide . Assumption one slide per gos ( ie one slide per record)
+        let slide_id = gos.as_object().unwrap()["slides"].as_array().unwrap()[0]
+            .as_i64()
+            .unwrap() as i32;
+        let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
+        println!(" record_path = {:#?}", record_path);
+        println!(" slide path  = {:#?}", slide.asset.asset_path);
+
+        // ffmpeg command to reproduce for overlay
+        //
+        // ffmpeg -y -i slide0.png -i record0.webm \
+        // -filter_complex \
+        // "[1]scale=300:-1 [pip]; \
+        // [0][pip] overlay=main_w-overlay
+        // _w-10:main_h-overlay_h-10" \
+        // -profile:v main \
+        // -level 3.1 -b:v 440k -ar 44100 -ab 128k \
+        // -vcodec h264 -acodec mp3 \
+        // $PIP1
+        let pip_out = format!("/tmp/pip{}.mp4", idx);
+        let command = format!(
+            "ffmpeg -hide_banner -y -i {slide} -i {record} -filter_complex \"[1]scale=300:-1 [pip]; [0][pip] overlay=main_w-overlay_w-10:main_h-overlay_h-10\"  -profile:v main -level 3.1 -b:v 440k -ar 44100 -ab 128k -vcodec h264 -acodec mp3 {out}"
+            , slide = format!("{}{}","dist", slide.asset.asset_path)
+            , record =  format!("{}{}","dist", record_path)
+            , out = pip_out);
+
+        println!("command = {:#?}", command);
+        let child = Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .output()
+            .expect("failed to execute child");
+        use std::io::{self, Write};
+        println!("status: {}", child.status);
+        //io::stdout().write_all(&child.stdout).unwrap();
+        io::stderr().write_all(&child.stderr).unwrap();
+        file.write(format!("file '{}'\n", pip_out).as_bytes())?;
+    }
+    // concat all generated pip videos
+
+    let command = format!(
+        "ffmpeg -y -f concat -safe 0 -i {pip_list} -c copy {vout}",
+        pip_list = pip_list,
+        vout = "/tmp/out.mp4"
+    );
+
+    println!("command = {:#?}", command);
+    let child = Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .output()
+        .expect("failed to execute child");
+    println!("status: {}", child.status);
+
+    //io::stdout().write_all(&child.stdout).unwrap();
+    use std::io::{self, Write};
+    io::stderr().write_all(&child.stderr).unwrap();
     format_capsule_data(&db, &capsule)
 }

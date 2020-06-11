@@ -123,6 +123,21 @@ impl SlideWithAsset {
             prompt: slide.prompt.clone(),
         })
     }
+
+    /// getter function
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<SlideWithAsset> {
+        use crate::schema::slides::dsl;
+
+        let slide = dsl::slides.filter(dsl::id.eq(id)).first::<Slide>(db)?;
+
+        Ok(SlideWithAsset {
+            id: slide.id,
+            asset: Asset::get(slide.asset_id, &db)?,
+            capsule_id: slide.capsule_id,
+            prompt: slide.prompt.clone(),
+        })
+    }
+
     /// delete a slide.
     /// TODO : Delete also linked asset ?
     pub fn delete(&self, db: &PgConnection) -> Result<usize> {
