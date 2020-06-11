@@ -1,5 +1,6 @@
 //! This module contains all the routes related to capsules.
 use std::fs::{self, create_dir, File};
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -430,7 +431,7 @@ pub fn upload_record(
 ) -> Result<JsonValue> {
     let mut capsule = user.get_capsule_by_id(capsule_id, &db)?;
 
-    let file_name = &format!("record-{}.webm", gos);
+    let file_name = &format!("capsule.mp4");
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
@@ -472,7 +473,6 @@ pub fn upload_record(
 #[post("/capsule/<id>/edition")]
 pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    println!("{:#?}", capsule.structure);
     let pip_list = "/tmp/pipList.txt";
     let mut file = File::create(pip_list)?;
 
@@ -489,8 +489,10 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
             .as_i64()
             .unwrap() as i32;
         let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
-        println!(" record_path = {:#?}", record_path);
-        println!(" slide path  = {:#?}", slide.asset.asset_path);
+        println!(
+            "Piping gos {}\n record_path = {:#?}\n slide_path = {:#?}",
+            idx, record_path, slide.asset.asset_path
+        );
 
         // ffmpeg command to reproduce for overlay
         //
@@ -510,36 +512,56 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
             , record =  format!("{}{}","dist", record_path)
             , out = pip_out);
 
-        println!("command = {:#?}", command);
+        //println!("command = {:#?}", command);
         let child = Command::new("sh")
             .arg("-c")
             .arg(command)
             .output()
             .expect("failed to execute child");
-        use std::io::{self, Write};
-        println!("status: {}", child.status);
-        //io::stdout().write_all(&child.stdout).unwrap();
-        io::stderr().write_all(&child.stderr).unwrap();
+        if !child.status.success() {
+            // for debug pupose if needed
+            io::stdout().write_all(&child.stdout).unwrap();
+            io::stderr().write_all(&child.stderr).unwrap();
+            return Err(Error::TranscodeError);
+        }
+
         file.write(format!("file '{}'\n", pip_out).as_bytes())?;
     }
     // concat all generated pip videos
+    let file_name = &format!("record.mp4");
 
+    let mut server_path = PathBuf::from(&user.username);
+    let uuid = Uuid::new_v4();
+    server_path.push(format!("{}_{}", uuid, file_name));
+
+    println!("Generating video capsule ...",);
     let command = format!(
-        "ffmpeg -y -f concat -safe 0 -i {pip_list} -c copy {vout}",
+        "ffmpeg -hide_banner -y -f concat -safe 0 -i {pip_list} -c copy {vout}",
         pip_list = pip_list,
-        vout = "/tmp/out.mp4"
+        vout = format!("{}/{}", "dist", server_path.to_str().unwrap())
     );
 
-    println!("command = {:#?}", command);
     let child = Command::new("sh")
         .arg("-c")
-        .arg(command)
+        .arg(&command)
         .output()
         .expect("failed to execute child");
     println!("status: {}", child.status);
-
-    //io::stdout().write_all(&child.stdout).unwrap();
-    use std::io::{self, Write};
-    io::stderr().write_all(&child.stderr).unwrap();
+    if child.status.success() {
+        let asset = Asset::new(
+            &db,
+            uuid,
+            file_name,
+            &format!("/{}", server_path.to_str().unwrap()),
+        )?;
+        AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
+    } else {
+        // for debug pupose if needed
+        //
+        println!("command = {:#?}", command);
+        io::stdout().write_all(&child.stdout).unwrap();
+        io::stderr().write_all(&child.stderr).unwrap();
+        return Err(Error::TranscodeError);
+    }
     format_capsule_data(&db, &capsule)
 }
