@@ -1,6 +1,7 @@
 module Core.Updates exposing (update)
 
 import Acquisition.Ports as Ports
+import Api
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
@@ -39,7 +40,7 @@ update msg { global, model } =
                     ( Core.FullModel global (Core.Login Login.init), Cmd.none )
 
                 ( Core.LogoutClicked, _ ) ->
-                    ( Core.FullModel global Core.Home, Cmd.none )
+                    ( Core.FullModel global Core.Home, Api.logOut (\_ -> Core.Noop) )
 
                 ( Core.SignUpClicked, _ ) ->
                     ( Core.FullModel global (Core.SignUp SignUp.init), Cmd.none )

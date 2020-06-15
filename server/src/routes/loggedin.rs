@@ -98,16 +98,13 @@ pub fn quick_upload_slides(
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
-                    let command = format!(
-                        "convert -density 300 {pdf} -resize 1920x1080! {temp}/'%02d'.png",
-                        pdf = &output_path.to_str().unwrap(),
-                        temp = dir.path().display()
-                    );
-                    println!("command = {:#?}", command);
-
-                    let mut child = Command::new("sh")
-                        .arg("-c")
-                        .arg(command)
+                    let mut child = Command::new("convert")
+                        .arg("-density")
+                        .arg("300")
+                        .arg(format!("{}", &output_path.to_str().unwrap()))
+                        .arg("-resize")
+                        .arg("1920x1080!")
+                        .arg(format!("{}/'%02'.png", dir.path().display()))
                         .stdout(Stdio::piped())
                         .stderr(Stdio::piped())
                         .spawn()

@@ -213,16 +213,13 @@ pub fn upload_slides(
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
-                    let command = format!(
-                        "convert -density 300 {pdf} -resize 1920x1080! {temp}/'%02d'.png",
-                        pdf = &output_path.to_str().unwrap(),
-                        temp = dir.path().display()
-                    );
-                    println!("command = {:#?}", command);
-
-                    let mut child = Command::new("sh")
-                        .arg("-c")
-                        .arg(command)
+                    let mut child = Command::new("convert")
+                        .arg("-density")
+                        .arg("300")
+                        .arg(format!("{}", &output_path.to_str().unwrap()))
+                        .arg("-resize")
+                        .arg("1920x1080!")
+                        .arg(format!("{}/'%02'.png", dir.path().display()))
                         .stdout(Stdio::piped())
                         .stderr(Stdio::piped())
                         .spawn()
@@ -413,10 +410,36 @@ pub fn gos_order(
     id: i32,
     goss: Json<Vec<GosStructure>>,
 ) -> Result<JsonValue> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let mut goss = goss.into_inner();
+
+    // Verifiy that the goss doesn't violate authorizations.
+    // All slides must belong to the user.
+    for gos in &goss {
+        for slide in &gos.slides {
+            user.get_slide_by_id(*slide, &db)?;
+        }
+    }
+
+    // The user is not allowed to modify the record_path.
+    for gos in 0..goss.len() {
+        if goss[gos].record_path != None {
+            goss[gos].record_path = Some(
+                capsule.structure.as_array().unwrap()[gos]
+                    .get("record_path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            );
+        }
+    }
+
+    // Perform the update
     use crate::schema::capsules::dsl::{id as cid, structure};
     diesel::update(capsules::table)
         .filter(cid.eq(id))
-        .set(structure.eq(serde_json!(goss.into_inner())))
+        .set(structure.eq(serde_json!(goss)))
         .execute(&db.0)?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
@@ -509,18 +532,41 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
         // -vcodec h264 -acodec mp3 \
         // $PIP1
         let pip_out = format!("/tmp/pip{}.mp4", idx);
-        let command = format!(
-            "ffmpeg -hide_banner -y -i {slide} -i {record} -filter_complex \"[1]scale=300:-1 [pip]; [0][pip] overlay=main_w-overlay_w-10:main_h-overlay_h-10\"  -profile:v main -level 3.1 -b:v 440k -ar 44100 -ab 128k -vcodec h264 -acodec mp3 {out}"
-            , slide = format!("{}{}","dist", slide.asset.asset_path)
-            , record =  format!("{}{}","dist", record_path)
-            , out = pip_out);
+        let slide = format!("{}{}", "dist", slide.asset.asset_path);
+        let record = format!("{}{}", "dist", record_path);
+        let command = vec![
+            "ffmpeg",
+            "-hide_banner",
+            "-y",
+            "-i",
+            &slide,
+            "-i",
+            &record,
+            "-filter_complex",
+            "[1]scale=300:-1 [pip]; [0][pip] overlay=main_w-overlay_w-10:main_h-overlay_h-10",
+            "-profile:v",
+            "main",
+            "-level",
+            "3.1",
+            "-b:v",
+            "440k",
+            "-ar",
+            "44100",
+            "-ab",
+            "128k",
+            "-vcodec",
+            "h264",
+            "-acodec",
+            "mp3",
+            &pip_out,
+        ];
 
-        //println!("command = {:#?}", command);
-        let child = Command::new("sh")
-            .arg("-c")
-            .arg(command)
+        println!("command = {:#?}", command);
+        let child = Command::new(command[0])
+            .args(&command[1..])
             .output()
             .expect("failed to execute child");
+
         if !child.status.success() {
             // for debug pupose if needed
             io::stdout().write_all(&child.stdout).unwrap();
@@ -537,18 +583,29 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
 
-    println!("Generating video capsule ...",);
-    let command = format!(
-        "ffmpeg -hide_banner -y -f concat -safe 0 -i {pip_list} -c copy {vout}",
-        pip_list = pip_list,
-        vout = format!("{}/{}", "dist", server_path.to_str().unwrap())
-    );
+    let output = format!("dist/{}", server_path.to_str().unwrap());
 
-    let child = Command::new("sh")
-        .arg("-c")
-        .arg(&command)
+    println!("Generating video capsule ...");
+    let command = vec![
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        pip_list,
+        "-c",
+        "copy",
+        &output,
+    ];
+
+    let child = Command::new(command[0])
+        .args(&command[1..])
         .output()
         .expect("failed to execute child");
+
     println!("status: {}", child.status);
     if child.status.success() {
         let asset = Asset::new(

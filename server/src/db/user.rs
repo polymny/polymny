@@ -15,9 +15,10 @@ use bcrypt::{hash, DEFAULT_COST};
 
 use serde::Deserialize;
 
-use crate::db::capsule::{Capsule, CapsulesProject};
+use crate::db::capsule::Capsule;
 use crate::db::project::Project;
 use crate::db::session::{NewSession, Session};
+use crate::db::slide::Slide;
 use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
 use crate::templates::{validation_email_html, validation_email_plain_text};
@@ -200,17 +201,22 @@ impl User {
     pub fn get_capsule_by_id(&self, capsule_id: i32, db: &Database) -> Result<Capsule> {
         let capsule = Capsule::get_by_id(capsule_id, &db)?;
         // TODO: do this in full SQL instead
-        let is_allowed = CapsulesProject::belonging_to(&capsule)
-            .load::<CapsulesProject>(&db.0)?
-            .into_iter()
-            .filter_map(|x| Project::get_by_id(x.project_id, &db).ok())
-            .any(|x| x.user_id == self.id);
+        let projects = capsule.get_projects(db)?;
+        let is_allowed = projects.into_iter().any(|x| x.user_id == self.id);
 
         if is_allowed {
             Ok(capsule)
         } else {
             Err(Error::NotFound)
         }
+    }
+
+    /// Gets a slide if the user has authorization to access to it, not found otherwise.
+    pub fn get_slide_by_id(&self, slide_id: i32, db: &Database) -> Result<Slide> {
+        let slide = Slide::get(slide_id, db)?;
+        // Check that the user owns a project containing the capsule
+        self.get_capsule_by_id(slide.capsule_id, db)?;
+        Ok(slide)
     }
 }
 

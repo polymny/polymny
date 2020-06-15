@@ -211,4 +211,4 @@ logoutButton =
 
 signUpButton : Element Core.Msg
 signUpButton =
-    Ui.successButton Nothing "Sign up"
+    Ui.successButton (Just Core.SignUpClicked) "Sign up"

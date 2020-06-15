@@ -26,9 +26,8 @@ pub struct UpdateSlideForm {
 
 /// The route to get a asset.
 #[get("/slide/<id>")]
-pub fn get_slide(db: Database, _user: User, id: i32) -> Result<JsonValue> {
-    // let (asset, projects) = Asset::get(id, &db)?;
-    let slide = Slide::get(id, &db)?;
+pub fn get_slide(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(slide))
 }
 
@@ -36,10 +35,12 @@ pub fn get_slide(db: Database, _user: User, id: i32) -> Result<JsonValue> {
 #[put("/slide/<slide_id>", data = "<slide_form>")]
 pub fn update_slide(
     db: Database,
-    _user: User,
+    user: User,
     slide_id: i32,
     slide_form: Json<UpdateSlideForm>,
 ) -> Result<JsonValue> {
+    user.get_slide_by_id(slide_id, &db)?;
+
     println!("slide info to update : {:#?}", slide_form);
 
     use crate::schema::slides::dsl::id;
@@ -55,13 +56,11 @@ pub fn update_slide(
 #[put("/slide/<slide_id>/move", data = "<move_slide>")]
 pub fn move_slide(
     db: Database,
-    _user: User,
+    user: User,
     slide_id: i32,
     move_slide: Json<UpdateSlideForm>,
 ) -> Result<JsonValue> {
-    // let (asset, projects) = Asset::get(id, &db)?;
-    // Ok(json!({ "asset": asset, "projects": projects } ))
-    let slide = Slide::get(slide_id, &db)?;
+    let slide = user.get_slide_by_id(slide_id, &db)?;
     println!("Move slide : {:#?}", move_slide);
 
     use crate::schema::slides::dsl::id;
