@@ -66,7 +66,11 @@ newProjectButton =
 homeView : Core.Global -> Api.Session -> Element Core.Msg
 homeView global session =
     Element.column []
-        [ projectsView global session.projects
+        [ Element.el []
+            (Element.text "Welcome")
+        , projectsView
+            global
+            session.projects
         ]
 
 

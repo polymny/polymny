@@ -23,7 +23,7 @@ update loginMsg content =
             )
 
         Login.Success s ->
-            ( Core.LoggedIn (LoggedIn.Model s LoggedIn.Home), Cmd.none )
+            ( Core.LoggedIn (LoggedIn.Model s LoggedIn.init), Cmd.none )
 
         Login.Failed ->
             ( Core.Login { content | status = Status.Error () }, Cmd.none )

@@ -29,8 +29,7 @@ update msg { global, model } =
                     ( Core.FullModel global
                         (Core.LoggedIn
                             { session = session
-                            , tab =
-                                LoggedIn.Preparation Preparation.Home
+                            , tab = LoggedIn.init
                             }
                         )
                     , Cmd.none

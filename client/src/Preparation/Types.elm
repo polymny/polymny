@@ -1,4 +1,7 @@
-module Preparation.Types exposing (Model(..), Msg(..))
+module Preparation.Types exposing
+    ( Model(..)
+    , Msg(..)
+    )
 
 import Api
 import Capsule.Types as Capsule

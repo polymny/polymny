@@ -7,6 +7,7 @@ module Ui.Ui exposing
     , editButton
     , errorModal
     , linkButton
+    , menuPointButton
     , menuTabAttributes
     , movieButton
     , onEnter
@@ -198,6 +199,11 @@ openLockButton onPress content =
 closeLockButton : Maybe msg -> String -> Element msg
 closeLockButton onPress content =
     iconButton Icons.closeLock onPress content
+
+
+menuPointButton : Maybe msg -> String -> Element msg
+menuPointButton onPress content =
+    iconButton Icons.menuPoint onPress content
 
 
 primaryButtonDisabled : String -> Element msg
