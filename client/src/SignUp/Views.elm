@@ -8,15 +8,33 @@ import Status
 import Ui.Ui as Ui
 
 
+isAllowedChar : Char -> Bool
+isAllowedChar char =
+    Char.isAlphaNum char || char == '_' || char == '-' || char == '.'
+
+
 view : SignUp.Model -> Element Core.Msg
 view { username, password, email, status } =
     let
+        isUsernameValid =
+            List.all isAllowedChar (String.toList username) && String.length username > 3
+
+        submitIfUsernameValid =
+            if isUsernameValid then
+                Just SignUp.Submitted
+
+            else
+                Nothing
+
         submitOnEnter =
-            case status of
-                Status.Sent ->
+            case ( status, isUsernameValid ) of
+                ( Status.Sent, _ ) ->
                     []
 
-                Status.Success () ->
+                ( Status.Success (), _ ) ->
+                    []
+
+                ( _, False ) ->
                     []
 
                 _ ->
@@ -31,15 +49,18 @@ view { username, password, email, status } =
                     Ui.primaryButtonDisabled "Submitted!"
 
                 _ ->
-                    Ui.primaryButton (Just SignUp.Submitted) "Submit"
+                    Ui.primaryButton submitIfUsernameValid "Submit"
 
         message =
-            case status of
-                Status.Success () ->
+            case ( status, isUsernameValid ) of
+                ( Status.Success (), _ ) ->
                     Just (Ui.successModal "An email has been sent to your address!")
 
-                Status.Error () ->
+                ( Status.Error (), _ ) ->
                     Just (Ui.errorModal "Sign up failed")
+
+                ( _, False ) ->
+                    Just (Ui.errorModal "Your username must contain only letters, numbers, ., - and _")
 
                 _ ->
                     Nothing
@@ -73,7 +94,7 @@ view { username, password, email, status } =
         form =
             case message of
                 Just m ->
-                    header :: m :: fields
+                    header :: fields ++ [ m ]
 
                 Nothing ->
                     header :: fields

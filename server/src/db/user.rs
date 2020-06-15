@@ -75,6 +75,18 @@ impl User {
         password: &str,
         mailer: &Option<Mailer>,
     ) -> Result<NewUser> {
+        // Verify username constraints: the username must follow this regex [a-zA-Z0-9._-]* and len
+        // > 3
+        if username.len() < 4 {
+            return Err(Error::NotFound);
+        }
+
+        for c in username.chars() {
+            if !(c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.') {
+                return Err(Error::NotFound);
+            }
+        }
+
         // Hash the password
         let hashed_password = hash(&password, DEFAULT_COST)?;
 
