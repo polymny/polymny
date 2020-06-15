@@ -39,6 +39,7 @@ CREATE TABLE capsules (
     description TEXT NOT NULL,
     background_id INT REFERENCES assets(id),
     logo_id INT REFERENCES assets(id),
+    video_id INT REFERENCES assets(id),
     structure JSON NOT NULL
 );
 

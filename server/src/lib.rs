@@ -120,6 +120,9 @@ pub enum Error {
 
     /// 404 Not Found.
     NotFound,
+
+    /// ffmpeg Transcode Error
+    TranscodeError,
 }
 
 impl_from_error!(
@@ -143,7 +146,8 @@ impl Error {
             | Error::MailError(_)
             | Error::SendMailError(_)
             | Error::BcryptError(_)
-            | Error::DatabaseRequestEmptyError(_) => Status::InternalServerError,
+            | Error::DatabaseRequestEmptyError(_)
+            | Error::TranscodeError => Status::InternalServerError,
 
             Error::SessionDoesNotExist | Error::AuthenticationFailed | Error::RequiresLogin => {
                 Status::Unauthorized
@@ -170,6 +174,7 @@ impl Error {
             Error::DatabaseRequestEmptyError(e) => format!("no database entry for \"{}\"", e),
             Error::RequiresLogin => format!("this request requires you to be logged in"),
             Error::NotFound => format!("the route requested does not exist"),
+            Error::TranscodeError => format!("Video transcode error"),
         }
     }
 }
@@ -312,6 +317,7 @@ pub fn main() {
                 routes::capsule::upload_logo,
                 routes::capsule::gos_order,
                 routes::capsule::upload_record,
+                routes::capsule::capsule_edition,
                 routes::asset::get_asset,
                 routes::asset::all_assets,
                 routes::asset::delete_asset,

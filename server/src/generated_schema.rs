@@ -18,6 +18,7 @@ table! {
         description -> Text,
         background_id -> Nullable<Int4>,
         logo_id -> Nullable<Int4>,
+        video_id -> Nullable<Int4>,
         structure -> Json,
     }
 }
