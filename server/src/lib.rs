@@ -31,6 +31,7 @@ pub mod generated_schema;
 pub mod schema;
 
 use std::io::Cursor;
+use std::path::PathBuf;
 use std::{error, fmt, io, result};
 
 use bcrypt::BcryptError;
@@ -38,13 +39,13 @@ use bcrypt::BcryptError;
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
-use rocket::response::{self, Responder, Response};
+use rocket::response::{self, NamedFile, Responder, Response};
+use rocket::State;
 
 use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
 
 use crate::config::Config;
-use crate::db::capsule::Capsule;
 use crate::db::user::User;
 use crate::templates::{index_html, setup_html};
 
@@ -246,26 +247,40 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
         None
     };
 
-    let capsule = Capsule::get_by_id(id, &db)?;
-    let slide_show = capsule.get_slide_show(&db)?;
-    let slides = capsule.get_slides(&db)?;
-    let background = capsule.get_background(&db)?;
-    let logo = capsule.get_logo(&db)?;
+    let flags = {
+        match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
+            Some(Ok(capsule)) => {
+                let slide_show = capsule.get_slide_show(&db)?;
+                let slides = capsule.get_slides(&db)?;
+                let background = capsule.get_background(&db)?;
+                let logo = capsule.get_logo(&db)?;
 
-    let flags = user_and_projects.map(|(user, projects)| {
-        json!({
-            "page":       "preparation/capsule",
-            "username":   user.username,
-            "projects":   projects,
-            "capsule" :   capsule,
-            "slide_show": slide_show,
-            "slides":     slides,
-            "background":  background,
-            "logo":        logo,
-            "active_project":"",
-           "structure":   capsule.structure,
-        })
-    });
+                user_and_projects.map(|(user, projects)| {
+                    json!({
+                        "page":       "preparation/capsule",
+                        "username":   user.username,
+                        "projects":   projects,
+                        "capsule" :   capsule,
+                        "slide_show": slide_show,
+                        "slides":     slides,
+                        "background":  background,
+                        "logo":        logo,
+                        "active_project":"",
+                       "structure":   capsule.structure,
+                    })
+                })
+            }
+
+            _ => user_and_projects.map(|(user, projects)| {
+                json!({
+                    "username": user.username,
+                    "projects": projects,
+                    "page": "index",
+                    "active_project": "",
+                })
+            }),
+        }
+    };
 
     let response = Response::build()
         .header(ContentType::HTML)
@@ -284,20 +299,29 @@ pub fn setup<'a>() -> Response<'a> {
         .finalize()
 }
 
+/// The route for static files that require authorization.
+#[get("/<path..>")]
+pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Option<NamedFile> {
+    println!("{:?}", path);
+    if path.starts_with(user.username) {
+        let data_path = config.data_path.join(path);
+        NamedFile::open(data_path).ok()
+    } else {
+        None
+    }
+}
+
 /// Starts the server.
 pub fn main() {
-    let server = rocket::ignite();
-    let config = Config::from(server.config());
-    let data_path = config.data_path.clone();
-
-    server
+    rocket::ignite()
         .attach(Database::fairing())
         .attach(AdHoc::on_attach("Config fairing", |rocket| {
+            let config = Config::from(&rocket.config());
             Ok(rocket.manage(config))
         }))
         .mount("/", routes![index, capsule])
         .mount("/dist", StaticFiles::from("dist"))
-        .mount("/data", StaticFiles::from(data_path))
+        .mount("/data", routes![data])
         .mount(
             "/api/",
             routes![
@@ -331,10 +355,11 @@ pub fn main() {
                 routes::loggedin::quick_upload_slides,
             ],
         )
-        .launch();
-    // This .kind() is here to prevent the server from panicking in case the config file is not
-    // available. launch() returns an Error that when dropped, panics if it has not been
-    // handled. Using .kind() here marks the error as handled.
+        .launch()
+        // This .kind() is here to prevent the server from panicking in case the config file is not
+        // available. launch() returns an Error that when dropped, panics if it has not been
+        // handled. Using .kind() here marks the error as handled.
+        .kind();
 
     // If we arrive here, it means that the server failed to start.
     // Unless it's due to a programming mistake, this means that the configuration is broken.
