@@ -10,6 +10,7 @@ module Ui.Ui exposing
     , linkButton
     , menuPointButton
     , menuTabAttributes
+    , messageWithSpinner
     , movieButton
     , onEnter
     , openLockButton
@@ -17,6 +18,7 @@ module Ui.Ui exposing
     , primaryButtonDisabled
     , simpleButton
     , simpleButtonDisabled
+    , spinner
     , successButton
     , successModal
     , tabButton
@@ -326,3 +328,27 @@ successModal text =
             :: modalAttributes
         )
         [ Element.text text ]
+
+
+spinner : Element msg
+spinner =
+    Element.el
+        [ Element.padding 10
+        , Element.centerX
+        , Font.color Colors.artIrises
+        ]
+        Icons.spinner
+
+
+messageWithSpinner : String -> Element msg
+messageWithSpinner content =
+    Element.column
+        (buttonAttributes
+            ++ [ Border.color Colors.artIrises
+               , Border.width 1
+               , Element.centerX
+               ]
+        )
+        [ spinner
+        , Element.el [] <| Element.text content
+        ]

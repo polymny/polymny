@@ -85,9 +85,8 @@ updateUploadSlideShow msg { session } form showMenu =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
-            ( LoggedIn.Model session
-                (LoggedIn.Home { form | file = Just file } showMenu)
-            , Cmd.none
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent, file = Just file } showMenu)
+            , Api.quickUploadSlideShow resultToMsg1 file
             )
 
         LoggedIn.UploadSlideShowFormSubmitted ->

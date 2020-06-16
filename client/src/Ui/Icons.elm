@@ -8,15 +8,13 @@ module Ui.Icons exposing
     , menuPoint
     , movie
     , openLock
+    , spinner
     , trash
     )
 
 import Element exposing (Element)
-import Element.Background as Background
 import FontAwesome
 import Html
-import Html.Attributes
-import Ui.Colors as Colors
 
 
 buttonFromIcon : FontAwesome.Icon -> Element msg
@@ -76,6 +74,20 @@ openLock =
 closeLock : Element msg
 closeLock =
     buttonFromIcon FontAwesome.lock
+
+
+spinner : Element msg
+spinner =
+    Element.html
+        (Html.div
+            []
+            [ FontAwesome.iconWithOptions
+                FontAwesome.spinner
+                FontAwesome.Solid
+                [ FontAwesome.Animation FontAwesome.Spin, FontAwesome.Size FontAwesome.Large ]
+                []
+            ]
+        )
 
 
 menuPoint : Element msg

@@ -6,7 +6,7 @@ import Api
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
-import File exposing (File)
+import File
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
@@ -89,10 +89,19 @@ homeView global session uploadForm showMenu =
 uploadFormView : LoggedIn.UploadForm -> Element Core.Msg
 uploadFormView { status, file } =
     let
+        filename =
+            case file of
+                Nothing ->
+                    ""
+
+                Just realFile ->
+                    File.name realFile
+
         message =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Préparation de l'enregitrement"
+                    Ui.messageWithSpinner
+                        ("Préparation de l'enregitrement pour le fichier\n " ++ filename)
 
                 Status.Error () ->
                     Ui.errorModal "Echec upload pdf"
@@ -119,24 +128,7 @@ uploadFormView { status, file } =
                 ]
             , message
             , selectFileButton
-            , uploadFileElement file
             ]
-        ]
-
-
-uploadFileElement : Maybe File -> Element Core.Msg
-uploadFileElement file =
-    let
-        button =
-            case file of
-                Nothing ->
-                    Element.none
-
-                Just realFile ->
-                    uploadButton <| File.name realFile
-    in
-    Element.column [ Element.centerX ]
-        [ button
         ]
 
 
@@ -145,13 +137,6 @@ selectFileButton =
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.UploadSlideShowMsg <|
             Ui.simpleButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
-
-
-uploadButton : String -> Element Core.Msg
-uploadButton filename =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.UploadSlideShowMsg <|
-            Ui.simpleButton (Just LoggedIn.UploadSlideShowFormSubmitted) ("Télécharger le fichier " ++ filename)
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg
