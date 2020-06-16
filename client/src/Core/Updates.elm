@@ -49,8 +49,7 @@ update msg { global, model } =
                         (Core.LoggedIn
                             { session = session
                             , tab =
-                                LoggedIn.Preparation <|
-                                    Preparation.NewProject NewProject.init
+                                LoggedIn.NewProject NewProject.init
                             }
                         )
                     , Cmd.none

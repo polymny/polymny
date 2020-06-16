@@ -7,8 +7,6 @@ import Core.Types as Core
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Updates as NewCapsule
-import NewProject.Types as NewProject
-import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Utils
 
@@ -49,13 +47,6 @@ update session msg preparationModel =
             ( session, Preparation.Project project (Just NewCapsule.init), Cmd.none )
 
         -- OTHER MESSAGES
-        ( Preparation.NewProjectMsg newProjectMsg, Preparation.NewProject newProjectModel ) ->
-            let
-                ( newSession, newModel, cmd ) =
-                    NewProject.update session newProjectMsg newProjectModel
-            in
-            ( newSession, Preparation.NewProject newModel, cmd )
-
         ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.Project project (Just newCapsuleModel) ) ->
             let
                 ( newModel, cmd ) =

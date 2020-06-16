@@ -8,7 +8,6 @@ import Element.Font as Font
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Views as NewCapsule
-import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import TimeUtils
 import Ui.Ui as Ui
@@ -30,9 +29,6 @@ view global session preparationModel =
             case preparationModel of
                 Preparation.Home ->
                     homeView global session
-
-                Preparation.NewProject newProjectModel ->
-                    NewProject.view newProjectModel
 
                 Preparation.Project project newCapsuleForm ->
                     projectView project clicktab newCapsuleForm

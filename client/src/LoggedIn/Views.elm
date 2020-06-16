@@ -10,6 +10,7 @@ import Element exposing (Element)
 import Element.Font as Font
 import File
 import LoggedIn.Types as LoggedIn
+import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import Status
@@ -36,6 +37,9 @@ view global session tab =
 
                 LoggedIn.Publication ->
                     Preparation.view global session Preparation.Home
+
+                LoggedIn.NewProject newProjectModel ->
+                    NewProject.view newProjectModel
 
         element =
             Element.column

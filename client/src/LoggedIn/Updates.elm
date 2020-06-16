@@ -8,6 +8,8 @@ import Edition.Types as Edition
 import Edition.Updates as Edition
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
+import NewProject.Types as NewProject
+import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Status
@@ -70,6 +72,13 @@ update msg { session, tab } =
 
         ( LoggedIn.ShowMenuToggleMsg, LoggedIn.Home form showMenu ) ->
             ( { session = session, tab = LoggedIn.Home form (not showMenu) }, Cmd.none )
+
+        ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    NewProject.update session newProjectMsg newProjectModel
+            in
+            ( { session = newSession, tab = LoggedIn.NewProject newModel }, cmd )
 
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
