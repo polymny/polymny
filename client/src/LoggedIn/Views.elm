@@ -4,6 +4,8 @@ import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
+import Edition.Types as Edition
+import Edition.Views as Edition
 import Element exposing (Element)
 import Element.Font as Font
 import File
@@ -29,8 +31,8 @@ view global session tab =
                 LoggedIn.Acquisition acquisitionModel ->
                     Acquisition.view global session acquisitionModel
 
-                LoggedIn.Edition ->
-                    Preparation.view global session Preparation.Home
+                LoggedIn.Edition editionModel ->
+                    Edition.view global session editionModel
 
                 LoggedIn.Publication ->
                     Preparation.view global session Preparation.Home
@@ -101,7 +103,7 @@ uploadFormView { status, file } =
             case status of
                 Status.Sent ->
                     Ui.messageWithSpinner
-                        ("Préparation de l'enregitrement pour le fichier\n " ++ filename)
+                        ("Préparation de l'enregistement pour le fichier\n " ++ filename)
 
                 Status.Error () ->
                     Ui.errorModal "Echec upload pdf"

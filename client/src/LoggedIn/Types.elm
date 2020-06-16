@@ -12,6 +12,7 @@ module LoggedIn.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Edition.Types as Edition
 import File exposing (File)
 import Preparation.Types as Preparation
 import Status exposing (Status)
@@ -33,14 +34,14 @@ type Tab
     = Home UploadForm Bool
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
-    | Edition
+    | Edition Edition.Model
     | Publication
 
 
 type Msg
     = PreparationMsg Preparation.Msg
     | AcquisitionMsg Acquisition.Msg
-    | EditionMsg
+    | EditionMsg Edition.Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg

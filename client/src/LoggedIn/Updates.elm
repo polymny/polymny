@@ -4,6 +4,8 @@ import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
 import Core.Types as Core
+import Edition.Types as Edition
+import Edition.Updates as Edition
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
@@ -41,6 +43,9 @@ update msg { session, tab } =
 
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
             Acquisition.update session acquisitionMsg model
+
+        ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
+            Edition.update session editionMsg model
 
         -- TODO Fix acquisition button
         -- ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->

@@ -18,6 +18,7 @@ module Api exposing
     , decodeProject
     , decodeSession
     , detailsSortSlides
+    , editionAuto
     , encodeSlideStructure
     , logOut
     , login
@@ -437,6 +438,15 @@ capsuleUploadLogo resultToMsg id content =
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_logo"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
+editionAuto resultToMsg id =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.emptyBody
         }
 
 

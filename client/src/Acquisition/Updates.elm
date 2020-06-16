@@ -5,10 +5,14 @@ import Acquisition.Types as Acquisition
 import Api
 import Capsule.Types as Capsule
 import Core.Types as Core
+import Edition.Types as Edition
+import Edition.Views as Edition
 import Json.Decode
 import Log
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
+import Status
+import Utils
 
 
 update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -111,8 +115,8 @@ update session msg model =
                             )
 
                         ( Ok v, Acquisition.All, True ) ->
-                            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
-                            , Cmd.none
+                            ( { session = session, tab = LoggedIn.Edition { status = Status.Sent, details = v } }
+                            , Api.editionAuto resultToMsg model.details.capsule.id
                             )
 
                         ( Ok v, Acquisition.All, False ) ->
@@ -160,3 +164,13 @@ update session msg model =
 elementId : String
 elementId =
     "video"
+
+
+resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
+        )
+        (\_ -> Core.Noop)
+        result
