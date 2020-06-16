@@ -62,14 +62,13 @@ homeView global session uploadForm showMenu =
 
             else
                 Element.map Core.LoggedInMsg <|
-                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) ""
+                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) " Projets"
     in
     Element.column
         [ Element.width
             Element.fill
         ]
-        [ Element.el [] (Element.text "Welcome in LoggedIn")
-        , Element.row
+        [ Element.row
             [ Element.spacing 20
             , Element.padding 20
             , Element.width Element.fill
@@ -93,7 +92,7 @@ uploadFormView { status, file } =
         message =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Creating project..."
+                    Ui.primaryButtonDisabled "Préparation de l'enregitrement"
 
                 Status.Error () ->
                     Ui.errorModal "Echec upload pdf"
@@ -108,24 +107,37 @@ uploadFormView { status, file } =
         [ Element.column
             [ Element.spacing 20
             , Element.centerX
+            , Font.size 18
+            , Font.center
             ]
-            [ message
+            [ Element.paragraph
+                [ Element.width (Element.fill |> Element.maximum 400)
+                , Font.size 14
+                , Font.justify
+                ]
+                [ Element.text " Pour commencer un enregistrement, il faut séléctionner un fichier PDF sur votre machine. Une fois la présentation téléchargée, l'enregisterment vidéo des planches pourra débuter"
+                ]
+            , message
             , selectFileButton
-            , fileNameElement file
-            , uploadButton
+            , uploadFileElement file
             ]
         ]
 
 
-fileNameElement : Maybe File -> Element Core.Msg
-fileNameElement file =
-    Element.text <|
-        case file of
-            Nothing ->
-                "No file selected"
+uploadFileElement : Maybe File -> Element Core.Msg
+uploadFileElement file =
+    let
+        button =
+            case file of
+                Nothing ->
+                    Element.none
 
-            Just realFile ->
-                File.name realFile
+                Just realFile ->
+                    uploadButton <| File.name realFile
+    in
+    Element.column [ Element.centerX ]
+        [ button
+        ]
 
 
 selectFileButton : Element Core.Msg
@@ -135,11 +147,11 @@ selectFileButton =
             Ui.simpleButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
 
 
-uploadButton : Element Core.Msg
-uploadButton =
+uploadButton : String -> Element Core.Msg
+uploadButton filename =
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.UploadSlideShowMsg <|
-            Ui.primaryButton (Just LoggedIn.UploadSlideShowFormSubmitted) "Upload slide show"
+            Ui.simpleButton (Just LoggedIn.UploadSlideShowFormSubmitted) ("Télécharger le fichier " ++ filename)
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg

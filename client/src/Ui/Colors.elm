@@ -62,7 +62,7 @@ blackColor =
 
 primaryColor : Color
 primaryColor =
-    Color.fromRGB ( 50, 115, 220 )
+    starryNightColor
 
 
 successColor : Color
@@ -147,7 +147,7 @@ black =
 
 primary : Element.Color
 primary =
-    colorToUi starryNightColor
+    colorToUi primaryColor
 
 
 success : Element.Color

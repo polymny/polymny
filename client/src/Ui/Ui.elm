@@ -6,6 +6,7 @@ module Ui.Ui exposing
     , closeLockButton
     , editButton
     , errorModal
+    , homeButton
     , linkButton
     , menuPointButton
     , menuTabAttributes
@@ -21,6 +22,7 @@ module Ui.Ui exposing
     , tabButton
     , tabButtonActive
     , textButton
+    , topBarButton
     , trashButton
     )
 
@@ -85,15 +87,36 @@ linkButton onPress content =
         }
 
 
+topBarButton : Maybe msg -> String -> Element msg
+topBarButton onPress content =
+    let
+        attr =
+            buttonAttributes
+                ++ [ Background.color Colors.primary
+                   , Font.color Colors.artSunFlowers
+                   , Border.color Colors.artSunFlowers
+                   , Border.rounded 5
+                   , Border.width 1
+                   ]
+    in
+    Input.button
+        attr
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
 simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
     let
         attr =
-            Background.color Colors.artStarryNight
-                :: Border.color Colors.grey
-                :: Border.rounded 5
-                :: Border.width 1
-                :: buttonAttributes
+            buttonAttributes
+                ++ [ Background.color Colors.primary
+                   , Font.color Colors.white
+                   , Border.color Colors.artEvening
+                   , Border.rounded 5
+                   , Border.width 1
+                   ]
     in
     Input.button
         attr
@@ -141,7 +164,7 @@ editButton : Maybe msg -> String -> Element msg
 editButton onPress content =
     Input.button
         (Background.color Colors.artStarryNight
-            :: Font.color Colors.artSunFlowers
+            :: Font.color Colors.artIrises
             :: buttonAttributes
         )
         { onPress = onPress
@@ -151,11 +174,18 @@ editButton onPress content =
 
 iconButton : Element msg -> Maybe msg -> String -> Element msg
 iconButton icon onPress content =
-    Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
-        )
+    let
+        iconAttributes =
+            [ Element.centerX
+            , Element.padding 10
+            , Font.color Colors.primary
+            , Background.color Colors.white
+            , Border.color Colors.primary
+            , Border.rounded 5
+            , Border.width 1
+            ]
+    in
+    Input.button iconAttributes
         { onPress = onPress
         , label = Element.row [] [ icon, Element.text content ]
         }
@@ -204,6 +234,24 @@ closeLockButton onPress content =
 menuPointButton : Maybe msg -> String -> Element msg
 menuPointButton onPress content =
     iconButton Icons.menuPoint onPress content
+
+
+homeButton : Maybe msg -> String -> Element msg
+homeButton onPress content =
+    let
+        icon =
+            Element.image [ Element.width (Element.px 60) ]
+                { src = "logo.png"
+                , description = " Polymny home page"
+                }
+    in
+    Input.button
+        [ Background.color Colors.primary
+        , Font.color Colors.white
+        ]
+        { onPress = onPress
+        , label = Element.row [] [ icon, Element.text content ]
+        }
 
 
 primaryButtonDisabled : String -> Element msg

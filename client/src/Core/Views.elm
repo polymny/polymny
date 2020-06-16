@@ -151,11 +151,12 @@ topBar model =
         Core.LoggedIn { session, tab } ->
             Element.row
                 [ Background.color Colors.primary
+                , Font.color Colors.white
                 , Element.width Element.fill
                 , Element.spacing 30
                 ]
                 [ Element.row
-                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+                    [ Element.alignLeft, Element.padding 10, Element.spacing 5 ]
                     [ homeButton ]
                 , Element.row
                     [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
@@ -196,19 +197,19 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton (Just Core.HomeClicked) "Polymny")
+    Element.el [ Font.bold, Font.size 18 ] (Ui.homeButton (Just Core.HomeClicked) "")
 
 
 loginButton : Element Core.Msg
 loginButton =
-    Ui.simpleButton (Just Core.LoginClicked) "Log in"
+    Ui.topBarButton (Just Core.LoginClicked) "Log in"
 
 
 logoutButton : Element Core.Msg
 logoutButton =
-    Ui.simpleButton (Just Core.LogoutClicked) "Log out"
+    Ui.topBarButton (Just Core.LogoutClicked) "Log out"
 
 
 signUpButton : Element Core.Msg
 signUpButton =
-    Ui.successButton Nothing "Sign up"
+    Ui.textButton Nothing "Sign up"

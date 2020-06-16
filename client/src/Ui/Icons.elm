@@ -12,8 +12,11 @@ module Ui.Icons exposing
     )
 
 import Element exposing (Element)
+import Element.Background as Background
 import FontAwesome
 import Html
+import Html.Attributes
+import Ui.Colors as Colors
 
 
 buttonFromIcon : FontAwesome.Icon -> Element msg
@@ -77,4 +80,14 @@ closeLock =
 
 menuPoint : Element msg
 menuPoint =
-    buttonFromIcon FontAwesome.ellipsisVertical
+    Element.el [] <|
+        Element.html
+            (Html.div
+                []
+                [ FontAwesome.iconWithOptions
+                    FontAwesome.ellipsisVertical
+                    FontAwesome.Solid
+                    [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                    []
+                ]
+            )
