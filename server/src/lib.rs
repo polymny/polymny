@@ -16,6 +16,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_derive_enum;
 
+pub mod config;
 pub mod db;
 pub mod mailer;
 pub mod routes;
@@ -42,9 +43,9 @@ use rocket::response::{self, Responder, Response};
 use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
 
+use crate::config::Config;
 use crate::db::capsule::Capsule;
 use crate::db::user::User;
-use crate::mailer::Mailer;
 use crate::templates::{index_html, setup_html};
 
 macro_rules! impl_from_error {
@@ -285,14 +286,18 @@ pub fn setup<'a>() -> Response<'a> {
 
 /// Starts the server.
 pub fn main() {
-    rocket::ignite()
+    let server = rocket::ignite();
+    let config = Config::from(server.config());
+    let data_path = config.data_path.clone();
+
+    server
         .attach(Database::fairing())
-        .attach(AdHoc::on_attach("Mailer fairing", |rocket| {
-            let mailer = Mailer::from_config(rocket.config());
-            Ok(rocket.manage(mailer))
+        .attach(AdHoc::on_attach("Config fairing", |rocket| {
+            Ok(rocket.manage(config))
         }))
         .mount("/", routes![index, capsule])
-        .mount("/", StaticFiles::from("dist"))
+        .mount("/dist", StaticFiles::from("dist"))
+        .mount("/data", StaticFiles::from(data_path))
         .mount(
             "/api/",
             routes![
@@ -326,11 +331,10 @@ pub fn main() {
                 routes::loggedin::quick_upload_slides,
             ],
         )
-        .launch()
-        // This .kind() is here to prevent the server from panicking in case the config file is not
-        // available. launch() returns an Error that when dropped, panics if it has not been
-        // handled. Using .kind() here marks the error as handled.
-        .kind();
+        .launch();
+    // This .kind() is here to prevent the server from panicking in case the config file is not
+    // available. launch() returns an Error that when dropped, panics if it has not been
+    // handled. Using .kind() here marks the error as handled.
 
     // If we arrive here, it means that the server failed to start.
     // Unless it's due to a programming mistake, this means that the configuration is broken.

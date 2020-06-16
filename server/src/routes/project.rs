@@ -1,10 +1,9 @@
 //! This module contains all the routes related to projects.
 
 use std::fs;
-use std::path::PathBuf;
 
 use rocket::http::ContentType;
-use rocket::Data;
+use rocket::{Data, State};
 
 use rocket_contrib::json::{Json, JsonValue};
 
@@ -14,6 +13,7 @@ use rocket_multipart_form_data::{
 
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::project::Project;
 use crate::db::user::User;
@@ -77,6 +77,7 @@ pub fn delete_project(db: Database, user: User, id: i32) -> Result<JsonValue> {
 /// Upload an asset in the project
 #[post("/project/<id>/upload", data = "<data>")]
 pub fn project_upload(
+    config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
@@ -102,7 +103,7 @@ pub fn project_upload(
                 let path = &file.path;
 
                 if let Some(file_name) = file_name {
-                    let mut output_path = PathBuf::from("dist");
+                    let mut output_path = config.data_path.clone();
                     output_path.push(&user.username);
                     let uuid = Uuid::new_v4();
                     output_path.push(format!("{}_{}", uuid, file_name));

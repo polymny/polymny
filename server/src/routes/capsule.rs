@@ -10,7 +10,7 @@ use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
 use rocket::http::ContentType;
-use rocket::Data;
+use rocket::{Data, State};
 
 use rocket_contrib::json::{Json, JsonValue};
 
@@ -22,6 +22,7 @@ use uuid::Uuid;
 
 use tempfile::tempdir;
 
+use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
 use crate::db::project::Project;
@@ -154,6 +155,7 @@ pub fn delete_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
 /// Upload a presentation (slides)
 #[post("/capsule/<id>/upload_slides", data = "<data>")]
 pub fn upload_slides(
+    config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
@@ -185,11 +187,11 @@ pub fn upload_slides(
                         &db,
                         uuid,
                         file_name,
-                        &format!("/{}", server_path.to_str().unwrap()),
+                        &format!("/data/{}", server_path.to_str().unwrap()),
                     )?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
-                    let mut output_path = PathBuf::from("dist");
+                    let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
@@ -248,11 +250,11 @@ pub fn upload_slides(
                             &db,
                             uuid,
                             &slide_name,
-                            &format!("/{}", server_path.to_str().unwrap()),
+                            &format!("/data/{}", server_path.to_str().unwrap()),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
                         let slide = Slide::new(&db, asset.id, idx, "Dummy prompt")?;
-                        let mut output_path = PathBuf::from("dist");
+                        let mut output_path = config.data_path.clone();
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
                         fs::copy(e, &output_path)?;
@@ -293,6 +295,7 @@ pub fn upload_slides(
 }
 
 fn upload_file(
+    config: &State<Config>,
     db: &Database,
     user: &User,
     capsule: &Capsule,
@@ -322,11 +325,11 @@ fn upload_file(
                         &db,
                         uuid,
                         file_name,
-                        &format!("/{}", server_path.to_str().unwrap()),
+                        &format!("/data/{}", server_path.to_str().unwrap()),
                     )?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
-                    let mut output_path = PathBuf::from("dist");
+                    let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
 
                     println!("output_path {:#?}", output_path);
@@ -349,6 +352,7 @@ fn upload_file(
 /// Upload a background
 #[post("/capsule/<id>/upload_background", data = "<data>")]
 pub fn upload_background(
+    config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
@@ -356,7 +360,7 @@ pub fn upload_background(
     data: Data,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    let asset = upload_file(&db, &user, &capsule, content_type, data)?;
+    let asset = upload_file(&config, &db, &user, &capsule, content_type, data)?;
     use crate::schema::capsules::dsl;
     diesel::update(capsules::table)
         .filter(dsl::id.eq(capsule.id))
@@ -369,6 +373,7 @@ pub fn upload_background(
 /// Upload logo
 #[post("/capsule/<id>/upload_logo", data = "<data>")]
 pub fn upload_logo(
+    config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
@@ -376,7 +381,7 @@ pub fn upload_logo(
     data: Data,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    let asset = upload_file(&db, &user, &capsule, content_type, data)?;
+    let asset = upload_file(&config, &db, &user, &capsule, content_type, data)?;
     use crate::schema::capsules::dsl;
     diesel::update(capsules::table)
         .filter(dsl::id.eq(capsule.id))
@@ -449,6 +454,7 @@ pub fn gos_order(
 /// Route to upload a record.
 #[post("/capsule/<capsule_id>/<gos>/upload_record", data = "<data>")]
 pub fn upload_record(
+    config: State<Config>,
     db: Database,
     user: User,
     capsule_id: i32,
@@ -466,11 +472,11 @@ pub fn upload_record(
         &db,
         uuid,
         file_name,
-        &format!("/{}", server_path.to_str().unwrap()),
+        &format!("/data/{}", server_path.to_str().unwrap()),
     )?;
     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
-    let mut output_path = PathBuf::from("dist");
+    let mut output_path = config.data_path.clone();
     output_path.push(server_path);
 
     println!("output_path {:#?}", output_path);
@@ -497,7 +503,12 @@ pub fn upload_record(
 
 /// order capsule gos and slide
 #[post("/capsule/<id>/edition")]
-pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
+pub fn capsule_edition(
+    config: State<Config>,
+    db: Database,
+    user: User,
+    id: i32,
+) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     let pip_list = "/tmp/pipList.txt";
     let mut file = File::create(pip_list)?;
@@ -532,8 +543,13 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
         // -vcodec h264 -acodec mp3 \
         // $PIP1
         let pip_out = format!("/tmp/pip{}.mp4", idx);
-        let slide = format!("{}{}", "dist", slide.asset.asset_path);
-        let record = format!("{}{}", "dist", record_path);
+        let mut slide_path = config.data_path.clone();
+        slide_path.push(slide.asset.asset_path);
+        let mut record = config.data_path.clone();
+        record.push(record_path);
+
+        let slide = slide_path.to_str().unwrap();
+        let record = record.to_str().unwrap();
         let command = vec![
             "ffmpeg",
             "-hide_banner",
@@ -583,7 +599,10 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
 
-    let output = format!("dist/{}", server_path.to_str().unwrap());
+    let mut output = config.data_path.clone();
+    output.push(&server_path);
+
+    let output = output.to_str().unwrap();
 
     println!("Generating video capsule ...");
     let command = vec![
@@ -598,7 +617,7 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
         pip_list,
         "-c",
         "copy",
-        &output,
+        output,
     ];
 
     let child = Command::new(command[0])
@@ -612,7 +631,7 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
             &db,
             uuid,
             file_name,
-            &format!("/{}", server_path.to_str().unwrap()),
+            &format!("/data/{}", server_path.to_str().unwrap()),
         )?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 

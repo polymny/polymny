@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-use std::path::PathBuf;
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -12,6 +11,7 @@ use serde::Deserialize;
 
 use uuid::Uuid;
 
+use server::config::Config;
 use server::db::asset::Asset;
 use server::db::capsule::{Capsule, CapsulesProject};
 use server::db::project::Project;
@@ -99,6 +99,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .as_str()
         .ok_or(NotFoundError {})?;
 
+    let config = Config::from(config);
+
     let db = PgConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
@@ -106,7 +108,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for sample_asset in sample.assets {
         let uuid = Uuid::new_v4();
-        let mut output_path = PathBuf::from("dist");
+        let mut output_path = config.data_path.clone();
         //TODO add user name
         output_path.push("Graydon".to_string());
         output_path.push(format!("{}_{}", uuid, sample_asset.name));

@@ -36,8 +36,8 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/main.js"></script>
-        <script src="/ports.js"></script>
+        <script src="/dist/main.js"></script>
+        <script src="/dist/ports.js"></script>
         <script>
             var app = Elm.Main.init({
 "#;
@@ -59,7 +59,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/setup.js"></script>
+        <script src="/dist/setup.js"></script>
         <script>
             var app = Elm.Setup.init({
                 node: document.getElementById('root')

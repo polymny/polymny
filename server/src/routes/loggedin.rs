@@ -10,7 +10,7 @@ use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
 use rocket::http::ContentType;
-use rocket::Data;
+use rocket::{Data, State};
 use rocket_contrib::json::JsonValue;
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
@@ -19,6 +19,7 @@ use rocket_multipart_form_data::{
 use tempfile::tempdir;
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
 use crate::db::project::Project;
@@ -44,6 +45,7 @@ fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
 /// Upload a presentation (slides)
 #[post("/quick_upload_slides", data = "<data>")]
 pub fn quick_upload_slides(
+    config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
@@ -72,10 +74,10 @@ pub fn quick_upload_slides(
                         &db,
                         uuid,
                         file_name,
-                        &format!("/{}", server_path.to_str().unwrap()),
+                        &format!("/data/{}", server_path.to_str().unwrap()),
                     )?;
 
-                    let mut output_path = PathBuf::from("dist");
+                    let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
 
                     println!("output_path {:#?}", output_path);
@@ -137,11 +139,11 @@ pub fn quick_upload_slides(
                             &db,
                             uuid,
                             &slide_name,
-                            &format!("/{}", server_path.to_str().unwrap()),
+                            &format!("/data/{}", server_path.to_str().unwrap()),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
                         let slide = Slide::new(&db, slide_asset.id, idx, "Dummy prompt")?;
-                        let mut output_path = PathBuf::from("dist");
+                        let mut output_path = config.data_path.clone();
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
                         fs::copy(e, &output_path)?;
