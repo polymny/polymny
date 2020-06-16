@@ -250,6 +250,7 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
     let slides = capsule.get_slides(&db)?;
     let background = capsule.get_background(&db)?;
     let logo = capsule.get_logo(&db)?;
+    let video = capsule.get_video(&db)?;
 
     let flags = user_and_projects.map(|(user, projects)| {
         json!({
@@ -263,6 +264,7 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
             "logo":        logo,
             "active_project":"",
            "structure":   capsule.structure,
+           "video":   video,
         })
     });
 

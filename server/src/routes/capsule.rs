@@ -83,7 +83,7 @@ pub struct UpdateCapsuleForm {
 }
 
 /// internal function for data format
-fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
+pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
                "slides":      capsule.get_slides(&db)? ,
@@ -91,6 +91,7 @@ fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
                "background":  capsule.get_background(&db)?,
                "logo":        capsule.get_logo(&db)?,
                "structure":   capsule.structure,
+               "video":       capsule.get_video(&db)?,
     }))
 }
 

@@ -178,6 +178,7 @@ type alias InnerCapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List InnerGos
+    , video : Maybe Asset
     }
 
 
@@ -189,6 +190,7 @@ type alias CapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List Gos
+    , video : Maybe Asset
     }
 
 
@@ -229,6 +231,7 @@ toCapsuleDetails innerDetails =
     , background = innerDetails.background
     , logo = innerDetails.logo
     , structure = List.map (toGos (slidesAsDict innerDetails.slides)) innerDetails.structure
+    , video = innerDetails.video
     }
 
 
@@ -236,7 +239,7 @@ decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
     let
         innerDecoder =
-            Decode.map7 InnerCapsuleDetails
+            Decode.map8 InnerCapsuleDetails
                 (Decode.field "capsule" decodeCapsule)
                 (Decode.field "slides" (Decode.list decodeSlide))
                 (Decode.field "projects" (Decode.list (decodeProject [])))
@@ -244,6 +247,7 @@ decodeCapsuleDetails =
                 (Decode.field "background" (Decode.maybe decodeAsset))
                 (Decode.field "logo" (Decode.maybe decodeAsset))
                 (Decode.field "structure" (Decode.list decodeInnerGos))
+                (Decode.field "video" (Decode.maybe decodeAsset))
     in
     Decode.map toCapsuleDetails innerDecoder
 

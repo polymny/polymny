@@ -4,6 +4,8 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
+import Html exposing (Html)
+import Html.Attributes
 import Status
 import Ui.Ui as Ui
 
@@ -44,8 +46,29 @@ mainView { status, details } =
 
                 _ ->
                     Element.text "Evenement non prevus"
+
+        video =
+            case details.video of
+                Just x ->
+                    Element.html <| htmlVideo x.asset_path
+
+                Nothing ->
+                    Element.none
     in
     Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ Element.text ("Coucou Edition " ++ String.fromInt details.capsule.id)
         , message
+        , video
+        ]
+
+
+htmlVideo : String -> Html msg
+htmlVideo url =
+    Html.video
+        [ Html.Attributes.controls True
+        , Html.Attributes.width 400
+        ]
+        [ Html.source
+            [ Html.Attributes.src url ]
+            []
         ]
