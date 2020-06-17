@@ -31,21 +31,3 @@ view global session preparationModel =
         , Element.spacing 20
         ]
         [ element ]
-
-
-homeView : Core.Global -> Api.Session -> Element Core.Msg
-homeView global session =
-    Element.column []
-        [ Element.el []
-            (Element.text "Welcome")
-        ]
-
-
-headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)
-headerView header el =
-    case List.length header of
-        0 ->
-            [ el ]
-
-        _ ->
-            header ++ [ el ]
