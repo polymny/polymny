@@ -63,31 +63,6 @@ macro_rules! impl_from_error {
     };
 }
 
-#[doc(hidden)]
-#[macro_export]
-macro_rules! log_ { ($name:ident: $($args:tt)*) => { $name!(target: "_", $($args)*) }; }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! launch_info { ($($args:tt)*) => { info!(target: "launch", $($args)*) } }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! launch_info_ { ($($args:tt)*) => { info!(target: "launch_", $($args)*) } }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! error_ { ($($args:expr),+) => { log_!(error: $($args),+); }; }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! info_ { ($($args:expr),+) => { log_!(info: $($args),+); }; }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! trace_ { ($($args:expr),+) => { log_!(trace: $($args),+); }; }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! debug_ { ($($args:expr),+) => { log_!(debug: $($args),+); }; }
-#[doc(hidden)]
-#[macro_export]
-macro_rules! warn_ { ($($args:expr),+) => { log_!(warn: $($args),+); }; }
-
 /// The different errors that can occur when processing a request.
 #[derive(Debug)]
 pub enum Error {
