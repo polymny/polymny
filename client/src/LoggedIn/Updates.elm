@@ -28,6 +28,36 @@ update msg { session, tab } =
             in
             ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 
+        ( LoggedIn.PreparationMsg (Preparation.PreparationClicked capsule), _ ) ->
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsule) }
+            , Cmd.none
+            )
+
+        ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
+            Acquisition.update session acquisitionMsg model
+
+        ( LoggedIn.AcquisitionMsg (Acquisition.AcquisitionClicked capsule), _ ) ->
+            let
+                ( model, cmd ) =
+                    Acquisition.init capsule Acquisition.All 0
+
+                coreCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+            in
+            ( { session = session, tab = LoggedIn.Acquisition model }
+            , coreCmd
+            )
+
+        ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
+            Edition.update session editionMsg model
+
+        ( LoggedIn.EditionClicked capsule, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+              }
+            , Cmd.none
+            )
+
         ( LoggedIn.Record capsule gos, _ ) ->
             let
                 ( t, cmd ) =
@@ -40,26 +70,8 @@ update msg { session, tab } =
             , Cmd.none
             )
 
-        ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
-            Acquisition.update session acquisitionMsg model
-
-        ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
-            Edition.update session editionMsg model
-
-        -- TODO Fix acquisition button
-        -- ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-        --     let
-        --         ( model, cmd ) =
-        --             Acquisition.init
-        --         coreCmd =
-        --             Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-        --     in
-        --     ( { session = session, tab = LoggedIn.Acquisition model }
-        --     , coreCmd
-        --     )
-        ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-            ( LoggedIn.Model session tab, Cmd.none )
-
+        --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
+        --   ( LoggedIn.Model session tab, Cmd.none )
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form showMenu ) ->
             let
                 ( newModel, cmd ) =

@@ -1,5 +1,6 @@
 module Preparation.Views exposing (gosGhostView, slideGhostView, view)
 
+import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Dialog
@@ -21,14 +22,24 @@ import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
-headerView : List (Element Core.Msg) -> List (Element Core.Msg) -> List (Element Core.Msg)
-headerView header el =
-    case List.length header of
-        0 ->
-            el
+headerView : Api.CapsuleDetails -> Element Core.Msg
+headerView details =
+    let
+        msgAcquisition =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.AcquisitionMsg <|
+                        Acquisition.AcquisitionClicked details
 
-        _ ->
-            header ++ el
+        msgEdition =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.EditionClicked details
+    in
+    Element.row []
+        [ Ui.primaryButton msgAcquisition "Acquisition ALL"
+        , Ui.primaryButton msgEdition "Edition"
+        ]
 
 
 view : Api.Session -> Preparation.Model -> Element Core.Msg
@@ -49,12 +60,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                     Element.none
 
         headers =
-            headerView []
-                [ Element.text " / "
-                , project_header
-                , Element.text " / "
-                , Element.text details.capsule.name
-                ]
+            headerView details
 
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -68,7 +74,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                 Nothing
     in
     Element.column []
-        [ Element.row [ Font.size 18 ] <| headers
+        [ headers
         , Element.el
             [ Element.padding 10
             , Element.mapAttribute Core.LoggedInMsg <|

@@ -23,16 +23,15 @@ update session msg model =
     in
     case msg of
         -- INNER MESSAGES
-        -- TODO Fix acquisition button
-        -- let
-        --     ( newModel, cmd ) =
-        --         Acquisition.init
-        --     coreCmd =
-        --         Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-        -- in
-        -- ( session, newModel, coreCmd )
-        Acquisition.AcquisitionClicked ->
-            ( makeModel model, Cmd.none )
+        Acquisition.AcquisitionClicked capsule ->
+            let
+                ( newModel, cmd ) =
+                    Acquisition.init capsule Acquisition.All 0
+
+                coreCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+            in
+            ( makeModel newModel, coreCmd )
 
         Acquisition.StartRecording ->
             let

@@ -56,6 +56,7 @@ type Msg
     | ProjectClicked Api.Project
     | NewCapsuleClicked Api.Project
     | CapsuleReceived Api.CapsuleDetails
+    | EditionClicked Api.CapsuleDetails
 
 
 type UploadSlideShowMsg

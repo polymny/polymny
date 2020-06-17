@@ -85,7 +85,8 @@ initEditPrompt =
 
 
 type Msg
-    = DnD DnDMsg
+    = PreparationClicked Api.CapsuleDetails
+    | DnD DnDMsg
     | SwitchLock Int
     | EditPromptMsg EditPromptMsg
     | UploadSlideShowMsg UploadSlideShowMsg

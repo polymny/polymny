@@ -1,11 +1,14 @@
 module Edition.Views exposing (view)
 
+import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes
+import LoggedIn.Types as LoggedIn
+import Preparation.Types as Preparation
 import Status
 import Ui.Ui as Ui
 
@@ -57,8 +60,30 @@ mainView { status, details } =
     in
     Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ Element.text ("Coucou Edition " ++ String.fromInt details.capsule.id)
+        , headerView details
         , message
         , video
+        ]
+
+
+headerView : Api.CapsuleDetails -> Element Core.Msg
+headerView details =
+    let
+        msgPreparation =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationMsg <|
+                        Preparation.PreparationClicked details
+
+        msgAcquisition =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.AcquisitionMsg <|
+                        Acquisition.AcquisitionClicked details
+    in
+    Element.row []
+        [ Ui.primaryButton msgPreparation "Preparation"
+        , Ui.primaryButton msgAcquisition "Acquisition"
         ]
 
 
