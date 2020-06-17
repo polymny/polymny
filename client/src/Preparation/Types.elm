@@ -3,7 +3,6 @@ module Preparation.Types exposing
     , Msg(..)
     )
 
-import Api
 import Capsule.Types as Capsule
 
 
@@ -12,6 +11,4 @@ type Model
 
 
 type Msg
-    = PreparationClicked
-    | CapsuleReceived Api.CapsuleDetails
-    | CapsuleMsg Capsule.Msg
+    = CapsuleMsg Capsule.Msg

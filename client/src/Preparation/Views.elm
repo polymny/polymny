@@ -4,27 +4,16 @@ import Api
 import Capsule.Views as Capsule
 import Core.Types as Core
 import Element exposing (Element)
-import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
-import Ui.Ui as Ui
 
 
 view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
 view global session preparationModel =
     let
-        preparationClickedMsg =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.PreparationClicked
-
-        clicktab =
-            headerView [] <| Ui.linkButton preparationClickedMsg "Préparation"
-
         mainPage =
             case preparationModel of
                 Preparation.Capsule capsule ->
-                    Capsule.view session capsule clicktab
+                    Capsule.view session capsule []
 
         element =
             Element.column

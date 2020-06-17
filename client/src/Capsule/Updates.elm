@@ -356,7 +356,7 @@ resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.CapsuleReceived x
+            Core.LoggedInMsg <| LoggedIn.CapsuleReceived x
         )
         (\_ -> Core.Noop)
         result

@@ -10,17 +10,6 @@ import Preparation.Types as Preparation
 update : Api.Session -> Preparation.Msg -> Preparation.Model -> ( Api.Session, Preparation.Model, Cmd Core.Msg )
 update session msg preparationModel =
     case ( msg, preparationModel ) of
-        -- INNER MESSAGES
-        ( Preparation.CapsuleReceived capsuleDetails, Preparation.Capsule capsule ) ->
-            ( session
-            , Preparation.Capsule
-                { capsule
-                    | details = capsuleDetails
-                    , slides = Capsule.setupSlides capsuleDetails
-                }
-            , Cmd.none
-            )
-
         -- OTHER MESSAGES
         ( Preparation.CapsuleMsg capsuleMsg, Preparation.Capsule capsule ) ->
             let
@@ -28,6 +17,3 @@ update session msg preparationModel =
                     Capsule.update capsuleMsg capsule
             in
             ( session, Preparation.Capsule newModel, cmd )
-
-        _ ->
-            ( session, preparationModel, Cmd.none )
