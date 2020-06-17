@@ -3,11 +3,14 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
+import Capsule.Types as Capsule
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Updates as Edition
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
@@ -26,11 +29,6 @@ update msg { session, tab } =
             in
             ( LoggedIn.Model newSession (LoggedIn.Preparation newModel), cmd )
 
-        ( LoggedIn.PreparationMsg (Preparation.ProjectClicked project), _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project Nothing }
-            , Api.capsulesFromProjectId (resultToMsg project) project.id
-            )
-
         ( LoggedIn.Record capsule gos, _ ) ->
             let
                 ( t, cmd ) =
@@ -40,6 +38,11 @@ update msg { session, tab } =
 
         ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
+            , Cmd.none
+            )
+
+        ( LoggedIn.PreparationMsg (Preparation.CapsuleReceived capsuleDetails), _ ) ->
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init capsuleDetails)) }
             , Cmd.none
             )
 
@@ -79,6 +82,49 @@ update msg { session, tab } =
                     NewProject.update session newProjectMsg newProjectModel
             in
             ( { session = newSession, tab = LoggedIn.NewProject newModel }, cmd )
+
+        ( LoggedIn.ProjectClicked project, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Project project Nothing
+              }
+            , Api.capsulesFromProjectId (resultToMsg project) project.id
+            )
+
+        ( LoggedIn.CapsulesReceived project capsules, _ ) ->
+            let
+                newSession =
+                    { session | active_project = Just project }
+            in
+            ( { session = newSession
+              , tab = LoggedIn.Project { project | capsules = capsules } Nothing
+              }
+            , Cmd.none
+            )
+
+        ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
+            let
+                ( newModel, cmd ) =
+                    NewCapsule.update project newCapsuleMsg newCapsuleModel
+            in
+            ( { session = session
+              , tab = newModel
+              }
+            , cmd
+            )
+
+        ( LoggedIn.NewCapsuleClicked project, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Project project (Just NewCapsule.init)
+              }
+            , Cmd.none
+            )
+
+        ( LoggedIn.CapsuleClicked capsule, _ ) ->
+            ( { session = session
+              , tab = tab
+              }
+            , Api.capsuleFromId resultToMsg2 capsule.id
+            )
 
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
@@ -131,8 +177,7 @@ resultToMsg project result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.CapsulesReceived project x
+                LoggedIn.CapsulesReceived project x
         )
         (\_ -> Core.Noop)
         result
@@ -143,6 +188,18 @@ resultToMsg1 result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess x
+        )
+        (\_ -> Core.Noop)
+        result
+
+
+resultToMsg2 : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg2 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.CapsuleReceived x
         )
         (\_ -> Core.Noop)
         result

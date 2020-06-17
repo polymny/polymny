@@ -14,6 +14,7 @@ import Acquisition.Types as Acquisition
 import Api
 import Edition.Types as Edition
 import File exposing (File)
+import NewCapsule.Types as NewCapsule
 import NewProject.Types as NewProject
 import Preparation.Types as Preparation
 import Status exposing (Status)
@@ -38,6 +39,7 @@ type Tab
     | Edition Edition.Model
     | Publication
     | NewProject NewProject.Model
+    | Project Api.Project (Maybe NewCapsule.Model)
 
 
 type Msg
@@ -49,6 +51,11 @@ type Msg
     | UploadSlideShowMsg UploadSlideShowMsg
     | ShowMenuToggleMsg
     | NewProjectMsg NewProject.Msg
+    | NewCapsuleMsg NewCapsule.Msg
+    | CapsulesReceived Api.Project (List Api.Capsule)
+    | CapsuleClicked Api.Capsule
+    | ProjectClicked Api.Project
+    | NewCapsuleClicked Api.Project
 
 
 type UploadSlideShowMsg

@@ -41,8 +41,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                     Ui.linkButton
                         (Just
                             (Core.LoggedInMsg <|
-                                LoggedIn.PreparationMsg <|
-                                    Preparation.ProjectClicked x
+                                LoggedIn.ProjectClicked x
                             )
                         )
                         x.name

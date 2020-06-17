@@ -10,6 +10,8 @@ import Element exposing (Element)
 import Element.Font as Font
 import File
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
@@ -40,6 +42,9 @@ view global session tab =
 
                 LoggedIn.NewProject newProjectModel ->
                     NewProject.view newProjectModel
+
+                LoggedIn.Project project newCapsuleForm ->
+                    projectView project newCapsuleForm
 
         element =
             Element.column
@@ -182,10 +187,74 @@ projectHeader global project =
         [ Ui.linkButton
             (Just
                 (Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.ProjectClicked project
+                    LoggedIn.ProjectClicked project
                 )
             )
             project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
+
+
+headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)
+headerView header el =
+    case List.length header of
+        0 ->
+            [ el ]
+
+        _ ->
+            header ++ [ el ]
+
+
+projectView : Api.Project -> Maybe NewCapsule.Model -> Element Core.Msg
+projectView project newCapsuleModel =
+    let
+        headers =
+            headerView [] <| Element.text (" / " ++ project.name)
+
+        newCapsuleForm =
+            case newCapsuleModel of
+                Just m ->
+                    NewCapsule.view m
+
+                Nothing ->
+                    Element.none
+    in
+    Element.column
+        [ Element.width (Element.fill |> Element.maximum 800)
+        ]
+        [ Element.row [ Font.size 18 ] <| headers
+        , Element.row [ Element.width Element.fill, Element.alignTop, Element.padding 20, Element.spacing 30 ]
+            [ Element.column [ Element.alignLeft, Element.width Element.fill, Element.alignTop, Element.padding 10 ]
+                [ Element.el [ Element.alignLeft ] <| newCapsuleButton project
+                , Element.column [ Element.padding 10, Element.spacing 10 ]
+                    (List.map capsuleView project.capsules)
+                ]
+            , Element.el [ Element.alignRight ] newCapsuleForm
+            ]
+        ]
+
+
+capsuleView : Api.Capsule -> Element Core.Msg
+capsuleView capsule =
+    Element.column [ Element.spacing 10 ]
+        [ Ui.linkButton
+            (Just
+                (Core.LoggedInMsg <|
+                    LoggedIn.CapsuleClicked capsule
+                )
+            )
+            capsule.name
+        , Element.text capsule.title
+        , Element.text capsule.description
+        ]
+
+
+newCapsuleButton : Api.Project -> Element Core.Msg
+newCapsuleButton project =
+    Ui.primaryButton
+        (Just
+            (Core.LoggedInMsg <|
+                LoggedIn.NewCapsuleClicked project
+            )
+        )
+        "New capsule"
