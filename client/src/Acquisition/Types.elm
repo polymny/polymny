@@ -49,8 +49,7 @@ init details mode gos =
 
 
 type Msg
-    = AcquisitionClicked Api.CapsuleDetails
-    | StartRecording
+    = StartRecording
     | StopRecording
     | GoToStream Int
     | NextSlide Bool

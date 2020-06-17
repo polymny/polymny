@@ -28,7 +28,7 @@ update msg { session, tab } =
             in
             ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 
-        ( LoggedIn.PreparationMsg (Preparation.PreparationClicked capsule), _ ) ->
+        ( LoggedIn.PreparationClicked capsule, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsule) }
             , Cmd.none
             )
@@ -36,7 +36,7 @@ update msg { session, tab } =
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
             Acquisition.update session acquisitionMsg model
 
-        ( LoggedIn.AcquisitionMsg (Acquisition.AcquisitionClicked capsule), _ ) ->
+        ( LoggedIn.AcquisitionClicked capsule, _ ) ->
             let
                 ( model, cmd ) =
                     Acquisition.init capsule Acquisition.All 0

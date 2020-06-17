@@ -13,9 +13,6 @@ import Utils
 update : Preparation.Msg -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
 update msg capsuleModel =
     case ( msg, capsuleModel ) of
-        ( Preparation.PreparationClicked capsule, _ ) ->
-            ( Preparation.init capsule, Cmd.none )
-
         ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
                 ( newFormModel, newCmd ) =

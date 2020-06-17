@@ -72,18 +72,17 @@ headerView details =
         msgPreparation =
             Just <|
                 Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.PreparationClicked details
+                    LoggedIn.PreparationClicked details
 
         msgAcquisition =
             Just <|
                 Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionMsg <|
-                        Acquisition.AcquisitionClicked details
+                    LoggedIn.AcquisitionClicked details
     in
     Element.row []
         [ Ui.primaryButton msgPreparation "Preparation"
         , Ui.primaryButton msgAcquisition "Acquisition"
+        , Ui.primaryButtonDisabled "Edition"
         ]
 
 

@@ -56,6 +56,8 @@ type Msg
     | ProjectClicked Api.Project
     | NewCapsuleClicked Api.Project
     | CapsuleReceived Api.CapsuleDetails
+    | PreparationClicked Api.CapsuleDetails
+    | AcquisitionClicked Api.CapsuleDetails
     | EditionClicked Api.CapsuleDetails
 
 

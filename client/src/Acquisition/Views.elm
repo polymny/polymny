@@ -33,10 +33,31 @@ view _ _ model =
         [ element ]
 
 
+headerView : Api.CapsuleDetails -> Element Core.Msg
+headerView details =
+    let
+        msgPreparation =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.PreparationClicked details
+
+        msgEdition =
+            Just <|
+                Core.LoggedInMsg <|
+                    LoggedIn.EditionClicked details
+    in
+    Element.row []
+        [ Ui.primaryButton msgPreparation "Preparation"
+        , Ui.primaryButtonDisabled "Acquisition"
+        , Ui.primaryButton msgEdition "Edition"
+        ]
+
+
 mainView : Acquisition.Model -> Element Core.Msg
 mainView model =
     Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ topView model
+        [ headerView model.details
+        , topView model
         , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextSlideButton ]
         , recordingsView model.records model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream

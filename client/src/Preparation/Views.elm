@@ -28,8 +28,7 @@ headerView details =
         msgAcquisition =
             Just <|
                 Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionMsg <|
-                        Acquisition.AcquisitionClicked details
+                    LoggedIn.AcquisitionClicked details
 
         msgEdition =
             Just <|
@@ -37,7 +36,8 @@ headerView details =
                     LoggedIn.EditionClicked details
     in
     Element.row []
-        [ Ui.primaryButton msgAcquisition "Acquisition ALL"
+        [ Ui.primaryButtonDisabled "Edition"
+        , Ui.primaryButton msgAcquisition "Acquisition ALL"
         , Ui.primaryButton msgEdition "Edition"
         ]
 
