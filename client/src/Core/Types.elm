@@ -8,7 +8,6 @@ module Core.Types exposing
     )
 
 import Api
-import Capsule.Types as Capsule
 import Json.Decode as Decode
 import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
@@ -57,9 +56,7 @@ modelFromFlags flags =
                     LoggedIn
                         { session = session
                         , tab =
-                            LoggedIn.Preparation <|
-                                Preparation.Capsule
-                                    (Capsule.init capsule)
+                            LoggedIn.Preparation <| Preparation.init capsule
                         }
 
                 ( _, _ ) ->

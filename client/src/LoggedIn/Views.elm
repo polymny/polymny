@@ -29,7 +29,7 @@ view global session tab =
                     homeView global session uploadForm showMenu
 
                 LoggedIn.Preparation preparationModel ->
-                    Preparation.view global session preparationModel
+                    Preparation.view session preparationModel
 
                 LoggedIn.Acquisition acquisitionModel ->
                     Acquisition.view global session acquisitionModel

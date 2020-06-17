@@ -3,7 +3,6 @@ module Acquisition.Updates exposing (update)
 import Acquisition.Ports as Ports
 import Acquisition.Types as Acquisition
 import Api
-import Capsule.Types as Capsule
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Views as Edition
@@ -110,7 +109,7 @@ update session msg model =
                         )
                     of
                         ( Ok v, Acquisition.Single, _ ) ->
-                            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init v)) }
+                            ( { session = session, tab = LoggedIn.Preparation (Preparation.init v) }
                             , Cmd.none
                             )
 

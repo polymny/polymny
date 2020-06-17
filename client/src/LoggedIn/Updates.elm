@@ -3,7 +3,6 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
-import Capsule.Types as Capsule
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Updates as Edition
@@ -24,10 +23,10 @@ update msg { session, tab } =
     case ( msg, tab ) of
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
-                ( newSession, newModel, cmd ) =
-                    Preparation.update session preparationMsg model
+                ( newModel, cmd ) =
+                    Preparation.update preparationMsg model
             in
-            ( LoggedIn.Model newSession (LoggedIn.Preparation newModel), cmd )
+            ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 
         ( LoggedIn.Record capsule gos, _ ) ->
             let
@@ -37,7 +36,7 @@ update msg { session, tab } =
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
         ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init capsuleDetails)) }
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsuleDetails) }
             , Cmd.none
             )
 

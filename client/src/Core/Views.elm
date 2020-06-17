@@ -2,8 +2,6 @@ module Core.Views exposing (subscriptions, view)
 
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
-import Capsule.Types as Capsule
-import Capsule.Views as Capsule
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
@@ -13,6 +11,7 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
 import Preparation.Types as Preparation
+import Preparation.Views as Preparation
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -24,18 +23,16 @@ subscriptions { model } =
     case model of
         Core.LoggedIn { tab } ->
             case tab of
-                LoggedIn.Preparation preparationModel ->
-                    case preparationModel of
-                        Preparation.Capsule { slideModel, gosModel } ->
-                            Sub.map
-                                (\x ->
-                                    Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.CapsuleMsg (Capsule.DnD x)))
-                                )
-                                (Sub.batch
-                                    [ Capsule.slideSystem.subscriptions slideModel
-                                    , Capsule.gosSystem.subscriptions gosModel
-                                    ]
-                                )
+                LoggedIn.Preparation { slideModel, gosModel } ->
+                    Sub.map
+                        (\x ->
+                            Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.DnD x))
+                        )
+                        (Sub.batch
+                            [ Preparation.slideSystem.subscriptions slideModel
+                            , Preparation.gosSystem.subscriptions gosModel
+                            ]
+                        )
 
                 LoggedIn.Acquisition _ ->
                     Sub.batch
@@ -80,12 +77,10 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation preparationModel ->
-                            case preparationModel of
-                                Preparation.Capsule { slides, slideModel, gosModel, details } ->
-                                    [ Element.inFront (Capsule.gosGhostView details gosModel slideModel (List.concat slides))
-                                    , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
-                                    ]
+                        LoggedIn.Preparation { slides, slideModel, gosModel, details } ->
+                            [ Element.inFront (Preparation.gosGhostView details gosModel slideModel (List.concat slides))
+                            , Element.inFront (Preparation.slideGhostView slideModel (List.concat slides))
+                            ]
 
                         _ ->
                             []
