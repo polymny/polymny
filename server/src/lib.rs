@@ -31,7 +31,7 @@ pub mod generated_schema;
 #[allow(missing_docs)]
 pub mod schema;
 
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::{error, fmt, io, result};
@@ -324,14 +324,17 @@ pub fn start_server(rocket_config: RConfig) {
         let mut config = ConfigBuilder::new();
         config.set_max_level(LevelFilter::Off);
         config.set_time_level(LevelFilter::Off);
+        let config = config.build();
 
-        WriteLogger::init(
-            LevelFilter::Info,
-            config.build(),
-            File::create(&server_config.log_path).unwrap(),
-            vec![String::from(module_path!())],
-        )
-        .unwrap();
+        let file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(&server_config.log_path)
+            .unwrap();
+
+        let module = vec![String::from(module_path!())];
+
+        WriteLogger::init(LevelFilter::Info, config, file, module).unwrap();
 
         rocket::custom(rocket_config).attach(Log::fairing())
     } else {
