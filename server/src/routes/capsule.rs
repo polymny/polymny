@@ -233,11 +233,9 @@ pub fn upload_slides(
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
                     entries.sort();
 
-                    //TODO : use enumerate  instead of idx ?
-                    let mut idx = 1;
                     let mut capsule_structure = vec![];
 
-                    for e in entries {
+                    for (idx, e) in entries.iter().enumerate() {
                         // Create one GOS and associated per image
                         // one slide per GOS
                         let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
@@ -252,13 +250,13 @@ pub fn upload_slides(
                             &slide_name,
                             &format!("/data/{}", server_path.to_str().unwrap()),
                         )?;
-                        // When generated a slide take position (idx*100) and one per GOS
-                        let slide = Slide::new(&db, asset.id, idx, "Dummy prompt")?;
+
+                        let slide = Slide::new(&db, asset.id, id, "Dummy prompt")?;
                         let mut output_path = config.data_path.clone();
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
                         fs::copy(e, &output_path)?;
-                        idx += 1;
+
                         capsule_structure.push(GosStructure {
                             record_path: None,
                             slides: vec![slide.id],
