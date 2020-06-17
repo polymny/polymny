@@ -26,6 +26,7 @@ pub const TEST_EMAIL_HTML: &str =
 pub const TEST_EMAIL_PLAIN_TEXT: &str =
     "Congratulations!\n\nIf you received this email, it means that the mailer is working!";
 
+#[cfg(debug_assertions)]
 const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
 <html>
     <head>
@@ -42,6 +43,23 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
             var app = Elm.Main.init({
 "#;
 
+#[cfg(not(debug_assertions))]
+const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+
+    </head>
+    <body>
+        <div id="root"></div>
+        <script src="/dist/main.min.js"></script>
+        <script src="/dist/ports.min.js"></script>
+        <script>
+            var app = Elm.Main.init({
+"#;
+
 const INDEX_HTML_AFTER_FLAGS: &str = r#"
                 node: document.getElementById('root')
             });
@@ -51,6 +69,7 @@ const INDEX_HTML_AFTER_FLAGS: &str = r#"
 </html>
 "#;
 
+#[cfg(debug_assertions)]
 const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
@@ -60,6 +79,25 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/setup.js"></script>
+        <script>
+            var app = Elm.Setup.init({
+                node: document.getElementById('root')
+            });
+        </script>
+    </body>
+</html>
+"#;
+
+#[cfg(not(debug_assertions))]
+const SETUP_HTML: &str = r#"<!doctype HTML>
+<html>
+    <head>
+        <title>Preparaption - Setup</title>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <div id="root"></div>
+        <script src="/dist/setup.min.js"></script>
         <script>
             var app = Elm.Setup.init({
                 node: document.getElementById('root')
