@@ -23,6 +23,7 @@ uuid = { version = "0.6.5", features = ["serde", "v4"] }
 tempfile = "3.1.0"
 log = "0.4.8"
 serde_json = "1.0"
+simplelog = { git = "https://gitlab.enseeiht.fr/tforgione/simplelog" }
 
 [dependencies.rocket_contrib]
 version = "0.4.4"

@@ -18,6 +18,7 @@ extern crate diesel_derive_enum;
 
 pub mod config;
 pub mod db;
+pub mod log_fairing;
 pub mod mailer;
 pub mod routes;
 pub mod templates;
@@ -30,12 +31,14 @@ pub mod generated_schema;
 #[allow(missing_docs)]
 pub mod schema;
 
+use std::fs::File;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::{error, fmt, io, result};
 
 use bcrypt::BcryptError;
 
+use rocket::config::{Config as RConfig, Environment, RocketConfig};
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
@@ -47,6 +50,7 @@ use rocket_contrib::serve::StaticFiles;
 
 use crate::config::Config;
 use crate::db::user::User;
+use crate::log_fairing::Log;
 use crate::templates::{index_html, setup_html};
 
 macro_rules! impl_from_error {
@@ -302,7 +306,6 @@ pub fn setup<'a>() -> Response<'a> {
 /// The route for static files that require authorization.
 #[get("/<path..>")]
 pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Option<NamedFile> {
-    println!("{:?}", path);
     if path.starts_with(user.username) {
         let data_path = config.data_path.join(path);
         NamedFile::open(data_path).ok()
@@ -311,13 +314,34 @@ pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Option<Name
     }
 }
 
-/// Starts the server.
-pub fn main() {
-    rocket::ignite()
+/// Starts the main server.
+pub fn start_server(rocket_config: RConfig) {
+    let server_config = Config::from(&rocket_config);
+
+    let rocket = if rocket_config.environment == Environment::Production {
+        use simplelog::*;
+
+        let mut config = ConfigBuilder::new();
+        config.set_max_level(LevelFilter::Off);
+        config.set_time_level(LevelFilter::Off);
+
+        WriteLogger::init(
+            LevelFilter::Info,
+            config.build(),
+            File::create(&server_config.log_path).unwrap(),
+            vec![String::from(module_path!())],
+        )
+        .unwrap();
+
+        rocket::custom(rocket_config).attach(Log::fairing())
+    } else {
+        rocket::custom(rocket_config)
+    };
+
+    rocket
         .attach(Database::fairing())
         .attach(AdHoc::on_attach("Config fairing", |rocket| {
-            let config = Config::from(&rocket.config());
-            Ok(rocket.manage(config))
+            Ok(rocket.manage(server_config))
         }))
         .mount("/", routes![index, capsule])
         .mount("/dist", StaticFiles::from("dist"))
@@ -332,13 +356,11 @@ pub fn main() {
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::get_capsules,
-                routes::project::all_projects,
                 routes::project::update_project,
                 routes::project::delete_project,
                 routes::project::project_upload,
                 routes::capsule::new_capsule,
                 routes::capsule::get_capsule,
-                routes::capsule::all_capsules,
                 routes::capsule::update_capsule,
                 routes::capsule::delete_capsule,
                 routes::capsule::upload_slides,
@@ -348,22 +370,17 @@ pub fn main() {
                 routes::capsule::upload_record,
                 routes::capsule::capsule_edition,
                 routes::asset::get_asset,
-                routes::asset::all_assets,
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
                 routes::slide::update_slide,
                 routes::loggedin::quick_upload_slides,
             ],
         )
-        .launch()
-        // This .kind() is here to prevent the server from panicking in case the config file is not
-        // available. launch() returns an Error that when dropped, panics if it has not been
-        // handled. Using .kind() here marks the error as handled.
-        .kind();
+        .launch();
+}
 
-    // If we arrive here, it means that the server failed to start.
-    // Unless it's due to a programming mistake, this means that the configuration is broken.
-    // In this case, we will spawn another server that asks for the configuration.
+/// Starts the setup server.
+pub fn start_setup_server() {
     rocket::ignite()
         .mount("/", routes![setup])
         .mount("/", StaticFiles::from("dist"))
@@ -375,6 +392,23 @@ pub fn main() {
                 routes::setup::setup_config
             ],
         )
-        .launch()
-        .kind();
+        .launch();
+}
+
+/// Starts the server.
+pub fn main() {
+    match RocketConfig::read() {
+        Ok(config) => {
+            RocketConfig::active_default().unwrap();
+            let rocket_config = config.active().clone();
+            start_server(rocket_config);
+        }
+
+        _ => {
+            // If we arrive here, it means that the server failed to start, because the
+            // configuration is broken or missing. In this case, we will spawn another server that
+            // asks for the configuration.
+            start_setup_server();
+        }
+    };
 }
