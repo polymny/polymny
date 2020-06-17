@@ -11,9 +11,6 @@ update : Api.Session -> Preparation.Msg -> Preparation.Model -> ( Api.Session, P
 update session msg preparationModel =
     case ( msg, preparationModel ) of
         -- INNER MESSAGES
-        ( Preparation.PreparationClicked, _ ) ->
-            ( session, Preparation.Home, Cmd.none )
-
         ( Preparation.CapsuleReceived capsuleDetails, Preparation.Capsule capsule ) ->
             ( session
             , Preparation.Capsule
@@ -23,9 +20,6 @@ update session msg preparationModel =
                 }
             , Cmd.none
             )
-
-        ( Preparation.CapsuleReceived capsuleDetails, _ ) ->
-            ( session, Preparation.Capsule (Capsule.init capsuleDetails), Cmd.none )
 
         -- OTHER MESSAGES
         ( Preparation.CapsuleMsg capsuleMsg, Preparation.Capsule capsule ) ->

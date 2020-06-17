@@ -37,9 +37,6 @@ subscriptions { model } =
                                     ]
                                 )
 
-                        _ ->
-                            Sub.none
-
                 LoggedIn.Acquisition _ ->
                     Sub.batch
                         [ Acquisition.Ports.newRecord Acquisition.NewRecord
@@ -90,9 +87,6 @@ viewContent { global, model } =
                                     , Element.inFront (Capsule.slideGhostView slideModel (List.concat slides))
                                     ]
 
-                                _ ->
-                                    []
-
                         _ ->
                             []
 
@@ -105,44 +99,6 @@ viewContent { global, model } =
 homeView : Element Core.Msg
 homeView =
     Element.column [ Element.alignTop, Element.padding 10, Element.width Element.fill ] [ Element.text "Home" ]
-
-
-menuTab : LoggedIn.Tab -> Element Core.Msg
-menuTab tab =
-    let
-        preparationClickedMsg =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.PreparationClicked
-
-        acquisitionClickedMsg =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionMsg <|
-                        Acquisition.AcquisitionClicked
-    in
-    Element.row Ui.menuTabAttributes
-        [ (if LoggedIn.isPreparation tab then
-            Ui.tabButtonActive
-
-           else
-            Ui.tabButton
-                preparationClickedMsg
-          )
-          <|
-            "Préparation"
-        , (if LoggedIn.isAcquisition tab then
-            Ui.tabButtonActive
-
-           else
-            Ui.tabButton
-                acquisitionClickedMsg
-          )
-          <|
-            "Acquisition"
-        , Ui.tabButton Nothing "Edition"
-        ]
 
 
 topBar : Core.Model -> Element Core.Msg
@@ -158,10 +114,6 @@ topBar model =
                 [ Element.row
                     [ Element.alignLeft, Element.padding 10, Element.spacing 5 ]
                     [ homeButton ]
-                , Element.row
-                    [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
-                    [ menuTab tab
-                    ]
                 , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
                         [ Element.el [] (Element.text session.username), logoutButton ]

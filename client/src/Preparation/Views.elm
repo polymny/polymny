@@ -4,12 +4,8 @@ import Api
 import Capsule.Views as Capsule
 import Core.Types as Core
 import Element exposing (Element)
-import Element.Font as Font
 import LoggedIn.Types as LoggedIn
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Views as NewCapsule
 import Preparation.Types as Preparation
-import TimeUtils
 import Ui.Ui as Ui
 
 
@@ -27,9 +23,6 @@ view global session preparationModel =
 
         mainPage =
             case preparationModel of
-                Preparation.Home ->
-                    homeView global session
-
                 Preparation.Capsule capsule ->
                     Capsule.view session capsule clicktab
 

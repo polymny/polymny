@@ -36,11 +36,6 @@ update msg { session, tab } =
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
-        ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
-            , Cmd.none
-            )
-
         ( LoggedIn.PreparationMsg (Preparation.CapsuleReceived capsuleDetails), _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.Capsule (Capsule.init capsuleDetails)) }
             , Cmd.none

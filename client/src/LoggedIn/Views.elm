@@ -37,9 +37,6 @@ view global session tab =
                 LoggedIn.Edition editionModel ->
                     Edition.view global session editionModel
 
-                LoggedIn.Publication ->
-                    Preparation.view global session Preparation.Home
-
                 LoggedIn.NewProject newProjectModel ->
                     NewProject.view newProjectModel
 

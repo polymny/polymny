@@ -8,8 +8,7 @@ import Capsule.Types as Capsule
 
 
 type Model
-    = Home
-    | Capsule Capsule.Model
+    = Capsule Capsule.Model
 
 
 type Msg

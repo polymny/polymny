@@ -37,7 +37,6 @@ type Tab
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition Edition.Model
-    | Publication
     | NewProject NewProject.Model
     | Project Api.Project (Maybe NewCapsule.Model)
 
