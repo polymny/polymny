@@ -7,6 +7,7 @@ module Core.Types exposing
     , isLoggedIn
     )
 
+import Acquisition.Types as Acquisition
 import Api
 import Json.Decode as Decode
 import Log exposing (debug)
@@ -14,6 +15,7 @@ import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import Preparation.Types as Preparation
 import SignUp.Types as SignUp
+import Status
 import Task
 import Time
 
@@ -57,6 +59,32 @@ modelFromFlags flags =
                         { session = session
                         , tab =
                             LoggedIn.Preparation <| Preparation.init capsule
+                        }
+
+                ( _, _ ) ->
+                    Home
+
+        Ok "acquisition/capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    let
+                        ( model, _ ) =
+                            Acquisition.init capsule Acquisition.All 0
+                    in
+                    LoggedIn
+                        { session = session
+                        , tab = LoggedIn.Acquisition model
+                        }
+
+                ( _, _ ) ->
+                    Home
+
+        Ok "edition/capsule" ->
+            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+                ( Ok session, Ok capsule ) ->
+                    LoggedIn
+                        { session = session
+                        , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
                         }
 
                 ( _, _ ) ->
