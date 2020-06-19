@@ -8,6 +8,7 @@ import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Ui.Ui as Ui
+import Utils
 
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
@@ -18,18 +19,12 @@ view _ _ model =
 
         element =
             Element.column
-                [ Element.alignTop
-                , Element.padding 10
-                , Element.width Element.fill
-                , Element.scrollbarX
+                Ui.mainViewAttributes2
+                [ Utils.headerView "acquisition" model.details
+                , mainPage
                 ]
-                [ mainPage ]
     in
-    Element.row
-        [ Element.height Element.fill
-        , Element.width Element.fill
-        , Element.spacing 20
-        ]
+    Element.row Ui.mainViewAttributes1
         [ element ]
 
 

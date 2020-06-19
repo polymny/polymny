@@ -8,6 +8,7 @@ module Ui.Icons exposing
     , menuPoint
     , movie
     , openLock
+    , spinner
     , trash
     )
 
@@ -75,6 +76,30 @@ closeLock =
     buttonFromIcon FontAwesome.lock
 
 
+spinner : Element msg
+spinner =
+    Element.html
+        (Html.div
+            []
+            [ FontAwesome.iconWithOptions
+                FontAwesome.spinner
+                FontAwesome.Solid
+                [ FontAwesome.Animation FontAwesome.Spin, FontAwesome.Size FontAwesome.Large ]
+                []
+            ]
+        )
+
+
 menuPoint : Element msg
 menuPoint =
-    buttonFromIcon FontAwesome.ellipsisVertical
+    Element.el [] <|
+        Element.html
+            (Html.div
+                []
+                [ FontAwesome.iconWithOptions
+                    FontAwesome.ellipsisVertical
+                    FontAwesome.Solid
+                    [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                    []
+                ]
+            )

@@ -83,7 +83,7 @@ pub struct UpdateCapsuleForm {
 }
 
 /// internal function for data format
-fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
+pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
                "slides":      capsule.get_slides(&db)? ,
@@ -91,6 +91,7 @@ fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
                "background":  capsule.get_background(&db)?,
                "logo":        capsule.get_logo(&db)?,
                "structure":   capsule.structure,
+               "video":       capsule.get_video(&db)?,
     }))
 }
 
@@ -497,22 +498,12 @@ pub fn capsule_edition(db: Database, user: User, id: i32) -> Result<JsonValue> {
             idx, record_path, slide.asset.asset_path
         );
 
-        // ffmpeg command to reproduce for overlay
-        //
-        // ffmpeg -y -i slide0.png -i record0.webm \
-        // -filter_complex \
-        // "[1]scale=300:-1 [pip]; \
-        // [0][pip] overlay=main_w-overlay
-        // _w-10:main_h-overlay_h-10" \
-        // -profile:v main \
-        // -level 3.1 -b:v 440k -ar 44100 -ab 128k \
-        // -vcodec h264 -acodec mp3 \
-        // $PIP1
         let pip_out = format!("/tmp/pip{}.mp4", idx);
         let command = format!(
-            "ffmpeg -hide_banner -y -i {slide} -i {record} -filter_complex \"[1]scale=300:-1 [pip]; [0][pip] overlay=main_w-overlay_w-10:main_h-overlay_h-10\"  -profile:v main -level 3.1 -b:v 440k -ar 44100 -ab 128k -vcodec h264 -acodec mp3 {out}"
+            "ffmpeg -hide_banner -y -i {slide} -i {record} -filter_complex \"[1]scale=300:-1 [pip]; [0][pip] overlay={overlay}\"  -profile:v main -level 3.1 -b:v 440k -ar 44100 -ab 128k -vcodec h264 -acodec mp3 {out}"
             , slide = format!("{}{}","dist", slide.asset.asset_path)
             , record =  format!("{}{}","dist", record_path)
+            , overlay = "4:main_h-overlay_h-4" // webcam input on bottom left
             , out = pip_out);
 
         //println!("command = {:#?}", command);

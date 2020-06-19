@@ -24,22 +24,10 @@ use crate::db::capsule::Capsule;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
-use crate::routes::capsule::GosStructure;
+use crate::routes::capsule::{format_capsule_data, GosStructure};
 use crate::schema::capsules;
 
 use crate::{Database, Error, Result};
-
-/// internal function for data format
-fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
-    Ok(json!({ "capsule":     capsule,
-               "slide_show":  capsule.get_slide_show(&db)?,
-               "slides":      capsule.get_slides(&db)? ,
-               "projects":    capsule.get_projects(&db)?,
-               "background":  capsule.get_background(&db)?,
-               "logo":        capsule.get_logo(&db)?,
-               "structure":   capsule.structure,
-    }))
-}
 
 /// Upload a presentation (slides)
 #[post("/quick_upload_slides", data = "<data>")]

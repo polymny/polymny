@@ -12,7 +12,10 @@ module LoggedIn.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Edition.Types as Edition
 import File exposing (File)
+import NewCapsule.Types as NewCapsule
+import NewProject.Types as NewProject
 import Preparation.Types as Preparation
 import Status exposing (Status)
 
@@ -33,18 +36,29 @@ type Tab
     = Home UploadForm Bool
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
-    | Edition
-    | Publication
+    | Edition Edition.Model
+    | NewProject NewProject.Model
+    | Project Api.Project (Maybe NewCapsule.Model)
 
 
 type Msg
     = PreparationMsg Preparation.Msg
     | AcquisitionMsg Acquisition.Msg
-    | EditionMsg
+    | EditionMsg Edition.Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
     | ShowMenuToggleMsg
+    | NewProjectMsg NewProject.Msg
+    | NewCapsuleMsg NewCapsule.Msg
+    | CapsulesReceived Api.Project (List Api.Capsule)
+    | CapsuleClicked Api.Capsule
+    | ProjectClicked Api.Project
+    | NewCapsuleClicked Api.Project
+    | CapsuleReceived Api.CapsuleDetails
+    | PreparationClicked Api.CapsuleDetails
+    | AcquisitionClicked Api.CapsuleDetails
+    | EditionClicked Api.CapsuleDetails
 
 
 type UploadSlideShowMsg

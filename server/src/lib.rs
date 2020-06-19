@@ -40,6 +40,7 @@ use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 
 use rocket_contrib::databases::diesel as rocket_diesel;
+use rocket_contrib::json::JsonValue;
 use rocket_contrib::serve::StaticFiles;
 
 use crate::db::capsule::Capsule;
@@ -236,9 +237,12 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
     Ok(response)
 }
 
-/// A page that moves the client directly to the capsule view.
-#[get("/preparation/capsule/<id>")]
-pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+fn jsonify_flags(
+    db: &Database,
+    user: &Option<User>,
+    id: i32,
+    page: &str,
+) -> Result<Option<JsonValue>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -250,10 +254,10 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
     let slides = capsule.get_slides(&db)?;
     let background = capsule.get_background(&db)?;
     let logo = capsule.get_logo(&db)?;
-
-    let flags = user_and_projects.map(|(user, projects)| {
+    let video = capsule.get_video(&db)?;
+    Ok(user_and_projects.map(|(user, projects)| {
         json!({
-            "page":       "preparation/capsule",
+            "page":       page,
             "username":   user.username,
             "projects":   projects,
             "capsule" :   capsule,
@@ -263,12 +267,41 @@ pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response
             "logo":        logo,
             "active_project":"",
            "structure":   capsule.structure,
+           "video":   video,
         })
-    });
+    }))
+}
 
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/preparation")]
+pub fn capsule_preparation<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "preparation/capsule");
     let response = Response::build()
         .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
+        .sized_body(Cursor::new(index_html(flags?)))
+        .finalize();
+
+    Ok(response)
+}
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/acquisition")]
+pub fn capsule_acquisition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "acquisition/capsule");
+    let response = Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags?)))
+        .finalize();
+
+    Ok(response)
+}
+
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/edition")]
+pub fn capsule_edition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "edition/capsule");
+    let response = Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags?)))
         .finalize();
 
     Ok(response)
@@ -291,7 +324,15 @@ pub fn main() {
             let mailer = Mailer::from_config(rocket.config());
             Ok(rocket.manage(mailer))
         }))
-        .mount("/", routes![index, capsule])
+        .mount(
+            "/",
+            routes![
+                index,
+                capsule_preparation,
+                capsule_acquisition,
+                capsule_edition
+            ],
+        )
         .mount("/", StaticFiles::from("dist"))
         .mount(
             "/api/",

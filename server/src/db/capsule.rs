@@ -207,6 +207,14 @@ impl Capsule {
         }
     }
 
+    /// get the video associated to capsule
+    pub fn get_video(&self, db: &PgConnection) -> Result<Option<Asset>> {
+        match self.video_id {
+            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
+            None => Ok(None),
+        }
+    }
+
     /// get the slide show associated to capsule
     pub fn get_slides(&self, db: &PgConnection) -> Result<Vec<SlideWithAsset>> {
         //TODO : Verify if gest slide is correct without GOS

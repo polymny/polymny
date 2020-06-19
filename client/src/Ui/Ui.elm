@@ -6,9 +6,13 @@ module Ui.Ui exposing
     , closeLockButton
     , editButton
     , errorModal
+    , homeButton
     , linkButton
+    , mainViewAttributes1
+    , mainViewAttributes2
     , menuPointButton
     , menuTabAttributes
+    , messageWithSpinner
     , movieButton
     , onEnter
     , openLockButton
@@ -16,11 +20,13 @@ module Ui.Ui exposing
     , primaryButtonDisabled
     , simpleButton
     , simpleButtonDisabled
+    , spinner
     , successButton
     , successModal
     , tabButton
     , tabButtonActive
     , textButton
+    , topBarButton
     , trashButton
     )
 
@@ -54,21 +60,20 @@ onEnter msg =
 
 buttonAttributes : List (Element.Attribute msg)
 buttonAttributes =
-    [ Element.centerX
+    [ Font.color Colors.white
+    , Element.centerX
     , Element.padding 10
+    , Background.color Colors.artIrises
+    , Border.color Colors.white
     , Border.rounded 5
-    , Font.color Colors.artEvening
+    , Border.width 1
+    , Font.color Colors.white
     ]
 
 
 textButton : Maybe msg -> String -> Element msg
 textButton onPress content =
-    Input.button
-        [ Font.color Colors.white
-        , Element.centerX
-        , Element.padding 10
-        , Background.color Colors.artStarryNight
-        ]
+    Input.button buttonAttributes
         { onPress = onPress
         , label = Element.text content
         }
@@ -77,9 +82,28 @@ textButton onPress content =
 linkButton : Maybe msg -> String -> Element msg
 linkButton onPress content =
     Input.button
-        [ Font.color Colors.link
+        [ Font.color Colors.primary
         , Font.underline
         ]
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
+topBarButton : Maybe msg -> String -> Element msg
+topBarButton onPress content =
+    let
+        attr =
+            buttonAttributes
+                ++ [ Background.color Colors.primary
+                   , Font.color Colors.artSunFlowers
+                   , Border.color Colors.artSunFlowers
+                   , Border.rounded 5
+                   , Border.width 1
+                   ]
+    in
+    Input.button
+        attr
         { onPress = onPress
         , label = Element.text content
         }
@@ -89,11 +113,13 @@ simpleButton : Maybe msg -> String -> Element msg
 simpleButton onPress content =
     let
         attr =
-            Background.color Colors.artStarryNight
-                :: Border.color Colors.grey
-                :: Border.rounded 5
-                :: Border.width 1
-                :: buttonAttributes
+            buttonAttributes
+                ++ [ Background.color Colors.primary
+                   , Font.color Colors.white
+                   , Border.color Colors.artEvening
+                   , Border.rounded 5
+                   , Border.width 1
+                   ]
     in
     Input.button
         attr
@@ -128,34 +154,23 @@ successButton onPress content =
 primaryButton : Maybe msg -> String -> Element msg
 primaryButton onPress content =
     Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
-        )
+        buttonAttributes
         { onPress = onPress
         , label = Element.text content
         }
 
 
-editButton : Maybe msg -> String -> Element msg
-editButton onPress content =
-    Input.button
-        (Background.color Colors.artStarryNight
-            :: Font.color Colors.artSunFlowers
-            :: buttonAttributes
-        )
-        { onPress = onPress
-        , label = Element.row [] [ Icons.edit, Element.text content ]
-        }
-
-
 iconButton : Element msg -> Maybe msg -> String -> Element msg
 iconButton icon onPress content =
-    Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
-        )
+    let
+        iconAttributes =
+            buttonAttributes
+                ++ [ Font.color Colors.primary
+                   , Background.color Colors.white
+                   , Border.color Colors.primary
+                   ]
+    in
+    Input.button iconAttributes
         { onPress = onPress
         , label = Element.row [] [ icon, Element.text content ]
         }
@@ -169,6 +184,11 @@ trashButton onPress content =
 addButton : Maybe msg -> String -> Element msg
 addButton onPress content =
     iconButton Icons.add onPress content
+
+
+editButton : Maybe msg -> String -> Element msg
+editButton onPress content =
+    iconButton Icons.edit onPress content
 
 
 clearButton : Maybe msg -> String -> Element msg
@@ -206,12 +226,31 @@ menuPointButton onPress content =
     iconButton Icons.menuPoint onPress content
 
 
+homeButton : Maybe msg -> String -> Element msg
+homeButton onPress content =
+    let
+        icon =
+            Element.image [ Element.width (Element.px 60) ]
+                { src = "/logo.png"
+                , description = " Polymny home page"
+                }
+    in
+    Input.button
+        [ Background.color Colors.primary
+        , Font.color Colors.white
+        ]
+        { onPress = onPress
+        , label = Element.row [] [ icon, Element.text content ]
+        }
+
+
 primaryButtonDisabled : String -> Element msg
 primaryButtonDisabled content =
     Input.button
-        (Background.color Colors.primaryLight
-            :: Font.color Colors.grey
-            :: buttonAttributes
+        (buttonAttributes
+            ++ [ Background.color Colors.grey
+               , Font.color Colors.greyDark
+               ]
         )
         { onPress = Nothing
         , label = Element.text content
@@ -278,3 +317,45 @@ successModal text =
             :: modalAttributes
         )
         [ Element.text text ]
+
+
+spinner : Element msg
+spinner =
+    Element.el
+        [ Element.padding 10
+        , Element.centerX
+        , Font.color Colors.artIrises
+        ]
+        Icons.spinner
+
+
+messageWithSpinner : String -> Element msg
+messageWithSpinner content =
+    Element.column
+        (buttonAttributes
+            ++ [ Border.color Colors.artIrises
+               , Border.width 1
+               , Element.centerX
+               ]
+        )
+        [ spinner
+        , Element.el [] <| Element.text content
+        ]
+
+
+mainViewAttributes1 : List (Element.Attribute msg)
+mainViewAttributes1 =
+    [ Element.alignTop
+    , Element.padding 10
+    , Element.width Element.fill
+    , Element.scrollbarX
+    ]
+
+
+mainViewAttributes2 : List (Element.Attribute msg)
+mainViewAttributes2 =
+    [ Element.alignTop
+    , Element.padding 10
+    , Element.width Element.fill
+    , Element.scrollbarX
+    ]
