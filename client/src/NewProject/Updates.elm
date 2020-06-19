@@ -4,7 +4,6 @@ import Api
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
 import NewProject.Types as NewProject
-import Preparation.Types as Preparation
 import Status
 import Utils exposing (resultToMsg)
 
@@ -30,10 +29,8 @@ resultToMsg result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.NewProjectMsg <|
-                        NewProject.Success <|
-                            x
+                LoggedIn.NewProjectMsg <|
+                    NewProject.Success x
         )
         (\_ -> Core.Noop)
         result

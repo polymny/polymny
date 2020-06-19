@@ -49,8 +49,7 @@ init details mode gos =
 
 
 type Msg
-    = AcquisitionClicked
-    | StartRecording
+    = StartRecording
     | StopRecording
     | GoToStream Int
     | NextSlide Bool

@@ -4,10 +4,15 @@ import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
+import Edition.Types as Edition
+import Edition.Views as Edition
 import Element exposing (Element)
 import Element.Font as Font
-import File exposing (File)
+import File
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Views as NewCapsule
+import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import Status
@@ -29,11 +34,14 @@ view global session tab =
                 LoggedIn.Acquisition acquisitionModel ->
                     Acquisition.view global session acquisitionModel
 
-                LoggedIn.Edition ->
-                    Preparation.view global session Preparation.Home
+                LoggedIn.Edition editionModel ->
+                    Edition.view global session editionModel
 
-                LoggedIn.Publication ->
-                    Preparation.view global session Preparation.Home
+                LoggedIn.NewProject newProjectModel ->
+                    NewProject.view newProjectModel
+
+                LoggedIn.Project project newCapsuleForm ->
+                    projectView project newCapsuleForm
 
         element =
             Element.column
@@ -62,14 +70,13 @@ homeView global session uploadForm showMenu =
 
             else
                 Element.map Core.LoggedInMsg <|
-                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) ""
+                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) " Projets"
     in
     Element.column
         [ Element.width
             Element.fill
         ]
-        [ Element.el [] (Element.text "Welcome in LoggedIn")
-        , Element.row
+        [ Element.row
             [ Element.spacing 20
             , Element.padding 20
             , Element.width Element.fill
@@ -90,10 +97,19 @@ homeView global session uploadForm showMenu =
 uploadFormView : LoggedIn.UploadForm -> Element Core.Msg
 uploadFormView { status, file } =
     let
+        filename =
+            case file of
+                Nothing ->
+                    ""
+
+                Just realFile ->
+                    File.name realFile
+
         message =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Creating project..."
+                    Ui.messageWithSpinner
+                        ("Préparation de l'enregistement pour le fichier\n " ++ filename)
 
                 Status.Error () ->
                     Ui.errorModal "Echec upload pdf"
@@ -108,24 +124,20 @@ uploadFormView { status, file } =
         [ Element.column
             [ Element.spacing 20
             , Element.centerX
+            , Font.size 18
+            , Font.center
             ]
-            [ message
+            [ Element.paragraph
+                [ Element.width (Element.fill |> Element.maximum 400)
+                , Font.size 14
+                , Font.justify
+                ]
+                [ Element.text " Pour commencer un enregistrement, il faut séléctionner un fichier PDF sur votre machine. Une fois la présentation téléchargée, l'enregisterment vidéo des planches pourra débuter"
+                ]
+            , message
             , selectFileButton
-            , fileNameElement file
-            , uploadButton
             ]
         ]
-
-
-fileNameElement : Maybe File -> Element Core.Msg
-fileNameElement file =
-    Element.text <|
-        case file of
-            Nothing ->
-                "No file selected"
-
-            Just realFile ->
-                File.name realFile
 
 
 selectFileButton : Element Core.Msg
@@ -133,13 +145,6 @@ selectFileButton =
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.UploadSlideShowMsg <|
             Ui.simpleButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
-
-
-uploadButton : Element Core.Msg
-uploadButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.UploadSlideShowMsg <|
-            Ui.primaryButton (Just LoggedIn.UploadSlideShowFormSubmitted) "Upload slide show"
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg
@@ -179,10 +184,74 @@ projectHeader global project =
         [ Ui.linkButton
             (Just
                 (Core.LoggedInMsg <|
-                    LoggedIn.PreparationMsg <|
-                        Preparation.ProjectClicked project
+                    LoggedIn.ProjectClicked project
                 )
             )
             project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
+
+
+headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)
+headerView header el =
+    case List.length header of
+        0 ->
+            [ el ]
+
+        _ ->
+            header ++ [ el ]
+
+
+projectView : Api.Project -> Maybe NewCapsule.Model -> Element Core.Msg
+projectView project newCapsuleModel =
+    let
+        headers =
+            headerView [] <| Element.text (" / " ++ project.name)
+
+        newCapsuleForm =
+            case newCapsuleModel of
+                Just m ->
+                    NewCapsule.view m
+
+                Nothing ->
+                    Element.none
+    in
+    Element.column
+        [ Element.width (Element.fill |> Element.maximum 800)
+        ]
+        [ Element.row [ Font.size 18 ] <| headers
+        , Element.row [ Element.width Element.fill, Element.alignTop, Element.padding 20, Element.spacing 30 ]
+            [ Element.column [ Element.alignLeft, Element.width Element.fill, Element.alignTop, Element.padding 10 ]
+                [ Element.el [ Element.alignLeft ] <| newCapsuleButton project
+                , Element.column [ Element.padding 10, Element.spacing 10 ]
+                    (List.map capsuleView project.capsules)
+                ]
+            , Element.el [ Element.alignRight ] newCapsuleForm
+            ]
+        ]
+
+
+capsuleView : Api.Capsule -> Element Core.Msg
+capsuleView capsule =
+    Element.column [ Element.spacing 10 ]
+        [ Ui.linkButton
+            (Just
+                (Core.LoggedInMsg <|
+                    LoggedIn.CapsuleClicked capsule
+                )
+            )
+            capsule.name
+        , Element.text capsule.title
+        , Element.text capsule.description
+        ]
+
+
+newCapsuleButton : Api.Project -> Element Core.Msg
+newCapsuleButton project =
+    Ui.primaryButton
+        (Just
+            (Core.LoggedInMsg <|
+                LoggedIn.NewCapsuleClicked project
+            )
+        )
+        "New capsule"

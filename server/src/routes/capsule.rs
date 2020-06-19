@@ -84,7 +84,7 @@ pub struct UpdateCapsuleForm {
 }
 
 /// internal function for data format
-fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
+pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
     Ok(json!({ "capsule":     capsule,
                "slide_show":  capsule.get_slide_show(&db)?,
                "slides":      capsule.get_slides(&db)? ,
@@ -92,6 +92,7 @@ fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
                "background":  capsule.get_background(&db)?,
                "logo":        capsule.get_logo(&db)?,
                "structure":   capsule.structure,
+               "video":       capsule.get_video(&db)?,
     }))
 }
 
@@ -183,12 +184,7 @@ pub fn upload_slides(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(
-                        &db,
-                        uuid,
-                        file_name,
-                        &format!("/data/{}", server_path.to_str().unwrap()),
-                    )?;
+                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
                     let mut output_path = config.data_path.clone();
@@ -244,12 +240,8 @@ pub fn upload_slides(
                         let mut server_path = PathBuf::from(&user.username);
                         server_path.push("extract");
                         server_path.push(format!("{}_{}", uuid, slide_name));
-                        let asset = Asset::new(
-                            &db,
-                            uuid,
-                            &slide_name,
-                            &format!("/data/{}", server_path.to_str().unwrap()),
-                        )?;
+                        let asset =
+                            Asset::new(&db, uuid, &slide_name, server_path.to_str().unwrap())?;
 
                         let slide = Slide::new(&db, asset.id, id, "Dummy prompt")?;
                         let mut output_path = config.data_path.clone();
@@ -319,12 +311,7 @@ fn upload_file(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(
-                        &db,
-                        uuid,
-                        file_name,
-                        &format!("/data/{}", server_path.to_str().unwrap()),
-                    )?;
+                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
                     let mut output_path = config.data_path.clone();
@@ -466,12 +453,7 @@ pub fn upload_record(
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
-    let asset = Asset::new(
-        &db,
-        uuid,
-        file_name,
-        &format!("/data/{}", server_path.to_str().unwrap()),
-    )?;
+    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
     let mut output_path = config.data_path.clone();
@@ -529,18 +511,8 @@ pub fn capsule_edition(
             idx, record_path, slide.asset.asset_path
         );
 
-        // ffmpeg command to reproduce for overlay
-        //
-        // ffmpeg -y -i slide0.png -i record0.webm \
-        // -filter_complex \
-        // "[1]scale=300:-1 [pip]; \
-        // [0][pip] overlay=main_w-overlay
-        // _w-10:main_h-overlay_h-10" \
-        // -profile:v main \
-        // -level 3.1 -b:v 440k -ar 44100 -ab 128k \
-        // -vcodec h264 -acodec mp3 \
-        // $PIP1
         let pip_out = format!("/tmp/pip{}.mp4", idx);
+
         let mut slide_path = config.data_path.clone();
         slide_path.push(slide.asset.asset_path);
         let mut record = config.data_path.clone();
@@ -557,7 +529,7 @@ pub fn capsule_edition(
             "-i",
             &record,
             "-filter_complex",
-            "[1]scale=300:-1 [pip]; [0][pip] overlay=main_w-overlay_w-10:main_h-overlay_h-10",
+            "[1]scale=300:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
             "-profile:v",
             "main",
             "-level",
@@ -625,12 +597,7 @@ pub fn capsule_edition(
 
     println!("status: {}", child.status);
     if child.status.success() {
-        let asset = Asset::new(
-            &db,
-            uuid,
-            file_name,
-            &format!("/data/{}", server_path.to_str().unwrap()),
-        )?;
+        let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
         // Add video_id to capsule

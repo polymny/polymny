@@ -46,6 +46,7 @@ use rocket::response::{self, NamedFile, Responder, Response};
 use rocket::State;
 
 use rocket_contrib::databases::diesel as rocket_diesel;
+use rocket_contrib::json::JsonValue;
 use rocket_contrib::serve::StaticFiles;
 
 use crate::config::Config;
@@ -217,50 +218,81 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
     Ok(response)
 }
 
-/// A page that moves the client directly to the capsule view.
-#[get("/preparation/capsule/<id>")]
-pub fn capsule<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+fn jsonify_flags(
+    db: &Database,
+    user: &Option<User>,
+    id: i32,
+    page: &str,
+) -> Result<Option<JsonValue>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
         None
     };
 
-    let flags = {
-        match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
-            Some(Ok(capsule)) => {
-                let slide_show = capsule.get_slide_show(&db)?;
-                let slides = capsule.get_slides(&db)?;
-                let background = capsule.get_background(&db)?;
-                let logo = capsule.get_logo(&db)?;
+    Ok(match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
+        Some(Ok(capsule)) => {
+            let slide_show = capsule.get_slide_show(&db)?;
+            let slides = capsule.get_slides(&db)?;
+            let background = capsule.get_background(&db)?;
+            let logo = capsule.get_logo(&db)?;
+            let video = capsule.get_video(&db)?;
 
-                user_and_projects.map(|(user, projects)| {
-                    json!({
-                        "page":       "preparation/capsule",
-                        "username":   user.username,
-                        "projects":   projects,
-                        "capsule" :   capsule,
-                        "slide_show": slide_show,
-                        "slides":     slides,
-                        "background":  background,
-                        "logo":        logo,
-                        "active_project":"",
-                       "structure":   capsule.structure,
-                    })
-                })
-            }
-
-            _ => user_and_projects.map(|(user, projects)| {
+            user_and_projects.map(|(user, projects)| {
                 json!({
-                    "username": user.username,
-                    "projects": projects,
-                    "page": "index",
-                    "active_project": "",
+                    "page":       page,
+                    "username":   user.username,
+                    "projects":   projects,
+                    "capsule" :   capsule,
+                    "slide_show": slide_show,
+                    "slides":     slides,
+                    "background":  background,
+                    "logo":        logo,
+                    "active_project":"",
+                    "structure":   capsule.structure,
+                    "video": video,
                 })
-            }),
+            })
         }
-    };
 
+        _ => user_and_projects.map(|(user, projects)| {
+            json!({
+                "username": user.username,
+                "projects": projects,
+                "page": "index",
+                "active_project": "",
+            })
+        }),
+    })
+}
+
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/preparation")]
+pub fn capsule_preparation<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "preparation/capsule")?;
+    let response = Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags)))
+        .finalize();
+
+    Ok(response)
+}
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/acquisition")]
+pub fn capsule_acquisition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "acquisition/capsule")?;
+    let response = Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags)))
+        .finalize();
+
+    Ok(response)
+}
+
+/// A page that moves the client directly to the capsule view.
+#[get("/capsule/<id>/edition")]
+pub fn capsule_edition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&db, &user, id, "edition/capsule")?;
     let response = Response::build()
         .header(ContentType::HTML)
         .sized_body(Cursor::new(index_html(flags)))
@@ -321,7 +353,16 @@ pub fn start_server(rocket_config: RConfig) {
         .attach(AdHoc::on_attach("Config fairing", |rocket| {
             Ok(rocket.manage(server_config))
         }))
-        .mount("/", routes![index, capsule, routes::auth::reset_password])
+        .mount(
+            "/",
+            routes![
+                index,
+                capsule_preparation,
+                capsule_acquisition,
+                capsule_edition,
+                routes::auth::reset_password,
+            ],
+        )
         .mount("/dist", StaticFiles::from("dist"))
         .mount("/data", routes![data])
         .mount(

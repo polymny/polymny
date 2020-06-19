@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="180.43393mm"
+   height="180.43393mm"
+   viewBox="0 0 180.43393 180.43393"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="polymny.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="201.48039"
+     inkscape:cy="284.71103"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-bbox="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1634"
+     inkscape:window-height="1113"
+     inkscape:window-x="0"
+     inkscape:window-y="18"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-14.783034,-58.283034)">
+    <path
+       sodipodi:type="star"
+       style="opacity:0.897;fill:#ffcc00;fill-opacity:1;stroke:#007848;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path20"
+       sodipodi:sides="8"
+       sodipodi:cx="105"
+       sodipodi:cy="148.5"
+       sodipodi:r1="94.759209"
+       sodipodi:r2="88.361259"
+       sodipodi:arg1="0.39678647"
+       sodipodi:arg2="0.78948555"
+       inkscape:flatsided="true"
+       inkscape:rounded="0.08"
+       inkscape:randomized="0"
+       d="m 192.39714,185.12031 c -2.24224,5.35127 -46.12308,48.87485 -51.4925,51.07327 -5.36942,2.19842 -67.173681,1.9458 -72.524951,-0.29644 -5.351271,-2.24224 -48.874854,-46.12308 -51.073272,-51.4925 -2.198418,-5.36942 -1.945799,-67.17368 0.296439,-72.52495 2.242238,-5.35127 46.123079,-48.874855 51.4925,-51.073273 5.369421,-2.198418 67.173684,-1.945799 72.524954,0.296439 5.35127,2.242238 48.87485,46.123084 51.07327,51.492504 2.19842,5.36942 1.9458,67.17368 -0.29644,72.52495 z"
+       inkscape:transform-center-y="-7.9361483e-06" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:35.27777863px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:1;fill:#007848;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="21.335852"
+       y="135.45514"
+       id="text4532"><tspan
+         sodipodi:role="line"
+         id="tspan4530"
+         x="21.335852"
+         y="135.45514"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:35.27777863px;font-family:serif;-inkscape-font-specification:'serif Bold';fill:#007848;fill-opacity:1;stroke-width:0.26458332">polymny</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot4546"
+       style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+       transform="scale(0.26458333)"><flowRegion
+         id="flowRegion4548"><rect
+           id="rect4550"
+           width="27.142857"
+           height="72.85714"
+           x="142.85715"
+           y="301.09113" /></flowRegion><flowPara
+         id="flowPara4552"></flowPara></flowRoot>    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:35.27777863px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;opacity:1;fill:#007848;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="60.525192"
+       y="181.75125"
+       id="text4532-4"><tspan
+         sodipodi:role="line"
+         id="tspan4530-5"
+         x="60.525192"
+         y="181.75125"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:25.39999962px;font-family:serif;-inkscape-font-specification:'serif Bold';fill:#007848;fill-opacity:1;stroke-width:0.26458332">studio</tspan></text>
+  </g>
+</svg>

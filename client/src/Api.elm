@@ -18,6 +18,7 @@ module Api exposing
     , decodeProject
     , decodeSession
     , detailsSortSlides
+    , editionAuto
     , encodeSlideStructure
     , logOut
     , login
@@ -120,7 +121,7 @@ decodeAsset : Decoder Asset
 decodeAsset =
     Decode.map6 Asset
         (Decode.field "id" Decode.int)
-        (Decode.field "asset_path" Decode.string)
+        (Decode.field "asset_path" (Decode.map (\x -> "/data/" ++ x) Decode.string))
         (Decode.field "asset_type" Decode.string)
         (Decode.field "name" Decode.string)
         (Decode.field "upload_date" Decode.int)
@@ -157,7 +158,7 @@ decodeInnerGos =
     Decode.map4 InnerGos
         (Decode.field "slides" (Decode.list Decode.int))
         (Decode.field "transitions" (Decode.list Decode.int))
-        (Decode.field "record_path" (Decode.nullable Decode.string))
+        (Decode.field "record_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.field "locked" Decode.bool)
 
 
@@ -177,6 +178,7 @@ type alias InnerCapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List InnerGos
+    , video : Maybe Asset
     }
 
 
@@ -188,6 +190,7 @@ type alias CapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List Gos
+    , video : Maybe Asset
     }
 
 
@@ -228,6 +231,7 @@ toCapsuleDetails innerDetails =
     , background = innerDetails.background
     , logo = innerDetails.logo
     , structure = List.map (toGos (slidesAsDict innerDetails.slides)) innerDetails.structure
+    , video = innerDetails.video
     }
 
 
@@ -235,7 +239,7 @@ decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
     let
         innerDecoder =
-            Decode.map7 InnerCapsuleDetails
+            Decode.map8 InnerCapsuleDetails
                 (Decode.field "capsule" decodeCapsule)
                 (Decode.field "slides" (Decode.list decodeSlide))
                 (Decode.field "projects" (Decode.list (decodeProject [])))
@@ -243,6 +247,7 @@ decodeCapsuleDetails =
                 (Decode.field "background" (Decode.maybe decodeAsset))
                 (Decode.field "logo" (Decode.maybe decodeAsset))
                 (Decode.field "structure" (Decode.list decodeInnerGos))
+                (Decode.field "video" (Decode.maybe decodeAsset))
     in
     Decode.map toCapsuleDetails innerDecoder
 
@@ -437,6 +442,15 @@ capsuleUploadLogo resultToMsg id content =
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_logo"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
+editionAuto resultToMsg id =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.emptyBody
         }
 
 

@@ -4,8 +4,14 @@ import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
 import Core.Types as Core
+import Edition.Types as Edition
+import Edition.Updates as Edition
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Updates as NewCapsule
+import NewProject.Types as NewProject
+import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Status
@@ -17,14 +23,39 @@ update msg { session, tab } =
     case ( msg, tab ) of
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
-                ( newSession, newModel, cmd ) =
-                    Preparation.update session preparationMsg model
+                ( newModel, cmd ) =
+                    Preparation.update preparationMsg model
             in
-            ( LoggedIn.Model newSession (LoggedIn.Preparation newModel), cmd )
+            ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 
-        ( LoggedIn.PreparationMsg (Preparation.ProjectClicked project), _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation <| Preparation.Project project Nothing }
-            , Api.capsulesFromProjectId (resultToMsg project) project.id
+        ( LoggedIn.PreparationClicked capsule, _ ) ->
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsule) }
+            , Cmd.none
+            )
+
+        ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
+            Acquisition.update session acquisitionMsg model
+
+        ( LoggedIn.AcquisitionClicked capsule, _ ) ->
+            let
+                ( model, cmd ) =
+                    Acquisition.init capsule Acquisition.All 0
+
+                coreCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+            in
+            ( { session = session, tab = LoggedIn.Acquisition model }
+            , coreCmd
+            )
+
+        ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
+            Edition.update session editionMsg model
+
+        ( LoggedIn.EditionClicked capsule, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+              }
+            , Cmd.none
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->
@@ -34,28 +65,13 @@ update msg { session, tab } =
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
-        ( LoggedIn.PreparationMsg Preparation.PreparationClicked, _ ) ->
-            ( { session = session, tab = LoggedIn.Preparation Preparation.Home }
+        ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
+            ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsuleDetails) }
             , Cmd.none
             )
 
-        ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
-            Acquisition.update session acquisitionMsg model
-
-        -- TODO Fix acquisition button
-        -- ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-        --     let
-        --         ( model, cmd ) =
-        --             Acquisition.init
-        --         coreCmd =
-        --             Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-        --     in
-        --     ( { session = session, tab = LoggedIn.Acquisition model }
-        --     , coreCmd
-        --     )
-        ( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-            ( LoggedIn.Model session tab, Cmd.none )
-
+        --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
+        --   ( LoggedIn.Model session tab, Cmd.none )
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form showMenu ) ->
             let
                 ( newModel, cmd ) =
@@ -65,6 +81,56 @@ update msg { session, tab } =
 
         ( LoggedIn.ShowMenuToggleMsg, LoggedIn.Home form showMenu ) ->
             ( { session = session, tab = LoggedIn.Home form (not showMenu) }, Cmd.none )
+
+        ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    NewProject.update session newProjectMsg newProjectModel
+            in
+            ( { session = newSession, tab = LoggedIn.NewProject newModel }, cmd )
+
+        ( LoggedIn.ProjectClicked project, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Project project Nothing
+              }
+            , Api.capsulesFromProjectId (resultToMsg project) project.id
+            )
+
+        ( LoggedIn.CapsulesReceived project capsules, _ ) ->
+            let
+                newSession =
+                    { session | active_project = Just project }
+            in
+            ( { session = newSession
+              , tab = LoggedIn.Project { project | capsules = capsules } Nothing
+              }
+            , Cmd.none
+            )
+
+        ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
+            let
+                ( newModel, cmd ) =
+                    NewCapsule.update project newCapsuleMsg newCapsuleModel
+            in
+            ( { session = session
+              , tab = newModel
+              }
+            , cmd
+            )
+
+        ( LoggedIn.NewCapsuleClicked project, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Project project (Just NewCapsule.init)
+              }
+            , Cmd.none
+            )
+
+        ( LoggedIn.CapsuleClicked capsule, _ ) ->
+            ( { session = session
+              , tab = tab
+              }
+            , Api.capsuleFromId resultToMsg2 capsule.id
+            )
 
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
@@ -85,9 +151,8 @@ updateUploadSlideShow msg { session } form showMenu =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
-            ( LoggedIn.Model session
-                (LoggedIn.Home { form | file = Just file } showMenu)
-            , Cmd.none
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent, file = Just file } showMenu)
+            , Api.quickUploadSlideShow resultToMsg1 file
             )
 
         LoggedIn.UploadSlideShowFormSubmitted ->
@@ -118,8 +183,7 @@ resultToMsg project result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.CapsulesReceived project x
+                LoggedIn.CapsulesReceived project x
         )
         (\_ -> Core.Noop)
         result
@@ -130,6 +194,17 @@ resultToMsg1 result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess x
+        )
+        (\_ -> Core.Noop)
+        result
+
+
+resultToMsg2 : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg2 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.CapsuleReceived x
         )
         (\_ -> Core.Noop)
         result

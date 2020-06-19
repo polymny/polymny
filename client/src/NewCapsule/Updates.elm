@@ -9,30 +9,30 @@ import Status
 import Utils exposing (resultToMsg)
 
 
-update : Api.Project -> NewCapsule.Msg -> NewCapsule.Model -> ( Preparation.Model, Cmd Core.Msg )
+update : Api.Project -> NewCapsule.Msg -> NewCapsule.Model -> ( LoggedIn.Tab, Cmd Core.Msg )
 update project msg model =
     case msg of
         NewCapsule.NameChanged newCapsuleName ->
-            ( Preparation.Project project (Just { model | name = newCapsuleName }), Cmd.none )
+            ( LoggedIn.Project project (Just { model | name = newCapsuleName }), Cmd.none )
 
         NewCapsule.TitleChanged newTitleName ->
-            ( Preparation.Project project (Just { model | title = newTitleName }), Cmd.none )
+            ( LoggedIn.Project project (Just { model | title = newTitleName }), Cmd.none )
 
         NewCapsule.DescriptionChanged newDescriptionName ->
-            ( Preparation.Project project (Just { model | description = newDescriptionName }), Cmd.none )
+            ( LoggedIn.Project project (Just { model | description = newDescriptionName }), Cmd.none )
 
         NewCapsule.Submitted ->
-            ( Preparation.Project project (Just { model | status = Status.Sent })
+            ( LoggedIn.Project project (Just { model | status = Status.Sent })
             , Api.newCapsule resultToMsg project.id model
             )
 
         NewCapsule.Success _ ->
-            ( Preparation.Project project Nothing
+            ( LoggedIn.Project project Nothing
             , Api.capsulesFromProjectId (resultToMsg1 project) project.id
             )
 
         NewCapsule.Cancel ->
-            ( Preparation.Project project Nothing
+            ( LoggedIn.Project project Nothing
             , Cmd.none
             )
 
@@ -42,10 +42,9 @@ resultToMsg result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.NewCapsuleMsg <|
-                        NewCapsule.Success <|
-                            x
+                LoggedIn.NewCapsuleMsg <|
+                    NewCapsule.Success <|
+                        x
         )
         (\_ -> Core.Noop)
         result
@@ -56,8 +55,7 @@ resultToMsg1 project result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.CapsulesReceived project x
+                LoggedIn.CapsulesReceived project x
         )
         (\_ -> Core.Noop)
         result

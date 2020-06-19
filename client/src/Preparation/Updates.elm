@@ -1,98 +1,372 @@
 module Preparation.Updates exposing (update)
 
 import Api
-import Capsule.Types as Capsule
-import Capsule.Updates as Capsule
 import Core.Types as Core
+import Dict
+import File.Select as Select
 import LoggedIn.Types as LoggedIn
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Updates as NewCapsule
-import NewProject.Types as NewProject
-import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
+import Status
 import Utils
 
 
-update : Api.Session -> Preparation.Msg -> Preparation.Model -> ( Api.Session, Preparation.Model, Cmd Core.Msg )
-update session msg preparationModel =
-    case ( msg, preparationModel ) of
-        -- INNER MESSAGES
-        ( Preparation.PreparationClicked, _ ) ->
-            ( session, Preparation.Home, Cmd.none )
+update : Preparation.Msg -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
+update msg capsuleModel =
+    case ( msg, capsuleModel ) of
+        ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadSlideShow newUploadSlideShowMsg model.uploadForms.slideShow model.details.capsule.id
 
-        ( Preparation.ProjectClicked project, _ ) ->
-            ( session, Preparation.Project project Nothing, Api.capsulesFromProjectId (resultToMsg1 project) project.id )
+                oldUploadForms =
+                    model.uploadForms
 
-        ( Preparation.CapsulesReceived project capsules, _ ) ->
-            ( { session | active_project = Just project }
-            , Preparation.Project { project | capsules = capsules } Nothing
+                newUploadForms =
+                    { oldUploadForms | slideShow = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Preparation.UploadBackgroundMsg newUploadBackgroundMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadBackground newUploadBackgroundMsg model.uploadForms.background model.details.capsule.id
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | background = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Preparation.UploadLogoMsg newUploadLogoMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadLogo newUploadLogoMsg model.uploadForms.logo model.details.capsule.id
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | logo = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Preparation.EditPromptMsg editPromptMsg, model ) ->
+            let
+                ( newModel, newCmd ) =
+                    updateEditPromptMsg editPromptMsg model.editPrompt
+            in
+            ( { model | editPrompt = newModel }, newCmd )
+
+        ( Preparation.DnD slideMsg, model ) ->
+            let
+                ( data, cmd, shouldSync ) =
+                    updateDnD slideMsg model
+
+                moveCmd =
+                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.DnD x))) cmd
+
+                syncCmd =
+                    Api.updateSlideStructure resultToMsg data.details
+
+                cmds =
+                    if shouldSync then
+                        Cmd.batch [ moveCmd, syncCmd ]
+
+                    else
+                        moveCmd
+            in
+            ( data, cmds )
+
+        ( Preparation.SwitchLock i, _ ) ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop i capsuleModel.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map (\x -> { x | locked = not x.locked }) gosStructure
+
+                newStructure : List Api.Gos
+                newStructure =
+                    case gosUpdatedStructure of
+                        Just new ->
+                            List.take i capsuleModel.details.structure
+                                ++ (new :: List.drop (i + 1) capsuleModel.details.structure)
+
+                        _ ->
+                            capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Cmd.none )
+
+
+updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
+updateEditPromptMsg msg content =
+    case msg of
+        Preparation.EditPromptOpenDialog id text ->
+            ( { content | visible = True, prompt = text, slideId = id }, Cmd.none )
+
+        Preparation.EditPromptCloseDialog ->
+            ( { content | visible = False }, Cmd.none )
+
+        Preparation.EditPromptTextChanged text ->
+            ( { content | prompt = text }, Cmd.none )
+
+        Preparation.EditPromptSubmitted ->
+            ( { content | status = Status.Sent }
+            , Api.updateSlide resultToMsg2 content.slideId content
+            )
+
+        Preparation.EditPromptSuccess slide ->
+            ( { content | visible = False, status = Status.Success () }
+            , Api.capsuleFromId resultToMsg slide.capsule_id
+            )
+
+
+updateUploadSlideShow : Preparation.UploadSlideShowMsg -> Preparation.UploadForm -> Int -> ( Preparation.UploadForm, Cmd Core.Msg )
+updateUploadSlideShow msg model capsuleId =
+    case ( msg, model ) of
+        ( Preparation.UploadSlideShowSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "application/pdf" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadSlideShowMsg <|
+                                Preparation.UploadSlideShowFileReady x
+                )
+            )
+
+        ( Preparation.UploadSlideShowFileReady file, form ) ->
+            ( { form | file = Just file }
             , Cmd.none
             )
 
-        ( Preparation.CapsuleClicked capsule, _ ) ->
-            ( session, preparationModel, Api.capsuleFromId resultToMsg2 capsule.id )
+        ( Preparation.UploadSlideShowFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( form, Cmd.none )
 
-        ( Preparation.CapsuleReceived capsuleDetails, Preparation.Capsule capsule ) ->
-            ( session
-            , Preparation.Capsule
-                { capsule
-                    | details = capsuleDetails
-                    , slides = Capsule.setupSlides capsuleDetails
-                }
+                Just file ->
+                    ( form, Api.capsuleUploadSlideShow resultToMsg capsuleId file )
+
+
+updateUploadBackground : Preparation.UploadBackgroundMsg -> Preparation.UploadForm -> Int -> ( Preparation.UploadForm, Cmd Core.Msg )
+updateUploadBackground msg model capsuleId =
+    case ( msg, model ) of
+        ( Preparation.UploadBackgroundSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "image/jpeg", "image/png" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadBackgroundMsg <|
+                                Preparation.UploadBackgroundFileReady x
+                )
+            )
+
+        ( Preparation.UploadBackgroundFileReady file, form ) ->
+            ( { form | file = Just file }
             , Cmd.none
             )
 
-        ( Preparation.CapsuleReceived capsuleDetails, _ ) ->
-            ( session, Preparation.Capsule (Capsule.init capsuleDetails), Cmd.none )
+        ( Preparation.UploadBackgroundFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( form, Cmd.none )
 
-        ( Preparation.NewCapsuleClicked project, _ ) ->
-            ( session, Preparation.Project project (Just NewCapsule.init), Cmd.none )
+                Just file ->
+                    ( form, Api.capsuleUploadBackground resultToMsg capsuleId file )
 
-        -- OTHER MESSAGES
-        ( Preparation.NewProjectMsg newProjectMsg, Preparation.NewProject newProjectModel ) ->
+
+updateUploadLogo : Preparation.UploadLogoMsg -> Preparation.UploadForm -> Int -> ( Preparation.UploadForm, Cmd Core.Msg )
+updateUploadLogo msg model capsuleId =
+    case ( msg, model ) of
+        ( Preparation.UploadLogoSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "image/jpeg", "image/png", "image/svg+xml" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadLogoMsg <|
+                                Preparation.UploadLogoFileReady x
+                )
+            )
+
+        ( Preparation.UploadLogoFileReady file, form ) ->
+            ( { form | file = Just file }
+            , Cmd.none
+            )
+
+        ( Preparation.UploadLogoFormSubmitted, form ) ->
+            case form.file of
+                Nothing ->
+                    ( form, Cmd.none )
+
+                Just file ->
+                    ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
+
+
+updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd Preparation.DnDMsg, Bool )
+updateDnD slideMsg data =
+    case slideMsg of
+        Preparation.SlideMoved msg ->
             let
-                ( newSession, newModel, cmd ) =
-                    NewProject.update session newProjectMsg newProjectModel
-            in
-            ( newSession, Preparation.NewProject newModel, cmd )
+                pre =
+                    Preparation.slideSystem.info data.slideModel
 
-        ( Preparation.NewCapsuleMsg newCapsuleMsg, Preparation.Project project (Just newCapsuleModel) ) ->
+                ( slideModel, slides ) =
+                    Preparation.slideSystem.update msg data.slideModel (List.concat data.slides)
+
+                post =
+                    Preparation.slideSystem.info slideModel
+
+                updatedSlides =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            List.filterMap Preparation.filterSlide slides
+
+                        _ ->
+                            data.details.slides
+
+                updatedStructure =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            fixStructure data.details.structure (Preparation.extractStructure slides)
+
+                        _ ->
+                            data.details.structure
+
+                shouldSync =
+                    case ( pre, post, data.details.structure /= updatedStructure ) of
+                        ( Just _, Nothing, _ ) ->
+                            True
+
+                        _ ->
+                            False
+
+                details =
+                    data.details
+
+                updatedDetails =
+                    { details | slides = updatedSlides, structure = updatedStructure }
+
+                updatedSlidesView =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            Preparation.setupSlides updatedDetails
+
+                        _ ->
+                            Preparation.regroupSlides slides
+            in
+            ( { data | details = updatedDetails, slideModel = slideModel, slides = updatedSlidesView }
+            , Preparation.slideSystem.commands slideModel
+            , shouldSync
+            )
+
+        Preparation.GosMoved msg ->
             let
-                ( newModel, cmd ) =
-                    NewCapsule.update project newCapsuleMsg newCapsuleModel
+                pre =
+                    Preparation.gosSystem.info data.gosModel
+
+                ( gosModel, goss ) =
+                    Preparation.gosSystem.update msg data.gosModel (Preparation.setupSlides data.details)
+
+                post =
+                    Preparation.gosSystem.info gosModel
+
+                concat =
+                    List.concat goss
+
+                updatedSlides =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            List.filterMap Preparation.filterSlide concat
+
+                        _ ->
+                            data.details.slides
+
+                updatedStructure =
+                    fixStructure data.details.structure (Preparation.extractStructure concat)
+
+                shouldSync =
+                    case ( pre, post, data.details.structure /= updatedStructure ) of
+                        ( Just _, Nothing, _ ) ->
+                            True
+
+                        _ ->
+                            False
+
+                details =
+                    data.details
+
+                updatedDetails =
+                    { details | slides = updatedSlides, structure = updatedStructure }
+
+                updatedSlidesView =
+                    case ( pre, post ) of
+                        ( Just _, Nothing ) ->
+                            Preparation.setupSlides updatedDetails
+
+                        _ ->
+                            Preparation.regroupSlides concat
             in
-            ( session, newModel, cmd )
-
-        ( Preparation.CapsuleMsg capsuleMsg, Preparation.Capsule capsule ) ->
-            let
-                ( newModel, cmd ) =
-                    Capsule.update capsuleMsg capsule
-            in
-            ( session, Preparation.Capsule newModel, cmd )
-
-        _ ->
-            ( session, preparationModel, Cmd.none )
+            ( { data | details = updatedDetails, gosModel = gosModel, slides = updatedSlidesView }, Preparation.gosSystem.commands gosModel, shouldSync )
 
 
-resultToMsg1 : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
-resultToMsg1 project result =
+fixStructure : List Api.Gos -> List Api.Gos -> List Api.Gos
+fixStructure old new =
+    let
+        dict =
+            Dict.fromList (List.map (\x -> ( List.map .id x.slides, x )) old)
+
+        fix : Api.Gos -> Api.Gos
+        fix gos =
+            case Dict.get (List.map .id gos.slides) dict of
+                Nothing ->
+                    gos
+
+                Just x ->
+                    x
+
+        ret =
+            List.map fix new
+    in
+    ret
+
+
+resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.CapsulesReceived project x
+            Core.LoggedInMsg <| LoggedIn.CapsuleReceived x
         )
         (\_ -> Core.Noop)
         result
 
 
-resultToMsg2 : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg2 : Result e Api.Slide -> Core.Msg
 resultToMsg2 result =
     Utils.resultToMsg
         (\x ->
             Core.LoggedInMsg <|
                 LoggedIn.PreparationMsg <|
-                    Preparation.CapsuleReceived x
+                    Preparation.EditPromptMsg <|
+                        Preparation.EditPromptSuccess <|
+                            x
         )
         (\_ -> Core.Noop)
         result
