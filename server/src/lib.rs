@@ -321,7 +321,7 @@ pub fn start_server(rocket_config: RConfig) {
         .attach(AdHoc::on_attach("Config fairing", |rocket| {
             Ok(rocket.manage(server_config))
         }))
-        .mount("/", routes![index, capsule])
+        .mount("/", routes![index, capsule, routes::auth::reset_password])
         .mount("/dist", StaticFiles::from("dist"))
         .mount("/data", routes![data])
         .mount(
@@ -331,6 +331,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::auth::activate,
                 routes::auth::login,
                 routes::auth::logout,
+                routes::auth::change_password,
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::get_capsules,

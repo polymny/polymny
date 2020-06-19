@@ -6,7 +6,8 @@ CREATE TABLE users (
     email VARCHAR NOT NULL UNIQUE,
     hashed_password VARCHAR NOT NULL,
     activated BOOLEAN NOT NULL,
-    activation_key VARCHAR
+    activation_key VARCHAR,
+    reset_password_key VARCHAR
 );
 
 CREATE TABLE sessions (

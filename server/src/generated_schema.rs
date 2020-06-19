@@ -65,6 +65,7 @@ table! {
         hashed_password -> Varchar,
         activated -> Bool,
         activation_key -> Nullable<Varchar>,
+        reset_password_key -> Nullable<Varchar>,
     }
 }
 

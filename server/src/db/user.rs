@@ -21,7 +21,10 @@ use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
 use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
-use crate::templates::{validation_email_html, validation_email_plain_text};
+use crate::templates::{
+    reset_password_email_html, reset_password_email_plain_text, validation_email_html,
+    validation_email_plain_text,
+};
 use crate::Database;
 use crate::{Error, Result};
 
@@ -45,6 +48,9 @@ pub struct User {
 
     /// The activation key of the user if it is not active.
     pub activation_key: Option<String>,
+
+    /// The key to reset the password user.
+    pub reset_password_key: Option<String>,
 }
 
 /// A user that is stored into the database yet.
@@ -65,6 +71,9 @@ pub struct NewUser {
 
     /// The activation key of the new user.
     pub activation_key: Option<String>,
+
+    /// The key to reset the password user.
+    pub reset_password_key: Option<String>,
 }
 
 impl User {
@@ -100,7 +109,7 @@ impl User {
                 let text = validation_email_plain_text(&activation_url);
                 let html = validation_email_html(&activation_url);
 
-                mailer.send_mail(email, String::from("Welcome"), text, html)?;
+                mailer.send_mail(email, String::from("Welcome to Polymny"), text, html)?;
 
                 Ok(NewUser {
                     username: String::from(username),
@@ -108,6 +117,7 @@ impl User {
                     hashed_password,
                     activated: false,
                     activation_key: Some(activation_key),
+                    reset_password_key: None,
                 })
             }
 
@@ -117,8 +127,78 @@ impl User {
                 hashed_password,
                 activated: true,
                 activation_key: None,
+                reset_password_key: None,
             }),
         }
+    }
+
+    /// Requests the user to change its password.
+    pub fn change_password(&mut self, mailer: &Option<Mailer>, db: &PgConnection) -> Result<()> {
+        let rng = OsRng {};
+        let key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+
+        use crate::schema::users::dsl::*;
+        diesel::update(users.filter(id.eq(self.id)))
+            .set(reset_password_key.eq(Some(key.clone())))
+            .execute(db)?;
+
+        self.reset_password_key = Some(key.clone());
+
+        match mailer {
+            Some(mailer) => {
+                let activation_url = format!("{}/reset-password/{}", mailer.root, key);
+                let text = reset_password_email_plain_text(&activation_url);
+                let html = reset_password_email_html(&activation_url);
+
+                mailer.send_mail(
+                    &self.email,
+                    String::from("Reset your Polymny password"),
+                    text,
+                    html,
+                )?;
+            }
+
+            _ => (),
+        }
+
+        Ok(())
+    }
+
+    /// Updates the user password.
+    pub fn update_password(&mut self, new_password: &str, db: &PgConnection) -> Result<()> {
+        let new_hashed_password = hash(new_password, DEFAULT_COST)?;
+
+        use crate::schema::users::dsl::*;
+        let none: Option<String> = None;
+        diesel::update(users.filter(id.eq(self.id)))
+            .set((
+                hashed_password.eq(new_hashed_password.clone()),
+                reset_password_key.eq(none),
+            ))
+            .execute(db)?;
+
+        self.hashed_password = new_hashed_password;
+
+        Ok(())
+    }
+
+    /// Returns a user from a reset password key.
+    pub fn update_password_by_key(
+        key: &str,
+        new_password: &str,
+        db: &PgConnection,
+    ) -> Result<User> {
+        let new_hashed_password = hash(new_password, DEFAULT_COST)?;
+
+        use crate::schema::users::dsl::*;
+        let none: Option<String> = None;
+
+        Ok(diesel::update(users.filter(reset_password_key.eq(key)))
+            .set((
+                hashed_password.eq(new_hashed_password.clone()),
+                reset_password_key.eq(none),
+            ))
+            .get_result::<User>(db)?)
     }
 
     /// Activates a user from its activation key and returns the user.
@@ -150,6 +230,7 @@ impl User {
                 hashed_password,
                 activated,
                 activation_key,
+                reset_password_key,
             ))
             .first::<User>(db)
             .map_err(|_| Error::AuthenticationFailed)?;
