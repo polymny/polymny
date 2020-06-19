@@ -8,6 +8,8 @@ module Ui.Ui exposing
     , errorModal
     , homeButton
     , linkButton
+    , mainViewAttributes1
+    , mainViewAttributes2
     , menuPointButton
     , menuTabAttributes
     , messageWithSpinner
@@ -357,3 +359,21 @@ messageWithSpinner content =
         [ spinner
         , Element.el [] <| Element.text content
         ]
+
+
+mainViewAttributes1 : List (Element.Attribute msg)
+mainViewAttributes1 =
+    [ Element.alignTop
+    , Element.padding 10
+    , Element.width Element.fill
+    , Element.scrollbarX
+    ]
+
+
+mainViewAttributes2 : List (Element.Attribute msg)
+mainViewAttributes2 =
+    [ Element.alignTop
+    , Element.padding 10
+    , Element.width Element.fill
+    , Element.scrollbarX
+    ]

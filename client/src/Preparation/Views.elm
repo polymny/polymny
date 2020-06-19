@@ -1,6 +1,5 @@
 module Preparation.Views exposing (gosGhostView, slideGhostView, view)
 
-import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Dialog
@@ -20,30 +19,28 @@ import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
+import Utils
 
 
-headerView : Api.CapsuleDetails -> Element Core.Msg
-headerView details =
+view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
+view _ session model =
     let
-        msgAcquisition =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionClicked details
+        mainPage =
+            mainView session model
 
-        msgEdition =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.EditionClicked details
+        element =
+            Element.column
+                Ui.mainViewAttributes2
+                [ Utils.headerView "preparation" model.details
+                , mainPage
+                ]
     in
-    Element.row []
-        [ Ui.primaryButtonDisabled "Edition"
-        , Ui.primaryButton msgAcquisition "Acquisition ALL"
-        , Ui.primaryButton msgEdition "Edition"
-        ]
+    Element.row Ui.mainViewAttributes1
+        [ element ]
 
 
-view : Api.Session -> Preparation.Model -> Element Core.Msg
-view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } =
+mainView : Api.Session -> Preparation.Model -> Element Core.Msg
+mainView session { details, slides, uploadForms, editPrompt, slideModel, gosModel } =
     let
         project_header =
             case session.active_project of
@@ -59,9 +56,6 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                 Nothing ->
                     Element.none
 
-        headers =
-            headerView details
-
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
@@ -74,8 +68,7 @@ view session { details, slides, uploadForms, editPrompt, slideModel, gosModel } 
                 Nothing
     in
     Element.column []
-        [ headers
-        , Element.el
+        [ Element.el
             [ Element.padding 10
             , Element.mapAttribute Core.LoggedInMsg <|
                 Element.mapAttribute LoggedIn.PreparationMsg <|

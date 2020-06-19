@@ -8,6 +8,7 @@ import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Ui.Ui as Ui
+import Utils
 
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
@@ -18,46 +19,19 @@ view _ _ model =
 
         element =
             Element.column
-                [ Element.alignTop
-                , Element.padding 10
-                , Element.width Element.fill
-                , Element.scrollbarX
+                Ui.mainViewAttributes2
+                [ Utils.headerView "acquisition" model.details
+                , mainPage
                 ]
-                [ mainPage ]
     in
-    Element.row
-        [ Element.height Element.fill
-        , Element.width Element.fill
-        , Element.spacing 20
-        ]
+    Element.row Ui.mainViewAttributes1
         [ element ]
-
-
-headerView : Api.CapsuleDetails -> Element Core.Msg
-headerView details =
-    let
-        msgPreparation =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.PreparationClicked details
-
-        msgEdition =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.EditionClicked details
-    in
-    Element.row []
-        [ Ui.primaryButton msgPreparation "Preparation"
-        , Ui.primaryButtonDisabled "Acquisition"
-        , Ui.primaryButton msgEdition "Edition"
-        ]
 
 
 mainView : Acquisition.Model -> Element Core.Msg
 mainView model =
     Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ headerView model.details
-        , topView model
+        [ topView model
         , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextSlideButton ]
         , recordingsView model.records model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream

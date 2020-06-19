@@ -4,14 +4,11 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
-import Element.Background as Background
-import Element.Border as Border
 import Html exposing (Html)
 import Html.Attributes
-import LoggedIn.Types as LoggedIn
 import Status
-import Ui.Colors as Colors
 import Ui.Ui as Ui
+import Utils
 
 
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
@@ -21,19 +18,12 @@ view _ _ model =
             mainView model
 
         element =
-            Element.column
-                [ Element.alignTop
-                , Element.padding 10
-                , Element.width Element.fill
-                , Element.scrollbarX
+            Element.column Ui.mainViewAttributes2
+                [ Utils.headerView "edition" model.details
+                , mainPage
                 ]
-                [ mainPage ]
     in
-    Element.row
-        [ Element.height Element.fill
-        , Element.width Element.fill
-        , Element.spacing 20
-        ]
+    Element.row Ui.mainViewAttributes1
         [ element ]
 
 
@@ -59,42 +49,10 @@ mainView { status, details } =
                 Nothing ->
                     Element.none
     in
-    Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ headerView details
-        , message
-        , video
-        ]
-
-
-headerView : Api.CapsuleDetails -> Element Core.Msg
-headerView details =
-    let
-        msgPreparation =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.PreparationClicked details
-
-        msgAcquisition =
-            Just <|
-                Core.LoggedInMsg <|
-                    LoggedIn.AcquisitionClicked details
-    in
     Element.column
-        [ Background.color Colors.whiteDark
-        , Element.width
-            Element.fill
-        , Element.spacing 20
-        , Element.padding 10
-        , Border.color Colors.whiteDarker
-        , Border.rounded 5
-        , Border.width 1
-        ]
-        [ Element.text ("Edition de le capsule " ++ String.fromInt details.capsule.id)
-        , Element.row [ Element.spacing 20 ]
-            [ Ui.textButton msgPreparation "Preparation"
-            , Ui.textButton msgAcquisition "Acquisition"
-            , Ui.primaryButtonDisabled "Edition"
-            ]
+        [ Element.centerX ]
+        [ message
+        , video
         ]
 
 
@@ -102,7 +60,7 @@ htmlVideo : String -> Html msg
 htmlVideo url =
     Html.video
         [ Html.Attributes.controls True
-        , Html.Attributes.width 400
+        , Html.Attributes.width 600
         ]
         [ Html.source
             [ Html.Attributes.src url ]
