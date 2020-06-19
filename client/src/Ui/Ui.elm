@@ -71,7 +71,10 @@ textButton onPress content =
         [ Font.color Colors.white
         , Element.centerX
         , Element.padding 10
-        , Background.color Colors.artStarryNight
+        , Background.color Colors.artIrises
+        , Border.color Colors.white
+        , Border.rounded 5
+        , Border.width 1
         ]
         { onPress = onPress
         , label = Element.text content
@@ -153,9 +156,10 @@ successButton onPress content =
 primaryButton : Maybe msg -> String -> Element msg
 primaryButton onPress content =
     Input.button
-        (Background.color Colors.primary
-            :: Font.color Colors.white
-            :: buttonAttributes
+        (buttonAttributes
+            ++ [ Background.color Colors.primary
+               , Element.focused [ Background.color Colors.artIrises ]
+               ]
         )
         { onPress = onPress
         , label = Element.text content
@@ -259,9 +263,10 @@ homeButton onPress content =
 primaryButtonDisabled : String -> Element msg
 primaryButtonDisabled content =
     Input.button
-        (Background.color Colors.primaryLight
-            :: Font.color Colors.grey
-            :: buttonAttributes
+        (buttonAttributes
+            ++ [ Background.color Colors.grey
+               , Font.color Colors.greyDark
+               ]
         )
         { onPress = Nothing
         , label = Element.text content

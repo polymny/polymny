@@ -10,6 +10,7 @@ module Ui.Colors exposing
     , dangerDark
     , dangerLight
     , grey
+    , greyDark
     , link
     , menthol
     , primary
@@ -25,6 +26,8 @@ module Ui.Colors exposing
     , warningDark
     , warningLight
     , white
+    , whiteDark
+    , whiteDarker
     )
 
 import Color exposing (Color)
@@ -62,7 +65,7 @@ blackColor =
 
 primaryColor : Color
 primaryColor =
-    starryNightColor
+    irisesColor
 
 
 successColor : Color
@@ -130,14 +133,44 @@ dangerDarkColor =
     Color.addLightness darkParameter dangerColor
 
 
+greyDarkColor : Color
+greyDarkColor =
+    Color.addLightness darkParameter greyColor
+
+
+whiteDarkColor : Color
+whiteDarkColor =
+    Color.fromRGB ( 250, 251, 252 )
+
+
+whiteDarkerColor : Color
+whiteDarkerColor =
+    Color.fromRGB ( 234, 236, 239 )
+
+
 grey : Element.Color
 grey =
     colorToUi greyColor
 
 
+greyDark : Element.Color
+greyDark =
+    colorToUi greyDarkColor
+
+
 white : Element.Color
 white =
     colorToUi whiteColor
+
+
+whiteDark : Element.Color
+whiteDark =
+    colorToUi whiteDarkColor
+
+
+whiteDarker : Element.Color
+whiteDarker =
+    colorToUi whiteDarkerColor
 
 
 black : Element.Color

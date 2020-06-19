@@ -1,15 +1,16 @@
 module Edition.Views exposing (view)
 
-import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
+import Element.Background as Background
+import Element.Border as Border
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
-import Preparation.Types as Preparation
 import Status
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -59,8 +60,7 @@ mainView { status, details } =
                     Element.none
     in
     Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ Element.text ("Coucou Edition " ++ String.fromInt details.capsule.id)
-        , headerView details
+        [ headerView details
         , message
         , video
         ]
@@ -79,10 +79,22 @@ headerView details =
                 Core.LoggedInMsg <|
                     LoggedIn.AcquisitionClicked details
     in
-    Element.row []
-        [ Ui.primaryButton msgPreparation "Preparation"
-        , Ui.primaryButton msgAcquisition "Acquisition"
-        , Ui.primaryButtonDisabled "Edition"
+    Element.column
+        [ Background.color Colors.whiteDark
+        , Element.width
+            Element.fill
+        , Element.spacing 20
+        , Element.padding 10
+        , Border.color Colors.whiteDarker
+        , Border.rounded 5
+        , Border.width 1
+        ]
+        [ Element.text ("Edition de le capsule " ++ String.fromInt details.capsule.id)
+        , Element.row [ Element.spacing 20 ]
+            [ Ui.textButton msgPreparation "Preparation"
+            , Ui.textButton msgAcquisition "Acquisition"
+            , Ui.primaryButtonDisabled "Edition"
+            ]
         ]
 
 
