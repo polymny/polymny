@@ -60,24 +60,20 @@ onEnter msg =
 
 buttonAttributes : List (Element.Attribute msg)
 buttonAttributes =
-    [ Element.centerX
+    [ Font.color Colors.white
+    , Element.centerX
     , Element.padding 10
+    , Background.color Colors.artIrises
+    , Border.color Colors.white
     , Border.rounded 5
-    , Font.color Colors.artEvening
+    , Border.width 1
+    , Font.color Colors.white
     ]
 
 
 textButton : Maybe msg -> String -> Element msg
 textButton onPress content =
-    Input.button
-        [ Font.color Colors.white
-        , Element.centerX
-        , Element.padding 10
-        , Background.color Colors.artIrises
-        , Border.color Colors.white
-        , Border.rounded 5
-        , Border.width 1
-        ]
+    Input.button buttonAttributes
         { onPress = onPress
         , label = Element.text content
         }
@@ -86,7 +82,7 @@ textButton onPress content =
 linkButton : Maybe msg -> String -> Element msg
 linkButton onPress content =
     Input.button
-        [ Font.color Colors.link
+        [ Font.color Colors.primary
         , Font.underline
         ]
         { onPress = onPress
@@ -158,25 +154,9 @@ successButton onPress content =
 primaryButton : Maybe msg -> String -> Element msg
 primaryButton onPress content =
     Input.button
-        (buttonAttributes
-            ++ [ Background.color Colors.primary
-               , Element.focused [ Background.color Colors.artIrises ]
-               ]
-        )
+        buttonAttributes
         { onPress = onPress
         , label = Element.text content
-        }
-
-
-editButton : Maybe msg -> String -> Element msg
-editButton onPress content =
-    Input.button
-        (Background.color Colors.artStarryNight
-            :: Font.color Colors.artIrises
-            :: buttonAttributes
-        )
-        { onPress = onPress
-        , label = Element.row [] [ Icons.edit, Element.text content ]
         }
 
 
@@ -184,14 +164,11 @@ iconButton : Element msg -> Maybe msg -> String -> Element msg
 iconButton icon onPress content =
     let
         iconAttributes =
-            [ Element.centerX
-            , Element.padding 10
-            , Font.color Colors.primary
-            , Background.color Colors.white
-            , Border.color Colors.primary
-            , Border.rounded 5
-            , Border.width 1
-            ]
+            buttonAttributes
+                ++ [ Font.color Colors.primary
+                   , Background.color Colors.white
+                   , Border.color Colors.primary
+                   ]
     in
     Input.button iconAttributes
         { onPress = onPress
@@ -207,6 +184,11 @@ trashButton onPress content =
 addButton : Maybe msg -> String -> Element msg
 addButton onPress content =
     iconButton Icons.add onPress content
+
+
+editButton : Maybe msg -> String -> Element msg
+editButton onPress content =
+    iconButton Icons.edit onPress content
 
 
 clearButton : Maybe msg -> String -> Element msg
