@@ -12,13 +12,13 @@ update : Login.Msg -> Login.Model -> ( Core.Model, Cmd Core.Msg )
 update loginMsg content =
     case loginMsg of
         Login.UsernameChanged newUsername ->
-            ( Core.Login { content | username = newUsername }, Cmd.none )
+            ( Core.homeLogin { content | username = newUsername }, Cmd.none )
 
         Login.PasswordChanged newPassword ->
-            ( Core.Login { content | password = newPassword }, Cmd.none )
+            ( Core.homeLogin { content | password = newPassword }, Cmd.none )
 
         Login.Submitted ->
-            ( Core.Login { content | status = Status.Sent }
+            ( Core.homeLogin { content | status = Status.Sent }
             , Api.login resultToMsg content
             )
 
@@ -26,7 +26,7 @@ update loginMsg content =
             ( Core.LoggedIn (LoggedIn.Model s LoggedIn.init), Cmd.none )
 
         Login.Failed ->
-            ( Core.Login { content | status = Status.Error () }, Cmd.none )
+            ( Core.homeLogin { content | status = Status.Error () }, Cmd.none )
 
 
 resultToMsg : Result e Api.Session -> Core.Msg

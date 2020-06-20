@@ -1,8 +1,12 @@
 module Core.Types exposing
     ( FullModel
     , Global
+    , HomeModel(..)
     , Model(..)
     , Msg(..)
+    , home
+    , homeLogin
+    , homeSignUp
     , init
     , isLoggedIn
     )
@@ -50,7 +54,7 @@ modelFromFlags flags =
                         }
 
                 Err _ ->
-                    Home
+                    home
 
         Ok "preparation/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
@@ -62,7 +66,7 @@ modelFromFlags flags =
                         }
 
                 ( _, _ ) ->
-                    Home
+                    home
 
         Ok "acquisition/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
@@ -77,7 +81,7 @@ modelFromFlags flags =
                         }
 
                 ( _, _ ) ->
-                    Home
+                    home
 
         Ok "edition/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
@@ -88,21 +92,21 @@ modelFromFlags flags =
                         }
 
                 ( _, _ ) ->
-                    Home
+                    home
 
         Ok ok ->
             let
                 _ =
                     debug "Unknown page" ok
             in
-            Home
+            home
 
         Err err ->
             let
                 _ =
                     debug "Error" err
             in
-            Home
+            home
 
 
 type alias Global =
@@ -112,10 +116,28 @@ type alias Global =
 
 
 type Model
-    = Home
-    | Login Login.Model
-    | SignUp SignUp.Model
+    = Home HomeModel
     | LoggedIn LoggedIn.Model
+
+
+type HomeModel
+    = HomeLogin Login.Model
+    | HomeSignUp SignUp.Model
+
+
+home : Model
+home =
+    Home (HomeLogin Login.init)
+
+
+homeLogin : Login.Model -> Model
+homeLogin login =
+    Home (HomeLogin login)
+
+
+homeSignUp : SignUp.Model -> Model
+homeSignUp signUp =
+    Home (HomeSignUp signUp)
 
 
 isLoggedIn : Model -> Bool

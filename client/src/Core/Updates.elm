@@ -37,13 +37,13 @@ update msg { global, model } =
                     )
 
                 ( Core.LoginClicked, _ ) ->
-                    ( Core.FullModel global (Core.Login Login.init), Cmd.none )
+                    ( Core.FullModel global (Core.homeLogin Login.init), Cmd.none )
 
                 ( Core.LogoutClicked, _ ) ->
-                    ( Core.FullModel global Core.Home, Api.logOut (\_ -> Core.Noop) )
+                    ( Core.FullModel global Core.home, Api.logOut (\_ -> Core.Noop) )
 
                 ( Core.SignUpClicked, _ ) ->
-                    ( Core.FullModel global (Core.SignUp SignUp.init), Cmd.none )
+                    ( Core.FullModel global (Core.homeSignUp SignUp.init), Cmd.none )
 
                 ( Core.NewProjectClicked, Core.LoggedIn { session } ) ->
                     ( Core.FullModel global
@@ -57,19 +57,19 @@ update msg { global, model } =
                     )
 
                 -- OTHER MODULES MESSAGES
-                ( Core.LoginMsg loginMsg, Core.Login loginModel ) ->
+                ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->
                     let
                         ( m, cmd ) =
                             Login.update loginMsg loginModel
                     in
                     ( Core.FullModel global m, cmd )
 
-                ( Core.SignUpMsg signUpMsg, Core.SignUp signUpModel ) ->
+                ( Core.SignUpMsg signUpMsg, Core.Home (Core.HomeSignUp signUpModel) ) ->
                     let
                         ( m, cmd ) =
                             SignUp.update signUpMsg signUpModel
                     in
-                    ( Core.FullModel global (Core.SignUp m), cmd )
+                    ( Core.FullModel global (Core.homeSignUp m), cmd )
 
                 ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
                     let

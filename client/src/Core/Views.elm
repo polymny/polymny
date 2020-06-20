@@ -61,14 +61,8 @@ viewContent { global, model } =
     let
         content =
             case model of
-                Core.Home ->
-                    homeView
-
-                Core.Login loginModel ->
-                    Login.view loginModel
-
-                Core.SignUp signUpModel ->
-                    SignUp.view signUpModel
+                Core.Home homeModel ->
+                    homeView homeModel
 
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
@@ -91,9 +85,26 @@ viewContent { global, model } =
     Element.column (Element.width Element.fill :: attributes) [ topBar model, content ]
 
 
-homeView : Element Core.Msg
-homeView =
-    Element.column [ Element.alignTop, Element.padding 10, Element.width Element.fill ] [ Element.text "Home" ]
+homeView : Core.HomeModel -> Element Core.Msg
+homeView model =
+    let
+        ( form, button ) =
+            case model of
+                Core.HomeLogin login ->
+                    ( Login.view login, Ui.linkButton (Just Core.SignUpClicked) "Pas encore de compte ? Créez-en un" )
+
+                Core.HomeSignUp signUp ->
+                    ( SignUp.view signUp, Ui.linkButton (Just Core.LoginClicked) "Déjà un compte ? Identifiez-vous" )
+    in
+    Element.row
+        [ Element.centerX
+        , Element.spacing 100
+        , Element.padding 10
+        , Element.width Element.fill
+        ]
+        [ Element.column [ Element.centerX ] [ Element.text "Welcome" ]
+        , Element.column [ Element.centerX ] [ form, button ]
+        ]
 
 
 topBar : Core.Model -> Element Core.Msg
@@ -114,7 +125,7 @@ topBar model =
                         [ Element.el [] (Element.text session.username), logoutButton ]
 
                      else
-                        [ loginButton, signUpButton ]
+                        []
                     )
                 ]
 
@@ -137,7 +148,7 @@ nonFull model =
                 [ logoutButton ]
 
              else
-                [ loginButton, signUpButton ]
+                []
             )
         ]
 
@@ -147,16 +158,6 @@ homeButton =
     Element.el [ Font.bold, Font.size 18 ] (Ui.homeButton (Just Core.HomeClicked) "")
 
 
-loginButton : Element Core.Msg
-loginButton =
-    Ui.topBarButton (Just Core.LoginClicked) "Log in"
-
-
 logoutButton : Element Core.Msg
 logoutButton =
     Ui.topBarButton (Just Core.LogoutClicked) "Log out"
-
-
-signUpButton : Element Core.Msg
-signUpButton =
-    Ui.textButton (Just Core.SignUpClicked) "Sign up"
