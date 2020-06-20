@@ -14,13 +14,16 @@ isAllowedChar char =
 
 
 view : SignUp.Model -> Element Core.Msg
-view { username, password, email, status } =
+view { username, password, passwordConfirmation, email, status } =
     let
         isUsernameValid =
             List.all isAllowedChar (String.toList username) && String.length username > 3
 
+        isPasswordValid =
+            password == passwordConfirmation
+
         submitIfUsernameValid =
-            if isUsernameValid then
+            if isUsernameValid && isPasswordValid then
                 Just SignUp.Submitted
 
             else
@@ -43,24 +46,27 @@ view { username, password, email, status } =
         submitButton =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Submitting ..."
+                    Ui.primaryButtonDisabled "Inscription en cours ..."
 
                 Status.Success () ->
-                    Ui.primaryButtonDisabled "Submitted!"
+                    Ui.primaryButtonDisabled "Inscription terminée !"
 
                 _ ->
-                    Ui.primaryButton submitIfUsernameValid "Submit"
+                    Ui.primaryButton submitIfUsernameValid "S'inscrire"
 
         message =
-            case ( status, isUsernameValid ) of
-                ( Status.Success (), _ ) ->
-                    Just (Ui.successModal "An email has been sent to your address!")
+            case ( status, isUsernameValid, isPasswordValid ) of
+                ( Status.Success (), _, _ ) ->
+                    Just (Ui.successModal "Un email vous a été envoyé !")
 
-                ( Status.Error (), _ ) ->
-                    Just (Ui.errorModal "Sign up failed")
+                ( Status.Error (), _, _ ) ->
+                    Just (Ui.errorModal "L'inscription a échoué")
 
-                ( _, False ) ->
-                    Just (Ui.errorModal "Your username must contain only letters, numbers, ., - and _")
+                ( _, False, _ ) ->
+                    Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres, chiffres, points, tirets et traits et doit faire plus de 3 caractères")
+
+                ( _, _, False ) ->
+                    Just (Ui.errorModal "Les deux mots de passe ne correspondent pas")
 
                 _ ->
                     Nothing
@@ -70,7 +76,7 @@ view { username, password, email, status } =
 
         fields =
             [ Input.username submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Username")
+                { label = Input.labelAbove [] (Element.text "Nom d'utilisateur")
                 , onChange = SignUp.UsernameChanged
                 , placeholder = Nothing
                 , text = username
@@ -81,11 +87,18 @@ view { username, password, email, status } =
                 , placeholder = Nothing
                 , text = email
                 }
-            , Input.currentPassword submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Password")
+            , Input.newPassword submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Mot de passe")
                 , onChange = SignUp.PasswordChanged
                 , placeholder = Nothing
                 , text = password
+                , show = False
+                }
+            , Input.currentPassword submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Confirmez votre mot de passe")
+                , onChange = SignUp.PasswordConfirmationChanged
+                , placeholder = Nothing
+                , text = passwordConfirmation
                 , show = False
                 }
             , submitButton

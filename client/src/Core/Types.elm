@@ -5,6 +5,7 @@ module Core.Types exposing
     , Model(..)
     , Msg(..)
     , home
+    , homeForgotPassword
     , homeLogin
     , homeSignUp
     , init
@@ -13,11 +14,13 @@ module Core.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
 import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import Preparation.Types as Preparation
+import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Status
 import Task
@@ -52,6 +55,14 @@ modelFromFlags flags =
                         { session = session
                         , tab = LoggedIn.init
                         }
+
+                Err _ ->
+                    home
+
+        Ok "reset-password" ->
+            case Decode.decodeValue (Decode.field "key" Decode.string) flags of
+                Ok key ->
+                    ResetPassword (ResetPassword.init key)
 
                 Err _ ->
                     home
@@ -117,12 +128,14 @@ type alias Global =
 
 type Model
     = Home HomeModel
+    | ResetPassword ResetPassword.Model
     | LoggedIn LoggedIn.Model
 
 
 type HomeModel
     = HomeLogin Login.Model
     | HomeSignUp SignUp.Model
+    | HomeForgotPassword ForgotPassword.Model
 
 
 home : Model
@@ -138,6 +151,11 @@ homeLogin login =
 homeSignUp : SignUp.Model -> Model
 homeSignUp signUp =
     Home (HomeSignUp signUp)
+
+
+homeForgotPassword : ForgotPassword.Model -> Model
+homeForgotPassword email =
+    Home (HomeForgotPassword email)
 
 
 isLoggedIn : Model -> Bool
@@ -156,8 +174,11 @@ type Msg
     | LoginClicked
     | LogoutClicked
     | SignUpClicked
+    | ForgotPasswordClicked
     | NewProjectClicked
     | TimeZoneChanged Time.Zone
     | LoginMsg Login.Msg
     | SignUpMsg SignUp.Msg
     | LoggedInMsg LoggedIn.Msg
+    | ForgotPasswordMsg ForgotPassword.Msg
+    | ResetPasswordMsg ResetPassword.Msg

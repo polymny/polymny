@@ -59,7 +59,7 @@ impl Mailer {
         let host = config.get_string("mailer_host").ok()?;
         let user = config.get_string("mailer_user").ok()?;
         let password = config.get_string("mailer_password").ok()?;
-        let require_email_validation = config.get_bool("require_email_validation").ok()?;
+        let require_email_validation = config.get_bool("mailer_require_email_validation").ok()?;
 
         Some(Mailer::new(
             require_email_validation,

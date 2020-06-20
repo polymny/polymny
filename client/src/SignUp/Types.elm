@@ -7,18 +7,20 @@ type alias Model =
     { status : Status () ()
     , username : String
     , password : String
+    , passwordConfirmation : String
     , email : String
     }
 
 
 init : Model
 init =
-    Model Status.NotSent "" "" ""
+    Model Status.NotSent "" "" "" ""
 
 
 type Msg
     = UsernameChanged String
     | PasswordChanged String
+    | PasswordConfirmationChanged String
     | EmailChanged String
     | Submitted
     | Success

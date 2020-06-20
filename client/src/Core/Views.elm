@@ -6,12 +6,14 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
+import ForgotPassword.Views as ForgotPassword
 import Html
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
+import ResetPassword.Views as ResetPassword
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -64,6 +66,9 @@ viewContent { global, model } =
                 Core.Home homeModel ->
                     homeView homeModel
 
+                Core.ResetPassword resetPasswordModel ->
+                    ResetPassword.view resetPasswordModel
+
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
 
@@ -88,13 +93,28 @@ viewContent { global, model } =
 homeView : Core.HomeModel -> Element Core.Msg
 homeView model =
     let
-        ( form, button ) =
+        forgotPasswordLinkContent =
+            Ui.linkButton (Just Core.ForgotPasswordClicked) "Mot de passe oublié"
+
+        ( form, button, forgotPasswordLink ) =
             case model of
                 Core.HomeLogin login ->
-                    ( Login.view login, Ui.linkButton (Just Core.SignUpClicked) "Pas encore de compte ? Créez-en un" )
+                    ( Login.view login
+                    , Ui.linkButton (Just Core.SignUpClicked) "Pas encore de compte ? Créez-en un"
+                    , forgotPasswordLinkContent
+                    )
 
                 Core.HomeSignUp signUp ->
-                    ( SignUp.view signUp, Ui.linkButton (Just Core.LoginClicked) "Déjà un compte ? Identifiez-vous" )
+                    ( SignUp.view signUp
+                    , Ui.linkButton (Just Core.LoginClicked) "Déjà un compte ? Identifiez-vous"
+                    , forgotPasswordLinkContent
+                    )
+
+                Core.HomeForgotPassword forgotPassword ->
+                    ( ForgotPassword.view forgotPassword
+                    , Ui.linkButton (Just Core.LoginClicked) "Retourner au début"
+                    , Element.none
+                    )
     in
     Element.row
         [ Element.centerX
@@ -103,7 +123,7 @@ homeView model =
         , Element.width Element.fill
         ]
         [ Element.column [ Element.centerX ] [ Element.text "Welcome" ]
-        , Element.column [ Element.centerX ] [ form, button ]
+        , Element.column [ Element.centerX, Element.spacing 10 ] [ form, forgotPasswordLink, button ]
         ]
 
 

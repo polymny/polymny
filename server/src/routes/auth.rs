@@ -82,6 +82,25 @@ pub fn logout(db: Database, mut cookies: Cookies) -> Result<()> {
     Ok(())
 }
 
+/// The form for requesting a new password.
+#[derive(Serialize, Deserialize)]
+pub struct RequestNewPasswordForm {
+    /// The email.
+    pub email: String,
+}
+
+/// The route that requests an email to change a password.
+#[post("/request-new-password", data = "<form>")]
+pub fn request_new_password(
+    config: State<Config>,
+    db: Database,
+    form: Json<RequestNewPasswordForm>,
+) -> Result<()> {
+    let mut user = User::get_by_email(&form.email, &db.0)?;
+    user.change_password(&config.mailer, &db.0)?;
+    Ok(())
+}
+
 /// The page that prompts a user for a new password.
 #[get("/reset-password/<key>")]
 pub fn reset_password<'a>(key: String) -> Result<Response<'a>> {
@@ -118,7 +137,7 @@ pub fn change_password(
     db: Database,
     form: Json<ChangePasswordForm>,
     mut cookies: Cookies,
-) -> Result<Redirect> {
+) -> Result<JsonValue> {
     let user = match (&form.username_and_old_password, &form.key) {
         (None, None) => return Err(Error::NotFound),
         (Some((username, old_password)), _) => {
@@ -132,5 +151,5 @@ pub fn change_password(
     let session = user.save_session(&db)?;
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
 
-    Ok(Redirect::to("/"))
+    Ok(json!({"username": user.username, "projects": user.projects(&db)?, "active_project": ""}))
 }

@@ -15,6 +15,9 @@ update msg content =
         SignUp.PasswordChanged newPassword ->
             ( { content | password = newPassword }, Cmd.none )
 
+        SignUp.PasswordConfirmationChanged newPasswordConfirmation ->
+            ( { content | passwordConfirmation = newPasswordConfirmation }, Cmd.none )
+
         SignUp.EmailChanged newEmail ->
             ( { content | email = newEmail }, Cmd.none )
 

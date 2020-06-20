@@ -20,11 +20,13 @@ module Api exposing
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
+    , forgotPassword
     , logOut
     , login
     , newCapsule
     , newProject
     , quickUploadSlideShow
+    , resetPassword
     , setupConfig
     , signUp
     , testDatabase
@@ -312,6 +314,45 @@ login resultToMsg content =
         { url = "/api/login"
         , expect = Http.expectJson resultToMsg decodeSession
         , body = Http.jsonBody (encodeLoginContent content)
+        }
+
+
+type alias ForgotPasswordContent a =
+    { a | email : String }
+
+
+encodeForgotPasswordContent : ForgotPasswordContent a -> Encode.Value
+encodeForgotPasswordContent { email } =
+    Encode.object [ ( "email", Encode.string email ) ]
+
+
+forgotPassword : (Result Http.Error () -> msg) -> ForgotPasswordContent b -> Cmd msg
+forgotPassword resultToMsg content =
+    Http.post
+        { url = "/api/request-new-password"
+        , expect = Http.expectWhatever resultToMsg
+        , body = Http.jsonBody (encodeForgotPasswordContent content)
+        }
+
+
+type alias ResetPasswordContent a =
+    { a
+        | password : String
+        , key : String
+    }
+
+
+encodeResetPasswordContent : ResetPasswordContent a -> Encode.Value
+encodeResetPasswordContent { password, key } =
+    Encode.object [ ( "key", Encode.string key ), ( "new_password", Encode.string password ) ]
+
+
+resetPassword : (Result Http.Error Session -> msg) -> ResetPasswordContent b -> Cmd msg
+resetPassword resultToMsg content =
+    Http.post
+        { url = "/api/change-password"
+        , expect = Http.expectJson resultToMsg decodeSession
+        , body = Http.jsonBody (encodeResetPasswordContent content)
         }
 
 

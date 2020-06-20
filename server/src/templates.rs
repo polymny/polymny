@@ -21,7 +21,7 @@ pub fn validation_email_plain_text(activation_url: &str) -> String {
 /// This function formats a reset password email with HTML format from a reset url.
 pub fn reset_password_email_html(url: &str) -> String {
     format!(
-        "<h1>You've recently request to change your password</h1><a href=\"{}\">Click here to change your password</p><p>If you haven not requested to change your password, you can ignore this email</p>",
+        "<h1>You've recently request to change your password</h1><p><a href=\"{}\">Click here to change your password</a></p><p>If you haven not requested to change your password, you can ignore this email</p>",
         url
     )
 }

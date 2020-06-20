@@ -1,15 +1,15 @@
-module Login.Views exposing (view)
+module ForgotPassword.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Input as Input
-import Login.Types as Login
+import ForgotPassword.Types as ForgotPassword
 import Status
 import Ui.Ui as Ui
 
 
-view : Login.Model -> Element Core.Msg
-view { username, password, status } =
+view : ForgotPassword.Model -> Element Core.Msg
+view { email, status } =
     let
         submitOnEnter =
             case status of
@@ -20,15 +20,15 @@ view { username, password, status } =
                     []
 
                 _ ->
-                    [ Ui.onEnter Login.Submitted ]
+                    [ Ui.onEnter ForgotPassword.Submitted ]
 
         submitButton =
             case status of
                 Status.Sent ->
-                    Ui.primaryButtonDisabled "Connection en cours..."
+                    Ui.primaryButtonDisabled "Demande de nouveau mot de passe en cours..."
 
                 _ ->
-                    Ui.primaryButton (Just Login.Submitted) "Se connecter"
+                    Ui.primaryButton (Just ForgotPassword.Submitted) "Demander un nouveau mot de passe"
 
         errorMessage =
             case status of
@@ -42,18 +42,11 @@ view { username, password, status } =
             Element.row [ Element.centerX ] [ Element.text "Login" ]
 
         fields =
-            [ Input.username submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Nom d'utilisateur")
-                , onChange = Login.UsernameChanged
+            [ Input.email submitOnEnter
+                { label = Input.labelAbove [] (Element.text "Email")
+                , onChange = ForgotPassword.EmailChanged
                 , placeholder = Nothing
-                , text = username
-                }
-            , Input.currentPassword submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Mot de passe")
-                , onChange = Login.PasswordChanged
-                , placeholder = Nothing
-                , text = password
-                , show = False
+                , text = email
                 }
             , submitButton
             ]
@@ -66,6 +59,6 @@ view { username, password, status } =
                 Nothing ->
                     header :: fields
     in
-    Element.map Core.LoginMsg <|
+    Element.map Core.ForgotPasswordMsg <|
         Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
             form

@@ -373,6 +373,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::auth::login,
                 routes::auth::logout,
                 routes::auth::change_password,
+                routes::auth::request_new_password,
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::get_capsules,

@@ -132,6 +132,13 @@ impl User {
         }
     }
 
+    /// Gets a user by email.
+    pub fn get_by_email(email: &str, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl;
+        let user = dsl::users.filter(dsl::email.eq(email)).first::<User>(db);
+        Ok(user?)
+    }
+
     /// Requests the user to change its password.
     pub fn change_password(&mut self, mailer: &Option<Mailer>, db: &PgConnection) -> Result<()> {
         let rng = OsRng {};
