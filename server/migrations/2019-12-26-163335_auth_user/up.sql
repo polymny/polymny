@@ -4,6 +4,7 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR NOT NULL UNIQUE,
     email VARCHAR NOT NULL UNIQUE,
+    secondary_email VARCHAR,
     hashed_password VARCHAR NOT NULL,
     activated BOOLEAN NOT NULL,
     activation_key VARCHAR,

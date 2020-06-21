@@ -153,3 +153,35 @@ pub fn change_password(
 
     Ok(json!({"username": user.username, "projects": user.projects(&db)?, "active_project": ""}))
 }
+
+/// The form for changing an email address.
+///
+/// Changing the email needs the old password.
+#[derive(Serialize, Deserialize)]
+pub struct ChangeEmailForm {
+    /// The old password.
+    pub password: String,
+
+    /// The new email.
+    pub new_email: String,
+}
+
+/// Route to change a user email.
+#[post("/change-email", data = "<form>")]
+pub fn change_email(
+    config: State<Config>,
+    db: Database,
+    user: User,
+    form: Json<ChangeEmailForm>,
+) -> Result<JsonValue> {
+    let mut user = User::authenticate(&user.username, &form.password, &db.0)?;
+    user.change_email(&form.new_email, &config.mailer, &db.0)?;
+    Ok(json!({}))
+}
+
+/// Route to validate a user email change.
+#[get("/validate-email-change/<key>")]
+pub fn validate_email_change(key: String, db: Database) -> Result<Redirect> {
+    User::validate_email_change(&key, &db.0)?;
+    Ok(Redirect::to("/"))
+}

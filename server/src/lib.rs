@@ -360,7 +360,9 @@ pub fn start_server(rocket_config: RConfig) {
                 capsule_preparation,
                 capsule_acquisition,
                 capsule_edition,
+                routes::auth::activate,
                 routes::auth::reset_password,
+                routes::auth::validate_email_change,
             ],
         )
         .mount("/dist", StaticFiles::from("dist"))
@@ -369,11 +371,11 @@ pub fn start_server(rocket_config: RConfig) {
             "/api/",
             routes![
                 routes::auth::new_user,
-                routes::auth::activate,
                 routes::auth::login,
                 routes::auth::logout,
                 routes::auth::change_password,
                 routes::auth::request_new_password,
+                routes::auth::change_email,
                 routes::project::new_project,
                 routes::project::get_project,
                 routes::project::get_capsules,

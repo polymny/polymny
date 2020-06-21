@@ -62,6 +62,7 @@ table! {
         id -> Int4,
         username -> Varchar,
         email -> Varchar,
+        secondary_email -> Nullable<Varchar>,
         hashed_password -> Varchar,
         activated -> Bool,
         activation_key -> Nullable<Varchar>,

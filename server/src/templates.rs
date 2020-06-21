@@ -17,6 +17,21 @@ pub fn validation_email_plain_text(activation_url: &str) -> String {
         activation_url
     )
 }
+/// This function formats a validation for email change with HTML format from an activation url.
+pub fn validation_new_email_html(activaion_url: &str) -> String {
+    format!(
+        "<h1>Welcome</h1><a href=\"{}\">Click here to activate your new email</a>",
+        activaion_url
+    )
+}
+
+/// This function formats a validation for email change with plain text format from an activation url.
+pub fn validation_new_email_plain_text(activation_url: &str) -> String {
+    format!(
+        "Welcome!\n\nTo activate your new email, please go to the following link:\n{}",
+        activation_url
+    )
+}
 
 /// This function formats a reset password email with HTML format from a reset url.
 pub fn reset_password_email_html(url: &str) -> String {

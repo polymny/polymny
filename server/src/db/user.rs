@@ -23,7 +23,7 @@ use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
 use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
-    validation_email_plain_text,
+    validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
 use crate::Database;
 use crate::{Error, Result};
@@ -39,6 +39,9 @@ pub struct User {
 
     /// The email of the user.
     pub email: String,
+
+    /// The email when a user wants to change their email.
+    pub secondary_email: Option<String>,
 
     /// The BCrypt hash of the password of the user.
     pub hashed_password: String,
@@ -62,6 +65,9 @@ pub struct NewUser {
 
     /// The email of the new user.
     pub email: String,
+
+    /// The email when a user wants to change their email.
+    pub secondary_email: Option<String>,
 
     /// The BCrypt hashed password of the new user.
     pub hashed_password: String,
@@ -105,7 +111,7 @@ impl User {
                 let rng = OsRng {};
                 let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
 
-                let activation_url = format!("{}/api/activate/{}", mailer.root, activation_key);
+                let activation_url = format!("{}/activate/{}", mailer.root, activation_key);
                 let text = validation_email_plain_text(&activation_url);
                 let html = validation_email_html(&activation_url);
 
@@ -114,6 +120,7 @@ impl User {
                 Ok(NewUser {
                     username: String::from(username),
                     email: String::from(email),
+                    secondary_email: None,
                     hashed_password,
                     activated: false,
                     activation_key: Some(activation_key),
@@ -124,6 +131,7 @@ impl User {
             _ => Ok(NewUser {
                 username: String::from(username),
                 email: String::from(email),
+                secondary_email: None,
                 hashed_password,
                 activated: true,
                 activation_key: None,
@@ -136,6 +144,15 @@ impl User {
     pub fn get_by_email(email: &str, db: &PgConnection) -> Result<User> {
         use crate::schema::users::dsl;
         let user = dsl::users.filter(dsl::email.eq(email)).first::<User>(db);
+        Ok(user?)
+    }
+
+    /// Gets a user by activation key.
+    pub fn get_by_activation_key(key: &str, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl;
+        let user = dsl::users
+            .filter(dsl::activation_key.eq(key))
+            .first::<User>(db);
         Ok(user?)
     }
 
@@ -169,6 +186,64 @@ impl User {
         }
 
         Ok(())
+    }
+
+    /// Changes the email an requests an email change validation.
+    pub fn change_email(
+        &mut self,
+        new_email: &str,
+        mailer: &Option<Mailer>,
+        db: &PgConnection,
+    ) -> Result<()> {
+        match mailer {
+            Some(mailer) if mailer.require_email_validation => {
+                let rng = OsRng {};
+                let key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+
+                use crate::schema::users::dsl::*;
+                diesel::update(users.filter(id.eq(self.id)))
+                    .set((
+                        activation_key.eq(Some(key.clone())),
+                        secondary_email.eq(Some(new_email)),
+                    ))
+                    .execute(db)?;
+
+                let activation_url = format!("{}/validate-email-change/{}", mailer.root, key);
+                let text = validation_new_email_plain_text(&activation_url);
+                let html = validation_new_email_html(&activation_url);
+
+                mailer.send_mail(
+                    new_email,
+                    String::from("Change your Polymny email"),
+                    text,
+                    html,
+                )?;
+            }
+
+            _ => {
+                use crate::schema::users::dsl::*;
+                diesel::update(users.filter(id.eq(self.id)))
+                    .set(email.eq(new_email))
+                    .execute(db)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Validates the email change of a user.
+    pub fn validate_email_change(key: &str, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl::*;
+
+        let user = User::get_by_activation_key(key, db)?;
+        let none: Option<String> = None;
+
+        Ok(diesel::update(users.filter(activation_key.eq(key)))
+            .set((
+                email.eq(user.secondary_email.ok_or(Error::NotFound)?),
+                activation_key.eq(none.clone()),
+                secondary_email.eq(none),
+            ))
+            .get_result::<User>(db)?)
     }
 
     /// Updates the user password.
@@ -234,6 +309,7 @@ impl User {
                 id,
                 username,
                 email,
+                secondary_email,
                 hashed_password,
                 activated,
                 activation_key,
