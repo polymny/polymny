@@ -187,7 +187,8 @@ projectHeader global project =
                     LoggedIn.ProjectClicked project
                 )
             )
-            project.name
+          <|
+            String.left 20 project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
 

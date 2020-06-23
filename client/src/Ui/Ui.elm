@@ -324,7 +324,7 @@ spinner =
     Element.el
         [ Element.padding 10
         , Element.centerX
-        , Font.color Colors.artIrises
+        , Font.color Colors.artSunFlowers
         ]
         Icons.spinner
 

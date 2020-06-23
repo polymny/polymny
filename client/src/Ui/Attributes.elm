@@ -1,8 +1,10 @@
 module Ui.Attributes exposing
-    ( capsuleInfoViewAttributes
+    ( attributesHomeTitle
+    , capsuleInfoViewAttributes
     , designAttributes
     , designGosAttributes
     , designGosTitleAttributes
+    , fontRoboto
     , fullModelAttributes
     , genericDesignSlideViewAttributes
     , uploadViewAttributes
@@ -28,7 +30,18 @@ designAttributes =
 fullModelAttributes : List (Element.Attribute msg)
 fullModelAttributes =
     [ Font.size 15
+    , fontOpenSans
     , Background.color Colors.white
+    ]
+
+
+attributesHomeTitle : List (Element.Attribute msg)
+attributesHomeTitle =
+    [ Element.centerX
+    , Element.padding 20
+    , Font.size 30
+    , fontRoboto
+    , Font.medium
     ]
 
 
@@ -91,3 +104,33 @@ uploadViewAttributes =
     , Border.width 1
     , Border.color Colors.artIrises
     ]
+
+
+fontRoboto : Element.Attribute msg
+fontRoboto =
+    Font.family
+        [ Font.external
+            { name = "Roboto"
+            , url = "https://fonts.googleapis.com/css?family=Roboto"
+            }
+        , Font.sansSerif
+        ]
+
+
+fontAnton : Element.Attribute msg
+fontAnton =
+    Font.family
+        [ Font.external
+            { name = "Anton"
+            , url = "https://fonts.googleapis.com/css2?family=Anton&display=swap"
+            }
+        , Font.sansSerif
+        ]
+
+
+fontOpenSans : Element.Attribute msg
+fontOpenSans =
+    Font.family
+        [ Font.typeface "Open Sans"
+        , Font.sansSerif
+        ]
