@@ -6,6 +6,7 @@ import Edition.Types as Edition
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes
+import LoggedIn.Types as LoggedIn
 import Status
 import Ui.Ui as Ui
 import Utils
@@ -48,11 +49,17 @@ mainView { status, details } =
 
                 Nothing ->
                     Element.none
+
+        publishButton =
+            Ui.primaryButton (Just Edition.PublishVideo) "Publier la video"
+                |> Element.map LoggedIn.EditionMsg
+                |> Element.map Core.LoggedInMsg
     in
     Element.column
         [ Element.centerX ]
         [ message
         , video
+        , publishButton
         ]
 
 

@@ -17,3 +17,6 @@ update session msg model =
     case msg of
         Edition.AutoSuccess capsuleDetails ->
             ( makeModel { model | status = Status.Success (), details = capsuleDetails }, Cmd.none )
+
+        Edition.PublishVideo ->
+            ( makeModel model, Api.publishVideo (\_ -> Core.Noop) model.details.capsule.id )

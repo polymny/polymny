@@ -618,3 +618,31 @@ pub fn capsule_edition(
     let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
 }
+
+/// The route to publish a video.
+#[post("/capsule/<id>/publication")]
+pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: i32) -> Result<()> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let asset = Asset::get_by_id(capsule.video_id.ok_or(Error::NotFound)?, &db)?;
+    let input_path = config.data_path.join(&asset.0.asset_path);
+    let input_path = input_path.to_str().unwrap();
+    let output_path = config.videos_path.join(asset.0.uuid.to_string());
+    let output_path = output_path.to_str().unwrap();
+    let command = vec!["dash-encode", "encode", input_path, output_path];
+
+    let child = Command::new(command[0])
+        .args(&command[1..])
+        .output()
+        .expect("failed to execute child");
+
+    if !child.status.success() {
+        error!(
+            "command {:?} failed:\nSTDOUT\n{}\n\nSTDERR\n{}",
+            command,
+            String::from_utf8(child.stdout).unwrap(),
+            String::from_utf8(child.stderr).unwrap()
+        );
+    }
+
+    Ok(())
+}

@@ -392,6 +392,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::capsule::gos_order,
                 routes::capsule::upload_record,
                 routes::capsule::capsule_edition,
+                routes::capsule::capsule_publication,
                 routes::asset::get_asset,
                 routes::asset::delete_asset,
                 routes::slide::get_slide,

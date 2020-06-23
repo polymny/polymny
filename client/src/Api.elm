@@ -25,6 +25,7 @@ module Api exposing
     , login
     , newCapsule
     , newProject
+    , publishVideo
     , quickUploadSlideShow
     , resetPassword
     , setupConfig
@@ -491,6 +492,15 @@ editionAuto resultToMsg id =
     Http.post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.emptyBody
+        }
+
+
+publishVideo : (Result Http.Error () -> msg) -> Int -> Cmd msg
+publishVideo resultToMsg id =
+    Http.post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/publication"
+        , expect = Http.expectWhatever resultToMsg
         , body = Http.emptyBody
         }
 
