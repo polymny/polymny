@@ -30,17 +30,6 @@ view _ _ model =
 mainView : Edition.Model -> Element Core.Msg
 mainView { status, details } =
     let
-        message =
-            case status of
-                Status.Sent ->
-                    Ui.messageWithSpinner "Edition automatique en cours"
-
-                Status.Success () ->
-                    Element.text "Edition auto terrminée"
-
-                _ ->
-                    Element.text "Evenement non prevus"
-
         video =
             case details.video of
                 Just x ->
@@ -48,11 +37,21 @@ mainView { status, details } =
 
                 Nothing ->
                     Element.none
+
+        element =
+            case status of
+                Status.Sent ->
+                    Ui.messageWithSpinner "Edition automatique en cours"
+
+                Status.Success () ->
+                    video
+
+                _ ->
+                    Element.text "Evenement non prevus"
     in
     Element.column
         [ Element.centerX ]
-        [ message
-        , video
+        [ element
         ]
 
 

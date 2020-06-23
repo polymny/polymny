@@ -23,10 +23,10 @@ import Utils
 
 
 view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
-view _ session model =
+view global session model =
     let
         mainPage =
-            mainView session model
+            mainView global session model
 
         element =
             Element.column
@@ -39,23 +39,9 @@ view _ session model =
         [ element ]
 
 
-mainView : Api.Session -> Preparation.Model -> Element Core.Msg
-mainView session { details, slides, uploadForms, editPrompt, slideModel, gosModel } =
+mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
+mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel } =
     let
-        project_header =
-            case session.active_project of
-                Just x ->
-                    Ui.linkButton
-                        (Just
-                            (Core.LoggedInMsg <|
-                                LoggedIn.ProjectClicked x
-                            )
-                        )
-                        x.name
-
-                Nothing ->
-                    Element.none
-
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
@@ -66,6 +52,31 @@ mainView session { details, slides, uploadForms, editPrompt, slideModel, gosMode
 
             else
                 Nothing
+
+        capsuleInfo =
+            if global.beta then
+                capsuleInfoView session details uploadForms
+
+            else
+                Element.none
+
+        isGosLocked : Api.Gos -> Bool
+        isGosLocked gos =
+            gos.locked
+
+        isCapsuleLocked : Bool
+        isCapsuleLocked =
+            List.all isGosLocked details.structure
+
+        msg =
+            Core.LoggedInMsg <| LoggedIn.EditionClicked details True
+
+        autoEdition =
+            if isCapsuleLocked then
+                Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
+
+            else
+                Ui.primaryButtonDisabled "Edition automatique de la vidéo"
     in
     Element.column []
         [ Element.el
@@ -76,7 +87,7 @@ mainView session { details, slides, uploadForms, editPrompt, slideModel, gosMode
                         Element.inFront (Dialog.view dialogConfig)
             ]
             (Element.row (Element.scrollbarX :: Attributes.designAttributes)
-                [ capsuleInfoView session details uploadForms
+                [ capsuleInfo
                 , Element.column
                     [ Element.scrollbarX
                     , Element.centerX
@@ -93,6 +104,7 @@ mainView session { details, slides, uploadForms, editPrompt, slideModel, gosMode
                             (\( i, slide ) -> capsuleGosView details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
+                    , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
                     ]
                 ]
             )

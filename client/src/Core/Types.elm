@@ -37,7 +37,7 @@ init : Decode.Value -> ( FullModel, Cmd Msg )
 init flags =
     let
         global =
-            { zone = Time.utc, dummy = "" }
+            { zone = Time.utc, dummy = "", beta = False }
 
         initialCommand =
             Task.perform TimeZoneChanged Time.here
@@ -123,6 +123,7 @@ modelFromFlags flags =
 type alias Global =
     { zone : Time.Zone
     , dummy : String
+    , beta : Bool
     }
 
 

@@ -41,7 +41,7 @@ headerView active details =
         msgEdition =
             Just <|
                 Core.LoggedInMsg <|
-                    LoggedIn.EditionClicked details
+                    LoggedIn.EditionClicked details False
 
         buttons =
             case active of

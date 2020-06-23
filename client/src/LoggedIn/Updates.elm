@@ -51,11 +51,18 @@ update msg { session, tab } =
         ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
             Edition.update session editionMsg model
 
-        ( LoggedIn.EditionClicked capsule, _ ) ->
+        ( LoggedIn.EditionClicked capsule False, _ ) ->
             ( { session = session
               , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
               }
             , Cmd.none
+            )
+
+        ( LoggedIn.EditionClicked details True, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Edition { status = Status.Sent, details = details }
+              }
+            , Api.editionAuto resultToMsg3 details.capsule.id
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->
@@ -205,6 +212,16 @@ resultToMsg2 result =
         (\x ->
             Core.LoggedInMsg <|
                 LoggedIn.CapsuleReceived x
+        )
+        (\_ -> Core.Noop)
+        result
+
+
+resultToMsg3 : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg3 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
         )
         (\_ -> Core.Noop)
         result
