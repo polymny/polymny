@@ -194,7 +194,7 @@ pub struct Database(rocket_diesel::PgConnection);
 
 /// The index page.
 #[get("/")]
-pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
+pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Result<Response<'a>> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -207,6 +207,7 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
             "username": user.username,
             "projects": projects,
             "active_project":"",
+            "video_root": config.video_root,
         })
     });
 
@@ -219,6 +220,7 @@ pub fn index<'a>(db: Database, user: Option<User>) -> Result<Response<'a>> {
 }
 
 fn jsonify_flags(
+    config: &Config,
     db: &Database,
     user: &Option<User>,
     id: i32,
@@ -251,6 +253,7 @@ fn jsonify_flags(
                     "active_project":"",
                     "structure":   capsule.structure,
                     "video": video,
+                    "video_root": config.video_root,
                 })
             })
         }
@@ -261,6 +264,7 @@ fn jsonify_flags(
                 "projects": projects,
                 "page": "index",
                 "active_project": "",
+                "video_root": config.video_root,
             })
         }),
     })
@@ -268,8 +272,13 @@ fn jsonify_flags(
 
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>/preparation")]
-pub fn capsule_preparation<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&db, &user, id, "preparation/capsule")?;
+pub fn capsule_preparation<'a>(
+    config: State<Config>,
+    db: Database,
+    user: Option<User>,
+    id: i32,
+) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&config, &db, &user, id, "preparation/capsule")?;
     let response = Response::build()
         .header(ContentType::HTML)
         .sized_body(Cursor::new(index_html(flags)))
@@ -279,8 +288,13 @@ pub fn capsule_preparation<'a>(db: Database, user: Option<User>, id: i32) -> Res
 }
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>/acquisition")]
-pub fn capsule_acquisition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&db, &user, id, "acquisition/capsule")?;
+pub fn capsule_acquisition<'a>(
+    config: State<Config>,
+    db: Database,
+    user: Option<User>,
+    id: i32,
+) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&config, &db, &user, id, "acquisition/capsule")?;
     let response = Response::build()
         .header(ContentType::HTML)
         .sized_body(Cursor::new(index_html(flags)))
@@ -291,8 +305,13 @@ pub fn capsule_acquisition<'a>(db: Database, user: Option<User>, id: i32) -> Res
 
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>/edition")]
-pub fn capsule_edition<'a>(db: Database, user: Option<User>, id: i32) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&db, &user, id, "edition/capsule")?;
+pub fn capsule_edition<'a>(
+    config: State<Config>,
+    db: Database,
+    user: Option<User>,
+    id: i32,
+) -> Result<Response<'a>> {
+    let flags = jsonify_flags(&config, &db, &user, id, "edition/capsule")?;
     let response = Response::build()
         .header(ContentType::HTML)
         .sized_body(Cursor::new(index_html(flags)))

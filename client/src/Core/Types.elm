@@ -37,12 +37,26 @@ init : Decode.Value -> ( FullModel, Cmd Msg )
 init flags =
     let
         global =
-            { zone = Time.utc, dummy = "", beta = False }
+            globalFromFlags flags
 
         initialCommand =
             Task.perform TimeZoneChanged Time.here
     in
     ( FullModel global (modelFromFlags flags), initialCommand )
+
+
+globalFromFlags : Decode.Value -> Global
+globalFromFlags flags =
+    let
+        root =
+            case Decode.decodeValue (Decode.field "video_root" Decode.string) flags of
+                Ok r ->
+                    r
+
+                Err _ ->
+                    "/"
+    in
+    { zone = Time.utc, beta = False, videoRoot = root }
 
 
 modelFromFlags : Decode.Value -> Model
@@ -122,8 +136,8 @@ modelFromFlags flags =
 
 type alias Global =
     { zone : Time.Zone
-    , dummy : String
     , beta : Bool
+    , videoRoot : String
     }
 
 
