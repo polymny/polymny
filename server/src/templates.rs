@@ -86,7 +86,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/main.min.js"></script>
-        <script src="/dist/ports.min.js"></script>
+        <script src="/dist/ports.js"></script>
         <script>
             var app = Elm.Main.init({
 "#;
