@@ -101,7 +101,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                         (Element.text "Slide timeline")
                     , Element.row (Background.color Colors.white :: Attributes.designAttributes)
                         (List.map
-                            (\( i, slide ) -> capsuleGosView details gosModel slideModel (calculateOffset i) i slide)
+                            (\( i, slide ) -> capsuleGosView global details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
@@ -188,10 +188,13 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView capsule gosModel slideModel offset gosIndex gos =
-    case Preparation.gosSystem.info gosModel of
-        Just { dragIndex } ->
+capsuleGosView : Core.Global -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView global capsule gosModel slideModel offset gosIndex gos =
+    case ( global.beta, Preparation.gosSystem.info gosModel ) of
+        ( False, _ ) ->
+            genericGosView capsule Locked gosModel slideModel offset gosIndex gos
+
+        ( _, Just { dragIndex } ) ->
             if dragIndex /= gosIndex then
                 genericGosView capsule Drop gosModel slideModel offset gosIndex gos
 
@@ -345,7 +348,7 @@ genericGosView capsule options gosModel slideModel offset index gos =
                     [ Element.row [ Element.alignLeft, Element.spacing 10 ] leftButtons
                     , Element.el
                         (Attributes.designGosTitleAttributes ++ dragAttributes)
-                        (Element.text (String.fromInt index))
+                        (Element.text (String.fromInt (gosIndex + 1)))
                     , Element.row [ Element.alignRight, Element.spacing 10 ] [ lockButton, Ui.trashButton Nothing "" ]
                     ]
                 , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
@@ -474,7 +477,7 @@ genericDesignSlideView options slideModel offset localIndex s =
                             , Element.centerX
                             , Font.color Colors.artEvening
                             ]
-                            (Element.text <| "Slide #" ++ String.fromInt globalIndex)
+                            (Element.text <| "Slide #" ++ String.fromInt localIndex)
                     , Element.row
                         [ Element.spacingXY 2 0 ]
                         [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
