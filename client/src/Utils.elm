@@ -41,7 +41,7 @@ headerView active details =
         msgEdition =
             Just <|
                 Core.LoggedInMsg <|
-                    LoggedIn.EditionClicked details
+                    LoggedIn.EditionClicked details False
 
         buttons =
             case active of
@@ -76,7 +76,11 @@ headerView active details =
         , Border.rounded 5
         , Border.width 1
         ]
-        [ Element.text ("Edition de le capsule " ++ String.fromInt details.capsule.id)
+        [ Element.paragraph []
+            [ Element.text <| "Capsule "
+            , Element.text <| String.left 20 details.capsule.name
+            , Element.text <| " ( id = " ++ String.fromInt details.capsule.id ++ ")"
+            ]
         , Element.row [ Element.spacing 20 ]
             buttons
         ]

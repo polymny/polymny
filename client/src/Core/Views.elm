@@ -115,14 +115,43 @@ homeView model =
                     , Ui.linkButton (Just Core.LoginClicked) "Retourner au début"
                     , Element.none
                     )
+
+        logoSmall =
+            80
     in
     Element.row
         [ Element.centerX
         , Element.spacing 100
-        , Element.padding 10
+        , Element.padding 20
         , Element.width Element.fill
         ]
-        [ Element.column [ Element.centerX ] [ Element.text "Welcome" ]
+        [ Element.column
+            [ Element.centerX
+            , Element.spacing 10
+            ]
+            [ Element.column
+                [ Element.spacing 10
+                , Element.padding 20
+                , Font.size 16
+                ]
+                [ Element.el Attributes.attributesHomeTitle <|
+                    Element.text "Polymny Studio "
+                , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques !" ]
+                , Element.paragraph [] [ Element.text "Le tout à distance, sans obstacles ni prérequis, à partir de simples présentations pdf.\n" ]
+                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie" ]
+                , Element.el [ Element.paddingXY 30 5, Element.alignLeft ] <| viewLogo 100 "/dist/logoRegionOccitanie.png"
+                , Element.paragraph [] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]
+                , Element.row [ Element.spacing 10 ]
+                    [ viewLogo logoSmall "/dist/logoTTT.png"
+                    , viewLogo logoSmall "/dist/logoIRIT.png"
+                    , viewLogo logoSmall "/dist/logoCEPFOR.png"
+                    , viewLogo logoSmall "/dist/logoCERESA.png"
+                    , viewLogo logoSmall "/dist/logoDYP.png"
+                    , viewLogo logoSmall "/dist/logoINP.png"
+                    , viewLogo logoSmall "/dist/logoUT2J.png"
+                    ]
+                ]
+            ]
         , Element.column [ Element.centerX, Element.spacing 10 ] [ form, forgotPasswordLink, button ]
         ]
 
@@ -181,3 +210,8 @@ homeButton =
 logoutButton : Element Core.Msg
 logoutButton =
     Ui.topBarButton (Just Core.LogoutClicked) "Log out"
+
+
+viewLogo : Int -> String -> Element Core.Msg
+viewLogo size url =
+    Element.image [ Element.centerX, Element.width (Element.px size) ] { src = url, description = "One desc" }

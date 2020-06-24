@@ -9,12 +9,15 @@ module Ui.Icons exposing
     , movie
     , openLock
     , spinner
+    , startRecord
+    , stopRecord
     , trash
     )
 
 import Element exposing (Element)
 import FontAwesome
 import Html
+import Html.Attributes
 
 
 buttonFromIcon : FontAwesome.Icon -> Element msg
@@ -85,6 +88,34 @@ spinner =
                 FontAwesome.spinner
                 FontAwesome.Solid
                 [ FontAwesome.Animation FontAwesome.Spin, FontAwesome.Size FontAwesome.Large ]
+                []
+            ]
+        )
+
+
+stopRecord : Element msg
+stopRecord =
+    Element.html
+        (Html.div
+            [ Html.Attributes.style "padding" "10px" ]
+            [ FontAwesome.iconWithOptions
+                FontAwesome.camera
+                FontAwesome.Solid
+                [ FontAwesome.Animation FontAwesome.Pulse, FontAwesome.Size FontAwesome.Large ]
+                []
+            ]
+        )
+
+
+startRecord : Element msg
+startRecord =
+    Element.html
+        (Html.div
+            [ Html.Attributes.style "padding" "10px" ]
+            [ FontAwesome.iconWithOptions
+                FontAwesome.camera
+                FontAwesome.Solid
+                [ FontAwesome.Size FontAwesome.Large ]
                 []
             ]
         )
