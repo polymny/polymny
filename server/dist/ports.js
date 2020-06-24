@@ -64,7 +64,7 @@ function setupPorts(app) {
             blobs.push(data.data);
         };
 
-        callback(performance.now());
+        callback(Math.round(performance.now()));
         recorder.start();
     }
 
@@ -150,7 +150,7 @@ function setupPorts(app) {
     });
 
     subscribe(app.ports.askNextSlide, function() {
-        app.ports.nextSlideReceived.send(performance.now());
+        app.ports.nextSlideReceived.send(Math.round(performance.now()));
     });
 
 }
