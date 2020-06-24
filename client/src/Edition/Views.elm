@@ -41,7 +41,7 @@ mainView global { status, details } =
 
         button =
             case ( details.capsule.published, details.video ) of
-                ( Api.NotPublished, _ ) ->
+                ( Api.NotPublished, Just _ ) ->
                     Ui.primaryButton (Just Edition.PublishVideo) "Publier la video"
                         |> Element.map LoggedIn.EditionMsg
                         |> Element.map Core.LoggedInMsg

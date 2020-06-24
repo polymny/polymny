@@ -19,4 +19,38 @@ update session msg model =
             ( makeModel { model | status = Status.Success (), details = capsuleDetails }, Cmd.none )
 
         Edition.PublishVideo ->
-            ( makeModel model, Api.publishVideo (\_ -> Core.Noop) model.details.capsule.id )
+            let
+                capsule =
+                    model.details.capsule
+
+                details =
+                    model.details
+
+                newCapsule =
+                    { capsule | published = Api.Publishing }
+
+                newDetails =
+                    { details | capsule = newCapsule }
+
+                cmd =
+                    Api.publishVideo (\_ -> Edition.VideoPublished) model.details.capsule.id
+                        |> Cmd.map LoggedIn.EditionMsg
+                        |> Cmd.map Core.LoggedInMsg
+            in
+            ( makeModel { model | details = newDetails }, cmd )
+
+        Edition.VideoPublished ->
+            let
+                capsule =
+                    model.details.capsule
+
+                details =
+                    model.details
+
+                newCapsule =
+                    { capsule | published = Api.Published }
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )

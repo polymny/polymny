@@ -14,6 +14,7 @@ module Core.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Edition.Types as Edition
 import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
 import Log exposing (debug)
@@ -22,7 +23,6 @@ import Login.Types as Login
 import Preparation.Types as Preparation
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
-import Status
 import Task
 import Time
 
@@ -113,7 +113,7 @@ modelFromFlags flags =
                 ( Ok session, Ok capsule ) ->
                     LoggedIn
                         { session = session
-                        , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+                        , tab = LoggedIn.Edition (Edition.init capsule)
                         }
 
                 ( _, _ ) ->

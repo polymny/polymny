@@ -1,4 +1,4 @@
-module Edition.Types exposing (Model, Msg(..))
+module Edition.Types exposing (Model, Msg(..), init)
 
 import Api
 import Status exposing (Status)
@@ -10,6 +10,12 @@ type alias Model =
     }
 
 
+init : Api.CapsuleDetails -> Model
+init details =
+    Model (Status.Success ()) details
+
+
 type Msg
     = AutoSuccess Api.CapsuleDetails
     | PublishVideo
+    | VideoPublished
