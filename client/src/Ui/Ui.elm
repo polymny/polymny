@@ -21,6 +21,8 @@ module Ui.Ui exposing
     , simpleButton
     , simpleButtonDisabled
     , spinner
+    , startRecordButton
+    , stopRecordButton
     , successButton
     , successModal
     , tabButton
@@ -63,7 +65,7 @@ buttonAttributes =
     [ Font.color Colors.white
     , Element.centerX
     , Element.padding 10
-    , Background.color Colors.artIrises
+    , Background.color Colors.primary
     , Border.color Colors.white
     , Border.rounded 5
     , Border.width 1
@@ -114,11 +116,9 @@ simpleButton onPress content =
     let
         attr =
             buttonAttributes
-                ++ [ Background.color Colors.primary
-                   , Font.color Colors.white
-                   , Border.color Colors.artEvening
-                   , Border.rounded 5
-                   , Border.width 1
+                ++ [ Background.color Colors.artSunFlowers
+                   , Font.color Colors.primary
+                   , Font.medium
                    ]
     in
     Input.button
@@ -142,9 +142,12 @@ simpleButtonDisabled content =
 successButton : Maybe msg -> String -> Element msg
 successButton onPress content =
     Input.button
-        (Background.color Colors.success
-            :: Font.color Colors.white
-            :: buttonAttributes
+        (buttonAttributes
+            ++ [ Background.color Colors.primary
+               , Font.medium
+               , Font.color Colors.artSunFlowers
+               , Border.color Colors.artSunFlowers
+               ]
         )
         { onPress = onPress
         , label = Element.text content
@@ -204,6 +207,28 @@ cancelButton onPress content =
 cameraButton : Maybe msg -> String -> Element msg
 cameraButton onPress content =
     iconButton Icons.camera onPress content
+
+
+recordButton : Element msg -> Maybe msg -> String -> Element msg
+recordButton icon onPress content =
+    let
+        iconAttributes =
+            buttonAttributes
+    in
+    Input.button iconAttributes
+        { onPress = onPress
+        , label = Element.row [] [ icon, Element.text content ]
+        }
+
+
+startRecordButton : Maybe msg -> String -> Element msg
+startRecordButton onPress content =
+    recordButton Icons.startRecord onPress content
+
+
+stopRecordButton : Maybe msg -> String -> Element msg
+stopRecordButton onPress content =
+    recordButton Icons.stopRecord onPress content
 
 
 movieButton : Maybe msg -> String -> Element msg
@@ -324,7 +349,7 @@ spinner =
     Element.el
         [ Element.padding 10
         , Element.centerX
-        , Font.color Colors.artIrises
+        , Font.color Colors.artSunFlowers
         ]
         Icons.spinner
 

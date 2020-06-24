@@ -58,7 +58,7 @@ type Msg
     | CapsuleReceived Api.CapsuleDetails
     | PreparationClicked Api.CapsuleDetails
     | AcquisitionClicked Api.CapsuleDetails
-    | EditionClicked Api.CapsuleDetails
+    | EditionClicked Api.CapsuleDetails Bool
 
 
 type UploadSlideShowMsg

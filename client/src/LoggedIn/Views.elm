@@ -144,7 +144,7 @@ selectFileButton : Element Core.Msg
 selectFileButton =
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.UploadSlideShowMsg <|
-            Ui.simpleButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
+            Ui.primaryButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
 
 
 projectsView : Core.Global -> List Api.Project -> Element Core.Msg
@@ -187,7 +187,8 @@ projectHeader global project =
                     LoggedIn.ProjectClicked project
                 )
             )
-            project.name
+          <|
+            String.left 20 project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
 
