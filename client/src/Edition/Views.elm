@@ -51,7 +51,7 @@ mainView global { status, details } =
 
                 ( Api.Published, Just v ) ->
                     Element.link []
-                        { url = global.videoRoot ++ "/?v=" ++ v.uuid
+                        { url = global.videoRoot ++ "/?v=" ++ v.uuid ++ "/"
                         , label = Ui.linkButton Nothing "Voir la vidéo publiée"
                         }
 
