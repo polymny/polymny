@@ -2,7 +2,6 @@
 use std::fs::{self, create_dir, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use serde_json::json as serde_json;
 
@@ -22,6 +21,7 @@ use uuid::Uuid;
 
 use tempfile::tempdir;
 
+use crate::command::run_command;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::{Capsule, PublishedType};
@@ -211,19 +211,19 @@ pub fn upload_slides(
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
-                    let mut child = Command::new("convert")
-                        .arg("-density")
-                        .arg("300")
-                        .arg(format!("{}", &output_path.to_str().unwrap()))
-                        .arg("-resize")
-                        .arg("1920x1080!")
-                        .arg(format!("{}/'%02'.png", dir.path().display()))
-                        .stdout(Stdio::piped())
-                        .stderr(Stdio::piped())
-                        .spawn()
-                        .expect("failed to execute child");
+                    let command_output_path = format!("{}", &output_path.to_str().unwrap());
+                    let command_input_path = format!("{}/'%02'.png", dir.path().display());
+                    let command = vec![
+                        "convert",
+                        "-density",
+                        "300",
+                        &command_output_path,
+                        "-resize",
+                        "1920x1080!",
+                        &command_input_path,
+                    ];
 
-                    child.wait().expect("failed to wait on child");
+                    run_command(&command)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -547,16 +547,9 @@ pub fn capsule_edition(
             &pip_out,
         ];
 
-        println!("command = {:#?}", command);
-        let child = Command::new(command[0])
-            .args(&command[1..])
-            .output()
-            .expect("failed to execute child");
+        let child = run_command(&command)?;
 
         if !child.status.success() {
-            // for debug pupose if needed
-            io::stdout().write_all(&child.stdout).unwrap();
-            io::stderr().write_all(&child.stderr).unwrap();
             return Err(Error::TranscodeError);
         }
 
@@ -590,10 +583,7 @@ pub fn capsule_edition(
         output,
     ];
 
-    let child = Command::new(command[0])
-        .args(&command[1..])
-        .output()
-        .expect("failed to execute child");
+    let child = run_command(&command)?;
 
     println!("status: {}", child.status);
     if child.status.success() {
@@ -643,10 +633,7 @@ pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: 
     let output_path = output_path.to_str().unwrap();
     let command = vec!["dash-encode", "encode", input_path, output_path];
 
-    let child = Command::new(command[0])
-        .args(&command[1..])
-        .output()
-        .expect("failed to execute child");
+    let child = run_command(&command)?;
 
     if child.status.success() {
         use crate::schema::capsules::dsl;

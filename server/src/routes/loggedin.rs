@@ -2,7 +2,6 @@
 
 use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 
 use serde_json::json as serde_json;
 
@@ -19,6 +18,7 @@ use rocket_multipart_form_data::{
 use tempfile::tempdir;
 use uuid::Uuid;
 
+use crate::command::run_command;
 use crate::config::Config;
 use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
@@ -83,19 +83,19 @@ pub fn quick_upload_slides(
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
-                    let mut child = Command::new("convert")
-                        .arg("-density")
-                        .arg("300")
-                        .arg(format!("{}", &output_path.to_str().unwrap()))
-                        .arg("-resize")
-                        .arg("1920x1080!")
-                        .arg(format!("{}/'%02'.png", dir.path().display()))
-                        .stdout(Stdio::piped())
-                        .stderr(Stdio::piped())
-                        .spawn()
-                        .expect("failed to execute child");
+                    let command_output_path = format!("{}", &output_path.to_str().unwrap());
+                    let command_input_path = format!("{}/'%02'.png", dir.path().display());
+                    let command = vec![
+                        "convert",
+                        "-density",
+                        "300",
+                        &command_output_path,
+                        "-resize",
+                        "1920x1080!",
+                        &command_input_path,
+                    ];
 
-                    child.wait().expect("failed to wait on child");
+                    run_command(&command)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();

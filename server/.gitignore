@@ -1,6 +1,7 @@
 dist
 data
 videos
+log.txt
 
 # Contains sensitive data
 Rocket.toml
