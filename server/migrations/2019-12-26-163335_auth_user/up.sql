@@ -33,6 +33,8 @@ CREATE TABLE assets (
     upload_date TIMESTAMP NOT NULL
 );
 
+CREATE TYPE published_type AS ENUM ('not_published', 'publishing', 'published');
+
 CREATE TABLE capsules (
     id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL UNIQUE,
@@ -42,7 +44,8 @@ CREATE TABLE capsules (
     background_id INT REFERENCES assets(id),
     logo_id INT REFERENCES assets(id),
     video_id INT REFERENCES assets(id),
-    structure JSON NOT NULL
+    structure JSON NOT NULL,
+    published published_type NOT NULL
 );
 
 CREATE TABLE capsules_projects (

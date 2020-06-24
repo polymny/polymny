@@ -13,10 +13,10 @@ import Utils
 
 
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
-view _ _ model =
+view global _ model =
     let
         mainPage =
-            mainView model
+            mainView global model
 
         element =
             Element.column Ui.mainViewAttributes2
@@ -28,8 +28,8 @@ view _ _ model =
         [ element ]
 
 
-mainView : Edition.Model -> Element Core.Msg
-mainView { status, details } =
+mainView : Core.Global -> Edition.Model -> Element Core.Msg
+mainView global { status, details } =
     let
         video =
             case details.video of
@@ -40,9 +40,23 @@ mainView { status, details } =
                     Element.none
 
         button =
-            Ui.primaryButton (Just Edition.PublishVideo) "Publier la video"
-                |> Element.map LoggedIn.EditionMsg
-                |> Element.map Core.LoggedInMsg
+            case ( details.capsule.published, details.video ) of
+                ( Api.NotPublished, _ ) ->
+                    Ui.primaryButton (Just Edition.PublishVideo) "Publier la video"
+                        |> Element.map LoggedIn.EditionMsg
+                        |> Element.map Core.LoggedInMsg
+
+                ( Api.Publishing, _ ) ->
+                    Element.text "Publication en cours..."
+
+                ( Api.Published, Just v ) ->
+                    Element.link []
+                        { url = global.videoRoot ++ "/?v=" ++ v.uuid
+                        , label = Ui.linkButton Nothing "Voir la vidéo publiée"
+                        }
+
+                ( _, _ ) ->
+                    Element.none
 
         ( element, publishButton ) =
             case status of

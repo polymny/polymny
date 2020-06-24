@@ -24,7 +24,7 @@ use tempfile::tempdir;
 
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::Capsule;
+use crate::db::capsule::{Capsule, PublishedType};
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
@@ -623,6 +623,19 @@ pub fn capsule_edition(
 #[post("/capsule/<id>/publication")]
 pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: i32) -> Result<()> {
     let capsule = user.get_capsule_by_id(id, &db)?;
+
+    match capsule.published {
+        PublishedType::Publishing => return Err(Error::NotFound),
+        PublishedType::Published => (),
+        _ => (),
+    }
+
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::published.eq(PublishedType::Publishing))
+        .execute(&db.0)?;
+
     let asset = Asset::get_by_id(capsule.video_id.ok_or(Error::NotFound)?, &db)?;
     let input_path = config.data_path.join(&asset.0.asset_path);
     let input_path = input_path.to_str().unwrap();
@@ -635,7 +648,18 @@ pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: 
         .output()
         .expect("failed to execute child");
 
-    if !child.status.success() {
+    if child.status.success() {
+        use crate::schema::capsules::dsl;
+        diesel::update(capsules::table)
+            .filter(dsl::id.eq(capsule.id))
+            .set(dsl::published.eq(PublishedType::Published))
+            .execute(&db.0)?;
+    } else {
+        use crate::schema::capsules::dsl;
+        diesel::update(capsules::table)
+            .filter(dsl::id.eq(capsule.id))
+            .set(dsl::published.eq(PublishedType::NotPublished))
+            .execute(&db.0)?;
         error!(
             "command {:?} failed:\nSTDOUT\n{}\n\nSTDERR\n{}",
             command,

@@ -11,6 +11,25 @@ use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
 use crate::Result;
 
+#[allow(missing_docs)]
+mod published_type {
+    /// The different published states possible.
+    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize)]
+    pub enum PublishedType {
+        /// Not published at all.
+        NotPublished,
+
+        /// In publication.
+        Publishing,
+
+        /// Published.
+        Published,
+    }
+}
+
+pub use published_type::PublishedTypeMapping as Published_type;
+pub use published_type::{PublishedType, PublishedTypeMapping};
+
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
 #[belongs_to(Asset, foreign_key=slide_show_id)]
@@ -50,6 +69,9 @@ pub struct Capsule {
     /// } ]
     /// ```
     pub structure: Json,
+
+    /// Whether the capsule video is published.
+    pub published: PublishedType,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -77,6 +99,9 @@ pub struct NewCapsule {
 
     /// The structure of the capsule.
     pub structure: Json,
+
+    /// Whether the capsule video is published.
+    pub published: PublishedType,
 }
 
 /// A link between a capsule and a project.
@@ -125,6 +150,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
+            published: PublishedType::NotPublished,
         }
         .save(&database)?;
 
@@ -154,6 +180,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
+            published: PublishedType::NotPublished,
         })
     }
     /// Gets a capsule from its id.

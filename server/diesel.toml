@@ -2,5 +2,5 @@
 # see diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "src/generated_schema.rs"
-filter = { except_tables = [ "assets_objects" ] }
+file = "src/schema.rs"
+import_types = ["diesel::sql_types::*", "crate::db::asset::*", "crate::db::capsule::*"]

@@ -4,6 +4,7 @@ module Api exposing
     , CapsuleDetails
     , Gos
     , Project
+    , PublishedType(..)
     , Session
     , Slide
     , capsuleFromId
@@ -60,21 +61,47 @@ createProject id name lastVisited =
     Project id name lastVisited []
 
 
+type PublishedType
+    = NotPublished
+    | Publishing
+    | Published
+
+
+decodePublishedAux : String -> PublishedType
+decodePublishedAux s =
+    case s of
+        "Publishing" ->
+            Publishing
+
+        "Published" ->
+            Published
+
+        _ ->
+            NotPublished
+
+
+decodePublished : Decoder PublishedType
+decodePublished =
+    Decode.map decodePublishedAux Decode.string
+
+
 type alias Capsule =
     { id : Int
     , name : String
     , title : String
     , description : String
+    , published : PublishedType
     }
 
 
 decodeCapsule : Decoder Capsule
 decodeCapsule =
-    Decode.map4 Capsule
+    Decode.map5 Capsule
         (Decode.field "id" Decode.int)
         (Decode.field "name" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "description" Decode.string)
+        (Decode.field "published" decodePublished)
 
 
 decodeCapsules : Decoder (List Capsule)
