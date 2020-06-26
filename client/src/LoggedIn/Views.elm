@@ -41,7 +41,7 @@ view global session tab =
                     NewProject.view newProjectModel
 
                 LoggedIn.Project project newCapsuleForm ->
-                    projectView project newCapsuleForm
+                    projectView global project newCapsuleForm
 
         element =
             Element.column
@@ -153,9 +153,13 @@ projectsView global projects =
         [] ->
             Element.paragraph [ Element.padding 10, Font.size 18 ]
                 [ Element.text "You have no projects yet. "
-                , Ui.linkButton
-                    (Just Core.NewProjectClicked)
-                    "Click here to create a new project!"
+                , if global.beta then
+                    Ui.linkButton
+                        (Just Core.NewProjectClicked)
+                        "Click here to create a new project!"
+
+                  else
+                    Element.none
                 ]
 
         _ ->
@@ -169,7 +173,11 @@ projectsView global projects =
                 , Element.el [ Font.size 18 ] (Element.text "Vos projets:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map (projectHeader global) sortedProjects)
-                , newProjectButton
+                , if global.beta then
+                    newProjectButton
+
+                  else
+                    Element.none
                 ]
 
 
@@ -203,8 +211,8 @@ headerView header el =
             header ++ [ el ]
 
 
-projectView : Api.Project -> Maybe NewCapsule.Model -> Element Core.Msg
-projectView project newCapsuleModel =
+projectView : Core.Global -> Api.Project -> Maybe NewCapsule.Model -> Element Core.Msg
+projectView global project newCapsuleModel =
     let
         headers =
             headerView [] <| Element.text (" / " ++ project.name)
@@ -223,7 +231,12 @@ projectView project newCapsuleModel =
         [ Element.row [ Font.size 18 ] <| headers
         , Element.row [ Element.width Element.fill, Element.alignTop, Element.padding 20, Element.spacing 30 ]
             [ Element.column [ Element.alignLeft, Element.width Element.fill, Element.alignTop, Element.padding 10 ]
-                [ Element.el [ Element.alignLeft ] <| newCapsuleButton project
+                [ Element.el [ Element.alignLeft ] <|
+                    if global.beta then
+                        newCapsuleButton project
+
+                    else
+                        Element.none
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map capsuleView project.capsules)
                 ]

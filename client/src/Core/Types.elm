@@ -59,7 +59,7 @@ globalFromFlags flags =
                 Err _ ->
                     "/"
     in
-    { zone = Time.utc, beta = True, videoRoot = root }
+    { zone = Time.utc, beta = False, videoRoot = root }
 
 
 modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
