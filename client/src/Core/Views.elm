@@ -125,9 +125,12 @@ homeView model =
         , Element.padding 20
         , Element.width Element.fill
         ]
-        [ Element.column
+        [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
+        , Element.column
             [ Element.centerX
             , Element.spacing 10
+            , Element.width (Element.fillPortion 4)
+            , Element.alignTop
             ]
             [ Element.column
                 [ Element.spacing 10
@@ -152,7 +155,14 @@ homeView model =
                     ]
                 ]
             ]
-        , Element.column [ Element.centerX, Element.spacing 10 ] [ form, forgotPasswordLink, button ]
+        , Element.column
+            [ Element.centerX
+            , Element.spacing 10
+            , Element.width (Element.fillPortion 2)
+            , Element.alignTop
+            ]
+            [ form, forgotPasswordLink, button ]
+        , Element.el [ Element.width (Element.fillPortion 1) ] Element.none
         ]
 
 

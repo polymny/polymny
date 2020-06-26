@@ -326,7 +326,7 @@ modalAttributes =
 
 errorModal : String -> Element msg
 errorModal text =
-    Element.row
+    Element.paragraph
         (Background.color Colors.dangerLight
             :: Font.color Colors.dangerDark
             :: modalAttributes
@@ -336,7 +336,7 @@ errorModal text =
 
 successModal : String -> Element msg
 successModal text =
-    Element.row
+    Element.paragraph
         (Background.color Colors.successLight
             :: Font.color Colors.successDark
             :: modalAttributes

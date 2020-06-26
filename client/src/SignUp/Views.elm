@@ -72,7 +72,7 @@ view { username, password, passwordConfirmation, email, status } =
                     Nothing
 
         header =
-            Element.row [ Element.centerX ] [ Element.text "Sign up" ]
+            Element.row [ Element.centerX ] [ Element.text "S'inscrire" ]
 
         fields =
             [ Input.username submitOnEnter
@@ -114,5 +114,5 @@ view { username, password, passwordConfirmation, email, status } =
     in
     Element.map Core.SignUpMsg <|
         Element.column
-            [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            [ Element.centerX, Element.padding 10, Element.spacing 10, Element.width Element.fill ]
             form
