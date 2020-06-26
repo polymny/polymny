@@ -4,10 +4,12 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
+import Element.Border as Border
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Status
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
 
@@ -34,7 +36,17 @@ mainView global { status, details } =
         video =
             case details.video of
                 Just x ->
-                    Element.html <| htmlVideo x.asset_path
+                    Element.el
+                        [ Border.color Colors.artEvening
+                        , Border.rounded 0
+                        , Border.width 2
+                        , Element.padding 2
+                        , Element.centerX
+                        , Element.centerY
+                        ]
+                    <|
+                        Element.html <|
+                            htmlVideo x.asset_path
 
                 Nothing ->
                     Element.none
@@ -47,7 +59,7 @@ mainView global { status, details } =
                         |> Element.map Core.LoggedInMsg
 
                 ( Api.Publishing, _ ) ->
-                    Element.text "Publication en cours..."
+                    Ui.messageWithSpinner "Publication de vidéo en cours..."
 
                 ( Api.Published, Just v ) ->
                     Element.link []
@@ -70,7 +82,7 @@ mainView global { status, details } =
                     ( Element.text "Evenement non prevus", Element.none )
     in
     Element.column
-        [ Element.centerX ]
+        [ Element.centerX, Element.spacing 20, Element.padding 10 ]
         [ element
         , publishButton
         ]

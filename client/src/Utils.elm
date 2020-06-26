@@ -70,7 +70,7 @@ headerView active details =
         [ Background.color Colors.whiteDark
         , Element.width
             Element.fill
-        , Element.spacing 20
+        , Element.spacing 5
         , Element.padding 10
         , Border.color Colors.whiteDarker
         , Border.rounded 5
