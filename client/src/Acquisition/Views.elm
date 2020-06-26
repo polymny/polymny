@@ -4,9 +4,13 @@ import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
 
@@ -28,6 +32,47 @@ view _ _ model =
         [ element ]
 
 
+viewSlideImage : String -> Element Core.Msg
+viewSlideImage urlImage =
+    Element.image
+        [ Element.width (Element.px 150) ]
+        { src = urlImage, description = "One desc" }
+
+
+slideThumbView : Bool -> Api.Slide -> Element Core.Msg
+slideThumbView isActive slide =
+    let
+        background =
+            if isActive then
+                Background.color Colors.artIrises
+
+            else
+                Background.color Colors.whiteDark
+
+        attributes =
+            [ background
+            , Border.color Colors.whiteDarker
+            , Border.rounded 5
+            , Border.width 1
+            , Element.padding 10
+            ]
+    in
+    Element.el attributes <|
+        viewSlideImage slide.asset.asset_path
+
+
+slidesThumbView : Acquisition.Model -> Element Core.Msg
+slidesThumbView model =
+    let
+        gosParser : Bool -> Api.Gos -> Element Core.Msg
+        gosParser isActive gos =
+            Element.row []
+                (List.map (slideThumbView isActive) gos.slides)
+    in
+    Element.row []
+        (List.indexedMap (\i x -> gosParser (i == model.gos) x) model.details.structure)
+
+
 mainView : Acquisition.Model -> Element Core.Msg
 mainView model =
     let
@@ -46,9 +91,32 @@ mainView model =
 
                 Nothing ->
                     Element.none
+
+        slidePos =
+            Element.column
+                [ Element.paddingXY 50 10
+                , Font.size 28
+                , Font.center
+                , Background.color Colors.whiteDark
+                , Border.color Colors.whiteDarker
+                , Border.rounded 5
+                , Border.width 1
+                , Element.width Element.shrink
+                , Element.centerX
+                , Element.spacing 5
+                ]
+                [ Element.paragraph []
+                    [ Element.text "Slide "
+                    , Element.el [ Font.bold ] <| Element.text <| String.fromInt (model.gos + 1)
+                    , Element.text "/"
+                    , Element.el [ Font.bold ] <| Element.text <| String.fromInt <| List.length model.details.slides
+                    ]
+                , slidesThumbView model
+                ]
     in
-    Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ topView model
+    Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
+        [ slidePos
+        , topView model
         , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextButton ]
         , recordingsView model.records model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream
