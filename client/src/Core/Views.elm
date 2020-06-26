@@ -42,6 +42,7 @@ subscriptions { model } =
                         , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
                         , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
                         , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
+                        , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
                         ]
                         |> Sub.map LoggedIn.AcquisitionMsg
                         |> Sub.map Core.LoggedInMsg

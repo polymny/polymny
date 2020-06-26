@@ -30,6 +30,7 @@ type alias Model =
     , gos : Int
     , currentSlide : Int
     , mode : Mode
+    , cameraReady : Bool
     }
 
 
@@ -43,6 +44,7 @@ init details mode gos =
       , gos = gos
       , currentSlide = 0
       , mode = mode
+      , cameraReady = False
       }
     , Ports.init "video"
     )
@@ -51,6 +53,7 @@ init details mode gos =
 type Msg
     = StartRecording
     | StopRecording
+    | CameraReady
     | GoToStream Int
     | NextSlide Bool
     | UploadStream String Int

@@ -23,6 +23,9 @@ update session msg model =
     in
     case msg of
         -- INNER MESSAGES
+        Acquisition.CameraReady ->
+            ( makeModel { model | cameraReady = True }, Cmd.none )
+
         Acquisition.StartRecording ->
             let
                 cmd =

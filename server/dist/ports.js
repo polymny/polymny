@@ -20,7 +20,9 @@ function setupPorts(app) {
     function init(elementId) {
         initVariables();
         setupUserMedia(() => {
-            bindWebcam(elementId);
+            bindWebcam(elementId, () => {
+                app.ports.cameraReady.send(null);
+            });
         });
     }
 
@@ -39,12 +41,13 @@ function setupPorts(app) {
         }
     }
 
-    function bindWebcam(elementId) {
+    function bindWebcam(elementId, callback) {
         let element = document.getElementById(elementId);
         element.srcObject = stream;
         element.src = null;
         element.muted = true;
         element.play();
+        callback();
     }
 
     function startRecording(callback) {
@@ -76,7 +79,9 @@ function setupPorts(app) {
         clearCallbacks();
 
         if (n === 0) {
-            bindWebcam(id);
+            bindWebcam(id, () => {
+                app.ports.cameraReady.send(null);
+            });
         } else {
             let video = document.getElementById(id);
             video.srcObject = null;
@@ -123,7 +128,9 @@ function setupPorts(app) {
 
     subscribe(app.ports.bindWebcam, function(id) {
         setupUserMedia(() => {
-            bindWebcam(id);
+            bindWebcam(id, () => {
+                app.ports.cameraReady.send(null);
+            });
         });
     });
 

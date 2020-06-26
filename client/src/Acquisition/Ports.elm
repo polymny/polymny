@@ -1,6 +1,7 @@
 port module Acquisition.Ports exposing
     ( askNextSlide
     , bindWebcam
+    , cameraReady
     , exit
     , goToNextSlide
     , goToStream
@@ -20,6 +21,9 @@ port init : String -> Cmd msg
 
 
 port bindWebcam : String -> Cmd msg
+
+
+port cameraReady : (() -> msg) -> Sub msg
 
 
 port startRecording : () -> Cmd msg

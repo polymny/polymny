@@ -41,8 +41,11 @@ init flags =
 
         initialCommand =
             Task.perform TimeZoneChanged Time.here
+
+        ( initModel, initCmd ) =
+            modelFromFlags flags
     in
-    ( FullModel global (modelFromFlags flags), initialCommand )
+    ( FullModel global initModel, Cmd.batch [ initialCommand, initCmd ] )
 
 
 globalFromFlags : Decode.Value -> Global
@@ -59,79 +62,87 @@ globalFromFlags flags =
     { zone = Time.utc, beta = True, videoRoot = root }
 
 
-modelFromFlags : Decode.Value -> Model
+modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
 modelFromFlags flags =
     case Decode.decodeValue (Decode.field "page" Decode.string) flags of
         Ok "index" ->
             case Decode.decodeValue Api.decodeSession flags of
                 Ok session ->
-                    LoggedIn
+                    ( LoggedIn
                         { session = session
                         , tab = LoggedIn.init
                         }
+                    , Cmd.none
+                    )
 
                 Err _ ->
-                    home
+                    ( home, Cmd.none )
 
         Ok "reset-password" ->
             case Decode.decodeValue (Decode.field "key" Decode.string) flags of
                 Ok key ->
-                    ResetPassword (ResetPassword.init key)
+                    ( ResetPassword (ResetPassword.init key), Cmd.none )
 
                 Err _ ->
-                    home
+                    ( home, Cmd.none )
 
         Ok "preparation/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn
+                    ( LoggedIn
                         { session = session
                         , tab =
                             LoggedIn.Preparation <| Preparation.init capsule
                         }
+                    , Cmd.none
+                    )
 
                 ( _, _ ) ->
-                    home
+                    ( home, Cmd.none )
 
         Ok "acquisition/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
                     let
-                        ( model, _ ) =
+                        ( model, cmd ) =
                             Acquisition.init capsule Acquisition.All 0
                     in
-                    LoggedIn
+                    ( LoggedIn
                         { session = session
                         , tab = LoggedIn.Acquisition model
                         }
+                    , cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map LoggedInMsg
+                    )
 
                 ( _, _ ) ->
-                    home
+                    ( home, Cmd.none )
 
         Ok "edition/capsule" ->
             case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
                 ( Ok session, Ok capsule ) ->
-                    LoggedIn
+                    ( LoggedIn
                         { session = session
                         , tab = LoggedIn.Edition (Edition.init capsule)
                         }
+                    , Cmd.none
+                    )
 
                 ( _, _ ) ->
-                    home
+                    ( home, Cmd.none )
 
         Ok ok ->
             let
                 _ =
                     debug "Unknown page" ok
             in
-            home
+            ( home, Cmd.none )
 
         Err err ->
             let
                 _ =
                     debug "Error" err
             in
-            home
+            ( home, Cmd.none )
 
 
 type alias Global =

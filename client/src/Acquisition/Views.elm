@@ -49,8 +49,8 @@ mainView model =
     in
     Element.column [ Element.spacing 10, Element.width Element.fill ]
         [ topView model
-        , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.recording, nextButton ]
-        , recordingsView model.records model.currentStream
+        , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.cameraReady model.recording, nextButton ]
+        , recordingsView model.recording model.records model.currentStream
         , uploadView model.details.capsule.id model.gos model.currentStream
         ]
 
@@ -78,17 +78,25 @@ videoView =
     Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
 
-recordingButton : Bool -> Element Core.Msg
-recordingButton recording =
+recordingButton : Bool -> Bool -> Element Core.Msg
+recordingButton cameraReady recording =
     let
         ( button, text, msg ) =
             if recording then
-                ( Ui.stopRecordButton, "Stop recording", Acquisition.StopRecording )
+                ( Ui.stopRecordButton, "Arrêter l'enregistrement", Just Acquisition.StopRecording )
 
             else
-                ( Ui.startRecordButton, "Start recording", Acquisition.StartRecording )
+                let
+                    m =
+                        if cameraReady then
+                            Just Acquisition.StartRecording
+
+                        else
+                            Nothing
+                in
+                ( Ui.startRecordButton, "Démarrer l'enregistrement", m )
     in
-    button (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg msg))) text
+    button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) text
 
 
 nextSlideButton : Element Core.Msg
@@ -96,16 +104,20 @@ nextSlideButton =
     Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.NextSlide True)))) "Next slide"
 
 
-recordingsView : List Acquisition.Record -> Int -> Element Core.Msg
-recordingsView n current =
+recordingsView : Bool -> List Acquisition.Record -> Int -> Element Core.Msg
+recordingsView isRecording n current =
     let
         texts : List String
         texts =
             "Webcam" :: List.map (\x -> "Enregistrement " ++ String.fromInt x) (List.range 1 (List.length n))
 
-        msg : Int -> Core.Msg
+        msg : Int -> Maybe Core.Msg
         msg i =
-            Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i))
+            if isRecording then
+                Nothing
+
+            else
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i)))
     in
     Element.column [ Element.padding 10, Element.spacing 10 ]
         [ Element.text "Enregistrments : "
@@ -114,10 +126,10 @@ recordingsView n current =
                 (\i ->
                     \x ->
                         if current == i then
-                            Ui.successButton (Just (msg i)) x
+                            Ui.successButton (msg i) x
 
                         else
-                            Ui.simpleButton (Just (msg i)) x
+                            Ui.simpleButton (msg i) x
                 )
                 texts
             )
