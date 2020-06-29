@@ -319,8 +319,8 @@ genericGosView global capsule options gosModel slideModel offset index gos =
         leftButtons : List (Element Core.Msg)
         leftButtons =
             case Maybe.map .record structure of
-                Just (Just _) ->
-                    [ movieButton, cameraButton ]
+                Just (Just record) ->
+                    [ Element.link [] { url = record, label = movieButton }, cameraButton ]
 
                 _ ->
                     [ cameraButton ]
