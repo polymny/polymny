@@ -49,7 +49,7 @@ view { password, passwordConfirmation, status } =
         message =
             case ( status, isPasswordValid ) of
                 ( Status.Success (), _ ) ->
-                    Nothing
+                    Just (Ui.successModal "Un e-mail avec un lien de changement de mot de passe vous a été envoyé !")
 
                 ( Status.Error (), _ ) ->
                     Just (Ui.errorModal "Le changement de mot de pass a échoué")
