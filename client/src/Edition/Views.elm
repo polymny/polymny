@@ -62,7 +62,7 @@ mainView global { status, details } =
                     Ui.messageWithSpinner "Publication de vidéo en cours..."
 
                 ( Api.Published, Just v ) ->
-                    Element.link []
+                    Element.link [ Element.htmlAttribute (Html.Attributes.attribute "target" "_blank") ]
                         { url = global.videoRoot ++ "/?v=" ++ v.uuid ++ "/"
                         , label = Ui.linkButton Nothing "Voir la vidéo publiée"
                         }
