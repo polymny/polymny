@@ -594,7 +594,10 @@ pub fn capsule_edition(
         use crate::schema::capsules::dsl;
         diesel::update(capsules::table)
             .filter(dsl::id.eq(capsule.id))
-            .set(dsl::video_id.eq(asset.id))
+            .set((
+                dsl::video_id.eq(asset.id),
+                dsl::published.eq(PublishedType::NotPublished),
+            ))
             .execute(&db.0)?;
     } else {
         // for debug pupose if needed
