@@ -116,10 +116,15 @@ mainView model =
     in
     Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
         [ slidePos
-        , topView model
+        , Element.row []
+            [ recordingsView model
+                model.recording
+                model.records
+                model.currentStream
+            , topView
+                model
+            ]
         , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.cameraReady model.recording, nextButton ]
-        , recordingsView model.recording model.records model.currentStream
-        , uploadView model.details.capsule.id model.gos model.currentStream
         ]
 
 
@@ -172,12 +177,22 @@ nextSlideButton =
     Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.NextSlide True)))) "Next slide"
 
 
-recordingsView : Bool -> List Acquisition.Record -> Int -> Element Core.Msg
-recordingsView isRecording n current =
+recordingsView : Acquisition.Model -> Bool -> List Acquisition.Record -> Int -> Element Core.Msg
+recordingsView model isRecording n current =
     let
+        webcam =
+            if isRecording then
+                Ui.primaryButtonDisabled "Webcam"
+
+            else if List.length n == 0 then
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Select Webcam"
+
+            else
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Retour  Webcam"
+
         texts : List String
         texts =
-            "Webcam" :: List.map (\x -> "Enregistrement " ++ String.fromInt x) (List.range 1 (List.length n))
+            List.map (\x -> "Enregistrement #" ++ String.fromInt x) (List.range 1 (List.length n))
 
         msg : Int -> Maybe Core.Msg
         msg i =
@@ -187,30 +202,43 @@ recordingsView isRecording n current =
             else
                 Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i)))
     in
-    Element.column [ Element.padding 10, Element.spacing 10 ]
-        [ Element.text "Enregistrments : "
-        , Element.row [ Element.spacing 10 ]
+    Element.column
+        [ Background.color Colors.whiteDark
+        , Element.spacing 5
+        , Element.padding 10
+        , Border.color Colors.whiteDarker
+        , Border.rounded 5
+        , Border.width 1
+        ]
+        [ webcam
+        , Element.text
+            "Enregsitrements : "
+        , Element.column [ Element.paddingXY 10 20, Element.spacing 10 ]
             (List.indexedMap
                 (\i ->
                     \x ->
-                        if current == i then
-                            Ui.successButton (msg i) x
+                        if current == i + 1 then
+                            Ui.successButton (msg (i + 1)) x
 
                         else
-                            Ui.simpleButton (msg i) x
+                            Ui.simpleButton (msg (i + 1)) x
                 )
                 texts
             )
+        , Element.el [ Font.size 16, Font.center ] <| uploadView model.details.capsule.id model.gos model.currentStream model.recording
         ]
 
 
-uploadView : Int -> Int -> Int -> Element Core.Msg
-uploadView capsuleId gosId stream =
+uploadView : Int -> Int -> Int -> Bool -> Element Core.Msg
+uploadView capsuleId gosId stream recording =
     if stream == 0 then
         Element.none
 
+    else if recording then
+        Ui.primaryButtonDisabled ("Valider \n l'enregistrement #" ++ String.fromInt stream)
+
     else
-        Ui.successButton (Just (Acquisition.UploadStream (url capsuleId gosId) stream)) "Valider"
+        Ui.successButton (Just (Acquisition.UploadStream (url capsuleId gosId) stream)) ("Valider \n l'enregistrement #" ++ String.fromInt stream)
             |> Element.map LoggedIn.AcquisitionMsg
             |> Element.map Core.LoggedInMsg
 
