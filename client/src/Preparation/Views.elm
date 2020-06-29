@@ -287,7 +287,7 @@ genericGosView global capsule options gosModel slideModel offset index gos =
 
         slides : List (Element Core.Msg)
         slides =
-            List.indexedMap (designSlideView (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
+            List.indexedMap (designSlideView global (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
 
         structure : Maybe Api.Gos
         structure =
@@ -363,18 +363,18 @@ genericGosView global capsule options gosModel slideModel offset index gos =
 -- SLIDES VIEWS
 
 
-slideGhostView : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-slideGhostView slideModel slides =
+slideGhostView : Core.Global -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+slideGhostView global slideModel slides =
     case maybeDragSlide slideModel slides of
         Preparation.JustSlide s _ ->
-            genericDesignSlideView Ghost slideModel 0 0 (Preparation.JustSlide s -1)
+            genericDesignSlideView global Ghost slideModel 0 0 (Preparation.JustSlide s -1)
 
         _ ->
             Element.none
 
 
-designSlideView : Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-designSlideView enabled slideModel offset localIndex slide =
+designSlideView : Core.Global -> Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+designSlideView global enabled slideModel offset localIndex slide =
     let
         t =
             case ( enabled, Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
@@ -391,7 +391,7 @@ designSlideView enabled slideModel offset localIndex slide =
                 _ ->
                     Drag
     in
-    genericDesignSlideView t slideModel offset localIndex slide
+    genericDesignSlideView global t slideModel offset localIndex slide
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.MaybeSlide
@@ -409,8 +409,8 @@ maybeDragSlide slideModel slides =
             Preparation.GosId -1
 
 
-genericDesignSlideView : DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-genericDesignSlideView options slideModel offset localIndex s =
+genericDesignSlideView : Core.Global -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+genericDesignSlideView global options slideModel offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -461,6 +461,14 @@ genericDesignSlideView options slideModel offset localIndex s =
             Element.none
 
         Preparation.JustSlide slide _ ->
+            let
+                secondColumn =
+                    if global.beta then
+                        genrericDesignSlide2ndColumnView eventLessAttributes slide
+
+                    else
+                        Element.none
+            in
             Element.el
                 (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
                 (Element.column
@@ -481,11 +489,11 @@ genericDesignSlideView options slideModel offset localIndex s =
                             , Element.centerX
                             , Font.color Colors.artEvening
                             ]
-                            (Element.text <| "Slide #" ++ String.fromInt localIndex)
+                            Element.none
                     , Element.row
                         [ Element.spacingXY 2 0 ]
                         [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
-                        , genrericDesignSlide2ndColumnView eventLessAttributes slide
+                        , secondColumn
                         ]
                     ]
                 )
@@ -505,13 +513,11 @@ genrericDesignSlide1stColumnView eventLessAttributes slide =
         [ viewSlideImage slide.asset.asset_path
         , Element.column [ Font.size 14, Element.spacing 4 ]
             [ Element.column [ Element.padding 4 ]
-                [ Element.el [ Element.paddingXY 0 4 ] <| Element.text "Additional Resources :"
-                , Element.el [ Element.spacingXY 2 4 ] <|
+                [ Element.el [ Element.spacingXY 2 4 ] <|
                     Ui.addButton
                         Nothing
                         " Ajouter des ressources"
                 ]
-            , Element.el [] (Element.text ("DEBUG: slide_id = " ++ String.fromInt slide.id))
             ]
         ]
 

@@ -32,6 +32,9 @@ view { email, status } =
 
         errorMessage =
             case status of
+                Status.Success () ->
+                    Just (Ui.successModal "Un email vous a été envoyé !")
+
                 Status.Error () ->
                     Just (Ui.errorModal "Connection échouée")
 

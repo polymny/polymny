@@ -79,7 +79,7 @@ viewContent { global, model } =
                     case tab of
                         LoggedIn.Preparation { slides, slideModel, gosModel, details } ->
                             [ Element.inFront (Preparation.gosGhostView global details gosModel slideModel (List.concat slides))
-                            , Element.inFront (Preparation.slideGhostView slideModel (List.concat slides))
+                            , Element.inFront (Preparation.slideGhostView global slideModel (List.concat slides))
                             ]
 
                         _ ->
