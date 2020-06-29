@@ -132,7 +132,18 @@ uploadFormView { status, file } =
                 , Font.size 14
                 , Font.justify
                 ]
-                [ Element.text " Pour commencer un enregistrement, il faut séléctionner un fichier PDF sur votre machine. Une fois la présentation téléchargée, l'enregisterment vidéo des planches pourra débuter"
+                [ Element.el [ Font.bold ] <| Element.text " Pour commencer un enregistrement"
+                , Element.text ", il faut sélectionner un fichier PDF sur votre machine. "
+                , Element.text "Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter. "
+                ]
+            , Element.paragraph
+                [ Element.width (Element.fill |> Element.maximum 400)
+                , Font.size 14
+                , Font.justify
+                ]
+                [ Element.text "Pour "
+                , Element.el [ Font.bold ] <| Element.text "modifier des vidéos existantes"
+                , Element.text " cliquer sur \"Projets\". "
                 ]
             , message
             , selectFileButton
@@ -196,7 +207,7 @@ projectHeader global project =
                 )
             )
           <|
-            String.left 20 project.name
+            String.dropRight 38 project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
 
@@ -215,7 +226,7 @@ projectView : Core.Global -> Api.Project -> Maybe NewCapsule.Model -> Element Co
 projectView global project newCapsuleModel =
     let
         headers =
-            headerView [] <| Element.text (" / " ++ project.name)
+            headerView [] <| Element.text (" Projet " ++ String.dropRight 38 project.name)
 
         newCapsuleForm =
             case newCapsuleModel of
@@ -237,6 +248,7 @@ projectView global project newCapsuleModel =
 
                     else
                         Element.none
+                , Element.el [] <| Element.text "Capsule(s) du projet:"
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map capsuleView project.capsules)
                 ]
@@ -254,8 +266,8 @@ capsuleView capsule =
                     LoggedIn.CapsuleClicked capsule
                 )
             )
-            capsule.name
-        , Element.text capsule.title
+          <|
+            String.dropRight 38 capsule.name
         , Element.text capsule.description
         ]
 

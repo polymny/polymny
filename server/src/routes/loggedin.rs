@@ -67,12 +67,30 @@ pub fn quick_upload_slides(
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
 
-                    println!(" assset: {:#?}", asset);
-                    let project =
-                        Project::create(&format!("project-{}", asset.uuid), user.id)?.save(&db)?;
+                    let project = Project::create(
+                        &format!(
+                            "{}__{}",
+                            PathBuf::from(file_name)
+                                .file_stem()
+                                .unwrap()
+                                .to_str()
+                                .unwrap(),
+                            asset.uuid
+                        ),
+                        user.id,
+                    )?
+                    .save(&db)?;
                     let capsule = Capsule::new(
                         &db,
-                        &format!("capsule-{}", asset.uuid),
+                        &format!(
+                            "{}__{}",
+                            PathBuf::from(file_name)
+                                .file_stem()
+                                .unwrap()
+                                .to_str()
+                                .unwrap(),
+                            asset.uuid
+                        ),
                         "title-1",
                         None,
                         "",
@@ -80,6 +98,13 @@ pub fn quick_upload_slides(
                         None,
                         Some(project),
                     )?;
+                    //update capsule with the ref to the uploaded pdf
+                    use crate::schema::capsules::dsl;
+                    diesel::update(capsules::table)
+                        .filter(dsl::id.eq(capsule.id))
+                        .set(dsl::slide_show_id.eq(asset.id))
+                        .execute(&db.0)?;
+
                     // Generates images one per presentation page
                     let dir = tempdir()?;
 
