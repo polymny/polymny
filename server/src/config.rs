@@ -18,6 +18,9 @@ pub struct Config {
     /// The root of the video streaming server.
     pub video_root: String,
 
+    /// Whether the server is in beta mode or not.
+    pub beta: bool,
+
     /// The mailer, if any.
     pub mailer: Option<Mailer>,
 }
@@ -41,11 +44,14 @@ impl Config {
             .get_string("video_root")
             .unwrap_or_else(|_| String::from("/"));
 
+        let beta = config.get_bool("beta").unwrap_or(false);
+
         Config {
             data_path: PathBuf::from(data_path),
             log_path: PathBuf::from(log_path),
             videos_path: PathBuf::from(videos_path),
             video_root,
+            beta,
             mailer: Mailer::from_config(config),
         }
     }

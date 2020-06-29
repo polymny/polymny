@@ -205,6 +205,7 @@ pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Res
             "projects": projects,
             "active_project":"",
             "video_root": config.video_root,
+            "beta": config.beta
         })
     });
 
@@ -251,6 +252,7 @@ fn jsonify_flags(
                     "structure":   capsule.structure,
                     "video": video,
                     "video_root": config.video_root,
+                    "beta": config.beta,
                 })
             })
         }
@@ -262,6 +264,7 @@ fn jsonify_flags(
                 "page": "index",
                 "active_project": "",
                 "video_root": config.video_root,
+                "beta": config.beta,
             })
         }),
     })

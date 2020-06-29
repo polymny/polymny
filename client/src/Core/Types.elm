@@ -58,8 +58,16 @@ globalFromFlags flags =
 
                 Err _ ->
                     "/"
+
+        beta =
+            case Decode.decodeValue (Decode.field "beta" Decode.bool) flags of
+                Ok b ->
+                    b
+
+                Err _ ->
+                    False
     in
-    { zone = Time.utc, beta = False, videoRoot = root }
+    { zone = Time.utc, beta = beta, videoRoot = root }
 
 
 modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
