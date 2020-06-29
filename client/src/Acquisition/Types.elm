@@ -1,4 +1,4 @@
-module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, newRecord)
+module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, initAtFirstNonRecorded, newRecord)
 
 import Acquisition.Ports as Ports
 import Api
@@ -36,6 +36,40 @@ type alias Model =
 
 init : Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
 init details mode gos =
+    ( { records = []
+      , recording = False
+      , currentStream = 0
+      , slides = List.head (List.drop gos (Api.detailsSortSlides details))
+      , details = details
+      , gos = gos
+      , currentSlide = 0
+      , mode = mode
+      , cameraReady = False
+      }
+    , Ports.init "video"
+    )
+
+
+filterNonRecorded : ( Int, Api.Gos ) -> Maybe Int
+filterNonRecorded ( id, gos ) =
+    case gos.record of
+        Nothing ->
+            Just id
+
+        Just _ ->
+            Nothing
+
+
+initAtFirstNonRecorded : Api.CapsuleDetails -> Mode -> ( Model, Cmd Msg )
+initAtFirstNonRecorded details mode =
+    let
+        gos : Int
+        gos =
+            List.indexedMap Tuple.pair details.structure
+                |> List.filterMap filterNonRecorded
+                |> List.head
+                |> Maybe.withDefault 0
+    in
     ( { records = []
       , recording = False
       , currentStream = 0

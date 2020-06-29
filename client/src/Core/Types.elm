@@ -113,7 +113,7 @@ modelFromFlags flags =
                 ( Ok session, Ok capsule ) ->
                     let
                         ( model, cmd ) =
-                            Acquisition.init capsule Acquisition.All 0
+                            Acquisition.initAtFirstNonRecorded capsule Acquisition.All
                     in
                     ( LoggedIn
                         { session = session

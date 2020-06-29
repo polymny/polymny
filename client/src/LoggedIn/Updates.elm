@@ -39,7 +39,7 @@ update msg { session, tab } =
         ( LoggedIn.AcquisitionClicked capsule, _ ) ->
             let
                 ( model, cmd ) =
-                    Acquisition.init capsule Acquisition.All 0
+                    Acquisition.initAtFirstNonRecorded capsule Acquisition.All
 
                 coreCmd =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
@@ -175,7 +175,7 @@ updateUploadSlideShow msg { session } form showMenu =
         LoggedIn.UploadSlideShowSuccess capsule ->
             let
                 ( model, cmd ) =
-                    Acquisition.init capsule Acquisition.All 0
+                    Acquisition.initAtFirstNonRecorded capsule Acquisition.All
 
                 coreCmd =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
