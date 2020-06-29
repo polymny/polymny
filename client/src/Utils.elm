@@ -65,6 +65,14 @@ headerView active details =
 
                 _ ->
                     [ Element.none ]
+
+        pdfName =
+            case details.slide_show of
+                Just x ->
+                    Element.text x.name
+
+                _ ->
+                    Element.none
     in
     Element.column
         [ Background.color Colors.whiteDark
@@ -78,7 +86,7 @@ headerView active details =
         ]
         [ Element.paragraph []
             [ Element.text <| "Capsule "
-            , Element.text <| String.left 20 details.capsule.name
+            , Element.text <| String.dropRight 38 details.capsule.name
             , Element.text <| " ( id = " ++ String.fromInt details.capsule.id ++ ")"
             ]
         , Element.row [ Element.spacing 20 ]

@@ -243,7 +243,7 @@ pub fn upload_slides(
                         let asset =
                             Asset::new(&db, uuid, &slide_name, server_path.to_str().unwrap())?;
 
-                        let slide = Slide::new(&db, asset.id, id, "Dummy prompt")?;
+                        let slide = Slide::new(&db, asset.id, id, "")?;
                         let mut output_path = config.data_path.clone();
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();
