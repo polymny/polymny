@@ -198,16 +198,25 @@ pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Res
         None
     };
 
-    let flags = user_and_projects.map(|(user, projects)| {
-        json!({
-            "page": "index",
-            "username": user.username,
-            "projects": projects,
-            "active_project":"",
-            "video_root": config.video_root,
-            "beta": config.beta
+    let flags = user_and_projects
+        .map(|(user, projects)| {
+            json!({
+                "page": "index",
+                "username": user.username,
+                "projects": projects,
+                "active_project":"",
+                "video_root": config.video_root,
+                "beta": config.beta,
+                "version": config.version,
+            })
         })
-    });
+        .unwrap_or_else(|| {
+            json!({
+                "video_root": config.video_root,
+                "beta": config.beta,
+                "version": config.version,
+            })
+        });
 
     let response = Response::build()
         .header(ContentType::HTML)
@@ -223,7 +232,7 @@ fn jsonify_flags(
     user: &Option<User>,
     id: i32,
     page: &str,
-) -> Result<Option<JsonValue>> {
+) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -238,35 +247,53 @@ fn jsonify_flags(
             let logo = capsule.get_logo(&db)?;
             let video = capsule.get_video(&db)?;
 
-            user_and_projects.map(|(user, projects)| {
-                json!({
-                    "page":       page,
-                    "username":   user.username,
-                    "projects":   projects,
-                    "capsule" :   capsule,
-                    "slide_show": slide_show,
-                    "slides":     slides,
-                    "background":  background,
-                    "logo":        logo,
-                    "active_project":"",
-                    "structure":   capsule.structure,
-                    "video": video,
-                    "video_root": config.video_root,
-                    "beta": config.beta,
+            user_and_projects
+                .map(|(user, projects)| {
+                    json!({
+                        "page":       page,
+                        "username":   user.username,
+                        "projects":   projects,
+                        "capsule" :   capsule,
+                        "slide_show": slide_show,
+                        "slides":     slides,
+                        "background":  background,
+                        "logo":        logo,
+                        "active_project":"",
+                        "structure":   capsule.structure,
+                        "video": video,
+                        "video_root": config.video_root,
+                        "beta": config.beta,
+                        "version": config.version,
+                    })
                 })
-            })
+                .unwrap_or_else(|| {
+                    json!({
+                        "video_root": config.video_root,
+                        "beta": config.beta,
+                        "version": config.version,
+                    })
+                })
         }
 
-        _ => user_and_projects.map(|(user, projects)| {
-            json!({
-                "username": user.username,
-                "projects": projects,
-                "page": "index",
-                "active_project": "",
-                "video_root": config.video_root,
-                "beta": config.beta,
+        _ => user_and_projects
+            .map(|(user, projects)| {
+                json!({
+                    "username": user.username,
+                    "projects": projects,
+                    "page": "index",
+                    "active_project": "",
+                    "video_root": config.video_root,
+                    "beta": config.beta,
+                    "version": config.version,
+                })
             })
-        }),
+            .unwrap_or_else(|| {
+                json!({
+                    "video_root": config.video_root,
+                    "beta": config.beta,
+                    "version": config.version,
+                })
+            }),
     })
 }
 

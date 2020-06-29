@@ -5,6 +5,7 @@ import Acquisition.Types as Acquisition
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import ForgotPassword.Views as ForgotPassword
 import Html
@@ -88,7 +89,12 @@ viewContent { global, model } =
                 _ ->
                     []
     in
-    Element.column (Element.width Element.fill :: attributes) [ topBar model, content ]
+    Element.column
+        (Element.height Element.fill
+            :: Element.width Element.fill
+            :: attributes
+        )
+        [ topBar model, content, bottomBar global ]
 
 
 homeView : Core.HomeModel -> Element Core.Msg
@@ -125,6 +131,7 @@ homeView model =
         , Element.spacing 100
         , Element.padding 20
         , Element.width Element.fill
+        , Element.height Element.fill
         ]
         [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
         , Element.column
@@ -191,6 +198,35 @@ topBar model =
 
         _ ->
             nonFull model
+
+
+bottomBar : Core.Global -> Element Core.Msg
+bottomBar global =
+    Element.column
+        [ Element.width Element.fill
+        , Background.color Colors.greyLight
+        , Border.color Colors.grey
+        , Border.width 1
+        , Font.size 14
+        ]
+        [ Element.el [ Element.height Element.fill ] Element.none
+        , Element.row
+            [ Element.width Element.fill, Element.alignBottom, Element.padding 15 ]
+            [ Element.row [ Element.alignLeft ] []
+            , Element.row [ Element.alignRight ]
+                [ Element.text
+                    ("Polymny "
+                        ++ global.version
+                        ++ (if global.beta then
+                                " beta"
+
+                            else
+                                ""
+                           )
+                    )
+                ]
+            ]
+        ]
 
 
 nonFull : Core.Model -> Element Core.Msg

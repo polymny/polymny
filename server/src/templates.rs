@@ -141,12 +141,8 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
 "#;
 
 /// This functions formats the index.html page of the server from flags.
-pub fn index_html(flags: Option<JsonValue>) -> String {
-    let line = if let Some(flags) = flags {
-        format!("flags: {},", flags.0)
-    } else {
-        "".to_string()
-    };
+pub fn index_html(flags: JsonValue) -> String {
+    let line = format!("flags: {},", flags.0);
 
     format!(
         "{}{}{}",

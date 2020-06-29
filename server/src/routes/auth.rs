@@ -106,10 +106,10 @@ pub fn request_new_password(
 pub fn reset_password<'a>(key: String) -> Result<Response<'a>> {
     let response = Response::build()
         .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(Some(json!({
+        .sized_body(Cursor::new(index_html(json!({
             "page": "reset-password",
             "key": key,
-        })))))
+        }))))
         .finalize();
 
     Ok(response)
