@@ -118,9 +118,6 @@ mainView model =
         [ slidePos
         , Element.row []
             [ recordingsView model
-                model.recording
-                model.records
-                model.currentStream
             , topView
                 model
             ]
@@ -177,14 +174,14 @@ nextSlideButton =
     Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.NextSlide True)))) "Next slide"
 
 
-recordingsView : Acquisition.Model -> Bool -> List Acquisition.Record -> Int -> Element Core.Msg
-recordingsView model isRecording n current =
+recordingsView : Acquisition.Model -> Element Core.Msg
+recordingsView model =
     let
         webcam =
-            if isRecording then
+            if model.recording then
                 Ui.primaryButtonDisabled "Webcam"
 
-            else if List.length n == 0 then
+            else if List.length model.records == 0 then
                 Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Select Webcam"
 
             else
@@ -192,11 +189,11 @@ recordingsView model isRecording n current =
 
         texts : List String
         texts =
-            List.map (\x -> "Enregistrement #" ++ String.fromInt x) (List.range 1 (List.length n))
+            List.map (\x -> "Enregistrement #" ++ String.fromInt x) (List.range 1 (List.length model.records))
 
         msg : Int -> Maybe Core.Msg
         msg i =
-            if isRecording then
+            if model.recording then
                 Nothing
 
             else
@@ -211,13 +208,16 @@ recordingsView model isRecording n current =
         , Border.width 1
         ]
         [ webcam
+        , Element.text <|
+            "current ="
+                ++ String.fromInt model.currentStream
         , Element.text
             "Enregsitrements : "
         , Element.column [ Element.paddingXY 10 20, Element.spacing 10 ]
             (List.indexedMap
                 (\i ->
                     \x ->
-                        if current == i + 1 then
+                        if model.currentStream == i + 1 then
                             Ui.successButton (msg (i + 1)) x
 
                         else
