@@ -192,24 +192,24 @@ capsuleGosView : Core.Global -> Api.CapsuleDetails -> DnDList.Model -> DnDList.G
 capsuleGosView global capsule gosModel slideModel offset gosIndex gos =
     case ( global.beta, Preparation.gosSystem.info gosModel ) of
         ( False, _ ) ->
-            genericGosView capsule Locked gosModel slideModel offset gosIndex gos
+            genericGosView global capsule Locked gosModel slideModel offset gosIndex gos
 
         ( _, Just { dragIndex } ) ->
             if dragIndex /= gosIndex then
-                genericGosView capsule Drop gosModel slideModel offset gosIndex gos
+                genericGosView global capsule Drop gosModel slideModel offset gosIndex gos
 
             else
-                genericGosView capsule EventLess gosModel slideModel offset gosIndex gos
+                genericGosView global capsule EventLess gosModel slideModel offset gosIndex gos
 
         _ ->
-            genericGosView capsule Drag gosModel slideModel offset gosIndex gos
+            genericGosView global capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-gosGhostView capsule gosModel slideModel slides =
+gosGhostView : Core.Global -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+gosGhostView global capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
-            genericGosView capsule Ghost gosModel slideModel 0 0 s
+            genericGosView global capsule Ghost gosModel slideModel 0 0 s
 
         _ ->
             Element.none
@@ -225,8 +225,8 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView capsule options gosModel slideModel offset index gos =
+genericGosView : Core.Global -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView global capsule options gosModel slideModel offset index gos =
     let
         gosId : String
         gosId =
@@ -303,14 +303,18 @@ genericGosView capsule options gosModel slideModel offset index gos =
 
         lockButton : Element Core.Msg
         lockButton =
-            (if Maybe.withDefault False (Maybe.map .locked structure) then
-                Ui.closeLockButton (Just (Preparation.SwitchLock gosIndex)) ""
+            if global.beta then
+                (if Maybe.withDefault False (Maybe.map .locked structure) then
+                    Ui.closeLockButton (Just (Preparation.SwitchLock gosIndex)) ""
 
-             else
-                Ui.openLockButton (Just (Preparation.SwitchLock gosIndex)) ""
-            )
-                |> Element.map LoggedIn.PreparationMsg
-                |> Element.map Core.LoggedInMsg
+                 else
+                    Ui.openLockButton (Just (Preparation.SwitchLock gosIndex)) ""
+                )
+                    |> Element.map LoggedIn.PreparationMsg
+                    |> Element.map Core.LoggedInMsg
+
+            else
+                Element.none
 
         leftButtons : List (Element Core.Msg)
         leftButtons =
