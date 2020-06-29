@@ -320,7 +320,7 @@ genericGosView global capsule options gosModel slideModel offset index gos =
         leftButtons =
             case Maybe.map .record structure of
                 Just (Just record) ->
-                    [ Element.link [] { url = record, label = movieButton }, cameraButton ]
+                    [ Element.link [ Element.htmlAttribute (Html.Attributes.attribute "target" "_blank") ] { url = record, label = movieButton }, cameraButton ]
 
                 _ ->
                     [ cameraButton ]
