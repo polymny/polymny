@@ -35,7 +35,7 @@ update session msg model =
                     else
                         Cmd.batch [ Ports.goToStream ( elementId, 0, Nothing ), Ports.startRecording () ]
             in
-            ( makeModel { model | recording = True, currentStream = 0, currentSlide = 0 }, cmd )
+            ( makeModel { model | recording = True, currentStream = List.length model.records + 1, currentSlide = 0 }, cmd )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
