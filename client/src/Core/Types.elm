@@ -14,6 +14,7 @@ module Core.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Browser.Navigation
 import Edition.Types as Edition
 import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
@@ -25,6 +26,7 @@ import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Task
 import Time
+import Url
 
 
 type alias FullModel =
@@ -33,11 +35,11 @@ type alias FullModel =
     }
 
 
-init : Decode.Value -> ( FullModel, Cmd Msg )
-init flags =
+init : Decode.Value -> Url.Url -> Browser.Navigation.Key -> ( FullModel, Cmd Msg )
+init flags url key =
     let
         global =
-            globalFromFlags flags
+            globalFromFlags flags key
 
         initialCommand =
             Task.perform TimeZoneChanged Time.here
@@ -48,8 +50,8 @@ init flags =
     ( FullModel global initModel, Cmd.batch [ initialCommand, initCmd ] )
 
 
-globalFromFlags : Decode.Value -> Global
-globalFromFlags flags =
+globalFromFlags : Decode.Value -> Browser.Navigation.Key -> Global
+globalFromFlags flags key =
     let
         root =
             case Decode.decodeValue (Decode.field "video_root" Decode.string) flags of
@@ -75,7 +77,7 @@ globalFromFlags flags =
                 Err _ ->
                     "Unkown version"
     in
-    { zone = Time.utc, beta = beta, videoRoot = root, version = version }
+    { zone = Time.utc, beta = beta, videoRoot = root, version = version, key = key }
 
 
 modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
@@ -166,6 +168,7 @@ type alias Global =
     , beta : Bool
     , videoRoot : String
     , version : String
+    , key : Browser.Navigation.Key
     }
 
 

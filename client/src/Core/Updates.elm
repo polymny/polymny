@@ -94,7 +94,7 @@ update msg { global, model } =
                 ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
                     let
                         ( m, cmd ) =
-                            LoggedIn.update newProjectMsg (LoggedIn.Model session tab)
+                            LoggedIn.update newProjectMsg global (LoggedIn.Model session tab)
                     in
                     ( Core.FullModel global (Core.LoggedIn m), cmd )
 

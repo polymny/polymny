@@ -9,9 +9,11 @@ import Json.Decode as Decode
 
 main : Program Decode.Value Core.FullModel Core.Msg
 main =
-    Browser.element
+    Browser.application
         { init = Core.init
         , update = Core.update
         , view = Core.view
         , subscriptions = Core.subscriptions
+        , onUrlChange = \_ -> Core.Noop
+        , onUrlRequest = \_ -> Core.Noop
         }

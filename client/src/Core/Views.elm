@@ -2,13 +2,13 @@ module Core.Views exposing (subscriptions, view)
 
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
+import Browser
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import ForgotPassword.Views as ForgotPassword
-import Html
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
@@ -55,9 +55,11 @@ subscriptions { model } =
             Sub.none
 
 
-view : Core.FullModel -> Html.Html Core.Msg
+view : Core.FullModel -> Browser.Document Core.Msg
 view fullModel =
-    Element.layout Attributes.fullModelAttributes (viewContent fullModel)
+    { title = "Polymny"
+    , body = [ Element.layout Attributes.fullModelAttributes (viewContent fullModel) ]
+    }
 
 
 viewContent : Core.FullModel -> Element Core.Msg
