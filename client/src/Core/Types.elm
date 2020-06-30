@@ -66,8 +66,16 @@ globalFromFlags flags =
 
                 Err _ ->
                     False
+
+        version =
+            case Decode.decodeValue (Decode.field "version" Decode.string) flags of
+                Ok v ->
+                    "Version " ++ v
+
+                Err _ ->
+                    "Unkown version"
     in
-    { zone = Time.utc, beta = beta, videoRoot = root }
+    { zone = Time.utc, beta = beta, videoRoot = root, version = version }
 
 
 modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
@@ -157,6 +165,7 @@ type alias Global =
     { zone : Time.Zone
     , beta : Bool
     , videoRoot : String
+    , version : String
     }
 
 

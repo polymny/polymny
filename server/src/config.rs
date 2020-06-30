@@ -23,6 +23,9 @@ pub struct Config {
 
     /// The mailer, if any.
     pub mailer: Option<Mailer>,
+
+    /// The version of the crate.
+    pub version: &'static str,
 }
 
 impl Config {
@@ -53,6 +56,7 @@ impl Config {
             video_root,
             beta,
             mailer: Mailer::from_config(config),
+            version: env!("CARGO_PKG_VERSION"),
         }
     }
 }

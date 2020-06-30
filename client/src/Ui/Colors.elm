@@ -11,6 +11,7 @@ module Ui.Colors exposing
     , dangerLight
     , grey
     , greyDark
+    , greyLight
     , link
     , menthol
     , primary
@@ -108,6 +109,11 @@ dangerLightColor =
     Color.addLightness lightParameter dangerColor
 
 
+greyLightColor : Color
+greyLightColor =
+    Color.addLightness lightParameter greyColor
+
+
 darkParameter : Float
 darkParameter =
     -30
@@ -151,6 +157,11 @@ whiteDarkerColor =
 grey : Element.Color
 grey =
     colorToUi greyColor
+
+
+greyLight : Element.Color
+greyLight =
+    colorToUi greyLightColor
 
 
 greyDark : Element.Color
