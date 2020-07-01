@@ -4,11 +4,13 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import Element exposing (Element)
+import Element.Background as Background
 import Element.Border as Border
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Status
+import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
@@ -51,6 +53,10 @@ mainView global { status, details } =
                 Nothing ->
                     Element.none
 
+        url_video : Api.Asset -> String
+        url_video asset =
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
         button =
             case ( details.capsule.published, details.video ) of
                 ( Api.NotPublished, Just _ ) ->
@@ -62,10 +68,30 @@ mainView global { status, details } =
                     Ui.messageWithSpinner "Publication de vidéo en cours..."
 
                 ( Api.Published, Just v ) ->
-                    Element.link [ Element.htmlAttribute (Html.Attributes.attribute "target" "_blank") ]
-                        { url = global.videoRoot ++ "/?v=" ++ v.uuid ++ "/"
-                        , label = Ui.linkButton Nothing "Voir la vidéo publiée"
-                        }
+                    Element.column
+                        (Attributes.boxAttributes
+                            ++ [ Element.spacing 20 ]
+                        )
+                        [ Element.link
+                            [ Element.centerX
+                            , Element.htmlAttribute (Html.Attributes.attribute "target" "_blank")
+                            ]
+                            { url = url_video v
+                            , label = Ui.primaryButton Nothing "Voir la vidéo publiée"
+                            }
+                        , Element.text "Lien vers la vidéo publiée : "
+                        , Element.el
+                            [ Background.color Colors.white
+                            , Border.color Colors.whiteDarker
+                            , Border.rounded 5
+                            , Border.width 1
+                            , Element.paddingXY 10 10
+                            , Attributes.fontMono
+                            ]
+                          <|
+                            Element.text <|
+                                url_video v
+                        ]
 
                 ( _, _ ) ->
                     Element.none

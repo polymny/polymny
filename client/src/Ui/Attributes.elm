@@ -1,9 +1,11 @@
 module Ui.Attributes exposing
     ( attributesHomeTitle
+    , boxAttributes
     , capsuleInfoViewAttributes
     , designAttributes
     , designGosAttributes
     , designGosTitleAttributes
+    , fontMono
     , fontRoboto
     , fullModelAttributes
     , genericDesignSlideViewAttributes
@@ -134,3 +136,27 @@ fontOpenSans =
         [ Font.typeface "Open Sans"
         , Font.sansSerif
         ]
+
+
+fontMono : Element.Attribute msg
+fontMono =
+    Font.family
+        [ Font.external
+            { name = "Roboto mono"
+            , url = "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@100;300&display=swap"
+            }
+        , Font.monospace
+        ]
+
+
+boxAttributes : List (Element.Attribute msg)
+boxAttributes =
+    [ Background.color Colors.whiteDark
+    , Element.width
+        Element.fill
+    , Element.spacing 5
+    , Element.padding 10
+    , Border.color Colors.whiteDarker
+    , Border.rounded 5
+    , Border.width 1
+    ]
