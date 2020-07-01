@@ -59,7 +59,7 @@ update msg global { session, tab } =
             ( { session = session
               , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
               }
-            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/acquisition")
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
         ( LoggedIn.EditionClicked details True, _ ) ->

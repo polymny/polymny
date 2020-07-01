@@ -72,9 +72,8 @@ mainView global { status, details } =
                         (Attributes.boxAttributes
                             ++ [ Element.spacing 20 ]
                         )
-                        [ Element.link
+                        [ Element.newTabLink
                             [ Element.centerX
-                            , Element.htmlAttribute (Html.Attributes.attribute "target" "_blank")
                             ]
                             { url = url_video v
                             , label = Ui.primaryButton Nothing "Voir la vidéo publiée"

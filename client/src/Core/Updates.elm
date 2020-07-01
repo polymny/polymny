@@ -3,6 +3,7 @@ module Core.Updates exposing (onUrlChange, onUrlRequest, update)
 import Acquisition.Ports as Ports
 import Api
 import Browser
+import Browser.Navigation as Nav
 import Core.Types as Core
 import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
@@ -42,7 +43,7 @@ update msg { global, model } =
                             , tab = LoggedIn.init
                             }
                         )
-                    , Cmd.none
+                    , Nav.pushUrl global.key "/"
                     )
 
                 ( Core.LoginClicked, _ ) ->
