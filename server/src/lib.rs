@@ -30,7 +30,6 @@ pub mod schema;
 
 use std::fs::OpenOptions;
 use std::io::Cursor;
-use std::path::PathBuf;
 use std::{error, fmt, io, result};
 
 use bcrypt::BcryptError;
@@ -39,17 +38,13 @@ use rocket::config::{Config as RConfig, Environment, RocketConfig};
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
-use rocket::response::{self, NamedFile, Responder, Response};
-use rocket::State;
+use rocket::response::{self, Responder, Response};
 
 use rocket_contrib::databases::diesel as rocket_diesel;
-use rocket_contrib::json::JsonValue;
 use rocket_contrib::serve::StaticFiles;
 
 use crate::config::Config;
-use crate::db::user::User;
 use crate::log_fairing::Log;
-use crate::templates::{index_html, setup_html};
 
 macro_rules! impl_from_error {
     ($type: ty, $variant: path, $from: ty) => {
@@ -189,187 +184,6 @@ impl<'r> Responder<'r> for Error {
 #[database("database")]
 pub struct Database(rocket_diesel::PgConnection);
 
-/// Helper to answer the HTML page with the Elm code as well as flags.
-pub fn helper<'a>(flags: JsonValue) -> Response<'a> {
-    Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize()
-}
-
-/// The index page.
-#[get("/")]
-pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Result<Response<'a>> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        Some((user, user.projects(&db)?))
-    } else {
-        None
-    };
-
-    let flags = user_and_projects
-        .map(|(user, projects)| {
-            json!({
-                "page": "index",
-                "username": user.username,
-                "projects": projects,
-                "active_project":"",
-                "video_root": config.video_root,
-                "beta": config.beta,
-                "version": config.version,
-            })
-        })
-        .unwrap_or_else(|| {
-            json!({
-                "video_root": config.video_root,
-                "beta": config.beta,
-                "version": config.version,
-            })
-        });
-
-    Ok(helper(flags))
-}
-
-fn jsonify_flags(
-    config: &Config,
-    db: &Database,
-    user: &Option<User>,
-    id: i32,
-    page: &str,
-) -> Result<JsonValue> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        Some((user, user.projects(&db)?))
-    } else {
-        None
-    };
-
-    Ok(match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
-        Some(Ok(capsule)) => {
-            let slide_show = capsule.get_slide_show(&db)?;
-            let slides = capsule.get_slides(&db)?;
-            let background = capsule.get_background(&db)?;
-            let logo = capsule.get_logo(&db)?;
-            let video = capsule.get_video(&db)?;
-
-            user_and_projects
-                .map(|(user, projects)| {
-                    json!({
-                        "page":       page,
-                        "username":   user.username,
-                        "projects":   projects,
-                        "capsule" :   capsule,
-                        "slide_show": slide_show,
-                        "slides":     slides,
-                        "background":  background,
-                        "logo":        logo,
-                        "active_project":"",
-                        "structure":   capsule.structure,
-                        "video": video,
-                        "video_root": config.video_root,
-                        "beta": config.beta,
-                        "version": config.version,
-                    })
-                })
-                .unwrap_or_else(|| {
-                    json!({
-                        "video_root": config.video_root,
-                        "beta": config.beta,
-                        "version": config.version,
-                    })
-                })
-        }
-
-        _ => user_and_projects
-            .map(|(user, projects)| {
-                json!({
-                    "username": user.username,
-                    "projects": projects,
-                    "page": "index",
-                    "active_project": "",
-                    "video_root": config.video_root,
-                    "beta": config.beta,
-                    "version": config.version,
-                })
-            })
-            .unwrap_or_else(|| {
-                json!({
-                    "video_root": config.video_root,
-                    "beta": config.beta,
-                    "version": config.version,
-                })
-            }),
-    })
-}
-
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/preparation")]
-pub fn capsule_preparation<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
-        &config,
-        &db,
-        &user,
-        id,
-        "preparation/capsule",
-    )?))
-}
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/acquisition")]
-pub fn capsule_acquisition<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
-        &config,
-        &db,
-        &user,
-        id,
-        "acquisition/capsule",
-    )?))
-}
-
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/edition")]
-pub fn capsule_edition<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
-        &config,
-        &db,
-        &user,
-        id,
-        "edition/capsule",
-    )?))
-}
-
-/// The route for the setup page, available only when Rocket.toml does not exist yet.
-#[get("/")]
-pub fn setup<'a>() -> Response<'a> {
-    Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(setup_html()))
-        .finalize()
-}
-
-/// The route for static files that require authorization.
-#[get("/<path..>")]
-pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Option<NamedFile> {
-    if path.starts_with(user.username) {
-        let data_path = config.data_path.join(path);
-        NamedFile::open(data_path).ok()
-    } else {
-        None
-    }
-}
-
 /// Starts the main server.
 pub fn start_server(rocket_config: RConfig) {
     let server_config = Config::from(&rocket_config);
@@ -405,17 +219,17 @@ pub fn start_server(rocket_config: RConfig) {
         .mount(
             "/",
             routes![
-                index,
-                capsule_preparation,
-                capsule_acquisition,
-                capsule_edition,
+                routes::index,
+                routes::capsule_preparation,
+                routes::capsule_acquisition,
+                routes::capsule_edition,
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,
             ],
         )
         .mount("/dist", StaticFiles::from("dist"))
-        .mount("/data", routes![data])
+        .mount("/data", routes![routes::data])
         .mount(
             "/api/",
             routes![
@@ -455,7 +269,7 @@ pub fn start_server(rocket_config: RConfig) {
 /// Starts the setup server.
 pub fn start_setup_server() {
     rocket::ignite()
-        .mount("/", routes![setup])
+        .mount("/", routes![routes::setup])
         .mount("/", StaticFiles::from("dist"))
         .mount(
             "/api/",
