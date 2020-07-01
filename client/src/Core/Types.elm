@@ -6,6 +6,7 @@ module Core.Types exposing
     , Msg(..)
     )
 
+import Browser
 import Browser.Navigation
 import ForgotPassword.Types as ForgotPassword
 import LoggedIn.Types as LoggedIn
@@ -13,7 +14,6 @@ import Login.Types as Login
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Time
-import Url
 
 
 type alias FullModel =
@@ -57,5 +57,5 @@ type Msg
     | LoggedInMsg LoggedIn.Msg
     | ForgotPasswordMsg ForgotPassword.Msg
     | ResetPasswordMsg ResetPassword.Msg
-    | UrlRequested Url.Url
-    | UrlReceived Model
+    | UrlRequested Browser.UrlRequest
+    | UrlReceived Model (Cmd Msg)

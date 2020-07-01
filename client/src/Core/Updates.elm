@@ -106,7 +106,7 @@ update msg { global, model } =
                     ( Core.FullModel global (Core.LoggedIn m), cmd )
 
                 -- Url message
-                ( Core.UrlRequested url, _ ) ->
+                ( Core.UrlRequested (Browser.Internal url), _ ) ->
                     ( Core.FullModel global model
                     , Api.get
                         { url = Url.toString url
@@ -115,8 +115,11 @@ update msg { global, model } =
                         }
                     )
 
-                ( Core.UrlReceived m, _ ) ->
-                    ( Core.FullModel global m, Cmd.none )
+                ( Core.UrlRequested (Browser.External url), _ ) ->
+                    ( Core.FullModel global model, Nav.load url )
+
+                ( Core.UrlReceived m c, _ ) ->
+                    ( Core.FullModel global m, c )
 
                 ( m, _ ) ->
                     let
@@ -152,10 +155,11 @@ isAcquisition model =
             False
 
 
+resultToMsg : Result Http.Error Decode.Value -> Core.Msg
 resultToMsg result =
     case Result.map (\x -> Core.modelFromFlags x) result of
         Ok ( m, c ) ->
-            Core.UrlReceived m
+            Core.UrlReceived m c
 
         Err _ ->
             Core.Noop
@@ -163,14 +167,9 @@ resultToMsg result =
 
 onUrlChange : Url.Url -> Core.Msg
 onUrlChange url =
-    Core.UrlRequested url
+    Core.UrlRequested (Browser.Internal url)
 
 
 onUrlRequest : Browser.UrlRequest -> Core.Msg
 onUrlRequest request =
-    case request of
-        Browser.Internal r ->
-            Core.UrlRequested r
-
-        Browser.External _ ->
-            Core.Noop
+    Core.UrlRequested request
