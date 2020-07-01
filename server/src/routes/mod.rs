@@ -19,56 +19,10 @@ use rocket_contrib::json::JsonValue;
 
 use crate::config::Config;
 use crate::db::user::User;
-use crate::templates::{index_html, setup_html};
+use crate::templates;
 use crate::{Database, Result};
 
-/// Helper to answer the HTML page with the Elm code as well as flags.
-pub fn helper<'a>(flags: JsonValue) -> Response<'a> {
-    Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize()
-}
-
-/// The index page.
-#[get("/")]
-pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Result<Response<'a>> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        Some((user, user.projects(&db)?))
-    } else {
-        None
-    };
-
-    let flags = user_and_projects
-        .map(|(user, projects)| {
-            json!({
-                "page": "index",
-                "username": user.username,
-                "projects": projects,
-                "active_project":"",
-                "video_root": config.video_root,
-                "beta": config.beta,
-                "version": config.version,
-            })
-        })
-        .unwrap_or_else(|| {
-            json!({
-                "video_root": config.video_root,
-                "beta": config.beta,
-                "version": config.version,
-            })
-        });
-
-    Ok(helper(flags))
-}
-
-fn jsonify_flags(
-    config: &Config,
-    db: &Database,
-    user: &Option<User>,
-    id: i32,
-    page: &str,
-) -> Result<JsonValue> {
+fn jsonify_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -97,18 +51,9 @@ fn jsonify_flags(
                         "active_project":"",
                         "structure":   capsule.structure,
                         "video": video,
-                        "video_root": config.video_root,
-                        "beta": config.beta,
-                        "version": config.version,
                     })
                 })
-                .unwrap_or_else(|| {
-                    json!({
-                        "video_root": config.video_root,
-                        "beta": config.beta,
-                        "version": config.version,
-                    })
-                })
+                .unwrap_or_else(|| json!(null))
         }
 
         _ => user_and_projects
@@ -118,19 +63,70 @@ fn jsonify_flags(
                     "projects": projects,
                     "page": "index",
                     "active_project": "",
-                    "video_root": config.video_root,
-                    "beta": config.beta,
-                    "version": config.version,
                 })
             })
-            .unwrap_or_else(|| {
-                json!({
-                    "video_root": config.video_root,
-                    "beta": config.beta,
-                    "version": config.version,
-                })
-            }),
+            .unwrap_or_else(|| json!(null)),
     })
+}
+
+/// Returns the json for the global info.
+fn global(config: &State<Config>) -> JsonValue {
+    json!({
+        "video_root": config.video_root,
+        "beta": config.beta,
+        "version": config.version,
+    })
+}
+
+/// Helper to answer the HTML page with the Elm code as well as flags.
+fn helper_html<'a>(config: &State<Config>, flags: JsonValue) -> Response<'a> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(templates::index_html(helper_json(
+            config, flags,
+        ))))
+        .finalize()
+}
+
+/// Helper to answer the JSON info as well as flags.
+fn helper_json(config: &State<Config>, flags: JsonValue) -> JsonValue {
+    json!({"global": global(config), "flags": flags})
+}
+
+/// The json for the index page.
+fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
+    let user_and_projects = if let Some(user) = user.as_ref() {
+        Some((user, user.projects(&db)?))
+    } else {
+        None
+    };
+
+    Ok(user_and_projects
+        .map(|(user, projects)| {
+            json!({
+                "page": "index",
+                "username": user.username,
+                "projects": projects,
+                "active_project":"",
+            })
+        })
+        .unwrap_or_else(|| json!(null)))
+}
+
+/// The index page.
+#[get("/", format = "text/html", rank = 1)]
+pub fn index_html<'a>(
+    config: State<Config>,
+    db: Database,
+    user: Option<User>,
+) -> Result<Response<'a>> {
+    Ok(helper_html(&config, index(db, user)?))
+}
+
+/// The index json page.
+#[get("/", format = "application/json", rank = 2)]
+pub fn index_json(config: State<Config>, db: Database, user: Option<User>) -> Result<JsonValue> {
+    Ok(helper_json(&config, index(db, user)?))
 }
 
 /// A page that moves the client directly to the capsule view.
@@ -141,13 +137,10 @@ pub fn capsule_preparation<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
+    Ok(helper_html(
         &config,
-        &db,
-        &user,
-        id,
-        "preparation/capsule",
-    )?))
+        jsonify_flags(&db, &user, id, "preparation/capsule")?,
+    ))
 }
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>/acquisition")]
@@ -157,13 +150,10 @@ pub fn capsule_acquisition<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
+    Ok(helper_html(
         &config,
-        &db,
-        &user,
-        id,
-        "acquisition/capsule",
-    )?))
+        jsonify_flags(&db, &user, id, "acquisition/capsule")?,
+    ))
 }
 
 /// A page that moves the client directly to the capsule view.
@@ -174,13 +164,10 @@ pub fn capsule_edition<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    Ok(helper(jsonify_flags(
+    Ok(helper_html(
         &config,
-        &db,
-        &user,
-        id,
-        "edition/capsule",
-    )?))
+        jsonify_flags(&db, &user, id, "edition/capsule")?,
+    ))
 }
 
 /// The route for the setup page, available only when Rocket.toml does not exist yet.
@@ -188,7 +175,7 @@ pub fn capsule_edition<'a>(
 pub fn setup<'a>() -> Response<'a> {
     Response::build()
         .header(ContentType::HTML)
-        .sized_body(Cursor::new(setup_html()))
+        .sized_body(Cursor::new(templates::setup_html()))
         .finalize()
 }
 

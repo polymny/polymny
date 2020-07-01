@@ -219,7 +219,8 @@ pub fn start_server(rocket_config: RConfig) {
         .mount(
             "/",
             routes![
-                routes::index,
+                routes::index_html,
+                routes::index_json,
                 routes::capsule_preparation,
                 routes::capsule_acquisition,
                 routes::capsule_edition,

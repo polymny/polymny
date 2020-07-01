@@ -45,6 +45,23 @@ import Json.Encode as Encode
 
 
 
+-- Helper for request
+
+
+post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+post { url, body, expect } =
+    Http.request
+        { method = "POST"
+        , headers = [ Http.header "Accept" "application/json" ]
+        , url = url
+        , body = body
+        , expect = expect
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+
 -- Api types
 
 
@@ -310,7 +327,7 @@ encodeSignUpContent { username, password, email } =
 
 signUp : (Result Http.Error () -> msg) -> SignUpContent a -> Cmd msg
 signUp responseToMsg content =
-    Http.post
+    post
         { url = "/api/new-user/"
         , expect = Http.expectWhatever responseToMsg
         , body = Http.jsonBody (encodeSignUpContent content)
@@ -338,7 +355,7 @@ encodeLoginContent { username, password } =
 
 login : (Result Http.Error Session -> msg) -> LoginContent b -> Cmd msg
 login resultToMsg content =
-    Http.post
+    post
         { url = "/api/login"
         , expect = Http.expectJson resultToMsg decodeSession
         , body = Http.jsonBody (encodeLoginContent content)
@@ -356,7 +373,7 @@ encodeForgotPasswordContent { email } =
 
 forgotPassword : (Result Http.Error () -> msg) -> ForgotPasswordContent b -> Cmd msg
 forgotPassword resultToMsg content =
-    Http.post
+    post
         { url = "/api/request-new-password"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.jsonBody (encodeForgotPasswordContent content)
@@ -377,7 +394,7 @@ encodeResetPasswordContent { password, key } =
 
 resetPassword : (Result Http.Error Session -> msg) -> ResetPasswordContent b -> Cmd msg
 resetPassword resultToMsg content =
-    Http.post
+    post
         { url = "/api/change-password"
         , expect = Http.expectJson resultToMsg decodeSession
         , body = Http.jsonBody (encodeResetPasswordContent content)
@@ -386,7 +403,7 @@ resetPassword resultToMsg content =
 
 logOut : (Result Http.Error () -> msg) -> Cmd msg
 logOut resultToMsg =
-    Http.post
+    post
         { url = "/api/logout"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.emptyBody
@@ -399,7 +416,7 @@ logOut resultToMsg =
 
 quickUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> File.File -> Cmd msg
 quickUploadSlideShow resultToMsg content =
-    Http.post
+    post
         { url = "/api/quick_upload_slides"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
@@ -425,7 +442,7 @@ encodeNewProjectContent { name } =
 
 newProject : (Result Http.Error Project -> msg) -> NewProjectContent a -> Cmd msg
 newProject resultToMsg content =
-    Http.post
+    post
         { url = "/api/new-project"
         , expect = Http.expectJson resultToMsg (decodeProject [])
         , body = Http.jsonBody (encodeNewProjectContent content)
@@ -468,7 +485,7 @@ encodeNewCapsuleContent projectId { name, title, description } =
 
 newCapsule : (Result Http.Error Capsule -> msg) -> Int -> NewCapsuleContent a -> Cmd msg
 newCapsule resultToMsg projectId content =
-    Http.post
+    post
         { url = "/api/new-capsule"
         , expect = Http.expectJson resultToMsg decodeCapsule
         , body = Http.jsonBody (encodeNewCapsuleContent projectId content)
@@ -489,7 +506,7 @@ capsuleFromId resultToMsg id =
 
 capsuleUploadSlideShow : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
 capsuleUploadSlideShow resultToMsg id content =
-    Http.post
+    post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_slides"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
@@ -498,7 +515,7 @@ capsuleUploadSlideShow resultToMsg id content =
 
 capsuleUploadBackground : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
 capsuleUploadBackground resultToMsg id content =
-    Http.post
+    post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_background"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
@@ -507,7 +524,7 @@ capsuleUploadBackground resultToMsg id content =
 
 capsuleUploadLogo : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Cmd msg
 capsuleUploadLogo resultToMsg id content =
-    Http.post
+    post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/upload_logo"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" content ]
@@ -516,7 +533,7 @@ capsuleUploadLogo resultToMsg id content =
 
 editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
 editionAuto resultToMsg id =
-    Http.post
+    post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.emptyBody
@@ -525,7 +542,7 @@ editionAuto resultToMsg id =
 
 publishVideo : (Result Http.Error () -> msg) -> Int -> Cmd msg
 publishVideo resultToMsg id =
-    Http.post
+    post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/publication"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.emptyBody
@@ -611,7 +628,7 @@ encodeDatabaseTestContent { hostname, username, password, name } =
 
 testDatabase : (Result Http.Error () -> msg) -> DatabaseTestContent a -> Cmd msg
 testDatabase resultToMsg content =
-    Http.post
+    post
         { url = "/api/test-database"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.jsonBody (encodeDatabaseTestContent content)
@@ -656,7 +673,7 @@ encodeConfig database mailer =
 
 testMailer : (Result Http.Error () -> msg) -> MailerTestContent a -> Cmd msg
 testMailer resultToMsg content =
-    Http.post
+    post
         { url = "/api/test-mailer"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.jsonBody (encodeMailerTestContent content)
@@ -665,7 +682,7 @@ testMailer resultToMsg content =
 
 setupConfig : (Result Http.Error () -> msg) -> DatabaseTestContent a -> MailerTestContent b -> Cmd msg
 setupConfig resultToMsg database mailer =
-    Http.post
+    post
         { url = "/api/setup-config"
         , expect = Http.expectWhatever resultToMsg
         , body = Http.jsonBody (encodeConfig database mailer)

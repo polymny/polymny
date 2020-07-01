@@ -54,7 +54,7 @@ globalFromFlags : Decode.Value -> Browser.Navigation.Key -> Global
 globalFromFlags flags key =
     let
         root =
-            case Decode.decodeValue (Decode.field "video_root" Decode.string) flags of
+            case Decode.decodeValue (Decode.field "global" (Decode.field "video_root" Decode.string)) flags of
                 Ok r ->
                     r
 
@@ -62,7 +62,7 @@ globalFromFlags flags key =
                     "/"
 
         beta =
-            case Decode.decodeValue (Decode.field "beta" Decode.bool) flags of
+            case Decode.decodeValue (Decode.field "global" (Decode.field "beta" Decode.bool)) flags of
                 Ok b ->
                     b
 
@@ -70,7 +70,7 @@ globalFromFlags flags key =
                     False
 
         version =
-            case Decode.decodeValue (Decode.field "version" Decode.string) flags of
+            case Decode.decodeValue (Decode.field "global" (Decode.field "version" Decode.string)) flags of
                 Ok v ->
                     "Version " ++ v
 
@@ -82,9 +82,9 @@ globalFromFlags flags key =
 
 modelFromFlags : Decode.Value -> ( Model, Cmd Msg )
 modelFromFlags flags =
-    case Decode.decodeValue (Decode.field "page" Decode.string) flags of
+    case Decode.decodeValue (Decode.field "flags" (Decode.field "page" Decode.string)) flags of
         Ok "index" ->
-            case Decode.decodeValue Api.decodeSession flags of
+            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
                 Ok session ->
                     ( LoggedIn
                         { session = session
@@ -97,7 +97,7 @@ modelFromFlags flags =
                     ( home, Cmd.none )
 
         Ok "reset-password" ->
-            case Decode.decodeValue (Decode.field "key" Decode.string) flags of
+            case Decode.decodeValue (Decode.field "flags" (Decode.field "key" Decode.string)) flags of
                 Ok key ->
                     ( ResetPassword (ResetPassword.init key), Cmd.none )
 
@@ -105,7 +105,7 @@ modelFromFlags flags =
                     ( home, Cmd.none )
 
         Ok "preparation/capsule" ->
-            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
                 ( Ok session, Ok capsule ) ->
                     ( LoggedIn
                         { session = session
@@ -119,7 +119,7 @@ modelFromFlags flags =
                     ( home, Cmd.none )
 
         Ok "acquisition/capsule" ->
-            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
                 ( Ok session, Ok capsule ) ->
                     let
                         ( model, cmd ) =
@@ -136,7 +136,7 @@ modelFromFlags flags =
                     ( home, Cmd.none )
 
         Ok "edition/capsule" ->
-            case ( Decode.decodeValue Api.decodeSession flags, Decode.decodeValue Api.decodeCapsuleDetails flags ) of
+            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
                 ( Ok session, Ok capsule ) ->
                     ( LoggedIn
                         { session = session
