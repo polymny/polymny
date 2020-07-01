@@ -3,11 +3,9 @@ module Utils exposing (headerView, resultToMsg)
 import Api
 import Core.Types as Core
 import Element exposing (Element)
-import Element.Background as Background
-import Element.Border as Border
 import Log exposing (debug)
 import LoggedIn.Types as LoggedIn
-import Ui.Colors as Colors
+import Ui.Attributes as Attributes
 import Ui.Ui as Ui
 
 
@@ -65,25 +63,8 @@ headerView active details =
 
                 _ ->
                     [ Element.none ]
-
-        pdfName =
-            case details.slide_show of
-                Just x ->
-                    Element.text x.name
-
-                _ ->
-                    Element.none
     in
-    Element.column
-        [ Background.color Colors.whiteDark
-        , Element.width
-            Element.fill
-        , Element.spacing 5
-        , Element.padding 10
-        , Border.color Colors.whiteDarker
-        , Border.rounded 5
-        , Border.width 1
-        ]
+    Element.column Attributes.boxAttributes
         [ Element.paragraph []
             [ Element.text <| "Capsule "
             , Element.text <| String.dropRight 38 details.capsule.name
