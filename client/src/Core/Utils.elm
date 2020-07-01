@@ -98,8 +98,16 @@ globalFromFlags flags key =
 
                 Err _ ->
                     "Version inconnue"
+
+        commit =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "commit" Decode.string)) flags of
+                Ok v ->
+                    v
+
+                Err _ ->
+                    ""
     in
-    { zone = Time.utc, beta = beta, videoRoot = root, version = version, key = key }
+    { zone = Time.utc, beta = beta, videoRoot = root, version = version, key = key, commit = commit }
 
 
 modelFromFlags : Decode.Value -> ( Core.Model, Cmd Core.Msg )

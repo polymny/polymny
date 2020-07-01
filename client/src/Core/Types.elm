@@ -27,6 +27,7 @@ type alias Global =
     , beta : Bool
     , videoRoot : String
     , version : String
+    , commit : String
     , key : Browser.Navigation.Key
     }
 

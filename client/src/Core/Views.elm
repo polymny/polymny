@@ -221,7 +221,7 @@ bottomBar global =
                     ("Polymny "
                         ++ global.version
                         ++ (if global.beta then
-                                " beta"
+                                " beta " ++ global.commit
 
                             else
                                 ""

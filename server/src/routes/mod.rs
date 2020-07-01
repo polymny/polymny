@@ -75,6 +75,7 @@ fn global(config: &State<Config>) -> JsonValue {
         "video_root": config.video_root,
         "beta": config.beta,
         "version": config.version,
+        "commit": config.commit,
     })
 }
 
