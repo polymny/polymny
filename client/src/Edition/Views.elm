@@ -53,14 +53,9 @@ mainView global { status, details } =
                 Nothing ->
                     Element.none
 
-        url_video : Maybe Api.Asset -> String
+        url_video : Api.Asset -> String
         url_video asset =
-            case asset of
-                Just v ->
-                    global.videoRoot ++ "/?v=" ++ v.uuid ++ "/"
-
-                _ ->
-                    global.videoRoot
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
 
         button =
             case ( details.capsule.published, details.video ) of
@@ -81,7 +76,7 @@ mainView global { status, details } =
                             [ Element.centerX
                             , Element.htmlAttribute (Html.Attributes.attribute "target" "_blank")
                             ]
-                            { url = url_video (Just v)
+                            { url = url_video v
                             , label = Ui.primaryButton Nothing "Voir la vidéo publiée"
                             }
                         , Element.text "Lien vers la vidéo publiée : "
@@ -95,8 +90,7 @@ mainView global { status, details } =
                             ]
                           <|
                             Element.text <|
-                                url_video <|
-                                    Just v
+                                url_video v
                         ]
 
                 ( _, _ ) ->
