@@ -226,7 +226,7 @@ bottomBar global =
                     { url = "https://elm-lang.org/"
                     , label = Element.el [ Font.bold ] <| Element.text "Elm"
                     }
-                , Element.text " by T. Forgione, N. Bertrand et V. Charvillat (IRIT/REVA). (c) 2020. Support: "
+                , Element.text " by T. Forgione, N. Bertrand and V. Charvillat (IRIT/REVA). (c) 2020. Support: "
                 , Element.link
                     []
                     { url = "mailto:contacter@polymny.studio"
