@@ -93,6 +93,54 @@ fn helper_json(config: &State<Config>, flags: JsonValue) -> JsonValue {
     json!({"global": global(config), "flags": flags})
 }
 
+macro_rules! make_route {
+    ($route: expr, $function: expr, $function_html: ident, $function_json: ident) => {
+        #[allow(missing_docs)]
+        #[get($route, format = "text/html", rank = 1)]
+        pub fn $function_html<'a>(
+            config: State<Config>,
+            db: Database,
+            user: Option<User>,
+        ) -> Result<Response<'a>> {
+            Ok(helper_html(&config, $function))
+        }
+
+        #[allow(missing_docs)]
+        #[get($route, format = "application/json", rank = 2)]
+        pub fn $function_json<'a>(
+            config: State<Config>,
+            db: Database,
+            user: Option<User>,
+        ) -> Result<JsonValue> {
+            Ok(helper_json(&config, $function))
+        }
+    };
+
+    ($route: expr, $param: expr, $ty: ty, $function: expr, $function_html: ident, $function_json: ident) => {
+        #[allow(missing_docs)]
+        #[get($route, format = "text/html", rank = 1)]
+        pub fn $function_html<'a>(
+            config: State<Config>,
+            db: Database,
+            user: Option<User>,
+            $param: $ty,
+        ) -> Result<Response<'a>> {
+            Ok(helper_html(&config, $function))
+        }
+
+        #[allow(missing_docs)]
+        #[get($route, format = "application/json", rank = 2)]
+        pub fn $function_json<'a>(
+            config: State<Config>,
+            db: Database,
+            user: Option<User>,
+            $param: $ty,
+        ) -> Result<JsonValue> {
+            Ok(helper_json(&config, $function))
+        }
+    };
+}
+
 /// The json for the index page.
 fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
@@ -113,62 +161,34 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
         .unwrap_or_else(|| json!(null)))
 }
 
-/// The index page.
-#[get("/", format = "text/html", rank = 1)]
-pub fn index_html<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-) -> Result<Response<'a>> {
-    Ok(helper_html(&config, index(db, user)?))
-}
+make_route!("/", index(db, user)?, index_html, index_json);
 
-/// The index json page.
-#[get("/", format = "application/json", rank = 2)]
-pub fn index_json(config: State<Config>, db: Database, user: Option<User>) -> Result<JsonValue> {
-    Ok(helper_json(&config, index(db, user)?))
-}
+make_route!(
+    "/capsule/<id>/preparation",
+    id,
+    i32,
+    jsonify_flags(&db, &user, id, "preparation/capsule")?,
+    capsule_preparation_html,
+    capsule_preparation_json
+);
 
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/preparation")]
-pub fn capsule_preparation<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper_html(
-        &config,
-        jsonify_flags(&db, &user, id, "preparation/capsule")?,
-    ))
-}
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/acquisition")]
-pub fn capsule_acquisition<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper_html(
-        &config,
-        jsonify_flags(&db, &user, id, "acquisition/capsule")?,
-    ))
-}
+make_route!(
+    "/capsule/<id>/acquisition",
+    id,
+    i32,
+    jsonify_flags(&db, &user, id, "acquisition/capsule")?,
+    capsule_acquisition_html,
+    capsule_acquisition_json
+);
 
-/// A page that moves the client directly to the capsule view.
-#[get("/capsule/<id>/edition")]
-pub fn capsule_edition<'a>(
-    config: State<Config>,
-    db: Database,
-    user: Option<User>,
-    id: i32,
-) -> Result<Response<'a>> {
-    Ok(helper_html(
-        &config,
-        jsonify_flags(&db, &user, id, "edition/capsule")?,
-    ))
-}
+make_route!(
+    "/capsule/<id>/edition",
+    id,
+    i32,
+    jsonify_flags(&db, &user, id, "edition/capsule")?,
+    capsule_edition_html,
+    capsule_edition_json
+);
 
 /// The route for the setup page, available only when Rocket.toml does not exist yet.
 #[get("/")]

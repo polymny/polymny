@@ -1,10 +1,15 @@
-module Core.Updates exposing (update)
+module Core.Updates exposing (onUrlChange, onUrlRequest, update)
 
 import Acquisition.Ports as Ports
 import Api
+import Browser
 import Core.Types as Core
+import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
 import ForgotPassword.Updates as ForgotPassword
+import Http
+import Json.Decode as Decode
+import Log
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
@@ -15,6 +20,7 @@ import ResetPassword.Types as ResetPassword
 import ResetPassword.Updates as ResetPassword
 import SignUp.Types as SignUp
 import SignUp.Updates as SignUp
+import Url
 
 
 update : Core.Msg -> Core.FullModel -> ( Core.FullModel, Cmd Core.Msg )
@@ -98,7 +104,24 @@ update msg { global, model } =
                     in
                     ( Core.FullModel global (Core.LoggedIn m), cmd )
 
-                _ ->
+                -- Url message
+                ( Core.UrlRequested url, _ ) ->
+                    ( Core.FullModel global model
+                    , Api.get
+                        { url = Url.toString url
+                        , body = Http.emptyBody
+                        , expect = Http.expectJson resultToMsg Decode.value
+                        }
+                    )
+
+                ( Core.UrlReceived m, _ ) ->
+                    ( Core.FullModel global m, Cmd.none )
+
+                ( m, _ ) ->
+                    let
+                        _ =
+                            Log.debug "Unhandled message" m
+                    in
                     ( Core.FullModel global model, Cmd.none )
 
         -- If model is acquisition and returnModel is not, we need to turn off the camera
@@ -126,3 +149,27 @@ isAcquisition model =
 
         _ ->
             False
+
+
+resultToMsg result =
+    case Result.map (\x -> Core.modelFromFlags x) result of
+        Ok ( m, c ) ->
+            Core.UrlReceived m
+
+        Err _ ->
+            Core.Noop
+
+
+onUrlChange : Url.Url -> Core.Msg
+onUrlChange url =
+    Core.UrlRequested url
+
+
+onUrlRequest : Browser.UrlRequest -> Core.Msg
+onUrlRequest request =
+    case request of
+        Browser.Internal r ->
+            Core.UrlRequested r
+
+        Browser.External _ ->
+            Core.Noop

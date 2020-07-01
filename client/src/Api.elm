@@ -22,10 +22,12 @@ module Api exposing
     , editionAuto
     , encodeSlideStructure
     , forgotPassword
+    , get
     , logOut
     , login
     , newCapsule
     , newProject
+    , post
     , publishVideo
     , quickUploadSlideShow
     , resetPassword
@@ -46,6 +48,19 @@ import Json.Encode as Encode
 
 
 -- Helper for request
+
+
+get : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+get { url, body, expect } =
+    Http.request
+        { method = "GET"
+        , headers = [ Http.header "Accept" "application/json" ]
+        , url = url
+        , body = body
+        , expect = expect
+        , timeout = Nothing
+        , tracker = Nothing
+        }
 
 
 post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg

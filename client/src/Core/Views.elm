@@ -4,6 +4,7 @@ import Acquisition.Ports
 import Acquisition.Types as Acquisition
 import Browser
 import Core.Types as Core
+import Core.Utils as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border

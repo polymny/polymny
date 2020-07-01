@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Core.Types as Core
 import Core.Updates as Core
+import Core.Utils as Core
 import Core.Views as Core
 import Json.Decode as Decode
 
@@ -14,6 +15,6 @@ main =
         , update = Core.update
         , view = Core.view
         , subscriptions = Core.subscriptions
-        , onUrlChange = \_ -> Core.Noop
-        , onUrlRequest = \_ -> Core.Noop
+        , onUrlChange = Core.onUrlChange
+        , onUrlRequest = Core.onUrlRequest
         }

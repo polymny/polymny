@@ -2,6 +2,7 @@ module ForgotPassword.Updates exposing (update)
 
 import Api
 import Core.Types as Core
+import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
 import Status
 import Utils
