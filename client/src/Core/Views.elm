@@ -207,14 +207,39 @@ bottomBar global =
         , Background.color Colors.greyLight
         , Border.color Colors.grey
         , Border.width 1
-        , Font.size 14
+        , Font.size 12
         ]
         [ Element.el [ Element.height Element.fill ] Element.none
         , Element.row
             [ Element.width Element.fill, Element.alignBottom, Element.padding 15 ]
-            [ Element.row [ Element.alignLeft ] []
-            , Element.row [ Element.alignRight ]
+            [ Element.row [ Element.alignLeft ]
                 [ Element.text
+                    "Polymny studio is proudly written in "
+                , Element.link
+                    []
+                    { url = "https://www.rust-lang.org/"
+                    , label = Element.el [ Font.bold ] <| Element.text "Rust"
+                    }
+                , Element.text " and "
+                , Element.link
+                    []
+                    { url = "https://elm-lang.org/"
+                    , label = Element.el [ Font.bold ] <| Element.text "Elm"
+                    }
+                , Element.text " by T. Forgione, N. Bertrand et V. Charvillat (IRIT/REVA). (c) 2020. Support: "
+                , Element.link
+                    []
+                    { url = "mailto:contacter@polymny.studio"
+                    , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
+                    }
+                ]
+            , Element.row [ Element.alignRight ]
+                [ Element.link
+                    []
+                    { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
+                    , label = Element.el [ Font.bold ] <| Element.text "Gnu Affero V3. "
+                    }
+                , Element.text
                     ("Polymny "
                         ++ global.version
                         ++ (if global.beta then
