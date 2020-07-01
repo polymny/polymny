@@ -171,7 +171,7 @@ pub type Result<T> = result::Result<T, Error>;
 
 impl<'r> Responder<'r> for Error {
     fn respond_to(self, _: &Request) -> response::Result<'r> {
-        error_!("Responding with {}", self);
+        error!("Responding with {}", self);
         Ok(Response::build()
             .status(self.status())
             .header(ContentType::JSON)
