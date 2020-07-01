@@ -189,6 +189,14 @@ impl<'r> Responder<'r> for Error {
 #[database("database")]
 pub struct Database(rocket_diesel::PgConnection);
 
+/// Helper to answer the HTML page with the Elm code as well as flags.
+pub fn helper<'a>(flags: JsonValue) -> Response<'a> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(index_html(flags)))
+        .finalize()
+}
+
 /// The index page.
 #[get("/")]
 pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Result<Response<'a>> {
@@ -218,12 +226,7 @@ pub fn index<'a>(config: State<Config>, db: Database, user: Option<User>) -> Res
             })
         });
 
-    let response = Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize();
-
-    Ok(response)
+    Ok(helper(flags))
 }
 
 fn jsonify_flags(
@@ -305,13 +308,13 @@ pub fn capsule_preparation<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&config, &db, &user, id, "preparation/capsule")?;
-    let response = Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize();
-
-    Ok(response)
+    Ok(helper(jsonify_flags(
+        &config,
+        &db,
+        &user,
+        id,
+        "preparation/capsule",
+    )?))
 }
 /// A page that moves the client directly to the capsule view.
 #[get("/capsule/<id>/acquisition")]
@@ -321,13 +324,13 @@ pub fn capsule_acquisition<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&config, &db, &user, id, "acquisition/capsule")?;
-    let response = Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize();
-
-    Ok(response)
+    Ok(helper(jsonify_flags(
+        &config,
+        &db,
+        &user,
+        id,
+        "acquisition/capsule",
+    )?))
 }
 
 /// A page that moves the client directly to the capsule view.
@@ -338,13 +341,13 @@ pub fn capsule_edition<'a>(
     user: Option<User>,
     id: i32,
 ) -> Result<Response<'a>> {
-    let flags = jsonify_flags(&config, &db, &user, id, "edition/capsule")?;
-    let response = Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(index_html(flags)))
-        .finalize();
-
-    Ok(response)
+    Ok(helper(jsonify_flags(
+        &config,
+        &db,
+        &user,
+        id,
+        "edition/capsule",
+    )?))
 }
 
 /// The route for the setup page, available only when Rocket.toml does not exist yet.
