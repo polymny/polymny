@@ -196,11 +196,23 @@ modelFromFlags flags =
                 _ =
                     Log.debug "Unknown page" ok
             in
-            ( home, Cmd.none )
+            -- Still try to log the user
+            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
+                Ok session ->
+                    ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
+
+                _ ->
+                    ( home, Cmd.none )
 
         Err err ->
             let
                 _ =
                     Log.debug "Error" err
             in
-            ( home, Cmd.none )
+            -- Still try to log the user
+            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
+                Ok session ->
+                    ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
+
+                _ ->
+                    ( home, Cmd.none )
