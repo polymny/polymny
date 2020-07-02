@@ -178,6 +178,19 @@ modelFromFlags flags =
                 ( _, _ ) ->
                     ( home, Cmd.none )
 
+        Ok "project" ->
+            case
+                ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
+                , Decode.decodeValue (Decode.field "flags" (Decode.field "project" (Api.decodeProject []))) flags
+                , Decode.decodeValue (Decode.field "flags" (Decode.field "capsules" Api.decodeCapsules)) flags
+                )
+            of
+                ( Ok session, Ok project, Ok capsules ) ->
+                    ( Core.LoggedIn { session = session, tab = LoggedIn.Project { project | capsules = capsules } Nothing }, Cmd.none )
+
+                _ ->
+                    ( home, Cmd.none )
+
         Ok ok ->
             let
                 _ =

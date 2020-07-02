@@ -227,6 +227,8 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::capsule_acquisition_json,
                 routes::capsule_edition_html,
                 routes::capsule_edition_json,
+                routes::project_html,
+                routes::project_json,
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,

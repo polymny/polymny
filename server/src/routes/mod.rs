@@ -22,7 +22,7 @@ use crate::db::user::User;
 use crate::templates;
 use crate::{Database, Result};
 
-fn jsonify_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
+fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         Some((user, user.projects(&db)?))
     } else {
@@ -67,6 +67,30 @@ fn jsonify_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
             })
             .unwrap_or_else(|| json!(null)),
     })
+}
+
+fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
+    let user_and_projects = if let Some(user) = user.as_ref() {
+        let project = user.get_project_by_id(id, &db)?;
+        let capsules = project.get_capsules(&db)?;
+        let projects = user.projects(&db)?;
+        Some((user, project, capsules, projects))
+    } else {
+        None
+    };
+
+    Ok(user_and_projects
+        .map(|(user, project, capsules, projects)| {
+            json!({
+                "page": page,
+                "username": user.username,
+                "projects": projects,
+                "project": project,
+                "capsules": capsules,
+                "active_project": ""
+            })
+        })
+        .unwrap_or_else(|| json!(null)))
 }
 
 /// Returns the json for the global info.
@@ -168,7 +192,7 @@ make_route!(
     "/capsule/<id>/preparation",
     id,
     i32,
-    jsonify_flags(&db, &user, id, "preparation/capsule")?,
+    capsule_flags(&db, &user, id, "preparation/capsule")?,
     capsule_preparation_html,
     capsule_preparation_json
 );
@@ -177,7 +201,7 @@ make_route!(
     "/capsule/<id>/acquisition",
     id,
     i32,
-    jsonify_flags(&db, &user, id, "acquisition/capsule")?,
+    capsule_flags(&db, &user, id, "acquisition/capsule")?,
     capsule_acquisition_html,
     capsule_acquisition_json
 );
@@ -186,9 +210,18 @@ make_route!(
     "/capsule/<id>/edition",
     id,
     i32,
-    jsonify_flags(&db, &user, id, "edition/capsule")?,
+    capsule_flags(&db, &user, id, "edition/capsule")?,
     capsule_edition_html,
     capsule_edition_json
+);
+
+make_route!(
+    "/project/<id>",
+    id,
+    i32,
+    project_flags(&db, &user, id, "project")?,
+    project_html,
+    project_json
 );
 
 /// The route for the setup page, available only when Rocket.toml does not exist yet.
