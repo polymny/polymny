@@ -18,7 +18,7 @@ function setupPorts(app) {
         nextSlideCallbacks = [];
     }
 
-    function init(elementId) {
+    function init(elementId, maybeVideo) {
         if (exitRequested) {
             exitRequested = false;
         }
@@ -28,6 +28,11 @@ function setupPorts(app) {
         }
 
         initVariables();
+
+        if (maybeVideo !== null) {
+            blobs.push(maybeVideo);
+        }
+
         initializing = true;
         setupUserMedia(() => {
             bindWebcam(elementId, () => {
@@ -106,7 +111,11 @@ function setupPorts(app) {
         } else {
             let video = document.getElementById(id);
             video.srcObject = null;
-            video.src = URL.createObjectURL(blobs[n-1]);
+            if (typeof blobs[n-1] === "string" || blobs[n-1] instanceof String) {
+                video.src = blobs[n-1];
+            } else {
+                video.src = URL.createObjectURL(blobs[n-1]);
+            }
             video.muted = false;
             video.play();
             for (let time of nextSlides) {
@@ -147,8 +156,8 @@ function setupPorts(app) {
         }
     }
 
-    subscribe(app.ports.init, function(id) {
-        init(id);
+    subscribe(app.ports.init, function(args) {
+        init(args[0], args[1]);
     });
 
     subscribe(app.ports.bindWebcam, function(id) {

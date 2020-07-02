@@ -36,7 +36,29 @@ type alias Model =
 
 init : Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
 init details mode gos =
-    ( { records = []
+    let
+        record =
+            case List.head (List.drop gos details.structure) of
+                Just g ->
+                    case g.record of
+                        Just s ->
+                            Just ( s, Record 0 g.transitions )
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+
+        records =
+            case record of
+                Just g ->
+                    [ Tuple.second g ]
+
+                Nothing ->
+                    []
+    in
+    ( { records = records
       , recording = False
       , currentStream = 0
       , slides = List.head (List.drop gos (Api.detailsSortSlides details))
@@ -46,7 +68,7 @@ init details mode gos =
       , mode = mode
       , cameraReady = False
       }
-    , Ports.init "video"
+    , Ports.init ( "video", Maybe.map Tuple.first record )
     )
 
 
@@ -70,18 +92,7 @@ initAtFirstNonRecorded details mode =
                 |> List.head
                 |> Maybe.withDefault 0
     in
-    ( { records = []
-      , recording = False
-      , currentStream = 0
-      , slides = List.head (List.drop gos (Api.detailsSortSlides details))
-      , details = details
-      , gos = gos
-      , currentSlide = 0
-      , mode = mode
-      , cameraReady = False
-      }
-    , Ports.init "video"
-    )
+    init details mode gos
 
 
 type Msg
