@@ -3,6 +3,7 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
+import Browser.Navigation as Nav
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Updates as Edition
@@ -18,8 +19,8 @@ import Status
 import Utils
 
 
-update : LoggedIn.Msg -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
-update msg { session, tab } =
+update : LoggedIn.Msg -> Core.Global -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
+update msg global { session, tab } =
     case ( msg, tab ) of
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
@@ -30,7 +31,7 @@ update msg { session, tab } =
 
         ( LoggedIn.PreparationClicked capsule, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsule) }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/preparation")
             )
 
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
@@ -45,7 +46,10 @@ update msg { session, tab } =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
             in
             ( { session = session, tab = LoggedIn.Acquisition model }
-            , coreCmd
+            , Cmd.batch
+                [ coreCmd
+                , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/acquisition")
+                ]
             )
 
         ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
@@ -55,7 +59,7 @@ update msg { session, tab } =
             ( { session = session
               , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
         ( LoggedIn.EditionClicked details True, _ ) ->
@@ -74,7 +78,7 @@ update msg { session, tab } =
 
         ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsuleDetails) }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsuleDetails.capsule.id ++ "/preparation")
             )
 
         --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
@@ -94,7 +98,12 @@ update msg { session, tab } =
                 ( newSession, newModel, cmd ) =
                     NewProject.update session newProjectMsg newProjectModel
             in
-            ( { session = newSession, tab = LoggedIn.NewProject newModel }, cmd )
+            ( { session = newSession, tab = LoggedIn.NewProject newModel }
+            , Cmd.batch
+                [ cmd
+                , Nav.pushUrl global.key "/new-project"
+                ]
+            )
 
         ( LoggedIn.ProjectClicked project, _ ) ->
             ( { session = session
@@ -111,7 +120,7 @@ update msg { session, tab } =
             ( { session = newSession
               , tab = LoggedIn.Project { project | capsules = capsules } Nothing
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/project/" ++ String.fromInt project.id)
             )
 
         ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
@@ -129,7 +138,7 @@ update msg { session, tab } =
             ( { session = session
               , tab = LoggedIn.Project project (Just NewCapsule.init)
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/new-capsule/" ++ String.fromInt project.id)
             )
 
         ( LoggedIn.CapsuleClicked capsule, _ ) ->

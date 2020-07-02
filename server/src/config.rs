@@ -2,6 +2,8 @@
 
 use std::path::PathBuf;
 
+use compile_time_run::run_command_str;
+
 use crate::mailer::Mailer;
 
 /// The config of the server.
@@ -26,6 +28,9 @@ pub struct Config {
 
     /// The version of the crate.
     pub version: &'static str,
+
+    /// The hash of the git commit.
+    pub commit: &'static str,
 }
 
 impl Config {
@@ -57,6 +62,7 @@ impl Config {
             beta,
             mailer: Mailer::from_config(config),
             version: env!("CARGO_PKG_VERSION"),
+            commit: run_command_str!("git", "rev-parse", "--short", "HEAD"),
         }
     }
 }

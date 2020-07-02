@@ -2,6 +2,7 @@ module Login.Updates exposing (update)
 
 import Api
 import Core.Types as Core
+import Core.Utils as Core
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import Status
