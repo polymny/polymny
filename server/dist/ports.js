@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, nextSlideCallbacks;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -13,15 +13,30 @@ function setupPorts(app) {
         stream = null;
         recorder = null;
         recording = false;
+        initializing = false;
         blobs = [];
         nextSlideCallbacks = [];
     }
 
     function init(elementId) {
+        if (exitRequested) {
+            exitRequested = false;
+        }
+
+        if (initializing) {
+            return;
+        }
+
         initVariables();
+        initializing = true;
         setupUserMedia(() => {
             bindWebcam(elementId, () => {
-                app.ports.cameraReady.send(null);
+                initializing = false;
+                if (exitRequested) {
+                    exit();
+                } else {
+                    app.ports.cameraReady.send(null);
+                }
             });
         });
     }
@@ -43,6 +58,12 @@ function setupPorts(app) {
 
     function bindWebcam(elementId, callback) {
         let element = document.getElementById(elementId);
+
+        if (element === null) {
+            callback();
+            return;
+        }
+
         element.srcObject = stream;
         element.src = null;
         element.muted = true;
@@ -109,11 +130,15 @@ function setupPorts(app) {
     }
 
     function exit() {
-        stream.getTracks().forEach(function(track) {
-            track.stop();
-        });
+        if (stream !== null && !initializing) {
+            stream.getTracks().forEach(function(track) {
+                track.stop();
+            });
 
-        initVariables();
+            initVariables();
+        } else {
+            exitRequested = true;
+        }
     }
 
     function subscribe(object, fun) {
