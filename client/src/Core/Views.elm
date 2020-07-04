@@ -150,9 +150,9 @@ homeView model =
                 ]
                 [ Element.el Attributes.attributesHomeTitle <|
                     Element.text "Polymny Studio "
-                , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques !" ]
+                , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}!" ]
                 , Element.paragraph [] [ Element.text "Le tout à distance, sans obstacles ni prérequis, à partir de simples présentations pdf.\n" ]
-                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie" ]
+                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie." ]
                 , Element.el [ Element.paddingXY 30 5, Element.alignLeft ] <| viewLogo 100 "/dist/logoRegionOccitanie.png"
                 , Element.paragraph [] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]
                 , Element.row [ Element.spacing 10 ]
