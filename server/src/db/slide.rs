@@ -4,7 +4,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
 
-use crate::db::asset::Asset;
+use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::Capsule;
 use crate::schema::slides;
 use crate::Result;
@@ -85,6 +85,11 @@ impl Slide {
             .filter(dsl::id.eq(self.id))
             .execute(db)
             .expect("Error deleting slide")) //TODO: expect it the good way to handle error?
+    }
+
+    /// get assets associated to this Slide
+    pub fn get_assets(&self, db: &PgConnection) -> Result<Vec<Asset>> {
+        Ok(AssetsObject::get_by_object(&db, self.id, AssetType::Slide)?)
     }
 }
 

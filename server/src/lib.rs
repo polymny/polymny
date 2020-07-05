@@ -269,6 +269,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
                 routes::slide::update_slide,
+                routes::slide::upload_resource,
                 routes::loggedin::quick_upload_slides,
                 routes::loggedin::options,
             ],
