@@ -125,18 +125,21 @@ function setupPorts(app) {
         }
     }
 
-    function uploadStream(url, n) {
+    function uploadStream(url, n, json) {
         let streamToUpload = blobs[n];
+
+        let formData = new FormData();
+        formData.append("file", streamToUpload);
+        formData.append("structure", JSON.stringify(json));
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type", "video/webm");
         xhr.onreadystatechange = () => {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 app.ports.streamUploaded.send(JSON.parse(xhr.responseText));
             }
         }
-        xhr.send(streamToUpload);
+        xhr.send(formData);
     }
 
     function exit() {
@@ -188,7 +191,7 @@ function setupPorts(app) {
     });
 
     subscribe(app.ports.uploadStream, function(attr) {
-        uploadStream(attr[0], attr[1]);
+        uploadStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.exit, function() {

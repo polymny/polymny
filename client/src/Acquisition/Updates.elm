@@ -70,9 +70,6 @@ update session msg model =
                 transitions =
                     List.head (List.drop stream (List.reverse model.records))
 
-                _ =
-                    Debug.log "t" ( transitions, stream )
-
                 newTransitions =
                     case ( structure, transitions ) of
                         ( Just s, Just { started, nextSlides } ) ->
@@ -96,7 +93,7 @@ update session msg model =
                     { details | structure = newStructure }
             in
             ( makeModel { model | details = newDetails }
-            , Cmd.batch [ Api.updateSlideStructure (\_ -> Core.Noop) newDetails, Ports.uploadStream ( url, stream ) ]
+            , Ports.uploadStream ( url, stream, Api.encodeSlideStructure newDetails )
             )
 
         Acquisition.StreamUploaded value ->
