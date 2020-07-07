@@ -101,31 +101,32 @@ function setupPorts(app) {
         recorder.stop();
     }
 
+    function goToWebcam(id) {
+        clearCallbacks();
+        bindWebcam(id, () => {
+            app.ports.cameraReady.send(null);
+        });
+    }
+
     function goToStream(id, n, nextSlides) {
         clearCallbacks();
 
-        if (n === 0) {
-            bindWebcam(id, () => {
-                app.ports.cameraReady.send(null);
-            });
+        let video = document.getElementById(id);
+        video.srcObject = null;
+        if (typeof blobs[n] === "string" || blobs[n] instanceof String) {
+            video.src = blobs[n];
         } else {
-            let video = document.getElementById(id);
-            video.srcObject = null;
-            if (typeof blobs[n-1] === "string" || blobs[n-1] instanceof String) {
-                video.src = blobs[n-1];
-            } else {
-                video.src = URL.createObjectURL(blobs[n-1]);
-            }
-            video.muted = false;
-            video.play();
-            for (let time of nextSlides) {
-                nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
-            }
+            video.src = URL.createObjectURL(blobs[n]);
+        }
+        video.muted = false;
+        video.play();
+        for (let time of nextSlides) {
+            nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
         }
     }
 
     function uploadStream(url, n) {
-        let streamToUpload = blobs[n-1];
+        let streamToUpload = blobs[n];
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
@@ -176,6 +177,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.stopRecording, function() {
         stopRecording();
+    });
+
+    subscribe(app.ports.goToWebcam, function(attr) {
+        goToWebcam(attr);
     });
 
     subscribe(app.ports.goToStream, function(attr) {

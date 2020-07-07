@@ -29,33 +29,38 @@ update session msg model =
         Acquisition.StartRecording ->
             let
                 cmd =
-                    if model.currentStream == 0 then
-                        Ports.startRecording ()
+                    case model.currentVideo of
+                        Just _ ->
+                            Cmd.batch [ Ports.goToWebcam elementId, Ports.startRecording () ]
 
-                    else
-                        Cmd.batch [ Ports.goToStream ( elementId, 0, Nothing ), Ports.startRecording () ]
+                        Nothing ->
+                            Ports.startRecording ()
             in
-            ( makeModel { model | recording = True, currentStream = List.length model.records + 1, currentSlide = 0 }, cmd )
+            ( makeModel { model | recording = True, currentVideo = Just (List.length model.records), currentSlide = 0 }, cmd )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
 
         Acquisition.NewRecord n ->
-            ( makeModel { model | records = Acquisition.newRecord n :: model.records }, Cmd.none )
+            ( makeModel { model | records = Acquisition.newRecord (List.length model.records) n :: model.records }, Cmd.none )
+
+        Acquisition.GoToWebcam ->
+            case model.currentVideo of
+                Just _ ->
+                    ( makeModel model, Ports.goToWebcam elementId )
+
+                Nothing ->
+                    ( makeModel model, Cmd.none )
 
         Acquisition.GoToStream n ->
-            if model.currentStream == n && n == 0 then
-                ( makeModel model, Cmd.none )
+            case List.head (List.drop n (List.reverse model.records)) of
+                Just { started, nextSlides } ->
+                    ( makeModel { model | currentVideo = Just n, currentSlide = 0 }
+                    , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
+                    )
 
-            else
-                case List.head (List.drop (n - 1) (List.reverse model.records)) of
-                    Just { started, nextSlides } ->
-                        ( makeModel { model | currentStream = n, currentSlide = 0 }
-                        , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
-                        )
-
-                    _ ->
-                        ( makeModel model, Cmd.none )
+                _ ->
+                    ( makeModel model, Cmd.none )
 
         Acquisition.UploadStream url stream ->
             let
@@ -63,7 +68,10 @@ update session msg model =
                     List.head (List.drop model.gos model.details.structure)
 
                 transitions =
-                    List.head (List.drop (stream - 1) model.records)
+                    List.head (List.drop stream (List.reverse model.records))
+
+                _ =
+                    Debug.log "t" ( transitions, stream )
 
                 newTransitions =
                     case ( structure, transitions ) of

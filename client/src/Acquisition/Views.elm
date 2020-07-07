@@ -151,7 +151,7 @@ videoView =
 recordingButton : Bool -> Bool -> Element Core.Msg
 recordingButton cameraReady recording =
     let
-        ( button, text, msg ) =
+        ( button, t, msg ) =
             if recording then
                 ( Ui.stopRecordButton, "Arrêter l'enregistrement", Just Acquisition.StopRecording )
 
@@ -166,7 +166,7 @@ recordingButton cameraReady recording =
                 in
                 ( Ui.startRecordButton, "Démarrer l'enregistrement", m )
     in
-    button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) text
+    button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) t
 
 
 nextSlideButton : Element Core.Msg
@@ -181,23 +181,29 @@ recordingsView model =
             if model.recording then
                 Ui.primaryButtonDisabled "Webcam"
 
-            else if List.length model.records == 0 then
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Select Webcam"
-
             else
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Retour  Webcam"
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Webcam"
 
-        texts : List String
-        texts =
-            List.map (\x -> "Enregistrement #" ++ String.fromInt x) (List.range 1 (List.length model.records))
-
-        msg : Int -> Maybe Core.Msg
+        msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
             if model.recording then
                 Nothing
 
             else
-                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i)))
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
+
+        button : Acquisition.Record -> Element Core.Msg
+        button x =
+            case model.currentVideo of
+                Just v ->
+                    if v == x.id then
+                        Ui.successButton (msg x) (text x)
+
+                    else
+                        Ui.simpleButton (msg x) (text x)
+
+                _ ->
+                    Ui.simpleButton (msg x) (text x)
     in
     Element.column
         [ Background.color Colors.whiteDark
@@ -208,43 +214,54 @@ recordingsView model =
         , Border.width 1
         ]
         [ webcam
-        , Element.text <|
-            "current ="
-                ++ String.fromInt model.currentStream
         , Element.text
             "Enregsitrements : "
         , Element.column [ Element.paddingXY 10 20, Element.spacing 10 ]
-            (List.indexedMap
-                (\i ->
-                    \x ->
-                        if model.currentStream == i + 1 then
-                            Ui.successButton (msg (i + 1)) x
-
-                        else
-                            Ui.simpleButton (msg (i + 1)) x
-                )
-                texts
-            )
-        , Element.el [ Font.size 16, Font.center ] <| uploadView model.details.capsule.id model.gos model.currentStream model.recording
+            (List.reverse (List.map button model.records))
+        , Element.el [ Font.size 16, Font.center ] <|
+            uploadView model
         ]
 
 
-uploadView : Int -> Int -> Int -> Bool -> Element Core.Msg
-uploadView capsuleId gosId stream recording =
-    if stream == 0 then
-        Element.none
+uploadView : Acquisition.Model -> Element Core.Msg
+uploadView { details, gos, currentVideo, recording, records } =
+    case currentVideo of
+        Nothing ->
+            Element.none
 
-    else if recording then
-        Ui.primaryButtonDisabled ("Valider \n l'enregistrement #" ++ String.fromInt stream)
+        Just v ->
+            let
+                record =
+                    List.head (List.drop v (List.reverse records))
+
+                t =
+                    Maybe.map String.toLower (Maybe.map text record)
+            in
+            case t of
+                Nothing ->
+                    Element.none
+
+                Just s ->
+                    if recording then
+                        Ui.primaryButtonDisabled ("Valider \n l'" ++ s)
+
+                    else
+                        Ui.successButton (Just (Acquisition.UploadStream (url details.capsule.id gos) v)) ("Valider \n l'" ++ s)
+                            |> Element.map LoggedIn.AcquisitionMsg
+                            |> Element.map Core.LoggedInMsg
+
+
+
+-- CONSTANTS AND UTILS
+
+
+text : Acquisition.Record -> String
+text record =
+    if record.new then
+        "Enregistrement #" ++ String.fromInt record.id
 
     else
-        Ui.successButton (Just (Acquisition.UploadStream (url capsuleId gosId) stream)) ("Valider \n l'enregistrement #" ++ String.fromInt stream)
-            |> Element.map LoggedIn.AcquisitionMsg
-            |> Element.map Core.LoggedInMsg
-
-
-
--- CONSTANTS
+        "Ancien enregistrement"
 
 
 url : Int -> Int -> String

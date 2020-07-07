@@ -11,20 +11,22 @@ type Mode
 
 
 type alias Record =
-    { started : Int
+    { id : Int
+    , new : Bool
+    , started : Int
     , nextSlides : List Int
     }
 
 
-newRecord : Int -> Record
-newRecord started =
-    { started = started, nextSlides = [] }
+newRecord : Int -> Int -> Record
+newRecord id started =
+    { id = id, new = True, started = started, nextSlides = [] }
 
 
 type alias Model =
     { records : List Record
     , recording : Bool
-    , currentStream : Int
+    , currentVideo : Maybe Int
     , slides : Maybe (List Api.Slide)
     , details : Api.CapsuleDetails
     , gos : Int
@@ -42,7 +44,7 @@ init details mode gos =
                 Just g ->
                     case g.record of
                         Just s ->
-                            Just ( s, Record 0 g.transitions )
+                            Just ( s, Record 0 False 0 g.transitions )
 
                         _ ->
                             Nothing
@@ -60,7 +62,7 @@ init details mode gos =
     in
     ( { records = records
       , recording = False
-      , currentStream = 0
+      , currentVideo = Nothing
       , slides = List.head (List.drop gos (Api.detailsSortSlides details))
       , details = details
       , gos = gos
@@ -99,6 +101,7 @@ type Msg
     = StartRecording
     | StopRecording
     | CameraReady
+    | GoToWebcam
     | GoToStream Int
     | NextSlide Bool
     | UploadStream String Int
