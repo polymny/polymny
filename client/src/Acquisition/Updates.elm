@@ -137,8 +137,8 @@ update session msg model =
                             )
 
                         ( Ok v, Acquisition.All, True ) ->
-                            ( { session = session, tab = LoggedIn.Edition { status = Status.Sent, details = v } }
-                            , Api.editionAuto resultToMsg model.details.capsule.id
+                            ( { session = session, tab = LoggedIn.Edition { status = Status.Sent, details = v, withVideo = True } }
+                            , Api.editionAuto resultToMsg model.details.capsule.id { status = Status.Sent, withVideo = True }
                             )
 
                         ( Ok v, Acquisition.All, False ) ->

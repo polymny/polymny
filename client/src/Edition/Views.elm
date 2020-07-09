@@ -6,6 +6,7 @@ import Edition.Types as Edition
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
@@ -33,8 +34,14 @@ view global _ model =
 
 
 mainView : Core.Global -> Edition.Model -> Element Core.Msg
-mainView global { status, details } =
+mainView global model =
     let
+        details =
+            model.details
+
+        status =
+            model.status
+
         video =
             case details.video of
                 Just x ->
@@ -103,14 +110,64 @@ mainView global { status, details } =
                 Status.Success () ->
                     ( video, button )
 
+                Status.Error () ->
+                    ( Element.text "Problème rencontré lors de la compostion de la vidéo. Merci de nous contacter", Element.none )
+
                 _ ->
                     ( Element.text "Evenement non prevus", Element.none )
     in
     Element.column
         [ Element.centerX, Element.spacing 20, Element.padding 10 ]
-        [ element
+        [ editionOptionView model
+        , element
         , publishButton
         ]
+
+
+editionOptionView : Edition.Model -> Element Core.Msg
+editionOptionView { status, withVideo } =
+    let
+        submitOnEnter =
+            case status of
+                Status.Sent ->
+                    []
+
+                Status.Success () ->
+                    []
+
+                _ ->
+                    [ Ui.onEnter Edition.OptionsSubmitted ]
+
+        submitButton =
+            case status of
+                Status.Sent ->
+                    Ui.primaryButtonDisabled "en cours ...."
+
+                _ ->
+                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Soumettre"
+
+        fields =
+            [ Input.checkbox []
+                { onChange = Edition.WithVideoChanged
+                , icon = Input.defaultCheckbox
+                , checked = withVideo
+                , label =
+                    Input.labelRight []
+                        (Element.text "Audio + Video")
+                }
+            , submitButton
+            ]
+
+        header =
+            Element.row [ Element.centerX ] [ Element.text "Option de génération de la vidéo" ]
+
+        form =
+            header :: fields
+    in
+    Element.map Core.LoggedInMsg <|
+        Element.map LoggedIn.EditionMsg <|
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+                form
 
 
 htmlVideo : String -> Html msg

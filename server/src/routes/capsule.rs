@@ -544,13 +544,21 @@ pub fn upload_record(
     format_capsule_data(&db, &capsule)
 }
 
+/// Post inout data for edition
+#[derive(Deserialize, Debug)]
+pub struct PostEdition {
+    /// Video and audio or audio only
+    pub with_video: Option<bool>,
+}
+
 /// order capsule gos and slide
-#[post("/capsule/<id>/edition")]
+#[post("/capsule/<id>/edition", data = "<post_data>")]
 pub fn capsule_edition(
     config: State<Config>,
     db: Database,
     user: User,
     id: i32,
+    post_data: Json<PostEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     let pip_list = "/tmp/pipList.txt";
@@ -583,32 +591,69 @@ pub fn capsule_edition(
 
         let slide = slide_path.to_str().unwrap();
         let record = record.to_str().unwrap();
-        let command = vec![
-            "ffmpeg",
-            "-hide_banner",
-            "-y",
-            "-i",
-            &slide,
-            "-i",
-            &record,
-            "-filter_complex",
-            "[1]scale=300:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
-            "-profile:v",
-            "main",
-            "-level",
-            "3.1",
-            "-b:v",
-            "440k",
-            "-ar",
-            "44100",
-            "-ab",
-            "128k",
-            "-vcodec",
-            "h264",
-            "-acodec",
-            "mp3",
-            &pip_out,
-        ];
+        let mut command = Vec::new();
+        if post_data.with_video.unwrap_or(true) {
+            command.extend(
+                vec![
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-y",
+                    "-i",
+                    &slide,
+                    "-i",
+                    &record,
+                    "-filter_complex",
+                    "[1]scale=300:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
+                ]
+                .into_iter(),
+            );
+        } else {
+            command.extend(
+                vec![
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-y",
+                    "-loop",
+                    "1",
+                    "-i",
+                    &slide,
+                    "-i",
+                    &record,
+                    "-map",
+                    "0:v:0",
+                    "-map",
+                    "1:a:0",
+                    "-shortest",
+                ]
+                .into_iter(),
+            );
+        }
+        command.extend(
+            vec![
+                "-profile:v",
+                "main",
+                "-pix_fmt",
+                "yuv420p",
+                "-level",
+                "3.1",
+                "-b:v",
+                "440k",
+                "-ar",
+                "44100",
+                "-ab",
+                "128k",
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "fast",
+                "-tune",
+                "zerolatency",
+                "-acodec",
+                "aac",
+                &pip_out,
+            ]
+            .into_iter(),
+        );
 
         let child = run_command(&command)?;
 
@@ -619,11 +664,17 @@ pub fn capsule_edition(
         file.write(format!("file '{}'\n", pip_out).as_bytes())?;
     }
     // concat all generated pip videos
-    let file_name = &format!("record.mp4");
+    let file_name = || {
+        if post_data.with_video.unwrap_or(true) {
+            format!("capsule_audio_and_video.mp4")
+        } else {
+            format!("capsule_audio_only.mp4")
+        }
+    };
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
-    server_path.push(format!("{}_{}", uuid, file_name));
+    server_path.push(format!("{}_{}", uuid, &file_name()));
 
     let mut output = config.data_path.clone();
     output.push(&server_path);
@@ -650,7 +701,7 @@ pub fn capsule_edition(
 
     println!("status: {}", child.status);
     if child.status.success() {
-        let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+        let asset = Asset::new(&db, uuid, &file_name(), server_path.to_str().unwrap())?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
         // Add video_id to capsule

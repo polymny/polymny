@@ -57,16 +57,16 @@ update msg global { session, tab } =
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule, withVideo = True }
               }
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
         ( LoggedIn.EditionClicked details True, _ ) ->
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Sent, details = details }
+              , tab = LoggedIn.Edition { status = Status.Sent, details = details, withVideo = True }
               }
-            , Api.editionAuto resultToMsg3 details.capsule.id
+            , Api.editionAuto resultToMsg3 details.capsule.id { withVideo = True }
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->

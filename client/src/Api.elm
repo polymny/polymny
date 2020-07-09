@@ -546,12 +546,25 @@ capsuleUploadLogo resultToMsg id content =
         }
 
 
-editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
-editionAuto resultToMsg id =
+type alias EditionAutoContent a =
+    { a
+        | withVideo : Bool
+    }
+
+
+encodeEditionAutoContent : EditionAutoContent a -> Encode.Value
+encodeEditionAutoContent { withVideo } =
+    Encode.object
+        [ ( "with_video", Encode.bool withVideo )
+        ]
+
+
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> Cmd msg
+editionAuto resultToMsg id content =
     post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
-        , body = Http.emptyBody
+        , body = Http.jsonBody (encodeEditionAutoContent content)
         }
 
 
