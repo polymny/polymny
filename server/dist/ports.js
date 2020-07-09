@@ -101,41 +101,45 @@ function setupPorts(app) {
         recorder.stop();
     }
 
+    function goToWebcam(id) {
+        clearCallbacks();
+        bindWebcam(id, () => {
+            app.ports.cameraReady.send(null);
+        });
+    }
+
     function goToStream(id, n, nextSlides) {
         clearCallbacks();
 
-        if (n === 0) {
-            bindWebcam(id, () => {
-                app.ports.cameraReady.send(null);
-            });
+        let video = document.getElementById(id);
+        video.srcObject = null;
+        if (typeof blobs[n] === "string" || blobs[n] instanceof String) {
+            video.src = blobs[n];
         } else {
-            let video = document.getElementById(id);
-            video.srcObject = null;
-            if (typeof blobs[n-1] === "string" || blobs[n-1] instanceof String) {
-                video.src = blobs[n-1];
-            } else {
-                video.src = URL.createObjectURL(blobs[n-1]);
-            }
-            video.muted = false;
-            video.play();
-            for (let time of nextSlides) {
-                nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
-            }
+            video.src = URL.createObjectURL(blobs[n]);
+        }
+        video.muted = false;
+        video.play();
+        for (let time of nextSlides) {
+            nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
         }
     }
 
-    function uploadStream(url, n) {
-        let streamToUpload = blobs[n-1];
+    function uploadStream(url, n, json) {
+        let streamToUpload = blobs[n];
+
+        let formData = new FormData();
+        formData.append("file", streamToUpload);
+        formData.append("structure", JSON.stringify(json));
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type", "video/webm");
         xhr.onreadystatechange = () => {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 app.ports.streamUploaded.send(JSON.parse(xhr.responseText));
             }
         }
-        xhr.send(streamToUpload);
+        xhr.send(formData);
     }
 
     function exit() {
@@ -178,12 +182,16 @@ function setupPorts(app) {
         stopRecording();
     });
 
+    subscribe(app.ports.goToWebcam, function(attr) {
+        goToWebcam(attr);
+    });
+
     subscribe(app.ports.goToStream, function(attr) {
         goToStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.uploadStream, function(attr) {
-        uploadStream(attr[0], attr[1]);
+        uploadStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.exit, function() {
