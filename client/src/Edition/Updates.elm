@@ -62,9 +62,24 @@ update session msg model =
         Edition.WithVideoChanged newWithVideo ->
             ( makeModel { model | withVideo = newWithVideo }, Cmd.none )
 
+        Edition.WebcamSizeChanged newWebcamSize ->
+            ( makeModel { model | webcamSize = newWebcamSize }, Cmd.none )
+
         Edition.OptionsSubmitted ->
+            let
+                stringWebcamSize =
+                    case model.webcamSize of
+                        Edition.Small ->
+                            "Small"
+
+                        Edition.Medium ->
+                            "Medium"
+
+                        Edition.Large ->
+                            "Large"
+            in
             ( makeModel { model | status = Status.Sent }
-            , Api.editionAuto resultToMsg model.details.capsule.id model
+            , Api.editionAuto resultToMsg model.details.capsule.id { withVideo = model.withVideo, webcamSize = stringWebcamSize }
             )
 
 

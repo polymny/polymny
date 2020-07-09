@@ -56,17 +56,25 @@ update msg global { session, tab } =
             Edition.update session editionMsg model
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
+            let
+                editionModel =
+                    { status = Status.Success (), details = capsule, withVideo = True, webcamSize = Edition.Medium }
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule, withVideo = True }
+              , tab = LoggedIn.Edition editionModel
               }
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
         ( LoggedIn.EditionClicked details True, _ ) ->
+            let
+                editionModel =
+                    { status = Status.Sent, details = details, withVideo = True, webcamSize = Edition.Medium }
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Sent, details = details, withVideo = True }
+              , tab = LoggedIn.Edition editionModel
               }
-            , Api.editionAuto resultToMsg3 details.capsule.id { withVideo = True }
+            , Api.editionAuto resultToMsg3 details.capsule.id { withVideo = True, webcamSize = "Medium" }
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->

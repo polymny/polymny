@@ -544,11 +544,47 @@ pub fn upload_record(
     format_capsule_data(&db, &capsule)
 }
 
+/// Decribes size and position of webcam
+mod webcam_type {
+    pub enum WebcamSize {
+        Small,
+        Medium,
+        Large,
+    }
+
+    pub enum WebcamPosition {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight,
+    }
+
+    pub fn size_in_pixels(webcamSize: WebcamSize) -> String {
+        match webcamSize {
+            WebcamSize::Small => "200".to_string(),
+            WebcamSize::Medium => "400".to_string(),
+            WebcamSize::Large => "800".to_string(),
+        }
+    }
+
+    pub fn position_in_pixels(webcamPosition: WebcamPosition) -> String {
+        match webcamPosition {
+            WebcamPosition::TopLeft => "200".to_string(),
+            WebcamPosition::TopRight => "200".to_string(),
+            WebcamPosition::BottomLeft => "200".to_string(),
+            WebcamPosition::BottomRight => "200".to_string(),
+        }
+    }
+}
+
 /// Post inout data for edition
 #[derive(Deserialize, Debug)]
 pub struct PostEdition {
     /// Video and audio or audio only
     pub with_video: Option<bool>,
+
+    /// Webcam size
+    pub webcam_size: Option<String>,
 }
 
 /// order capsule gos and slide
@@ -592,6 +628,24 @@ pub fn capsule_edition(
         let slide = slide_path.to_str().unwrap();
         let record = record.to_str().unwrap();
         let mut command = Vec::new();
+
+        let webcam_size = {
+            match &post_data.webcam_size {
+                Some(x) => match &x as &str {
+                    "Small" => webcam_type::WebcamSize::Small,
+                    "Medium" => webcam_type::WebcamSize::Medium,
+                    "Large" => webcam_type::WebcamSize::Large,
+                    _ => webcam_type::WebcamSize::Medium,
+                },
+                _ => webcam_type::WebcamSize::Medium,
+            }
+        };
+
+        let filter_complex = format!(
+            "[1]scale={}:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
+            webcam_type::size_in_pixels(webcam_size)
+        );
+
         if post_data.with_video.unwrap_or(true) {
             command.extend(
                 vec![
@@ -603,7 +657,7 @@ pub fn capsule_edition(
                     "-i",
                     &record,
                     "-filter_complex",
-                    "[1]scale=300:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
+                    &filter_complex,
                 ]
                 .into_iter(),
             );
@@ -654,7 +708,6 @@ pub fn capsule_edition(
             ]
             .into_iter(),
         );
-
         let child = run_command(&command)?;
 
         if !child.status.success() {

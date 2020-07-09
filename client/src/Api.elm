@@ -549,13 +549,15 @@ capsuleUploadLogo resultToMsg id content =
 type alias EditionAutoContent a =
     { a
         | withVideo : Bool
+        , webcamSize : String
     }
 
 
 encodeEditionAutoContent : EditionAutoContent a -> Encode.Value
-encodeEditionAutoContent { withVideo } =
+encodeEditionAutoContent { withVideo, webcamSize } =
     Encode.object
         [ ( "with_video", Encode.bool withVideo )
+        , ( "webcam_size", Encode.string webcamSize )
         ]
 
 
