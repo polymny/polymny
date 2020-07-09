@@ -7,6 +7,7 @@ module Preparation.Types exposing
     , Model
     , Msg(..)
     , UploadBackgroundMsg(..)
+    , UploadExtraResourceMsg(..)
     , UploadForm
     , UploadLogoMsg(..)
     , UploadModel(..)
@@ -55,6 +56,7 @@ type alias Forms =
     { slideShow : UploadForm
     , background : UploadForm
     , logo : UploadForm
+    , extraResource : UploadForm
     }
 
 
@@ -68,6 +70,7 @@ initForms =
     { slideShow = initUploadForm
     , background = initUploadForm
     , logo = initUploadForm
+    , extraResource = initUploadForm
     }
 
 
@@ -91,6 +94,7 @@ type Msg
     | UploadSlideShowMsg UploadSlideShowMsg
     | UploadBackgroundMsg UploadBackgroundMsg
     | UploadLogoMsg UploadLogoMsg
+    | UploadExtraResourceMsg UploadExtraResourceMsg
 
 
 type DnDMsg
@@ -124,10 +128,18 @@ type UploadLogoMsg
     | UploadLogoFormSubmitted
 
 
+type UploadExtraResourceMsg
+    = UploadExtraResourceSelectFileRequested
+    | UploadExtraResourceFileReady File
+    | UploadExtraResourceFormSubmitted Int
+    | UploadExtraResourceSuccess Api.Slide
+
+
 type UploadModel
     = SlideShow
     | Background
     | Logo
+    | ExtraResource Int
 
 
 init : Api.CapsuleDetails -> Model

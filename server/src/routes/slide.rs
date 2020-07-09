@@ -99,7 +99,7 @@ pub fn upload_resource(
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
-    println!("{:#?}", slide.get_assets(&db)?);
+    println!("{:#?}", slide.get_extra_assets(&db)?);
 
     let mut asset_path = config.data_path.clone();
     asset_path.push(asset.asset_path);
@@ -108,34 +108,36 @@ pub fn upload_resource(
     transcoded_path.push(&user.username);
     transcoded_path.push(format!("{}_transcoded.mp4", asset.uuid));
 
-    let handle = thread::spawn(move || {
-        let command = vec![
-            "ffmpeg",
-            "-hide_banner",
-            "-y",
-            "-i",
-            &asset_path.to_str().unwrap(),
-            "-level",
-            "3.1",
-            "-b:v",
-            "440k",
-            "-ar",
-            "44100",
-            "-ab",
-            "128k",
-            "-vcodec",
-            "h264",
-            "-acodec",
-            "mp3",
-            "-s",
-            "hd1080",
-            &transcoded_path.to_str().unwrap(),
-        ];
+    let command = vec![
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-i",
+        &asset_path.to_str().unwrap(),
+        "-level",
+        "3.1",
+        "-b:v",
+        "440k",
+        "-ar",
+        "44100",
+        "-ab",
+        "128k",
+        "-vcodec",
+        "h264",
+        "-acodec",
+        "mp3",
+        "-s",
+        "hd1080",
+        &transcoded_path.to_str().unwrap(),
+    ];
 
-        let child = run_command(&command).unwrap();
+    let child = run_command(&command).unwrap();
+    println!("status: {}", child.status);
+
+    if child.status.success() {
         println!("status: {}", child.status);
-    });
-    Ok(json!(slide))
+    }
+    Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
 
 // TODO: unify this focntion with uploaf_file from src/route/capsule.rd

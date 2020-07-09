@@ -52,6 +52,19 @@ update msg capsuleModel =
             in
             ( { model | uploadForms = newUploadForms }, newCmd )
 
+        ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
+            let
+                ( newFormModel, newCmd ) =
+                    updateUploadExtraResource newUploadExtraResourceMsg model.uploadForms.extraResource
+
+                oldUploadForms =
+                    model.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | extraResource = newFormModel }
+            in
+            ( { model | uploadForms = newUploadForms }, newCmd )
+
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
                 ( newModel, newCmd ) =
@@ -220,6 +233,41 @@ updateUploadLogo msg model capsuleId =
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
+updateUploadExtraResource : Preparation.UploadExtraResourceMsg -> Preparation.UploadForm -> ( Preparation.UploadForm, Cmd Core.Msg )
+updateUploadExtraResource msg model =
+    case ( msg, model ) of
+        ( Preparation.UploadExtraResourceSelectFileRequested, _ ) ->
+            ( model
+            , Select.file
+                [ "video/*" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadExtraResourceMsg <|
+                                Preparation.UploadExtraResourceFileReady x
+                )
+            )
+
+        ( Preparation.UploadExtraResourceFileReady file, form ) ->
+            ( { form | file = Just file }
+            , Cmd.none
+            )
+
+        ( Preparation.UploadExtraResourceFormSubmitted slideId, _ ) ->
+            case model.file of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just file ->
+                    ( { model | status = Status.Sent }, Api.slideUploadExtraResource resultToMsg3 slideId file )
+
+        ( Preparation.UploadExtraResourceSuccess slide, _ ) ->
+            -- TODO Maybe here update slide in Preparation.model.details ???
+            ( { model | status = Status.Success () }
+            , Cmd.none
+            )
+
+
 updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd Preparation.DnDMsg, Bool )
 updateDnD slideMsg data =
     case slideMsg of
@@ -366,6 +414,20 @@ resultToMsg2 result =
                 LoggedIn.PreparationMsg <|
                     Preparation.EditPromptMsg <|
                         Preparation.EditPromptSuccess <|
+                            x
+        )
+        (\_ -> Core.Noop)
+        result
+
+
+resultToMsg3 : Result e Api.Slide -> Core.Msg
+resultToMsg3 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceSuccess <|
                             x
         )
         (\_ -> Core.Noop)

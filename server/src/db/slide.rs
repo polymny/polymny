@@ -88,7 +88,7 @@ impl Slide {
     }
 
     /// get assets associated to this Slide
-    pub fn get_assets(&self, db: &PgConnection) -> Result<Vec<Asset>> {
+    pub fn get_extra_assets(&self, db: &PgConnection) -> Result<Vec<Asset>> {
         Ok(AssetsObject::get_by_object(&db, self.id, AssetType::Slide)?)
     }
 }
@@ -116,6 +116,9 @@ pub struct SlideWithAsset {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra asset
+    pub extra: Option<Asset>,
 }
 
 impl SlideWithAsset {
@@ -126,6 +129,7 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
+            extra: slide.get_extra_assets(&db)?.pop(),
         })
     }
 
@@ -140,6 +144,7 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
+            extra: slide.get_extra_assets(&db)?.pop(),
         })
     }
 
