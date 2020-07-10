@@ -27,10 +27,11 @@ use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
     validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, WebcamPosition, WebcamSize};
 use crate::Database;
 use crate::{Error, Result};
 
-/// A user of chouette.
+/// A user of polymny.
 #[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
 pub struct User {
     /// The id of the user.
@@ -62,7 +63,7 @@ pub struct User {
     /// This json should be of the form
     /// ```
     ///  {
-    ///     withVideo: bool,
+    ///     with_video: bool,
     ///     webcam_size: String or WebcamSize,
     ///     webcam_position: String or WebcamPosition,
     ///  ]
@@ -99,11 +100,17 @@ pub struct NewUser {
     pub edition_options: Option<Json>,
 }
 
+/// Set of Webcam view options
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EditionOptions {
-    withVideo: bool,
-    webcam_size: String,
-    webcam_position: String,
+    /// Only audio, or audio + video option
+    pub with_video: bool,
+
+    /// Size of webcam view
+    pub webcam_size: WebcamSize,
+
+    /// Position of webcam view in slide
+    pub webcam_position: WebcamPosition,
 }
 
 impl User {
@@ -422,17 +429,31 @@ impl User {
         Ok(slide)
     }
 
-    pub fn get_edition_options(&self, db: &Database) -> Result<EditionOptions> {
-        let default = r#"
-        {
-        "with_video": True,
-        "webcam_size": "Medium",
-        "webcam_position": "TopLeft"
-        }   "#;
-        let v: EditionOptions = serde_json::from_str(default).unwrap();
-        //let options:  = self.edition_options.unwrap_or(v);
-
-        Ok(v)
+    /// Gets Webcam option in db or default values if not set
+    pub fn get_edition_options(&self) -> Result<EditionOptions> {
+        let v = EditionOptions {
+            with_video: true,
+            webcam_size: WebcamSize::Medium,
+            webcam_position: WebcamPosition::BottomLeft,
+        };
+        let options = self
+            .edition_options
+            .as_ref()
+            .map(|x| EditionOptions {
+                with_video: x.get("with_video").unwrap().as_bool().unwrap(),
+                webcam_size: str_to_webcam_size(
+                    &x.get("webcam_size").unwrap().as_str().unwrap().to_string(),
+                ),
+                webcam_position: str_to_webcam_position(
+                    &x.get("webcam_position")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                ),
+            })
+            .unwrap_or(v);
+        Ok(options)
     }
 }
 

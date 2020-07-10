@@ -29,6 +29,10 @@ use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
+use crate::webcam::{
+    position_in_pixels, size_in_pixels, str_to_webcam_position, str_to_webcam_size, WebcamPosition,
+    WebcamSize,
+};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -544,39 +548,6 @@ pub fn upload_record(
     format_capsule_data(&db, &capsule)
 }
 
-/// Decribes size and position of webcam
-mod webcam_type {
-    pub enum WebcamSize {
-        Small,
-        Medium,
-        Large,
-    }
-
-    pub enum WebcamPosition {
-        TopLeft,
-        TopRight,
-        BottomLeft,
-        BottomRight,
-    }
-
-    pub fn size_in_pixels(webcam_size: WebcamSize) -> String {
-        match webcam_size {
-            WebcamSize::Small => "200".to_string(),
-            WebcamSize::Medium => "400".to_string(),
-            WebcamSize::Large => "800".to_string(),
-        }
-    }
-
-    pub fn position_in_pixels(webcam_position: WebcamPosition) -> String {
-        match webcam_position {
-            WebcamPosition::TopLeft => "4:4".to_string(),
-            WebcamPosition::TopRight => "W-w-4:4".to_string(),
-            WebcamPosition::BottomLeft => "4:H-h-4".to_string(),
-            WebcamPosition::BottomRight => "W-w-4:H-h-4".to_string(),
-        }
-    }
-}
-
 /// Post inout data for edition
 #[derive(Deserialize, Debug)]
 pub struct PostEdition {
@@ -634,32 +605,21 @@ pub fn capsule_edition(
 
         let webcam_size = {
             match &post_data.webcam_size {
-                Some(x) => match &x as &str {
-                    "Small" => webcam_type::WebcamSize::Small,
-                    "Medium" => webcam_type::WebcamSize::Medium,
-                    "Large" => webcam_type::WebcamSize::Large,
-                    _ => webcam_type::WebcamSize::Medium,
-                },
-                _ => webcam_type::WebcamSize::Medium,
+                Some(x) => str_to_webcam_size(x),
+                _ => WebcamSize::Medium,
             }
         };
         let webcam_postion = {
             match &post_data.webcam_position {
-                Some(x) => match &x as &str {
-                    "TopLeft" => webcam_type::WebcamPosition::TopLeft,
-                    "TopRight" => webcam_type::WebcamPosition::TopRight,
-                    "BottomLeft" => webcam_type::WebcamPosition::BottomLeft,
-                    "BottomRight" => webcam_type::WebcamPosition::BottomRight,
-                    _ => webcam_type::WebcamPosition::BottomLeft,
-                },
-                _ => webcam_type::WebcamPosition::BottomLeft,
+                Some(x) => str_to_webcam_position(x),
+                _ => WebcamPosition::BottomLeft,
             }
         };
 
         let filter_complex = format!(
             "[1]scale={}:-1 [pip]; [0][pip] overlay={}",
-            webcam_type::size_in_pixels(webcam_size),
-            webcam_type::position_in_pixels(webcam_postion)
+            size_in_pixels(webcam_size),
+            position_in_pixels(webcam_postion)
         );
 
         if post_data.with_video.unwrap_or(true) {

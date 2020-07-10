@@ -12,6 +12,7 @@ use crate::config::Config;
 use crate::db::session::Session;
 use crate::db::user::User;
 use crate::templates::index_html;
+use crate::webcam::{webcam_position_to_str, webcam_size_to_str};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -61,23 +62,29 @@ pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Resu
     let user = User::authenticate(&login.username, &login.password, &db)?;
     let session = user.save_session(&db)?;
 
+    let edition_options = user.get_edition_options()?;
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
 
-    Ok(
-        json!({"username": user.username, "projects": user.projects(&db)?, "active_project": "",
-        "with_video":true, "webcam_size": "Small", "webcam_position": "TopLeft"
-        }),
-    )
+    Ok(json!({"username": user.username,
+        "projects": user.projects(&db)?,
+        "active_project": "",
+        "with_video": edition_options.with_video,
+        "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+        "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+    }))
 }
 
 /// Returns the username.
 #[post("/session")]
 pub fn session(db: Database, user: User) -> Result<JsonValue> {
-    Ok(
-        json!({"username": user.username, "projects": user.projects(&db)?, "active_project": "",
-            "with_video":true, "webcam_size": "Small", "webcam_position": "TopLeft"
-        }),
-    )
+    let edition_options = user.get_edition_options()?;
+    Ok(json!({ "username": user.username,
+            "projects": user.projects(&db)?,
+            "active_project": "",
+            "with_video": edition_options.with_video,
+            "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+            "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+    }))
 }
 
 /// The logout page.
@@ -157,9 +164,16 @@ pub fn change_password(
     };
 
     let session = user.save_session(&db)?;
+    let edition_options = user.get_edition_options()?;
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
 
-    Ok(json!({"username": user.username, "projects": user.projects(&db)?, "active_project": ""}))
+    Ok(json!({"username": user.username,
+              "projects": user.projects(&db)?,
+              "active_project": "",
+              "with_video": edition_options.with_video,
+              "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+              "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+    }))
 }
 
 /// The form for changing an email address.

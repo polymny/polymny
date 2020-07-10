@@ -20,6 +20,7 @@ use rocket_contrib::json::JsonValue;
 use crate::config::Config;
 use crate::db::user::User;
 use crate::templates;
+use crate::webcam::{webcam_position_to_str, webcam_size_to_str};
 use crate::{Database, Result};
 
 fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
@@ -28,7 +29,6 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
     } else {
         None
     };
-
     Ok(match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
         Some(Ok(capsule)) => {
             let slide_show = capsule.get_slide_show(&db)?;
@@ -39,6 +39,8 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
 
             user_and_projects
                 .map(|(user, projects)| {
+                    let edition_options = user.get_edition_options().unwrap();
+
                     json!({
                         "page":       page,
                         "username":   user.username,
@@ -51,6 +53,9 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                         "active_project":"",
                         "structure":   capsule.structure,
                         "video": video,
+                        "with_video": edition_options.with_video,
+                        "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+                        "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                     })
                 })
                 .unwrap_or_else(|| json!(null))
@@ -58,11 +63,15 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
 
         _ => user_and_projects
             .map(|(user, projects)| {
+                let edition_options = user.get_edition_options().unwrap();
                 json!({
                     "username": user.username,
                     "projects": projects,
                     "page": "index",
                     "active_project": "",
+                    "with_video": edition_options.with_video,
+                    "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+                    "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                 })
             })
             .unwrap_or_else(|| json!(null)),
@@ -81,13 +90,17 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
 
     Ok(user_and_projects
         .map(|(user, project, capsules, projects)| {
+            let edition_options = user.get_edition_options().unwrap();
             json!({
                 "page": page,
                 "username": user.username,
                 "projects": projects,
                 "project": project,
                 "capsules": capsules,
-                "active_project": ""
+                "active_project": "",
+                "with_video": edition_options.with_video,
+                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
             })
         })
         .unwrap_or_else(|| json!(null)))
@@ -176,11 +189,15 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
 
     Ok(user_and_projects
         .map(|(user, projects)| {
+            let edition_options = user.get_edition_options().unwrap();
             json!({
                 "page": "index",
                 "username": user.username,
                 "projects": projects,
                 "active_project":"",
+                "with_video": edition_options.with_video,
+                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
             })
         })
         .unwrap_or_else(|| json!(null)))
