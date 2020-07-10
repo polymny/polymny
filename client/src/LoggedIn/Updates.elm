@@ -15,6 +15,7 @@ import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Settings.Types as Settings
 import Status
 import Utils
 
@@ -169,6 +170,13 @@ update msg global { session, tab } =
               , tab = tab
               }
             , Api.capsuleFromId resultToMsg2 capsule.id
+            )
+
+        ( LoggedIn.SettingsClicked, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Settings Settings.init
+              }
+            , Cmd.none
             )
 
         _ ->

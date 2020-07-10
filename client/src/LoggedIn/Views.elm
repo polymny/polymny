@@ -15,6 +15,7 @@ import NewCapsule.Views as NewCapsule
 import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
+import Settings.Views as Settings
 import Status
 import TimeUtils
 import Ui.Ui as Ui
@@ -42,6 +43,9 @@ view global session tab =
 
                 LoggedIn.Project project newCapsuleForm ->
                     projectView global project newCapsuleForm
+
+                LoggedIn.Settings modelSettings ->
+                    Settings.view global session modelSettings
 
         element =
             Element.column
