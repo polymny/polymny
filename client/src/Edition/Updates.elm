@@ -70,38 +70,12 @@ update session msg model =
             ( makeModel { model | webcamPosition = newWebcamPosition }, Cmd.none )
 
         Edition.OptionsSubmitted ->
-            let
-                stringWebcamSize =
-                    case model.webcamSize of
-                        Webcam.Small ->
-                            "Small"
-
-                        Webcam.Medium ->
-                            "Medium"
-
-                        Webcam.Large ->
-                            "Large"
-
-                stringWebcamPosition =
-                    case model.webcamPosition of
-                        Webcam.TopLeft ->
-                            "TopLeft"
-
-                        Webcam.TopRight ->
-                            "TopRight"
-
-                        Webcam.BottomLeft ->
-                            "BottomLeft"
-
-                        Webcam.BottomRight ->
-                            "BottomRight"
-            in
             ( makeModel { model | status = Status.Sent }
             , Api.editionAuto resultToMsg
                 model.details.capsule.id
                 { withVideo = model.withVideo
-                , webcamSize = stringWebcamSize
-                , webcamPosition = stringWebcamPosition
+                , webcamSize = model.webcamSize
+                , webcamPosition = model.webcamPosition
                 }
             )
 

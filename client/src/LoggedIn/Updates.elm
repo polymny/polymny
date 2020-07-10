@@ -16,6 +16,7 @@ import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Settings.Types as Settings
+import Settings.Updates as Settings
 import Status
 import Utils
 import Webcam
@@ -88,9 +89,9 @@ update msg global { session, tab } =
               }
             , Api.editionAuto resultToMsg3
                 details.capsule.id
-                { withVideo = True
-                , webcamSize = "Medium"
-                , webcamPosition = "BottomLeft"
+                { withVideo = Maybe.withDefault True session.withVideo
+                , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
+                , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
                 }
             )
 
@@ -178,6 +179,18 @@ update msg global { session, tab } =
               , tab = LoggedIn.Settings Settings.init
               }
             , Cmd.none
+            )
+
+        ( LoggedIn.SettingsMsg newSettingsMsg, LoggedIn.Settings settingsModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    Settings.update session newSettingsMsg settingsModel
+            in
+            ( { session = newSession, tab = LoggedIn.Settings newModel }
+            , Cmd.batch
+                [ cmd
+                , Nav.pushUrl global.key "/settings"
+                ]
             )
 
         _ ->

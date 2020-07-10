@@ -62,6 +62,7 @@ type Msg
     | AcquisitionClicked Api.CapsuleDetails
     | EditionClicked Api.CapsuleDetails Bool
     | SettingsClicked
+    | SettingsMsg Settings.Msg
 
 
 type UploadSlideShowMsg

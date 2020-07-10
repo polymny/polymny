@@ -35,6 +35,7 @@ module Api exposing
     , signUp
     , testDatabase
     , testMailer
+    , updateOptions
     , updateSlide
     , updateSlideStructure
     )
@@ -596,11 +597,40 @@ capsuleUploadLogo resultToMsg id content =
         }
 
 
+encodeWebcamSize : Webcam.WebcamSize -> String
+encodeWebcamSize webcamSize =
+    case webcamSize of
+        Webcam.Small ->
+            "Small"
+
+        Webcam.Medium ->
+            "Medium"
+
+        Webcam.Large ->
+            "Large"
+
+
+encodeWebcamPosition : Webcam.WebcamPosition -> String
+encodeWebcamPosition webcamPosition =
+    case webcamPosition of
+        Webcam.TopLeft ->
+            "TopLeft"
+
+        Webcam.TopRight ->
+            "TopRight"
+
+        Webcam.BottomLeft ->
+            "BottomLeft"
+
+        Webcam.BottomRight ->
+            "BottomRight"
+
+
 type alias EditionAutoContent a =
     { a
         | withVideo : Bool
-        , webcamSize : String
-        , webcamPosition : String
+        , webcamSize : Webcam.WebcamSize
+        , webcamPosition : Webcam.WebcamPosition
     }
 
 
@@ -608,8 +638,8 @@ encodeEditionAutoContent : EditionAutoContent a -> Encode.Value
 encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
     Encode.object
         [ ( "with_video", Encode.bool withVideo )
-        , ( "webcam_size", Encode.string webcamSize )
-        , ( "webcam_position", Encode.string webcamPosition )
+        , ( "webcam_size", Encode.string <| encodeWebcamSize webcamSize )
+        , ( "webcam_position", Encode.string <| encodeWebcamPosition webcamPosition )
         ]
 
 
@@ -680,6 +710,36 @@ updateSlideStructure resultToMsg content =
         , url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/gos_order"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.jsonBody (encodeSlideStructure content)
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+type alias OptionsContent a =
+    { a
+        | withVideo : Bool
+        , webcamSize : Webcam.WebcamSize
+        , webcamPosition : Webcam.WebcamPosition
+    }
+
+
+encodeOptionsContent : OptionsContent a -> Encode.Value
+encodeOptionsContent { withVideo, webcamSize, webcamPosition } =
+    Encode.object
+        [ ( "with_video", Encode.bool withVideo )
+        , ( "webcam_size", Encode.string <| encodeWebcamSize webcamSize )
+        , ( "webcam_position", Encode.string <| encodeWebcamPosition webcamPosition )
+        ]
+
+
+updateOptions : (Result Http.Error Session -> msg) -> OptionsContent a -> Cmd msg
+updateOptions resultToMsg content =
+    Http.request
+        { method = "PUT"
+        , headers = []
+        , url = "/api/options"
+        , expect = Http.expectJson resultToMsg decodeSession
+        , body = Http.jsonBody (encodeOptionsContent content)
         , timeout = Nothing
         , tracker = Nothing
         }

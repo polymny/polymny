@@ -148,7 +148,12 @@ update session msg model =
                                     }
                             in
                             ( { session = session, tab = LoggedIn.Edition editionModel }
-                            , Api.editionAuto resultToMsg model.details.capsule.id { withVideo = True, webcamSize = "Medium", webcamPosition = "BottomLeft" }
+                            , Api.editionAuto resultToMsg
+                                model.details.capsule.id
+                                { withVideo = Maybe.withDefault True session.withVideo
+                                , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
+                                , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
+                                }
                             )
 
                         ( Ok v, Acquisition.All, False ) ->
