@@ -1,21 +1,22 @@
-module Edition.Types exposing (Model, Msg(..), WebcamPosition(..), WebcamSize(..), init)
+module Edition.Types exposing (Model, Msg(..), init)
 
 import Api
 import Status exposing (Status)
+import Webcam
 
 
 type alias Model =
     { status : Status () ()
     , details : Api.CapsuleDetails
     , withVideo : Bool
-    , webcamSize : WebcamSize
-    , webcamPosition : WebcamPosition
+    , webcamSize : Webcam.WebcamSize
+    , webcamPosition : Webcam.WebcamPosition
     }
 
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model (Status.Success ()) details True Medium BottomLeft
+    Model (Status.Success ()) details True Webcam.Medium Webcam.BottomLeft
 
 
 type Msg
@@ -24,19 +25,6 @@ type Msg
     | PublishVideo
     | VideoPublished
     | WithVideoChanged Bool
-    | WebcamSizeChanged WebcamSize
-    | WebcamPositionChanged WebcamPosition
+    | WebcamSizeChanged Webcam.WebcamSize
+    | WebcamPositionChanged Webcam.WebcamPosition
     | OptionsSubmitted
-
-
-type WebcamSize
-    = Small
-    | Medium
-    | Large
-
-
-type WebcamPosition
-    = TopLeft
-    | TopRight
-    | BottomLeft
-    | BottomRight

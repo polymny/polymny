@@ -63,13 +63,21 @@ pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Resu
 
     cookies.add_private(Cookie::new("EXAUTH", session.secret));
 
-    Ok(json!({"username": user.username, "projects": user.projects(&db)?, "active_project": ""}))
+    Ok(
+        json!({"username": user.username, "projects": user.projects(&db)?, "active_project": "",
+        "with_video":true, "webcam_size": "Small", "webcam_position": "TopLeft"
+        }),
+    )
 }
 
 /// Returns the username.
 #[post("/session")]
 pub fn session(db: Database, user: User) -> Result<JsonValue> {
-    Ok(json!({"username": user.username, "projects": user.projects(&db)?, "active_project": ""}))
+    Ok(
+        json!({"username": user.username, "projects": user.projects(&db)?, "active_project": "",
+            "with_video":true, "webcam_size": "Small", "webcam_position": "TopLeft"
+        }),
+    )
 }
 
 /// The logout page.

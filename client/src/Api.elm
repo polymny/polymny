@@ -44,6 +44,7 @@ import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Webcam
 
 
 
@@ -158,15 +159,64 @@ type alias Session =
     { username : String
     , projects : List Project
     , active_project : Maybe Project
+    , withVideo : Maybe Bool
+    , webcamSize : Maybe Webcam.WebcamSize
+    , webcamPosition : Maybe Webcam.WebcamPosition
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map3 Session
+    Decode.map6 Session
         (Decode.field "username" Decode.string)
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "active_project" (Decode.maybe (decodeProject [])))
+        (Decode.field "with_video" (Decode.maybe Decode.bool))
+        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+
+
+decodeWebcamSize : Decoder Webcam.WebcamSize
+decodeWebcamSize =
+    Decode.map
+        (\x ->
+            case x of
+                "Small" ->
+                    Webcam.Small
+
+                "Medium" ->
+                    Webcam.Medium
+
+                "Large" ->
+                    Webcam.Large
+
+                _ ->
+                    Webcam.Medium
+        )
+        Decode.string
+
+
+decodeWebcamPosition : Decoder Webcam.WebcamPosition
+decodeWebcamPosition =
+    Decode.map
+        (\x ->
+            case x of
+                "TopLeft" ->
+                    Webcam.TopLeft
+
+                "TopRight" ->
+                    Webcam.TopRight
+
+                "BottomLeft" ->
+                    Webcam.BottomLeft
+
+                "BottomRight" ->
+                    Webcam.BottomRight
+
+                _ ->
+                    Webcam.BottomLeft
+        )
+        Decode.string
 
 
 type alias Asset =

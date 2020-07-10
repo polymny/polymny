@@ -12,6 +12,7 @@ import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Status
 import Utils
+import Webcam
 
 
 update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -141,9 +142,9 @@ update session msg model =
                                 editionModel =
                                     { status = Status.Sent
                                     , details = v
-                                    , withVideo = True
-                                    , webcamSize = Edition.Medium
-                                    , webcamPosition = Edition.BottomLeft
+                                    , withVideo = Maybe.withDefault True session.withVideo
+                                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
+                                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
                                     }
                             in
                             ( { session = session, tab = LoggedIn.Edition editionModel }

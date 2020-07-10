@@ -16,6 +16,7 @@ import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
+import Webcam
 
 
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
@@ -158,9 +159,9 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                 , selected = Just webcamSize
                 , label = Input.labelAbove [] (Element.text "taille de l'incrustation webcam")
                 , options =
-                    [ Input.option Edition.Small (Element.text "Petit")
-                    , Input.option Edition.Medium (Element.text "Moyen")
-                    , Input.option Edition.Large (Element.text "Grand")
+                    [ Input.option Webcam.Small (Element.text "Petit")
+                    , Input.option Webcam.Medium (Element.text "Moyen")
+                    , Input.option Webcam.Large (Element.text "Grand")
                     ]
                 }
             , Input.radio
@@ -171,10 +172,10 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                 , selected = Just webcamPosition
                 , label = Input.labelAbove [] (Element.text "Position de l'incrustation")
                 , options =
-                    [ Input.option Edition.TopLeft (Element.text "En haut à gauche.")
-                    , Input.option Edition.TopRight (Element.text "En haut à droite.")
-                    , Input.option Edition.BottomLeft (Element.text "En bas à gauche.")
-                    , Input.option Edition.BottomRight (Element.text "En bas à droite.")
+                    [ Input.option Webcam.TopLeft (Element.text "En haut à gauche.")
+                    , Input.option Webcam.TopRight (Element.text "En haut à droite.")
+                    , Input.option Webcam.BottomLeft (Element.text "En bas à gauche.")
+                    , Input.option Webcam.BottomRight (Element.text "En bas à droite.")
                     ]
                 }
             ]

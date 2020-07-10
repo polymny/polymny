@@ -18,6 +18,7 @@ import Preparation.Updates as Preparation
 import Settings.Types as Settings
 import Status
 import Utils
+import Webcam
 
 
 update : LoggedIn.Msg -> Core.Global -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -61,9 +62,9 @@ update msg global { session, tab } =
                 editionModel =
                     { status = Status.Success ()
                     , details = capsule
-                    , withVideo = True
-                    , webcamSize = Edition.Medium
-                    , webcamPosition = Edition.BottomLeft
+                    , withVideo = Maybe.withDefault True session.withVideo
+                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
+                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
                     }
             in
             ( { session = session
@@ -77,9 +78,9 @@ update msg global { session, tab } =
                 editionModel =
                     { status = Status.Sent
                     , details = details
-                    , withVideo = True
-                    , webcamSize = Edition.Medium
-                    , webcamPosition = Edition.BottomLeft
+                    , withVideo = Maybe.withDefault True session.withVideo
+                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
+                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
                     }
             in
             ( { session = session

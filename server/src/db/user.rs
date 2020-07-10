@@ -1,5 +1,7 @@
 //! This module contains the structures to manipulate users.
 
+use serde_json::{json, Value as Json};
+
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
@@ -29,7 +31,7 @@ use crate::Database;
 use crate::{Error, Result};
 
 /// A user of chouette.
-#[derive(Identifiable, Queryable, PartialEq, Debug)]
+#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
 pub struct User {
     /// The id of the user.
     pub id: i32,
@@ -54,6 +56,18 @@ pub struct User {
 
     /// The key to reset the password user.
     pub reset_password_key: Option<String>,
+
+    /// The structure of the editions options.
+    ///
+    /// This json should be of the form
+    /// ```
+    ///  {
+    ///     withVideo: bool,
+    ///     webcam_size: String or WebcamSize,
+    ///     webcam_position: String or WebcamPosition,
+    ///  ]
+    /// ```
+    pub edition_options: Option<Json>,
 }
 
 /// A user that is stored into the database yet.
@@ -80,6 +94,16 @@ pub struct NewUser {
 
     /// The key to reset the password user.
     pub reset_password_key: Option<String>,
+
+    /// The structure of the editions options.
+    pub edition_options: Option<Json>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EditionOptions {
+    withVideo: bool,
+    webcam_size: String,
+    webcam_position: String,
 }
 
 impl User {
@@ -125,6 +149,7 @@ impl User {
                     activated: false,
                     activation_key: Some(activation_key),
                     reset_password_key: None,
+                    edition_options: Some(json!([])),
                 })
             }
 
@@ -136,6 +161,7 @@ impl User {
                 activated: true,
                 activation_key: None,
                 reset_password_key: None,
+                edition_options: Some(json!([])),
             }),
         }
     }
@@ -314,6 +340,7 @@ impl User {
                 activated,
                 activation_key,
                 reset_password_key,
+                edition_options,
             ))
             .first::<User>(db)
             .map_err(|_| Error::AuthenticationFailed)?;
@@ -393,6 +420,19 @@ impl User {
         // Check that the user owns a project containing the capsule
         self.get_capsule_by_id(slide.capsule_id, db)?;
         Ok(slide)
+    }
+
+    pub fn get_edition_options(&self, db: &Database) -> Result<EditionOptions> {
+        let default = r#"
+        {
+        "with_video": True,
+        "webcam_size": "Medium",
+        "webcam_position": "TopLeft"
+        }   "#;
+        let v: EditionOptions = serde_json::from_str(default).unwrap();
+        //let options:  = self.edition_options.unwrap_or(v);
+
+        Ok(v)
     }
 }
 

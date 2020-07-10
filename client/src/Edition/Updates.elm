@@ -6,6 +6,7 @@ import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
 import Status
 import Utils
+import Webcam
 
 
 update : Api.Session -> Edition.Msg -> Edition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -72,27 +73,27 @@ update session msg model =
             let
                 stringWebcamSize =
                     case model.webcamSize of
-                        Edition.Small ->
+                        Webcam.Small ->
                             "Small"
 
-                        Edition.Medium ->
+                        Webcam.Medium ->
                             "Medium"
 
-                        Edition.Large ->
+                        Webcam.Large ->
                             "Large"
 
                 stringWebcamPosition =
                     case model.webcamPosition of
-                        Edition.TopLeft ->
+                        Webcam.TopLeft ->
                             "TopLeft"
 
-                        Edition.TopRight ->
+                        Webcam.TopRight ->
                             "TopRight"
 
-                        Edition.BottomLeft ->
+                        Webcam.BottomLeft ->
                             "BottomLeft"
 
-                        Edition.BottomRight ->
+                        Webcam.BottomRight ->
                             "BottomRight"
             in
             ( makeModel { model | status = Status.Sent }
