@@ -6,6 +6,7 @@ import Edition.Types as Edition
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
@@ -116,11 +117,13 @@ mainView global model =
                 _ ->
                     ( Element.text "Evenement non prevus", Element.none )
     in
-    Element.column
-        [ Element.centerX, Element.spacing 20, Element.padding 10 ]
+    Element.row [ Element.centerX, Element.spacing 20, Element.padding 10 ]
         [ editionOptionView model
-        , element
-        , publishButton
+        , Element.column
+            [ Element.centerX, Element.spacing 20, Element.padding 10 ]
+            [ element
+            , publishButton
+            ]
         ]
 
 
@@ -144,18 +147,10 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                     Ui.primaryButtonDisabled "en cours ...."
 
                 _ ->
-                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Soumettre"
+                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Valider les Options"
 
-        fields =
-            [ Input.checkbox []
-                { onChange = Edition.WithVideoChanged
-                , icon = Input.defaultCheckbox
-                , checked = withVideo
-                , label =
-                    Input.labelRight []
-                        (Element.text "Audio + Video")
-                }
-            , Input.radio
+        videoFields =
+            [ Input.radio
                 [ Element.padding 10
                 , Element.spacing 20
                 ]
@@ -182,11 +177,32 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                     , Input.option Edition.BottomRight (Element.text "En bas à droite.")
                     ]
                 }
-            , submitButton
             ]
 
+        commmonFields =
+            Input.checkbox []
+                { onChange = Edition.WithVideoChanged
+                , icon = Input.defaultCheckbox
+                , checked = withVideo
+                , label =
+                    Input.labelRight [] <|
+                        Element.text <|
+                            if withVideo then
+                                "Audio + vidéo . La vidéo et l'audio seront utilisés"
+
+                            else
+                                "Audio. Uniquement l'audio sera utilisé"
+                }
+
+        fields =
+            if withVideo then
+                (commmonFields :: videoFields) ++ [ submitButton ]
+
+            else
+                [ commmonFields, submitButton ]
+
         header =
-            Element.row [ Element.centerX ] [ Element.text "Option de génération de la vidéo" ]
+            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
 
         form =
             header :: fields
