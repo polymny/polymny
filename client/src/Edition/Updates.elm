@@ -65,6 +65,9 @@ update session msg model =
         Edition.WebcamSizeChanged newWebcamSize ->
             ( makeModel { model | webcamSize = newWebcamSize }, Cmd.none )
 
+        Edition.WebcamPositionChanged newWebcamPosition ->
+            ( makeModel { model | webcamPosition = newWebcamPosition }, Cmd.none )
+
         Edition.OptionsSubmitted ->
             let
                 stringWebcamSize =
@@ -77,9 +80,28 @@ update session msg model =
 
                         Edition.Large ->
                             "Large"
+
+                stringWebcamPosition =
+                    case model.webcamPosition of
+                        Edition.TopLeft ->
+                            "TopLeft"
+
+                        Edition.TopRight ->
+                            "TopRight"
+
+                        Edition.BottomLeft ->
+                            "BottomLeft"
+
+                        Edition.BottomRight ->
+                            "BottomRight"
             in
             ( makeModel { model | status = Status.Sent }
-            , Api.editionAuto resultToMsg model.details.capsule.id { withVideo = model.withVideo, webcamSize = stringWebcamSize }
+            , Api.editionAuto resultToMsg
+                model.details.capsule.id
+                { withVideo = model.withVideo
+                , webcamSize = stringWebcamSize
+                , webcamPosition = stringWebcamPosition
+                }
             )
 
 

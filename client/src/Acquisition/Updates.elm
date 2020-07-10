@@ -139,10 +139,15 @@ update session msg model =
                         ( Ok v, Acquisition.All, True ) ->
                             let
                                 editionModel =
-                                    { status = Status.Sent, details = v, withVideo = True, webcamSize = Edition.Medium }
+                                    { status = Status.Sent
+                                    , details = v
+                                    , withVideo = True
+                                    , webcamSize = Edition.Medium
+                                    , webcamPosition = Edition.BottomLeft
+                                    }
                             in
                             ( { session = session, tab = LoggedIn.Edition editionModel }
-                            , Api.editionAuto resultToMsg model.details.capsule.id { withVideo = True, webcamSize = "Medium" }
+                            , Api.editionAuto resultToMsg model.details.capsule.id { withVideo = True, webcamSize = "Medium", webcamPosition = "BottomLeft" }
                             )
 
                         ( Ok v, Acquisition.All, False ) ->

@@ -58,7 +58,12 @@ update msg global { session, tab } =
         ( LoggedIn.EditionClicked capsule False, _ ) ->
             let
                 editionModel =
-                    { status = Status.Success (), details = capsule, withVideo = True, webcamSize = Edition.Medium }
+                    { status = Status.Success ()
+                    , details = capsule
+                    , withVideo = True
+                    , webcamSize = Edition.Medium
+                    , webcamPosition = Edition.BottomLeft
+                    }
             in
             ( { session = session
               , tab = LoggedIn.Edition editionModel
@@ -69,12 +74,22 @@ update msg global { session, tab } =
         ( LoggedIn.EditionClicked details True, _ ) ->
             let
                 editionModel =
-                    { status = Status.Sent, details = details, withVideo = True, webcamSize = Edition.Medium }
+                    { status = Status.Sent
+                    , details = details
+                    , withVideo = True
+                    , webcamSize = Edition.Medium
+                    , webcamPosition = Edition.BottomLeft
+                    }
             in
             ( { session = session
               , tab = LoggedIn.Edition editionModel
               }
-            , Api.editionAuto resultToMsg3 details.capsule.id { withVideo = True, webcamSize = "Medium" }
+            , Api.editionAuto resultToMsg3
+                details.capsule.id
+                { withVideo = True
+                , webcamSize = "Medium"
+                , webcamPosition = "BottomLeft"
+                }
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->

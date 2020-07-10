@@ -125,7 +125,7 @@ mainView global model =
 
 
 editionOptionView : Edition.Model -> Element Core.Msg
-editionOptionView { status, withVideo, webcamSize } =
+editionOptionView { status, withVideo, webcamSize, webcamPosition } =
     let
         submitOnEnter =
             case status of
@@ -166,6 +166,20 @@ editionOptionView { status, withVideo, webcamSize } =
                     [ Input.option Edition.Small (Element.text "Petit")
                     , Input.option Edition.Medium (Element.text "Moyen")
                     , Input.option Edition.Large (Element.text "Grand")
+                    ]
+                }
+            , Input.radio
+                [ Element.padding 10
+                , Element.spacing 20
+                ]
+                { onChange = Edition.WebcamPositionChanged
+                , selected = Just webcamPosition
+                , label = Input.labelAbove [] (Element.text "Position de l'incrustation")
+                , options =
+                    [ Input.option Edition.TopLeft (Element.text "En haut à gauche.")
+                    , Input.option Edition.TopRight (Element.text "En haut à droite.")
+                    , Input.option Edition.BottomLeft (Element.text "En bas à gauche.")
+                    , Input.option Edition.BottomRight (Element.text "En bas à droite.")
                     ]
                 }
             , submitButton

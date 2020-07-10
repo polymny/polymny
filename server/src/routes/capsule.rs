@@ -559,20 +559,20 @@ mod webcam_type {
         BottomRight,
     }
 
-    pub fn size_in_pixels(webcamSize: WebcamSize) -> String {
-        match webcamSize {
+    pub fn size_in_pixels(webcam_size: WebcamSize) -> String {
+        match webcam_size {
             WebcamSize::Small => "200".to_string(),
             WebcamSize::Medium => "400".to_string(),
             WebcamSize::Large => "800".to_string(),
         }
     }
 
-    pub fn position_in_pixels(webcamPosition: WebcamPosition) -> String {
-        match webcamPosition {
-            WebcamPosition::TopLeft => "200".to_string(),
-            WebcamPosition::TopRight => "200".to_string(),
-            WebcamPosition::BottomLeft => "200".to_string(),
-            WebcamPosition::BottomRight => "200".to_string(),
+    pub fn position_in_pixels(webcam_position: WebcamPosition) -> String {
+        match webcam_position {
+            WebcamPosition::TopLeft => "4:4".to_string(),
+            WebcamPosition::TopRight => "W-w-4:4".to_string(),
+            WebcamPosition::BottomLeft => "4:H-h-4".to_string(),
+            WebcamPosition::BottomRight => "W-w-4:H-h-4".to_string(),
         }
     }
 }
@@ -585,6 +585,9 @@ pub struct PostEdition {
 
     /// Webcam size
     pub webcam_size: Option<String>,
+
+    /// Webcam  Position
+    pub webcam_position: Option<String>,
 }
 
 /// order capsule gos and slide
@@ -640,10 +643,23 @@ pub fn capsule_edition(
                 _ => webcam_type::WebcamSize::Medium,
             }
         };
+        let webcam_postion = {
+            match &post_data.webcam_position {
+                Some(x) => match &x as &str {
+                    "TopLeft" => webcam_type::WebcamPosition::TopLeft,
+                    "TopRight" => webcam_type::WebcamPosition::TopRight,
+                    "BottomLeft" => webcam_type::WebcamPosition::BottomLeft,
+                    "BottomRight" => webcam_type::WebcamPosition::BottomRight,
+                    _ => webcam_type::WebcamPosition::BottomLeft,
+                },
+                _ => webcam_type::WebcamPosition::BottomLeft,
+            }
+        };
 
         let filter_complex = format!(
-            "[1]scale={}:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
-            webcam_type::size_in_pixels(webcam_size)
+            "[1]scale={}:-1 [pip]; [0][pip] overlay={}",
+            webcam_type::size_in_pixels(webcam_size),
+            webcam_type::position_in_pixels(webcam_postion)
         );
 
         if post_data.with_video.unwrap_or(true) {
