@@ -27,7 +27,9 @@ use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
     validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, WebcamPosition, WebcamSize};
+use crate::webcam::{
+    str_to_webcam_position, str_to_webcam_size, EditionOptions, WebcamPosition, WebcamSize,
+};
 use crate::Database;
 use crate::{Error, Result};
 
@@ -98,19 +100,6 @@ pub struct NewUser {
 
     /// The structure of the editions options.
     pub edition_options: Option<Json>,
-}
-
-/// Set of Webcam view options
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EditionOptions {
-    /// Only audio, or audio + video option
-    pub with_video: bool,
-
-    /// Size of webcam view
-    pub webcam_size: WebcamSize,
-
-    /// Position of webcam view in slide
-    pub webcam_position: WebcamPosition,
 }
 
 impl User {

@@ -88,3 +88,16 @@ pub fn position_in_pixels(webcam_position: WebcamPosition) -> String {
         WebcamPosition::BottomRight => "W-w-4:H-h-4".to_string(),
     }
 }
+
+/// Set of Webcam view options
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EditionOptions {
+    /// Only audio, or audio + video option
+    pub with_video: bool,
+
+    /// Size of webcam view
+    pub webcam_size: WebcamSize,
+
+    /// Position of webcam view in slide
+    pub webcam_position: WebcamPosition,
+}

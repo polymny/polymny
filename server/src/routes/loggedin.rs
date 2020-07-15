@@ -10,7 +10,7 @@ use diesel::RunQueryDsl;
 
 use rocket::http::ContentType;
 use rocket::{Data, State};
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
@@ -26,7 +26,8 @@ use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::routes::capsule::{format_capsule_data, GosStructure};
-use crate::schema::capsules;
+use crate::schema::{capsules, users};
+use crate::webcam::{webcam_position_to_str, webcam_size_to_str, EditionOptions};
 
 use crate::{Database, Error, Result};
 
@@ -181,4 +182,37 @@ pub fn quick_upload_slides(
         todo!();
     }
     return Err(Error::NotFound);
+}
+
+/// Set of Webcam view options
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ApiEditionOptions {
+    /// Only audio, or audio + video option
+    pub with_video: bool,
+
+    /// Size of webcam view
+    pub webcam_size: String,
+
+    /// Position of webcam view in slide
+    pub webcam_position: String,
+}
+
+/// Upload a presentation (slides)
+#[post("/options", data = "<data>")]
+pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<JsonValue> {
+    // Perform the update
+    use crate::schema::users::dsl::{edition_options, id};
+    diesel::update(users::table)
+        .filter(id.eq(user.id))
+        .set(edition_options.eq(serde_json!(data)))
+        .execute(&db.0)?;
+
+    let options = user.get_edition_options()?;
+    Ok(json!({"username": user.username,
+        "projects": user.projects(&db)?,
+        "active_project": "",
+        "with_video": options.with_video,
+        "webcam_size": webcam_size_to_str(options.webcam_size),
+        "webcam_position": webcam_position_to_str(options.webcam_position),
+    }))
 }
