@@ -64,37 +64,63 @@ update session msg model =
 
         Acquisition.UploadStream url stream ->
             let
-                structure =
-                    List.head (List.drop model.gos model.details.structure)
-
                 transitions =
                     List.head (List.drop stream (List.reverse model.records))
 
-                newTransitions =
-                    case ( structure, transitions ) of
-                        ( Just s, Just { started, nextSlides } ) ->
-                            Just { s | transitions = List.reverse (List.map (\x -> x - started) nextSlides) }
+                isNew =
+                    case transitions of
+                        Just { new } ->
+                            new
 
                         _ ->
-                            Nothing
-
-                newStructure =
-                    case newTransitions of
-                        Just y ->
-                            List.take model.gos model.details.structure ++ (y :: List.drop (model.gos + 1) model.details.structure)
-
-                        _ ->
-                            model.details.structure
-
-                details =
-                    model.details
-
-                newDetails =
-                    { details | structure = newStructure }
+                            False
             in
-            ( makeModel { model | details = newDetails }
-            , Ports.uploadStream ( url, stream, Api.encodeSlideStructure newDetails )
-            )
+            if not isNew then
+                case model.mode of
+                    Acquisition.Single ->
+                        ( { session = session, tab = LoggedIn.Preparation (Preparation.init model.details) }, Cmd.none )
+
+                    Acquisition.All ->
+                        if model.gos + 1 == List.length model.details.structure then
+                            ( { session = session, tab = LoggedIn.Preparation (Preparation.init model.details) }, Cmd.none )
+
+                        else
+                            let
+                                ( m, cmd ) =
+                                    Acquisition.init model.details model.mode (model.gos + 1)
+                            in
+                            ( makeModel m, cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
+
+            else
+                let
+                    structure =
+                        List.head (List.drop model.gos model.details.structure)
+
+                    newTransitions =
+                        case ( structure, transitions ) of
+                            ( Just s, Just { started, nextSlides } ) ->
+                                Just { s | transitions = List.reverse (List.map (\x -> x - started) nextSlides) }
+
+                            _ ->
+                                Nothing
+
+                    newStructure =
+                        case newTransitions of
+                            Just y ->
+                                List.take model.gos model.details.structure ++ (y :: List.drop (model.gos + 1) model.details.structure)
+
+                            _ ->
+                                model.details.structure
+
+                    details =
+                        model.details
+
+                    newDetails =
+                        { details | structure = newStructure }
+                in
+                ( makeModel { model | details = newDetails }
+                , Ports.uploadStream ( url, stream, Api.encodeSlideStructure newDetails )
+                )
 
         Acquisition.StreamUploaded value ->
             let
