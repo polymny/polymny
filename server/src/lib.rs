@@ -268,6 +268,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::slide::get_slide,
                 routes::slide::update_slide,
                 routes::loggedin::quick_upload_slides,
+                routes::loggedin::options,
             ],
         )
         .launch();

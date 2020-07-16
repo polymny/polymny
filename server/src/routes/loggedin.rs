@@ -184,21 +184,8 @@ pub fn quick_upload_slides(
     return Err(Error::NotFound);
 }
 
-/// Set of Webcam view options
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ApiEditionOptions {
-    /// Only audio, or audio + video option
-    pub with_video: bool,
-
-    /// Size of webcam view
-    pub webcam_size: String,
-
-    /// Position of webcam view in slide
-    pub webcam_position: String,
-}
-
 /// Upload a presentation (slides)
-#[post("/options", data = "<data>")]
+#[put("/options", data = "<data>")]
 pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<JsonValue> {
     // Perform the update
     use crate::schema::users::dsl::{edition_options, id};
