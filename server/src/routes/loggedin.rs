@@ -188,15 +188,18 @@ pub fn quick_upload_slides(
 #[put("/options", data = "<data>")]
 pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<JsonValue> {
     // Perform the update
-    use crate::schema::users::dsl::{edition_options, id};
+    use crate::schema::users::dsl;
+    println!("data= {:#?}", data);
     diesel::update(users::table)
-        .filter(id.eq(user.id))
-        .set(edition_options.eq(serde_json!(data.into_inner())))
+        .filter(dsl::id.eq(user.id))
+        .set(dsl::edition_options.eq(serde_json!(data.into_inner())))
         .execute(&db.0)?;
 
-    let options = user.get_edition_options()?;
-    Ok(json!({"username": user.username,
-        "projects": user.projects(&db)?,
+    let nuser = User::get_by_id(user.id, &db)?;
+    let options = nuser.get_edition_options()?;
+    println!("{:#?}", options);
+    Ok(json!({"username": nuser.username,
+        "projects": nuser.projects(&db)?,
         "active_project": "",
         "with_video": options.with_video,
         "webcam_size": webcam_size_to_str(options.webcam_size),

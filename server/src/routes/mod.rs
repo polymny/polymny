@@ -106,6 +106,30 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
         .unwrap_or_else(|| json!(null)))
 }
 
+fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<JsonValue> {
+    let user_projects_options = if let Some(user) = user.as_ref() {
+        let projects = user.projects(&db)?;
+        let edition_options = user.get_edition_options().unwrap();
+        Some((user, projects, edition_options))
+    } else {
+        None
+    };
+
+    Ok(user_projects_options
+        .map(|(user, projects, edition_options)| {
+            json!({
+                "page": page,
+                "username": user.username,
+                "with_video": edition_options.with_video,
+                "projects": projects,
+                "active_project": "",
+                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
+                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+            })
+        })
+        .unwrap_or_else(|| json!(null)))
+}
+
 /// Returns the json for the global info.
 fn global(config: &State<Config>) -> JsonValue {
     json!({
@@ -239,6 +263,13 @@ make_route!(
     project_flags(&db, &user, id, "project")?,
     project_html,
     project_json
+);
+
+make_route!(
+    "/settings",
+    settings_flags(&db, &user, "settings")?,
+    settings_html,
+    settings_json
 );
 
 /// The route for the setup page, available only when Rocket.toml does not exist yet.

@@ -168,6 +168,12 @@ impl User {
         let user = dsl::users.filter(dsl::email.eq(email)).first::<User>(db);
         Ok(user?)
     }
+    /// Gets a user by idl.
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl;
+        let user = dsl::users.filter(dsl::id.eq(id)).first::<User>(db);
+        Ok(user?)
+    }
 
     /// Gets a user by activation key.
     pub fn get_by_activation_key(key: &str, db: &PgConnection) -> Result<User> {

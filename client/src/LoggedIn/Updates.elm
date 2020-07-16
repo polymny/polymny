@@ -178,7 +178,9 @@ update msg global { session, tab } =
             ( { session = session
               , tab = LoggedIn.Settings Settings.init
               }
-            , Cmd.none
+            , Nav.pushUrl
+                global.key
+                "/settings"
             )
 
         ( LoggedIn.SettingsMsg newSettingsMsg, LoggedIn.Settings settingsModel ) ->
@@ -187,10 +189,7 @@ update msg global { session, tab } =
                     Settings.update session newSettingsMsg settingsModel
             in
             ( { session = newSession, tab = LoggedIn.Settings newModel }
-            , Cmd.batch
-                [ cmd
-                , Nav.pushUrl global.key "/settings"
-                ]
+            , cmd
             )
 
         _ ->
