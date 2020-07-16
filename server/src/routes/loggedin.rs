@@ -204,7 +204,7 @@ pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<J
     use crate::schema::users::dsl::{edition_options, id};
     diesel::update(users::table)
         .filter(id.eq(user.id))
-        .set(edition_options.eq(serde_json!(data)))
+        .set(edition_options.eq(serde_json!(data.into_inner())))
         .execute(&db.0)?;
 
     let options = user.get_edition_options()?;

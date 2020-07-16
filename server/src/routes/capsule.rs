@@ -449,100 +449,34 @@ pub fn upload_record(
     capsule_id: i32,
     gos: usize,
     data: Data,
-    content_type: &ContentType,
 ) -> Result<JsonValue> {
-    let mut options = MultipartFormDataOptions::new();
-    options.allowed_fields.push(
-        MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
-    );
-    options
-        .allowed_fields
-        .push(MultipartFormDataField::text("structure"));
-
-    let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
-    //TODO: handle errors from multipart form dat ?
-    // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
-
-    let file = multipart_form_data.files.get("file");
-
-    let asset = if let Some(file) = file {
-        match file {
-            FileField::Single(file) => {
-                let file_name = &file.file_name;
-                let path = &file.path;
-                if let Some(file_name) = file_name {
-                    let mut server_path = PathBuf::from(&user.username);
-                    let uuid = Uuid::new_v4();
-                    server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
-                    AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
-
-                    let mut output_path = config.data_path.clone();
-                    output_path.push(server_path);
-
-                    println!("output_path {:#?}", output_path);
-                    create_dir(output_path.parent().unwrap()).ok();
-                    fs::copy(path, &output_path)?;
-                    asset
-                } else {
-                    todo!();
-                }
-            }
-            FileField::Multiple(_files) => {
-                // TODO: handle mutlile files
-                todo!()
-            }
-        }
-    } else {
-        todo!();
-    };
+    let capsule = user.get_capsule_by_id(capsule_id, &db)?;
 
     let file_name = &format!("capsule.mp4");
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
+    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+    AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
     let mut output_path = config.data_path.clone();
     output_path.push(server_path);
 
-    let text = match multipart_form_data.texts.get("structure") {
-        Some(TextField::Single(field)) => &field.text,
-        _ => panic!(),
-    };
+    println!("output_path {:#?}", output_path);
+    create_dir(output_path.parent().unwrap()).ok();
+    // fs::copy(path, &output_path)?;
+    data.stream_to(&mut File::create(output_path)?)?;
 
-    let structure: Vec<GosStructure> = serde_json::from_str(text).unwrap();
+    let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+    v[gos].record_path = Some(asset.asset_path.clone());
+    v[gos].locked = true;
 
-    // Verifiy that the goss doesn't violate authorizations.
-    // All slides must belong to the user.
-    for gos in &structure {
-        for slide in &gos.slides {
-            user.get_slide_by_id(*slide, &db)?;
-        }
-    }
-
-    // let mut structure: Vec<GosStructure> =
-    //     serde_json::from_str(multipart_form_data.texts.get("structure").unwrap().text).unwrap();
-
-    let mut structure: JsonValue = serde_json::from_str(text).unwrap();
-
-    *structure.as_array_mut().unwrap()[gos]
-        .get_mut("record_path")
-        .unwrap() = serde_json!(asset.asset_path);
-
-    *structure.as_array_mut().unwrap()[gos]
-        .get_mut("locked")
-        .unwrap() = serde_json!(true);
-
-    let new_structure = &structure;
-
-    {
-        use crate::schema::capsules::dsl::{id as cid, structure};
-        diesel::update(capsules::table)
-            .filter(cid.eq(capsule_id))
-            .set(structure.eq(serde_json!(new_structure)))
-            .execute(&db.0)?;
-    }
+    use crate::schema::capsules::dsl::{id as cid, structure};
+    diesel::update(capsules::table)
+        .filter(cid.eq(capsule_id))
+        .set(structure.eq(serde_json!(v)))
+        .execute(&db.0)?;
 
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     format_capsule_data(&db, &capsule)
@@ -574,18 +508,12 @@ pub fn capsule_edition(
     let pip_list = "/tmp/pipList.txt";
     let mut file = File::create(pip_list)?;
 
-    for (idx, gos) in capsule
-        .structure
-        .as_array()
-        .unwrap()
-        .into_iter()
-        .enumerate()
-    {
-        let record_path = gos.as_object().unwrap()["record_path"].as_str().unwrap();
+    let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+
+    for (idx, gos) in structure.into_iter().enumerate() {
+        let record_path = gos.record_path.unwrap();
         // TODO : only fist slide . Assumption one slide per gos ( ie one slide per record)
-        let slide_id = gos.as_object().unwrap()["slides"].as_array().unwrap()[0]
-            .as_i64()
-            .unwrap() as i32;
+        let slide_id = gos.slides[0];
         let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
         println!(
             "Piping gos {}\n record_path = {:#?}\n slide_path = {:#?}",
