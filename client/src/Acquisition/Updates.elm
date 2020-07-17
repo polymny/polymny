@@ -140,19 +140,16 @@ update session msg model =
                         ( Ok v, Acquisition.All, True ) ->
                             let
                                 editionModel =
-                                    { status = Status.Sent
-                                    , details = v
-                                    , withVideo = Maybe.withDefault True session.withVideo
-                                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
-                                    }
+                                    Edition.selectEditionOptions session v.capsule (Edition.init v)
                             in
-                            ( { session = session, tab = LoggedIn.Edition editionModel }
+                            ( { session = session
+                              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
+                              }
                             , Api.editionAuto resultToMsg
-                                model.details.capsule.id
-                                { withVideo = Maybe.withDefault True session.withVideo
-                                , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                                , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
+                                editionModel.details.capsule.id
+                                { withVideo = editionModel.withVideo
+                                , webcamSize = editionModel.webcamSize
+                                , webcamPosition = editionModel.webcamPosition
                                 }
                             )
 
