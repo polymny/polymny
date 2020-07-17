@@ -449,35 +449,79 @@ pub fn upload_record(
     capsule_id: i32,
     gos: usize,
     data: Data,
+    content_type: &ContentType,
 ) -> Result<JsonValue> {
-    let capsule = user.get_capsule_by_id(capsule_id, &db)?;
-
+    let mut options = MultipartFormDataOptions::new();
+    options.allowed_fields.push(
+        MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
+    );
+    options
+        .allowed_fields
+        .push(MultipartFormDataField::text("structure"));
+    let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
+    //TODO: handle errors from multipart form dat ?
+    // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
+    let file = multipart_form_data.files.get("file");
+    let asset = if let Some(file) = file {
+        match file {
+            FileField::Single(file) => {
+                let file_name = &file.file_name;
+                let path = &file.path;
+                if let Some(file_name) = file_name {
+                    let mut server_path = PathBuf::from(&user.username);
+                    let uuid = Uuid::new_v4();
+                    server_path.push(format!("{}_{}", uuid, file_name));
+                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
+                    let mut output_path = config.data_path.clone();
+                    output_path.push(server_path);
+                    println!("output_path {:#?}", output_path);
+                    create_dir(output_path.parent().unwrap()).ok();
+                    fs::copy(path, &output_path)?;
+                    asset
+                } else {
+                    todo!();
+                }
+            }
+            FileField::Multiple(_files) => {
+                // TODO: handle mutlile files
+                todo!()
+            }
+        }
+    } else {
+        todo!();
+    };
     let file_name = &format!("capsule.mp4");
-
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
-    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
-    AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
-
     let mut output_path = config.data_path.clone();
     output_path.push(server_path);
-
-    println!("output_path {:#?}", output_path);
-    create_dir(output_path.parent().unwrap()).ok();
-    // fs::copy(path, &output_path)?;
-    data.stream_to(&mut File::create(output_path)?)?;
-
+    let text = match multipart_form_data.texts.get("structure") {
+        Some(TextField::Single(field)) => &field.text,
+        _ => panic!(),
+    };
+    let structure: Vec<GosStructure> = serde_json::from_str(text).unwrap();
+    // Verifiy that the goss doesn't violate authorizations.
+    // All slides must belong to the user.
+    for gos in &structure {
+        for slide in &gos.slides {
+            user.get_slide_by_id(*slide, &db)?;
+        }
+    }
+    // let mut structure: Vec<GosStructure> =
+    //     serde_json::from_str(multipart_form_data.texts.get("structure").unwrap().text).unwrap();
+    let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     v[gos].record_path = Some(asset.asset_path.clone());
     v[gos].locked = true;
-
-    use crate::schema::capsules::dsl::{id as cid, structure};
-    diesel::update(capsules::table)
-        .filter(cid.eq(capsule_id))
-        .set(structure.eq(serde_json!(v)))
-        .execute(&db.0)?;
-
+    {
+        use crate::schema::capsules::dsl::{id as cid, structure};
+        diesel::update(capsules::table)
+            .filter(cid.eq(capsule_id))
+            .set(structure.eq(serde_json!(v)))
+            .execute(&db.0)?;
+    }
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     format_capsule_data(&db, &capsule)
 }
