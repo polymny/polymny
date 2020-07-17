@@ -68,7 +68,6 @@ headerView active details =
         [ Element.paragraph []
             [ Element.text <| "Capsule "
             , Element.text <| String.dropRight 38 details.capsule.name
-            , Element.text <| " ( id = " ++ String.fromInt details.capsule.id ++ ")"
             ]
         , Element.row [ Element.spacing 20 ]
             buttons

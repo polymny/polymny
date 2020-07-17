@@ -115,13 +115,13 @@ mainView model =
                 ]
     in
     Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
-        [ slidePos
-        , Element.row []
+        [ Element.row [ Element.spacing 10 ]
             [ recordingsView model
-            , topView
-                model
+            , topView model
             ]
-        , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.cameraReady model.recording, nextButton ]
+        , Element.row [ Element.centerX, Element.spacing 10 ]
+            [ recordingButton model.cameraReady model.recording (List.length model.records), nextButton ]
+        , slidePos
         ]
 
 
@@ -148,8 +148,8 @@ videoView =
     Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
 
-recordingButton : Bool -> Bool -> Element Core.Msg
-recordingButton cameraReady recording =
+recordingButton : Bool -> Bool -> Int -> Element Core.Msg
+recordingButton cameraReady recording nbRecords =
     let
         ( button, t, msg ) =
             if recording then
@@ -163,8 +163,15 @@ recordingButton cameraReady recording =
 
                         else
                             Nothing
+
+                    buttonText =
+                        if nbRecords > 0 then
+                            "Refaire un enregistrement"
+
+                        else
+                            "Démarrer l'enregistrement"
                 in
-                ( Ui.startRecordButton, "Démarrer l'enregistrement", m )
+                ( Ui.startRecordButton, buttonText, m )
     in
     button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) t
 
@@ -179,10 +186,10 @@ recordingsView model =
     let
         webcam =
             if model.recording then
-                Ui.primaryButtonDisabled "Webcam"
+                Ui.primaryButtonDisabled "Flux webcam"
 
             else
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Webcam"
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Flux webcam"
 
         msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
@@ -197,26 +204,37 @@ recordingsView model =
             case model.currentVideo of
                 Just v ->
                     if v == x.id then
-                        Ui.successButton (msg x) (text x)
+                        Ui.successButton (msg x) ("Lire l'" ++ text x)
 
                     else
-                        Ui.simpleButton (msg x) (text x)
+                        Ui.simpleButton (msg x) ("Lire l'" ++ text x)
 
                 _ ->
                     Ui.simpleButton (msg x) (text x)
     in
     Element.column
         [ Background.color Colors.whiteDark
+        , Element.alignTop
         , Element.spacing 5
         , Element.padding 10
+        , Element.width
+            (Element.fill
+                |> Element.maximum 300
+                |> Element.minimum 250
+            )
         , Border.color Colors.whiteDarker
         , Border.rounded 5
         , Border.width 1
         ]
         [ webcam
-        , Element.text
-            "Enregsitrements : "
-        , Element.column [ Element.paddingXY 10 20, Element.spacing 10 ]
+        , if List.length model.records > 0 then
+            Element.el [ Element.paddingXY 0 4, Element.centerX, Font.size 16 ] <|
+                Element.text
+                    " Enregistrements : "
+
+          else
+            Element.none
+        , Element.column [ Element.alignLeft, Element.paddingXY 2 10, Element.spacing 10 ]
             (List.reverse (List.map button model.records))
         , Element.el [ Font.size 16, Font.center ] <|
             uploadView model
@@ -258,10 +276,10 @@ uploadView { details, gos, currentVideo, recording, records } =
 text : Acquisition.Record -> String
 text record =
     if record.new then
-        "Enregistrement #" ++ String.fromInt record.id
+        "enregistrement #" ++ String.fromInt record.id
 
     else
-        "Ancien enregistrement"
+        "ancien enregistrement"
 
 
 url : Int -> Int -> String
