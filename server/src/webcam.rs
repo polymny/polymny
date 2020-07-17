@@ -71,7 +71,7 @@ pub fn webcam_position_to_str(webcam_position: WebcamPosition) -> String {
 }
 
 /// Return WebcamSize in pixels
-pub fn size_in_pixels(webcam_size: WebcamSize) -> String {
+pub fn size_in_pixels(webcam_size: &WebcamSize) -> String {
     match webcam_size {
         WebcamSize::Small => "200".to_string(),
         WebcamSize::Medium => "400".to_string(),
@@ -80,7 +80,7 @@ pub fn size_in_pixels(webcam_size: WebcamSize) -> String {
 }
 
 /// Return WebcamPosition in Pixesls (for overlay filter in ffmpeg)
-pub fn position_in_pixels(webcam_position: WebcamPosition) -> String {
+pub fn position_in_pixels(webcam_position: &WebcamPosition) -> String {
     match webcam_position {
         WebcamPosition::TopLeft => "4:4".to_string(),
         WebcamPosition::TopRight => "W-w-4:4".to_string(),

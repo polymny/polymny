@@ -42,6 +42,7 @@ table! {
         video_id -> Nullable<Int4>,
         structure -> Json,
         published -> Published_type,
+        edition_options -> Nullable<Json>,
     }
 }
 

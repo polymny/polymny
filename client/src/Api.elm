@@ -119,62 +119,11 @@ decodePublished =
     Decode.map decodePublishedAux Decode.string
 
 
-type alias Capsule =
-    { id : Int
-    , name : String
-    , title : String
-    , description : String
-    , published : PublishedType
-    }
-
-
-decodeCapsule : Decoder Capsule
-decodeCapsule =
-    Decode.map5 Capsule
-        (Decode.field "id" Decode.int)
-        (Decode.field "name" Decode.string)
-        (Decode.field "title" Decode.string)
-        (Decode.field "description" Decode.string)
-        (Decode.field "published" decodePublished)
-
-
-decodeCapsules : Decoder (List Capsule)
-decodeCapsules =
-    Decode.list decodeCapsule
-
-
-withCapsules : List Capsule -> Int -> String -> Int -> Project
-withCapsules capsules id name lastVisited =
-    Project id name lastVisited capsules
-
-
-decodeProject : List Capsule -> Decoder Project
-decodeProject capsules =
-    Decode.map3 (withCapsules capsules)
-        (Decode.field "id" Decode.int)
-        (Decode.field "project_name" Decode.string)
-        (Decode.field "last_visited" Decode.int)
-
-
-type alias Session =
-    { username : String
-    , projects : List Project
-    , active_project : Maybe Project
-    , withVideo : Maybe Bool
+type alias CapsuleEditionOptions =
+    { withVideo : Bool
     , webcamSize : Maybe Webcam.WebcamSize
     , webcamPosition : Maybe Webcam.WebcamPosition
     }
-
-
-decodeSession : Decoder Session
-decodeSession =
-    Decode.map6 Session
-        (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
-        (Decode.field "with_video" (Decode.maybe Decode.bool))
-        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
-        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
 
 
 decodeWebcamSize : Decoder Webcam.WebcamSize
@@ -218,6 +167,74 @@ decodeWebcamPosition =
                     Webcam.BottomLeft
         )
         Decode.string
+
+
+decodeCapsuleEditionOptions : Decoder CapsuleEditionOptions
+decodeCapsuleEditionOptions =
+    Decode.map3 CapsuleEditionOptions
+        (Decode.field "with_video" Decode.bool)
+        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+
+
+type alias Capsule =
+    { id : Int
+    , name : String
+    , title : String
+    , description : String
+    , published : PublishedType
+    , capsuleEditionOptions : Maybe CapsuleEditionOptions
+    }
+
+
+decodeCapsule : Decoder Capsule
+decodeCapsule =
+    Decode.map6 Capsule
+        (Decode.field "id" Decode.int)
+        (Decode.field "name" Decode.string)
+        (Decode.field "title" Decode.string)
+        (Decode.field "description" Decode.string)
+        (Decode.field "published" decodePublished)
+        (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
+
+
+decodeCapsules : Decoder (List Capsule)
+decodeCapsules =
+    Decode.list decodeCapsule
+
+
+withCapsules : List Capsule -> Int -> String -> Int -> Project
+withCapsules capsules id name lastVisited =
+    Project id name lastVisited capsules
+
+
+decodeProject : List Capsule -> Decoder Project
+decodeProject capsules =
+    Decode.map3 (withCapsules capsules)
+        (Decode.field "id" Decode.int)
+        (Decode.field "project_name" Decode.string)
+        (Decode.field "last_visited" Decode.int)
+
+
+type alias Session =
+    { username : String
+    , projects : List Project
+    , active_project : Maybe Project
+    , withVideo : Maybe Bool
+    , webcamSize : Maybe Webcam.WebcamSize
+    , webcamPosition : Maybe Webcam.WebcamPosition
+    }
+
+
+decodeSession : Decoder Session
+decodeSession =
+    Decode.map6 Session
+        (Decode.field "username" Decode.string)
+        (Decode.field "projects" (Decode.list (decodeProject [])))
+        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
+        (Decode.field "with_video" (Decode.maybe Decode.bool))
+        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
 
 
 type alias Asset =

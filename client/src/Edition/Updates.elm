@@ -6,7 +6,6 @@ import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
 import Status
 import Utils
-import Webcam
 
 
 update : Api.Session -> Edition.Msg -> Edition.Model -> ( LoggedIn.Model, Cmd Core.Msg )

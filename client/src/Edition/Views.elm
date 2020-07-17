@@ -60,7 +60,7 @@ mainView global model =
                             htmlVideo x.asset_path
 
                 Nothing ->
-                    Element.none
+                    Element.el [] <| Element.text "Pas de vdiéo éditée pour l'instant"
 
         url_video : Api.Asset -> String
         url_video asset =
@@ -115,8 +115,8 @@ mainView global model =
                 Status.Error () ->
                     ( Element.text "Problème rencontré lors de la compostion de la vidéo. Merci de nous contacter", Element.none )
 
-                _ ->
-                    ( Element.text "Evenement non prevus", Element.none )
+                Status.NotSent ->
+                    ( video, button )
     in
     Element.row [ Element.centerX, Element.spacing 20, Element.padding 10 ]
         [ editionOptionView model
@@ -148,7 +148,7 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                     Ui.primaryButtonDisabled "en cours ...."
 
                 _ ->
-                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Valider les Options"
+                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Valider les options et \ngénerer la vidéo de la capsule"
 
         videoFields =
             [ Input.radio

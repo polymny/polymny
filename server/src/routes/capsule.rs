@@ -30,8 +30,8 @@ use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
 use crate::webcam::{
-    position_in_pixels, size_in_pixels, str_to_webcam_position, str_to_webcam_size, WebcamPosition,
-    WebcamSize,
+    position_in_pixels, size_in_pixels, str_to_webcam_position, str_to_webcam_size, EditionOptions,
+    WebcamPosition, WebcamSize,
 };
 use crate::{Database, Error, Result};
 
@@ -537,7 +537,7 @@ pub fn capsule_edition(
                 _ => WebcamSize::Medium,
             }
         };
-        let webcam_postion = {
+        let webcam_position = {
             match &post_data.webcam_position {
                 Some(x) => str_to_webcam_position(x),
                 _ => WebcamPosition::BottomLeft,
@@ -546,9 +546,21 @@ pub fn capsule_edition(
 
         let filter_complex = format!(
             "[1]scale={}:-1 [pip]; [0][pip] overlay={}",
-            size_in_pixels(webcam_size),
-            position_in_pixels(webcam_postion)
+            size_in_pixels(&webcam_size),
+            position_in_pixels(&webcam_position)
         );
+
+        let capsule_edition_options = EditionOptions {
+            with_video: post_data.with_video.unwrap_or(true),
+            webcam_size: webcam_size,
+            webcam_position: webcam_position,
+        };
+        println!("capsule_edition_options= {:#?}", capsule_edition_options);
+        use crate::schema::capsules::dsl;
+        diesel::update(capsules::table)
+            .filter(dsl::id.eq(capsule.id))
+            .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
+            .execute(&db.0)?;
 
         if post_data.with_video.unwrap_or(true) {
             command.extend(

@@ -19,7 +19,6 @@ import Settings.Types as Settings
 import Settings.Updates as Settings
 import Status
 import Utils
-import Webcam
 
 
 update : LoggedIn.Msg -> Core.Global -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -61,12 +60,7 @@ update msg global { session, tab } =
         ( LoggedIn.EditionClicked capsule False, _ ) ->
             let
                 editionModel =
-                    { status = Status.Success ()
-                    , details = capsule
-                    , withVideo = Maybe.withDefault True session.withVideo
-                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
-                    }
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
             in
             ( { session = session
               , tab = LoggedIn.Edition editionModel
@@ -74,24 +68,19 @@ update msg global { session, tab } =
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
-        ( LoggedIn.EditionClicked details True, _ ) ->
+        ( LoggedIn.EditionClicked capsule True, _ ) ->
             let
                 editionModel =
-                    { status = Status.Sent
-                    , details = details
-                    , withVideo = Maybe.withDefault True session.withVideo
-                    , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                    , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
-                    }
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
             in
             ( { session = session
-              , tab = LoggedIn.Edition editionModel
+              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
               }
             , Api.editionAuto resultToMsg3
-                details.capsule.id
-                { withVideo = Maybe.withDefault True session.withVideo
-                , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
+                capsule.capsule.id
+                { withVideo = editionModel.withVideo
+                , webcamSize = editionModel.webcamSize
+                , webcamPosition = editionModel.webcamPosition
                 }
             )
 

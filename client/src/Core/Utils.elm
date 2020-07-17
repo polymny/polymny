@@ -176,12 +176,7 @@ modelFromFlags flags =
                 ( Ok session, Ok capsule ) ->
                     let
                         editionModel =
-                            { status = Status.Success ()
-                            , details = capsule
-                            , withVideo = Maybe.withDefault True session.withVideo
-                            , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                            , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
-                            }
+                            Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
                     in
                     ( Core.LoggedIn
                         { session = session

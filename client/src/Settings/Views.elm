@@ -33,7 +33,9 @@ mainView global session model =
         [ Element.padding 10
         , Element.spacing 20
         ]
-        [ Element.el [] <| Element.text <| "Coucou Settings " ++ session.username
+        [ Element.el [ Font.size 30 ] <|
+            Element.text <|
+                "Réglage de paramètres géneraux"
         , webcamOptionsView session model
         ]
 
@@ -87,7 +89,7 @@ webcamOptionsView session { status } =
                 ]
                 { onChange = Settings.WebcamSizeChanged
                 , selected = Just webcamSize
-                , label = Input.labelAbove [] (Element.text "taille de l'incrustation webcam")
+                , label = Input.labelAbove [] (Element.text "Taille de l'incrustation de la webcam")
                 , options =
                     [ Input.option Webcam.Small (Element.text "Petit")
                     , Input.option Webcam.Medium (Element.text "Moyen")
@@ -133,7 +135,7 @@ webcamOptionsView session { status } =
                 [ commmonFields, submitButton ]
 
         header =
-            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
+            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options globale d'édition de la vidéo. Si besoin, elle peuvent être modifié pour une capsule lors de l'édition." ]
 
         form =
             case message of
