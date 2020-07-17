@@ -35,6 +35,7 @@ module Api exposing
     , signUp
     , testDatabase
     , testMailer
+    , updateOptions
     , updateSlide
     , updateSlideStructure
     )
@@ -44,6 +45,7 @@ import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Webcam
 
 
 
@@ -117,23 +119,83 @@ decodePublished =
     Decode.map decodePublishedAux Decode.string
 
 
+type alias CapsuleEditionOptions =
+    { withVideo : Bool
+    , webcamSize : Maybe Webcam.WebcamSize
+    , webcamPosition : Maybe Webcam.WebcamPosition
+    }
+
+
+decodeWebcamSize : Decoder Webcam.WebcamSize
+decodeWebcamSize =
+    Decode.map
+        (\x ->
+            case x of
+                "Small" ->
+                    Webcam.Small
+
+                "Medium" ->
+                    Webcam.Medium
+
+                "Large" ->
+                    Webcam.Large
+
+                _ ->
+                    Webcam.Medium
+        )
+        Decode.string
+
+
+decodeWebcamPosition : Decoder Webcam.WebcamPosition
+decodeWebcamPosition =
+    Decode.map
+        (\x ->
+            case x of
+                "TopLeft" ->
+                    Webcam.TopLeft
+
+                "TopRight" ->
+                    Webcam.TopRight
+
+                "BottomLeft" ->
+                    Webcam.BottomLeft
+
+                "BottomRight" ->
+                    Webcam.BottomRight
+
+                _ ->
+                    Webcam.BottomLeft
+        )
+        Decode.string
+
+
+decodeCapsuleEditionOptions : Decoder CapsuleEditionOptions
+decodeCapsuleEditionOptions =
+    Decode.map3 CapsuleEditionOptions
+        (Decode.field "with_video" Decode.bool)
+        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+
+
 type alias Capsule =
     { id : Int
     , name : String
     , title : String
     , description : String
     , published : PublishedType
+    , capsuleEditionOptions : Maybe CapsuleEditionOptions
     }
 
 
 decodeCapsule : Decoder Capsule
 decodeCapsule =
-    Decode.map5 Capsule
+    Decode.map6 Capsule
         (Decode.field "id" Decode.int)
         (Decode.field "name" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "description" Decode.string)
         (Decode.field "published" decodePublished)
+        (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
 
 
 decodeCapsules : Decoder (List Capsule)
@@ -158,15 +220,21 @@ type alias Session =
     { username : String
     , projects : List Project
     , active_project : Maybe Project
+    , withVideo : Maybe Bool
+    , webcamSize : Maybe Webcam.WebcamSize
+    , webcamPosition : Maybe Webcam.WebcamPosition
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map3 Session
+    Decode.map6 Session
         (Decode.field "username" Decode.string)
         (Decode.field "projects" (Decode.list (decodeProject [])))
         (Decode.field "active_project" (Decode.maybe (decodeProject [])))
+        (Decode.field "with_video" (Decode.maybe Decode.bool))
+        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
 
 
 type alias Asset =
@@ -546,12 +614,58 @@ capsuleUploadLogo resultToMsg id content =
         }
 
 
-editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> Cmd msg
-editionAuto resultToMsg id =
+encodeWebcamSize : Webcam.WebcamSize -> String
+encodeWebcamSize webcamSize =
+    case webcamSize of
+        Webcam.Small ->
+            "Small"
+
+        Webcam.Medium ->
+            "Medium"
+
+        Webcam.Large ->
+            "Large"
+
+
+encodeWebcamPosition : Webcam.WebcamPosition -> String
+encodeWebcamPosition webcamPosition =
+    case webcamPosition of
+        Webcam.TopLeft ->
+            "TopLeft"
+
+        Webcam.TopRight ->
+            "TopRight"
+
+        Webcam.BottomLeft ->
+            "BottomLeft"
+
+        Webcam.BottomRight ->
+            "BottomRight"
+
+
+type alias EditionAutoContent a =
+    { a
+        | withVideo : Bool
+        , webcamSize : Webcam.WebcamSize
+        , webcamPosition : Webcam.WebcamPosition
+    }
+
+
+encodeEditionAutoContent : EditionAutoContent a -> Encode.Value
+encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
+    Encode.object
+        [ ( "with_video", Encode.bool withVideo )
+        , ( "webcam_size", Encode.string <| encodeWebcamSize webcamSize )
+        , ( "webcam_position", Encode.string <| encodeWebcamPosition webcamPosition )
+        ]
+
+
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> Cmd msg
+editionAuto resultToMsg id content =
     post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
-        , body = Http.emptyBody
+        , body = Http.jsonBody (encodeEditionAutoContent content)
         }
 
 
@@ -613,6 +727,36 @@ updateSlideStructure resultToMsg content =
         , url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/gos_order"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.jsonBody (encodeSlideStructure content)
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+type alias OptionsContent a =
+    { a
+        | withVideo : Bool
+        , webcamSize : Webcam.WebcamSize
+        , webcamPosition : Webcam.WebcamPosition
+    }
+
+
+encodeOptionsContent : OptionsContent a -> Encode.Value
+encodeOptionsContent { withVideo, webcamSize, webcamPosition } =
+    Encode.object
+        [ ( "with_video", Encode.bool withVideo )
+        , ( "webcam_size", Encode.string <| encodeWebcamSize webcamSize )
+        , ( "webcam_position", Encode.string <| encodeWebcamPosition webcamPosition )
+        ]
+
+
+updateOptions : (Result Http.Error Session -> msg) -> OptionsContent a -> Cmd msg
+updateOptions resultToMsg content =
+    Http.request
+        { method = "PUT"
+        , headers = []
+        , url = "/api/options"
+        , expect = Http.expectJson resultToMsg decodeSession
+        , body = Http.jsonBody (encodeOptionsContent content)
         , timeout = Nothing
         , tracker = Nothing
         }

@@ -17,6 +17,7 @@ import File exposing (File)
 import NewCapsule.Types as NewCapsule
 import NewProject.Types as NewProject
 import Preparation.Types as Preparation
+import Settings.Types as Settings
 import Status exposing (Status)
 
 
@@ -39,6 +40,7 @@ type Tab
     | Edition Edition.Model
     | NewProject NewProject.Model
     | Project Api.Project (Maybe NewCapsule.Model)
+    | Settings Settings.Model
 
 
 type Msg
@@ -59,6 +61,8 @@ type Msg
     | PreparationClicked Api.CapsuleDetails
     | AcquisitionClicked Api.CapsuleDetails
     | EditionClicked Api.CapsuleDetails Bool
+    | SettingsClicked
+    | SettingsMsg Settings.Msg
 
 
 type UploadSlideShowMsg

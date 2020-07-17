@@ -42,6 +42,7 @@ table! {
         video_id -> Nullable<Int4>,
         structure -> Json,
         published -> Published_type,
+        edition_options -> Nullable<Json>,
     }
 }
 
@@ -54,6 +55,19 @@ table! {
         id -> Int4,
         capsule_id -> Int4,
         project_id -> Int4,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use crate::db::asset::*;
+    use crate::db::capsule::*;
+
+    goss (id) {
+        id -> Int4,
+        is_locked -> Bool,
+        position_in_capsule -> Int4,
+        capsule_id -> Int4,
     }
 }
 
@@ -109,6 +123,7 @@ table! {
         activated -> Bool,
         activation_key -> Nullable<Varchar>,
         reset_password_key -> Nullable<Varchar>,
+        edition_options -> Nullable<Json>,
     }
 }
 
@@ -125,6 +140,7 @@ allow_tables_to_appear_in_same_query!(
     assets_objects,
     capsules,
     capsules_projects,
+    goss,
     projects,
     sessions,
     slides,

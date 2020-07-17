@@ -22,9 +22,11 @@ import Login.Types as Login
 import Preparation.Types as Preparation
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
+import Status exposing (Status)
 import Task
 import Time
 import Url
+import Webcam
 
 
 home : Core.Model
@@ -149,7 +151,11 @@ modelFromFlags flags =
                     ( home, Cmd.none )
 
         Ok "acquisition/capsule" ->
-            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
+            case
+                ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
+                , Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags
+                )
+            of
                 ( Ok session, Ok capsule ) ->
                     let
                         ( model, cmd ) =
@@ -168,9 +174,13 @@ modelFromFlags flags =
         Ok "edition/capsule" ->
             case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
                 ( Ok session, Ok capsule ) ->
+                    let
+                        editionModel =
+                            Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+                    in
                     ( Core.LoggedIn
                         { session = session
-                        , tab = LoggedIn.Edition (Edition.init capsule)
+                        , tab = LoggedIn.Edition editionModel
                         }
                     , Cmd.none
                     )
@@ -187,6 +197,16 @@ modelFromFlags flags =
             of
                 ( Ok session, Ok project, Ok capsules ) ->
                     ( Core.LoggedIn { session = session, tab = LoggedIn.Project { project | capsules = capsules } Nothing }, Cmd.none )
+
+                _ ->
+                    ( home, Cmd.none )
+
+        Ok "settings" ->
+            case
+                Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
+            of
+                Ok session ->
+                    ( Core.LoggedIn { session = session, tab = LoggedIn.Settings { status = Status.NotSent } }, Cmd.none )
 
                 _ ->
                     ( home, Cmd.none )

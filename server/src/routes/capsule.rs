@@ -29,6 +29,10 @@ use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
+use crate::webcam::{
+    position_in_pixels, size_in_pixels, str_to_webcam_position, str_to_webcam_size, EditionOptions,
+    WebcamPosition, WebcamSize,
+};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -454,13 +458,10 @@ pub fn upload_record(
     options
         .allowed_fields
         .push(MultipartFormDataField::text("structure"));
-
     let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
     //TODO: handle errors from multipart form dat ?
     // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
-
     let file = multipart_form_data.files.get("file");
-
     let asset = if let Some(file) = file {
         match file {
             FileField::Single(file) => {
@@ -472,10 +473,8 @@ pub fn upload_record(
                     server_path.push(format!("{}_{}", uuid, file_name));
                     let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
                     AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
-
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
-
                     println!("output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
@@ -492,23 +491,17 @@ pub fn upload_record(
     } else {
         todo!();
     };
-
     let file_name = &format!("capsule.mp4");
-
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
     server_path.push(format!("{}_{}", uuid, file_name));
-
     let mut output_path = config.data_path.clone();
     output_path.push(server_path);
-
     let text = match multipart_form_data.texts.get("structure") {
         Some(TextField::Single(field)) => &field.text,
         _ => panic!(),
     };
-
     let structure: Vec<GosStructure> = serde_json::from_str(text).unwrap();
-
     // Verifiy that the goss doesn't violate authorizations.
     // All slides must belong to the user.
     for gos in &structure {
@@ -516,58 +509,55 @@ pub fn upload_record(
             user.get_slide_by_id(*slide, &db)?;
         }
     }
-
     // let mut structure: Vec<GosStructure> =
     //     serde_json::from_str(multipart_form_data.texts.get("structure").unwrap().text).unwrap();
-
-    let mut structure: JsonValue = serde_json::from_str(text).unwrap();
-
-    *structure.as_array_mut().unwrap()[gos]
-        .get_mut("record_path")
-        .unwrap() = serde_json!(asset.asset_path);
-
-    *structure.as_array_mut().unwrap()[gos]
-        .get_mut("locked")
-        .unwrap() = serde_json!(true);
-
-    let new_structure = &structure;
-
+    let capsule = user.get_capsule_by_id(capsule_id, &db)?;
+    let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+    v[gos].record_path = Some(asset.asset_path.clone());
+    v[gos].locked = true;
     {
         use crate::schema::capsules::dsl::{id as cid, structure};
         diesel::update(capsules::table)
             .filter(cid.eq(capsule_id))
-            .set(structure.eq(serde_json!(new_structure)))
+            .set(structure.eq(serde_json!(v)))
             .execute(&db.0)?;
     }
-
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     format_capsule_data(&db, &capsule)
 }
 
+/// Post inout data for edition
+#[derive(Deserialize, Debug)]
+pub struct PostEdition {
+    /// Video and audio or audio only
+    pub with_video: Option<bool>,
+
+    /// Webcam size
+    pub webcam_size: Option<String>,
+
+    /// Webcam  Position
+    pub webcam_position: Option<String>,
+}
+
 /// order capsule gos and slide
-#[post("/capsule/<id>/edition")]
+#[post("/capsule/<id>/edition", data = "<post_data>")]
 pub fn capsule_edition(
     config: State<Config>,
     db: Database,
     user: User,
     id: i32,
+    post_data: Json<PostEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     let pip_list = "/tmp/pipList.txt";
     let mut file = File::create(pip_list)?;
 
-    for (idx, gos) in capsule
-        .structure
-        .as_array()
-        .unwrap()
-        .into_iter()
-        .enumerate()
-    {
-        let record_path = gos.as_object().unwrap()["record_path"].as_str().unwrap();
+    let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+
+    for (idx, gos) in structure.into_iter().enumerate() {
+        let record_path = gos.record_path.unwrap();
         // TODO : only fist slide . Assumption one slide per gos ( ie one slide per record)
-        let slide_id = gos.as_object().unwrap()["slides"].as_array().unwrap()[0]
-            .as_i64()
-            .unwrap() as i32;
+        let slide_id = gos.slides[0];
         let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
         println!(
             "Piping gos {}\n record_path = {:#?}\n slide_path = {:#?}",
@@ -583,33 +573,101 @@ pub fn capsule_edition(
 
         let slide = slide_path.to_str().unwrap();
         let record = record.to_str().unwrap();
-        let command = vec![
-            "ffmpeg",
-            "-hide_banner",
-            "-y",
-            "-i",
-            &slide,
-            "-i",
-            &record,
-            "-filter_complex",
-            "[1]scale=300:-1 [pip]; [0][pip] overlay=4:main_h-overlay_h-4",
-            "-profile:v",
-            "main",
-            "-level",
-            "3.1",
-            "-b:v",
-            "440k",
-            "-ar",
-            "44100",
-            "-ab",
-            "128k",
-            "-vcodec",
-            "h264",
-            "-acodec",
-            "mp3",
-            &pip_out,
-        ];
+        let mut command = Vec::new();
 
+        let webcam_size = {
+            match &post_data.webcam_size {
+                Some(x) => str_to_webcam_size(x),
+                _ => WebcamSize::Medium,
+            }
+        };
+        let webcam_position = {
+            match &post_data.webcam_position {
+                Some(x) => str_to_webcam_position(x),
+                _ => WebcamPosition::BottomLeft,
+            }
+        };
+
+        let filter_complex = format!(
+            "[1]scale={}:-1 [pip]; [0][pip] overlay={}",
+            size_in_pixels(&webcam_size),
+            position_in_pixels(&webcam_position)
+        );
+
+        let capsule_edition_options = EditionOptions {
+            with_video: post_data.with_video.unwrap_or(true),
+            webcam_size: webcam_size,
+            webcam_position: webcam_position,
+        };
+        println!("capsule_edition_options= {:#?}", capsule_edition_options);
+        use crate::schema::capsules::dsl;
+        diesel::update(capsules::table)
+            .filter(dsl::id.eq(capsule.id))
+            .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
+            .execute(&db.0)?;
+
+        if post_data.with_video.unwrap_or(true) {
+            command.extend(
+                vec![
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-y",
+                    "-i",
+                    &slide,
+                    "-i",
+                    &record,
+                    "-filter_complex",
+                    &filter_complex,
+                ]
+                .into_iter(),
+            );
+        } else {
+            command.extend(
+                vec![
+                    "ffmpeg",
+                    "-hide_banner",
+                    "-y",
+                    "-loop",
+                    "1",
+                    "-i",
+                    &slide,
+                    "-i",
+                    &record,
+                    "-map",
+                    "0:v:0",
+                    "-map",
+                    "1:a:0",
+                    "-shortest",
+                ]
+                .into_iter(),
+            );
+        }
+        command.extend(
+            vec![
+                "-profile:v",
+                "main",
+                "-pix_fmt",
+                "yuv420p",
+                "-level",
+                "3.1",
+                "-b:v",
+                "440k",
+                "-ar",
+                "44100",
+                "-ab",
+                "128k",
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "fast",
+                "-tune",
+                "zerolatency",
+                "-acodec",
+                "aac",
+                &pip_out,
+            ]
+            .into_iter(),
+        );
         let child = run_command(&command)?;
 
         if !child.status.success() {
@@ -619,11 +677,17 @@ pub fn capsule_edition(
         file.write(format!("file '{}'\n", pip_out).as_bytes())?;
     }
     // concat all generated pip videos
-    let file_name = &format!("record.mp4");
+    let file_name = || {
+        if post_data.with_video.unwrap_or(true) {
+            format!("capsule_audio_and_video.mp4")
+        } else {
+            format!("capsule_audio_only.mp4")
+        }
+    };
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
-    server_path.push(format!("{}_{}", uuid, file_name));
+    server_path.push(format!("{}_{}", uuid, &file_name()));
 
     let mut output = config.data_path.clone();
     output.push(&server_path);
@@ -650,7 +714,7 @@ pub fn capsule_edition(
 
     println!("status: {}", child.status);
     if child.status.success() {
-        let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+        let asset = Asset::new(&db, uuid, &file_name(), server_path.to_str().unwrap())?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
         // Add video_id to capsule

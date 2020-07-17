@@ -12,6 +12,7 @@ import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Status
 import Utils
+import Webcam
 
 
 update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -137,8 +138,19 @@ update session msg model =
                             )
 
                         ( Ok v, Acquisition.All, True ) ->
-                            ( { session = session, tab = LoggedIn.Edition { status = Status.Sent, details = v } }
-                            , Api.editionAuto resultToMsg model.details.capsule.id
+                            let
+                                editionModel =
+                                    Edition.selectEditionOptions session v.capsule (Edition.init v)
+                            in
+                            ( { session = session
+                              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
+                              }
+                            , Api.editionAuto resultToMsg
+                                editionModel.details.capsule.id
+                                { withVideo = editionModel.withVideo
+                                , webcamSize = editionModel.webcamSize
+                                , webcamPosition = editionModel.webcamPosition
+                                }
                             )
 
                         ( Ok v, Acquisition.All, False ) ->

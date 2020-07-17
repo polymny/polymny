@@ -15,6 +15,8 @@ import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Settings.Types as Settings
+import Settings.Updates as Settings
 import Status
 import Utils
 
@@ -56,17 +58,30 @@ update msg global { session, tab } =
             Edition.update session editionMsg model
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
+            let
+                editionModel =
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+              , tab = LoggedIn.Edition editionModel
               }
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
-        ( LoggedIn.EditionClicked details True, _ ) ->
+        ( LoggedIn.EditionClicked capsule True, _ ) ->
+            let
+                editionModel =
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Sent, details = details }
+              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
               }
-            , Api.editionAuto resultToMsg3 details.capsule.id
+            , Api.editionAuto resultToMsg3
+                capsule.capsule.id
+                { withVideo = editionModel.withVideo
+                , webcamSize = editionModel.webcamSize
+                , webcamPosition = editionModel.webcamPosition
+                }
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->
@@ -146,6 +161,24 @@ update msg global { session, tab } =
               , tab = tab
               }
             , Api.capsuleFromId resultToMsg2 capsule.id
+            )
+
+        ( LoggedIn.SettingsClicked, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Settings Settings.init
+              }
+            , Nav.pushUrl
+                global.key
+                "/settings"
+            )
+
+        ( LoggedIn.SettingsMsg newSettingsMsg, LoggedIn.Settings settingsModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    Settings.update session newSettingsMsg settingsModel
+            in
+            ( { session = newSession, tab = LoggedIn.Settings newModel }
+            , cmd
             )
 
         _ ->

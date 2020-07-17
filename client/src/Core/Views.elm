@@ -192,7 +192,9 @@ topBar model =
                     [ homeButton ]
                 , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
-                        [ Element.el [] (Element.text session.username), logoutButton ]
+                        [ settingsButton session.username
+                        , logoutButton
+                        ]
 
                      else
                         []
@@ -285,6 +287,11 @@ homeButton =
 logoutButton : Element Core.Msg
 logoutButton =
     Ui.topBarButton (Just Core.LogoutClicked) "Log out"
+
+
+settingsButton : String -> Element Core.Msg
+settingsButton content =
+    Ui.topBarButton (Just <| Core.LoggedInMsg <| LoggedIn.SettingsClicked) content
 
 
 viewLogo : Int -> String -> Element Core.Msg
