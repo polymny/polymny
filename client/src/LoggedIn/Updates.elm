@@ -27,7 +27,7 @@ update msg global { session, tab } =
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
                 ( newModel, cmd ) =
-                    Preparation.update preparationMsg model
+                    Preparation.update preparationMsg global model
             in
             ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 

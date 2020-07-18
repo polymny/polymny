@@ -524,6 +524,23 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
 
                 _ ->
                     Element.none
+
+        extra =
+            case slide.extra of
+                Just asset ->
+                    Element.column []
+                        [ Element.el [] <| Element.text asset.asset_path
+                        , Element.el [] <| Element.text "Supprimer la reosurce"
+                        ]
+
+                Nothing ->
+                    Element.column [ Font.size 14, Element.spacing 4 ]
+                        [ Element.column [ Element.padding 4 ]
+                            [ Element.el [ Element.spacingXY 2 4 ] <|
+                                uploadView uploadForm <|
+                                    Preparation.ExtraResource slide.id
+                            ]
+                        ]
     in
     Element.column
         (Element.alignTop
@@ -536,13 +553,7 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
         )
         [ viewSlideImage slide.asset.asset_path
         , message
-        , Element.column [ Font.size 14, Element.spacing 4 ]
-            [ Element.column [ Element.padding 4 ]
-                [ Element.el [ Element.spacingXY 2 4 ] <|
-                    uploadView uploadForm <|
-                        Preparation.ExtraResource slide.id
-                ]
-            ]
+        , extra
         ]
 
 

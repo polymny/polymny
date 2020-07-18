@@ -1,6 +1,7 @@
 module Preparation.Updates exposing (update)
 
 import Api
+import Browser.Navigation as Nav
 import Core.Types as Core
 import Dict
 import File.Select as Select
@@ -10,8 +11,8 @@ import Status
 import Utils
 
 
-update : Preparation.Msg -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
-update msg capsuleModel =
+update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
+update msg global capsuleModel =
     case ( msg, capsuleModel ) of
         ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
@@ -55,7 +56,7 @@ update msg capsuleModel =
         ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
             let
                 ( newFormModel, newCmd ) =
-                    updateUploadExtraResource newUploadExtraResourceMsg model.uploadForms.extraResource
+                    updateUploadExtraResource newUploadExtraResourceMsg global model.uploadForms.extraResource
 
                 oldUploadForms =
                     model.uploadForms
@@ -233,8 +234,8 @@ updateUploadLogo msg model capsuleId =
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
-updateUploadExtraResource : Preparation.UploadExtraResourceMsg -> Preparation.UploadForm -> ( Preparation.UploadForm, Cmd Core.Msg )
-updateUploadExtraResource msg model =
+updateUploadExtraResource : Preparation.UploadExtraResourceMsg -> Core.Global -> Preparation.UploadForm -> ( Preparation.UploadForm, Cmd Core.Msg )
+updateUploadExtraResource msg global model =
     case ( msg, model ) of
         ( Preparation.UploadExtraResourceSelectFileRequested, _ ) ->
             ( model
@@ -263,8 +264,10 @@ updateUploadExtraResource msg model =
 
         ( Preparation.UploadExtraResourceSuccess slide, _ ) ->
             -- TODO Maybe here update slide in Preparation.model.details ???
+            -- TODO: the page reload is an ugly waay to update view.
+            -- Search a way to update only slide in preparation View (ie without page reload)
             ( { model | status = Status.Success () }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt slide.capsule_id ++ "/preparation")
             )
 
 
