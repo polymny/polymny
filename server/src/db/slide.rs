@@ -24,6 +24,9 @@ pub struct Slide {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra resource
+    pub extra_id: Option<i32>,
 }
 
 /// A slide that isn't stored into the database yet.
@@ -38,6 +41,9 @@ pub struct NewSlide {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra resource
+    pub extra_id: Option<i32>,
 }
 
 impl Slide {
@@ -47,6 +53,7 @@ impl Slide {
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
+            extra_id: None,
         }
         .save(&db)?)
     }
@@ -57,6 +64,7 @@ impl Slide {
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
+            extra_id: None,
         })
     }
 
@@ -85,11 +93,6 @@ impl Slide {
             .filter(dsl::id.eq(self.id))
             .execute(db)
             .expect("Error deleting slide")) //TODO: expect it the good way to handle error?
-    }
-
-    /// get assets associated to this Slide
-    pub fn get_extra_assets(&self, db: &PgConnection) -> Result<Vec<Asset>> {
-        Ok(AssetsObject::get_by_object(&db, self.id, AssetType::Slide)?)
     }
 }
 
@@ -129,7 +132,10 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
-            extra: slide.get_extra_assets(&db)?.pop(),
+            extra: match slide.extra_id {
+                Some(id) => Some(Asset::get(id, &db)?),
+                None => None,
+            },
         })
     }
 
@@ -144,7 +150,10 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
-            extra: slide.get_extra_assets(&db)?.pop(),
+            extra: match slide.extra_id {
+                Some(id) => Some(Asset::get(id, &db)?),
+                None => None,
+            },
         })
     }
 

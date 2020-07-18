@@ -1,8 +1,7 @@
 //! This module contains all the routes related to slides.
 
 use std::fs::{self, create_dir};
-use std::path::PathBuf;
-use std::thread;
+use std::path::{Path, PathBuf};
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
@@ -99,14 +98,28 @@ pub fn upload_resource(
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
-    println!("{:#?}", slide.get_extra_assets(&db)?);
+    println!("asset = {:#?}", asset);
 
     let mut asset_path = config.data_path.clone();
     asset_path.push(asset.asset_path);
 
+    let transcoded_asset = {
+        let file_stem = Path::new(&asset.name)
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap();
+        let mut server_path = PathBuf::from(&user.username);
+        let uuid = Uuid::new_v4();
+        let file_name = format!("{}_transcoded.mp4", file_stem);
+        server_path.push(format!("{}_{}", uuid, file_name));
+        Asset::new(&db, uuid, &file_name, server_path.to_str().unwrap())
+    }?;
+
+    AssetsObject::new(&db, transcoded_asset.id, slide.id, AssetType::Slide)?;
+    println!("transcoded_asset = {:#?}", transcoded_asset);
     let mut transcoded_path = config.data_path.clone();
-    transcoded_path.push(&user.username);
-    transcoded_path.push(format!("{}_transcoded.mp4", asset.uuid));
+    transcoded_path.push(transcoded_asset.asset_path);
 
     let command = vec![
         "ffmpeg",
@@ -123,20 +136,31 @@ pub fn upload_resource(
         "-ab",
         "128k",
         "-vcodec",
-        "h264",
+        "libx264",
         "-acodec",
-        "mp3",
+        "aac",
         "-s",
         "hd1080",
         &transcoded_path.to_str().unwrap(),
     ];
 
     let child = run_command(&command).unwrap();
-    println!("status: {}", child.status);
+    println!("Transcoded status: {}", child.status);
 
     if child.status.success() {
         println!("status: {}", child.status);
-    }
+        use crate::schema::slides::dsl;
+        diesel::update(slides::table)
+            .filter(dsl::id.eq(slide.id))
+            .set(dsl::extra_id.eq(transcoded_asset.id))
+            .execute(&db.0)?;
+    } else {
+        AssetsObject::get_by_asset(&db, transcoded_asset.id)?.delete(&db)?;
+        Asset::get(transcoded_asset.id, &db)?.delete(&db)?;
+        return Err(Error::TranscodeError);
+    };
+
+    let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
 

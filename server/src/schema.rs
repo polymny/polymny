@@ -93,6 +93,7 @@ table! {
         asset_id -> Int4,
         capsule_id -> Int4,
         prompt -> Text,
+        extra_id -> Nullable<Int4>,
     }
 }
 
@@ -119,7 +120,6 @@ joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
-joinable!(slides -> assets (asset_id));
 joinable!(slides -> capsules (capsule_id));
 
 allow_tables_to_appear_in_same_query!(

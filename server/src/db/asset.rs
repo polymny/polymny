@@ -223,6 +223,13 @@ impl AssetsObject {
             .filter(dsl::id.eq(id))
             .first::<AssetsObject>(db)?)
     }
+    /// Get asset with the object.
+    pub fn get_by_asset(db: &PgConnection, id: i32) -> Result<AssetsObject> {
+        use crate::schema::assets_objects::dsl;
+        Ok(dsl::assets_objects
+            .filter(dsl::asset_id.eq(id))
+            .first::<AssetsObject>(db)?)
+    }
 
     /// Get asset with the object.
     pub fn get_by_object(
