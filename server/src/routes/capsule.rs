@@ -666,7 +666,7 @@ pub fn capsule_edition(
                     ]
                     .into_iter(),
                 );
-                let child = run_command(&command)?;
+                let child = command::run_command(&command)?;
 
                 if !child.status.success() {
                     return Err(Error::TranscodeError);

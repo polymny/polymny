@@ -130,6 +130,8 @@ pub fn upload_resource(
         "-y",
         "-i",
         &asset_path.to_str().unwrap(),
+        "-pix_fmt",
+        "yuv420p",
         "-level",
         "3.1",
         "-b:v",
