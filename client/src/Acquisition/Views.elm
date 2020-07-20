@@ -133,7 +133,7 @@ topView model =
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
                 Element.image
-                    [ Element.width (Element.fill |> Element.maximum 1024)
+                    [ Element.width (Element.fill |> Element.maximum 800)
                     , Element.centerX
                     , Border.color Colors.artIrises
                     , Border.rounded 5
@@ -150,10 +150,7 @@ videoView : Element Core.Msg
 videoView =
     Element.el
         [ Element.centerX
-        , Element.width (Element.px 320)
-        , Border.color Colors.artIrises
-        , Border.rounded 5
-        , Border.width 1
+        , Element.width (Element.px 400)
         ]
         (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
