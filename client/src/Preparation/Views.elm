@@ -11,7 +11,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
-import Html
+import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
@@ -463,11 +463,39 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
         Preparation.JustSlide slide _ ->
             let
                 secondColumn =
-                    if global.beta then
-                        genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm
+                    genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm
 
-                    else
-                        Element.none
+                filename =
+                    case uploadForm.file of
+                        Nothing ->
+                            "No file selected"
+
+                        Just realFile ->
+                            File.name realFile
+
+                message =
+                    case uploadForm.activeSlideId of
+                        Just x ->
+                            if x == slide.id then
+                                case uploadForm.status of
+                                    Status.Sent ->
+                                        Ui.messageWithSpinner
+                                            ("Téléchargement et transcodage en cours de  \n " ++ filename)
+
+                                    Status.Error () ->
+                                        Ui.errorModal "Echec du transcodage de la video. Merci de nous contacter"
+
+                                    Status.Success () ->
+                                        Ui.successModal "Upload et transcodage de la video réussis"
+
+                                    _ ->
+                                        Element.none
+
+                            else
+                                Element.none
+
+                        Nothing ->
+                            Element.none
             in
             Element.el
                 (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
@@ -490,49 +518,27 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
                             , Font.color Colors.artEvening
                             ]
                             Element.none
+                    , message
                     , Element.row
                         [ Element.spacingXY 2 0 ]
-                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) uploadForm slide
+                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
                         , secondColumn
                         ]
                     ]
                 )
 
 
-genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Preparation.UploadExtraResourceForm -> Api.Slide -> Element Core.Msg
-genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
+genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Element Core.Msg
+genrericDesignSlide1stColumnView eventLessAttributes slide =
     let
-        filename =
-            case uploadForm.file of
-                Nothing ->
-                    "No file selected"
-
-                Just realFile ->
-                    File.name realFile
-
-        message =
-            case uploadForm.activeSlideId of
-                Just x ->
-                    if x == slide.id then
-                        case uploadForm.status of
-                            Status.Sent ->
-                                Ui.messageWithSpinner
-                                    ("Téléchargement et transcodage en cours de  \n " ++ filename)
-
-                            Status.Error () ->
-                                Ui.errorModal "Echec du transcodage de la video. Merci de nous contacter"
-
-                            Status.Success () ->
-                                Ui.successModal "Upload et transcodage de la video réussis"
-
-                            _ ->
-                                Element.none
-
-                    else
-                        Element.none
+        media =
+            case slide.extra of
+                Just asset ->
+                    Element.html <|
+                        htmlVideo asset.asset_path
 
                 Nothing ->
-                    Element.none
+                    viewSlideImage slide.asset.asset_path
     in
     Element.column
         (Element.alignTop
@@ -543,13 +549,24 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
                 )
             :: eventLessAttributes
         )
-        [ viewSlideImage slide.asset.asset_path
-        , message
+        [ media
         ]
 
 
-genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
-genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
+htmlVideo : String -> Html msg
+htmlVideo url =
+    Html.video
+        [ Html.Attributes.controls True
+        , Html.Attributes.width 200
+        ]
+        [ Html.source
+            [ Html.Attributes.src url ]
+            []
+        ]
+
+
+genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
+genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm =
     let
         promptMsg : Core.Msg
         promptMsg =
@@ -569,20 +586,53 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
             case slide.extra of
                 Just asset ->
                     Element.column []
-                        [ Element.el [] <|
+                        [ Element.el [ Element.spacingXY 2 4 ] <|
                             Element.text asset.name
                         , Ui.primaryButton
                             (Just deleteExtraMsg)
-                            "Supprimer la resource "
+                            "Supprimer la resource vidéo "
                         ]
 
                 Nothing ->
                     Element.column [ Font.size 14, Element.spacing 4 ]
-                        [ Element.column [ Element.padding 4 ]
+                        [ Element.column []
                             [ Element.el [ Element.spacingXY 2 4 ] <|
                                 uploadExtraResourceView uploadForm slide.id
                             ]
                         ]
+
+        prompt =
+            [ Element.el
+                [ Font.size 14
+                , Element.centerX
+                ]
+                (Element.text "Prompteur")
+            , Element.el
+                [ Border.rounded 5
+                , Border.width 2
+                , Border.color Colors.grey
+                , Background.color Colors.black
+                , Element.centerX
+                , Element.scrollbarY
+                , Element.height (Element.px 150)
+                , Element.width (Element.px 150)
+                , Element.padding 5
+                , Font.size 12
+                , Font.color Colors.white
+                ]
+                (Element.text slide.prompt)
+            , Element.row []
+                [ Ui.editButton (Just promptMsg) "Modifier"
+                , Ui.clearButton Nothing "Effacer"
+                ]
+            ]
+
+        rows =
+            if global.beta then
+                extra :: prompt
+
+            else
+                [ extra ]
     in
     Element.column
         (Element.alignTop
@@ -596,31 +646,7 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
                 )
             :: eventLessAttributes
         )
-        [ Element.el
-            [ Font.size 14
-            , Element.centerX
-            ]
-            (Element.text "Prompteur")
-        , Element.el
-            [ Border.rounded 5
-            , Border.width 2
-            , Border.color Colors.grey
-            , Background.color Colors.black
-            , Element.centerX
-            , Element.scrollbarY
-            , Element.height (Element.px 150)
-            , Element.width (Element.px 150)
-            , Element.padding 5
-            , Font.size 12
-            , Font.color Colors.white
-            ]
-            (Element.text slide.prompt)
-        , Element.row []
-            [ Ui.editButton (Just promptMsg) "Modifier"
-            , Ui.clearButton Nothing "Effacer"
-            ]
-        , extra
-        ]
+        rows
 
 
 viewSlideImage : String -> Element Core.Msg
@@ -730,7 +756,7 @@ uploadView form model =
 
 uploadFormView : Preparation.UploadForm -> Preparation.UploadModel -> Element Core.Msg
 uploadFormView form model =
-    Element.column
+    Element.row
         [ Element.spacing 20
         , Element.centerX
         ]
@@ -744,19 +770,19 @@ uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element 
 uploadExtraResourceView form slideId =
     let
         text =
-            "Choisir une resource additionelle"
+            "Resource additionelle:"
 
         buttonSelect =
             Element.map Core.LoggedInMsg <|
                 Element.map LoggedIn.PreparationMsg <|
                     Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Select resource"
+                        Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Choisir :"
 
         buttonSubmit =
             Element.map Core.LoggedInMsg <|
                 Element.map LoggedIn.PreparationMsg <|
                     Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Upload resource"
+                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la resource"
 
         filename =
             case form.activeSlideId of
@@ -771,12 +797,12 @@ uploadExtraResourceView form slideId =
                     fileNameElement form.file
     in
     Element.column
-        [ Element.padding 10
-        , Element.spacing 10
+        [ Element.padding 5
+        , Element.spacing 5
         ]
         [ Element.text text
         , Element.column
-            [ Element.spacing 20
+            [ Element.spacing 5
             , Element.centerX
             ]
             [ buttonSelect
@@ -791,7 +817,7 @@ fileNameElement file =
     Element.text <|
         case file of
             Nothing ->
-                "No file selected"
+                ""
 
             Just realFile ->
                 File.name realFile
