@@ -56,7 +56,7 @@ update msg global capsuleModel =
         ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
             let
                 ( newFormModel, newCmd, newModel ) =
-                    updateUploadExtraResource newUploadExtraResourceMsg global model.uploadForms.extraResource model
+                    updateUploadExtraResource newUploadExtraResourceMsg model.uploadForms.extraResource model
 
                 oldUploadForms =
                     newModel.uploadForms
@@ -236,13 +236,12 @@ updateUploadLogo msg model capsuleId =
 
 updateUploadExtraResource :
     Preparation.UploadExtraResourceMsg
-    -> Core.Global
     -> Preparation.UploadForm
     -> Preparation.Model
     -> ( Preparation.UploadForm, Cmd Core.Msg, Preparation.Model )
-updateUploadExtraResource msg global uploadForm preparationModel =
-    case ( msg, uploadForm ) of
-        ( Preparation.UploadExtraResourceSelectFileRequested, _ ) ->
+updateUploadExtraResource msg uploadForm preparationModel =
+    case msg of
+        Preparation.UploadExtraResourceSelectFileRequested ->
             ( uploadForm
             , Select.file
                 [ "video/*" ]
@@ -255,13 +254,13 @@ updateUploadExtraResource msg global uploadForm preparationModel =
             , preparationModel
             )
 
-        ( Preparation.UploadExtraResourceFileReady file, form ) ->
-            ( { form | file = Just file }
+        Preparation.UploadExtraResourceFileReady file ->
+            ( { uploadForm | file = Just file }
             , Cmd.none
             , preparationModel
             )
 
-        ( Preparation.UploadExtraResourceFormSubmitted slideId, _ ) ->
+        Preparation.UploadExtraResourceFormSubmitted slideId ->
             case uploadForm.file of
                 Nothing ->
                     ( uploadForm, Cmd.none, preparationModel )
@@ -269,21 +268,8 @@ updateUploadExtraResource msg global uploadForm preparationModel =
                 Just file ->
                     ( { uploadForm | status = Status.Sent }, Api.slideUploadExtraResource resultToMsg3 slideId file, preparationModel )
 
-        ( Preparation.UploadExtraResourceSuccess slide, _ ) ->
+        Preparation.UploadExtraResourceSuccess slide ->
             let
-                updateMaybeSlide : Api.Slide -> Preparation.MaybeSlide -> Preparation.MaybeSlide
-                updateMaybeSlide newSlide maybeSlide =
-                    case maybeSlide of
-                        Preparation.GosId id ->
-                            Preparation.GosId id
-
-                        Preparation.JustSlide s id ->
-                            if s.id == newSlide.id then
-                                Preparation.JustSlide newSlide id
-
-                            else
-                                Preparation.JustSlide s id
-
                 updateSlide : Api.Slide -> Api.Slide -> Api.Slide
                 updateSlide newSlide aSlide =
                     if aSlide.id == newSlide.id then
@@ -295,19 +281,13 @@ updateUploadExtraResource msg global uploadForm preparationModel =
                 newSlides =
                     List.map (updateSlide slide) preparationModel.details.slides
 
-                oldDetails =
+                details =
                     preparationModel.details
-
-                newDetails =
-                    { oldDetails | slides = newSlides }
             in
-            -- TODO Maybe here update slide in Preparation.model ???
-            -- TODO: the page reload is an ugly waay to update view.
             -- Search a way to update only slide in preparation View (ie without page reload)
             ( { uploadForm | status = Status.Success () }
             , Cmd.none
-            , preparationModel
-              --       ,  Preparation.init newDetails
+            , Preparation.init { details | slides = newSlides }
             )
 
 

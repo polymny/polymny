@@ -464,7 +464,7 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
             let
                 secondColumn =
                     if global.beta then
-                        genrericDesignSlide2ndColumnView eventLessAttributes slide
+                        genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm
 
                     else
                         Element.none
@@ -524,23 +524,6 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
 
                 _ ->
                     Element.none
-
-        extra =
-            case slide.extra of
-                Just asset ->
-                    Element.column []
-                        [ Element.el [] <| Element.text asset.asset_path
-                        , Element.el [] <| Element.text "Supprimer la reosurce"
-                        ]
-
-                Nothing ->
-                    Element.column [ Font.size 14, Element.spacing 4 ]
-                        [ Element.column [ Element.padding 4 ]
-                            [ Element.el [ Element.spacingXY 2 4 ] <|
-                                uploadView uploadForm <|
-                                    Preparation.ExtraResource slide.id
-                            ]
-                        ]
     in
     Element.column
         (Element.alignTop
@@ -553,12 +536,11 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
         )
         [ viewSlideImage slide.asset.asset_path
         , message
-        , extra
         ]
 
 
-genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Element Core.Msg
-genrericDesignSlide2ndColumnView eventLessAttributes slide =
+genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadForm -> Element Core.Msg
+genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
     let
         promptMsg : Core.Msg
         promptMsg =
@@ -566,6 +548,23 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
                 LoggedIn.PreparationMsg <|
                     Preparation.EditPromptMsg <|
                         Preparation.EditPromptOpenDialog slide.id slide.prompt
+
+        extra =
+            case slide.extra of
+                Just asset ->
+                    Element.column []
+                        [ Element.el [] <| Element.text asset.name
+                        , Element.el [] <| Element.text "Supprimer la reosurce"
+                        ]
+
+                Nothing ->
+                    Element.column [ Font.size 14, Element.spacing 4 ]
+                        [ Element.column [ Element.padding 4 ]
+                            [ Element.el [ Element.spacingXY 2 4 ] <|
+                                uploadView uploadForm <|
+                                    Preparation.ExtraResource slide.id
+                            ]
+                        ]
     in
     Element.column
         (Element.alignTop
@@ -602,6 +601,7 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
             [ Ui.editButton (Just promptMsg) "Modifier"
             , Ui.clearButton Nothing "Effacer"
             ]
+        , extra
         ]
 
 
