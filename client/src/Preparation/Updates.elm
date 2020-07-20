@@ -235,26 +235,26 @@ updateUploadLogo msg model capsuleId =
 
 updateUploadExtraResource :
     Preparation.UploadExtraResourceMsg
-    -> Preparation.UploadForm
+    -> Preparation.UploadExtraResourceForm
     -> Preparation.Model
-    -> ( Preparation.UploadForm, Cmd Core.Msg, Preparation.Model )
+    -> ( Preparation.UploadExtraResourceForm, Cmd Core.Msg, Preparation.Model )
 updateUploadExtraResource msg uploadForm preparationModel =
     case msg of
-        Preparation.UploadExtraResourceSelectFileRequested ->
-            ( uploadForm
+        Preparation.UploadExtraResourceSelectFileRequested slideId ->
+            ( { uploadForm | activeSlideId = Just slideId, deleteStatus = Status.NotSent }
             , Select.file
                 [ "video/*" ]
                 (\x ->
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceFileReady x
+                                Preparation.UploadExtraResourceFileReady x slideId
                 )
             , preparationModel
             )
 
-        Preparation.UploadExtraResourceFileReady file ->
-            ( { uploadForm | file = Just file }
+        Preparation.UploadExtraResourceFileReady file slideId ->
+            ( { uploadForm | file = Just file, activeSlideId = Just slideId }
             , Cmd.none
             , preparationModel
             )
@@ -265,7 +265,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
                     ( uploadForm, Cmd.none, preparationModel )
 
                 Just file ->
-                    ( { uploadForm | status = Status.Sent }
+                    ( { uploadForm | status = Status.Sent, activeSlideId = Just slideId }
                     , Api.slideUploadExtraResource resultToMsg3 slideId file
                     , preparationModel
                     )
@@ -289,7 +289,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 details =
                     preparationModel.details
             in
-            ( { uploadForm | status = Status.Success () }
+            ( { uploadForm | status = Status.Success (), activeSlideId = Just slide.id }
             , Cmd.none
             , Preparation.init { details | slides = newSlides, structure = newStructure }
             )
@@ -301,7 +301,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
             )
 
         Preparation.DeleteExtraResource slideId ->
-            ( { uploadForm | status = Status.Sent }
+            ( { uploadForm | status = Status.NotSent, file = Nothing, deleteStatus = Status.Sent }
             , Api.slideDeleteExtraResource
                 resultToMsg4
                 slideId
@@ -327,13 +327,13 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 details =
                     preparationModel.details
             in
-            ( { uploadForm | status = Status.Success () }
+            ( { uploadForm | deleteStatus = Status.Success () }
             , Cmd.none
             , Preparation.init { details | slides = newSlides, structure = newStructure }
             )
 
         Preparation.DeleteExtraResourceError ->
-            ( { uploadForm | status = Status.Error () }
+            ( { uploadForm | deleteStatus = Status.Error () }
             , Cmd.none
             , preparationModel
             )

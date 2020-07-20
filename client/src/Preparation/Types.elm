@@ -7,6 +7,7 @@ module Preparation.Types exposing
     , Model
     , Msg(..)
     , UploadBackgroundMsg(..)
+    , UploadExtraResourceForm
     , UploadExtraResourceMsg(..)
     , UploadForm
     , UploadLogoMsg(..)
@@ -52,17 +53,30 @@ type alias UploadForm =
     }
 
 
+initUploadForm : UploadForm
+initUploadForm =
+    UploadForm Status.NotSent Nothing
+
+
+type alias UploadExtraResourceForm =
+    { status : Status () ()
+    , deleteStatus : Status () ()
+    , file : Maybe File
+    , activeSlideId : Maybe Int
+    }
+
+
+initUploadExtraResourceForm : UploadExtraResourceForm
+initUploadExtraResourceForm =
+    UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing
+
+
 type alias Forms =
     { slideShow : UploadForm
     , background : UploadForm
     , logo : UploadForm
-    , extraResource : UploadForm
+    , extraResource : UploadExtraResourceForm
     }
-
-
-initUploadForm : UploadForm
-initUploadForm =
-    UploadForm Status.NotSent Nothing
 
 
 initForms : Forms
@@ -70,7 +84,7 @@ initForms =
     { slideShow = initUploadForm
     , background = initUploadForm
     , logo = initUploadForm
-    , extraResource = initUploadForm
+    , extraResource = initUploadExtraResourceForm
     }
 
 
@@ -129,8 +143,8 @@ type UploadLogoMsg
 
 
 type UploadExtraResourceMsg
-    = UploadExtraResourceSelectFileRequested
-    | UploadExtraResourceFileReady File
+    = UploadExtraResourceSelectFileRequested Int
+    | UploadExtraResourceFileReady File Int
     | UploadExtraResourceFormSubmitted Int
     | UploadExtraResourceSuccess Api.Slide
     | UploadExtraResourceError
@@ -143,7 +157,6 @@ type UploadModel
     = SlideShow
     | Background
     | Logo
-    | ExtraResource Int
 
 
 init : Api.CapsuleDetails -> Model

@@ -188,7 +188,7 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Core.Global -> Preparation.UploadForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
 capsuleGosView global uploadForm capsule gosModel slideModel offset gosIndex gos =
     case ( global.beta, Preparation.gosSystem.info gosModel ) of
         ( False, _ ) ->
@@ -205,7 +205,7 @@ capsuleGosView global uploadForm capsule gosModel slideModel offset gosIndex gos
             genericGosView global uploadForm capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : Core.Global -> Preparation.UploadForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+gosGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
 gosGhostView global uploadForm capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
@@ -225,7 +225,7 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : Core.Global -> Preparation.UploadForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
 genericGosView global uploadForm capsule options gosModel slideModel offset index gos =
     let
         gosId : String
@@ -363,7 +363,7 @@ genericGosView global uploadForm capsule options gosModel slideModel offset inde
 -- SLIDES VIEWS
 
 
-slideGhostView : Core.Global -> Preparation.UploadForm -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+slideGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
 slideGhostView global uploadForm slideModel slides =
     case maybeDragSlide slideModel slides of
         Preparation.JustSlide s _ ->
@@ -373,7 +373,7 @@ slideGhostView global uploadForm slideModel slides =
             Element.none
 
 
-designSlideView : Core.Global -> Preparation.UploadForm -> Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+designSlideView : Core.Global -> Preparation.UploadExtraResourceForm -> Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
 designSlideView global uploadForm enabled slideModel offset localIndex slide =
     let
         t =
@@ -409,7 +409,7 @@ maybeDragSlide slideModel slides =
             Preparation.GosId -1
 
 
-genericDesignSlideView : Core.Global -> Preparation.UploadForm -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+genericDesignSlideView : Core.Global -> Preparation.UploadExtraResourceForm -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
 genericDesignSlideView global uploadForm options slideModel offset localIndex s =
     let
         globalIndex : Int
@@ -499,7 +499,7 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
                 )
 
 
-genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Preparation.UploadForm -> Api.Slide -> Element Core.Msg
+genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Preparation.UploadExtraResourceForm -> Api.Slide -> Element Core.Msg
 genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
     let
         filename =
@@ -511,18 +511,27 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
                     File.name realFile
 
         message =
-            case uploadForm.status of
-                Status.Sent ->
-                    Ui.messageWithSpinner
-                        ("Télécchargement et transcodage en cours \n " ++ filename)
+            case uploadForm.activeSlideId of
+                Just x ->
+                    if x == slide.id then
+                        case uploadForm.status of
+                            Status.Sent ->
+                                Ui.messageWithSpinner
+                                    ("Téléchargement et transcodage en cours de  \n " ++ filename)
 
-                Status.Error () ->
-                    Ui.errorModal "Echec upload pdf"
+                            Status.Error () ->
+                                Ui.errorModal "Echec du transcodage de la video. Merci de nous contacter"
 
-                Status.Success () ->
-                    Ui.successModal "L Upload du pdf a réussis"
+                            Status.Success () ->
+                                Ui.successModal "Upload et transcodage de la video réussis"
 
-                _ ->
+                            _ ->
+                                Element.none
+
+                    else
+                        Element.none
+
+                Nothing ->
                     Element.none
     in
     Element.column
@@ -539,7 +548,7 @@ genrericDesignSlide1stColumnView eventLessAttributes uploadForm slide =
         ]
 
 
-genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadForm -> Element Core.Msg
+genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
 genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
     let
         promptMsg : Core.Msg
@@ -571,8 +580,7 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
                     Element.column [ Font.size 14, Element.spacing 4 ]
                         [ Element.column [ Element.padding 4 ]
                             [ Element.el [ Element.spacingXY 2 4 ] <|
-                                uploadView uploadForm <|
-                                    Preparation.ExtraResource slide.id
+                                uploadExtraResourceView uploadForm slide.id
                             ]
                         ]
     in
@@ -710,9 +718,6 @@ uploadView form model =
 
                 Preparation.Logo ->
                     "Choisir un logo"
-
-                Preparation.ExtraResource _ ->
-                    "Choisir une resource additionelle"
     in
     Element.column
         [ Element.padding 10
@@ -732,6 +737,52 @@ uploadFormView form model =
         [ selectFileButton model
         , fileNameElement form.file
         , uploadButton model
+        ]
+
+
+uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element Core.Msg
+uploadExtraResourceView form slideId =
+    let
+        text =
+            "Choisir une resource additionelle"
+
+        buttonSelect =
+            Element.map Core.LoggedInMsg <|
+                Element.map LoggedIn.PreparationMsg <|
+                    Element.map Preparation.UploadExtraResourceMsg <|
+                        Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Select resource"
+
+        buttonSubmit =
+            Element.map Core.LoggedInMsg <|
+                Element.map LoggedIn.PreparationMsg <|
+                    Element.map Preparation.UploadExtraResourceMsg <|
+                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Upload resource"
+
+        filename =
+            case form.activeSlideId of
+                Just x ->
+                    if x == slideId then
+                        fileNameElement form.file
+
+                    else
+                        Element.text "Pas de fichier choisis"
+
+                Nothing ->
+                    fileNameElement form.file
+    in
+    Element.column
+        [ Element.padding 10
+        , Element.spacing 10
+        ]
+        [ Element.text text
+        , Element.column
+            [ Element.spacing 20
+            , Element.centerX
+            ]
+            [ buttonSelect
+            , filename
+            , buttonSubmit
+            ]
         ]
 
 
@@ -762,10 +813,6 @@ selectFileButton model =
                 Preparation.Logo ->
                     Element.map Preparation.UploadLogoMsg <|
                         Ui.simpleButton (Just Preparation.UploadLogoSelectFileRequested) "Select logo"
-
-                Preparation.ExtraResource _ ->
-                    Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.simpleButton (Just Preparation.UploadExtraResourceSelectFileRequested) "Select resource"
     in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.PreparationMsg msg
@@ -787,10 +834,6 @@ uploadButton model =
                 Preparation.Logo ->
                     Element.map Preparation.UploadLogoMsg <|
                         Ui.primaryButton (Just Preparation.UploadLogoFormSubmitted) "Upload logo"
-
-                Preparation.ExtraResource slideId ->
-                    Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Upload resource"
     in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.PreparationMsg msg

@@ -662,6 +662,8 @@ pub fn capsule_edition(
                         "zerolatency",
                         "-acodec",
                         "aac",
+                        "-r",
+                        "25",
                         &pip_out,
                     ]
                     .into_iter(),
