@@ -281,13 +281,16 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 newSlides =
                     List.map (updateSlide slide) preparationModel.details.slides
 
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
                 details =
                     preparationModel.details
             in
             -- Search a way to update only slide in preparation View (ie without page reload)
             ( { uploadForm | status = Status.Success () }
             , Cmd.none
-            , Preparation.init { details | slides = newSlides }
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
             )
 
 
