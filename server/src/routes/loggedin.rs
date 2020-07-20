@@ -18,7 +18,7 @@ use rocket_multipart_form_data::{
 use tempfile::tempdir;
 use uuid::Uuid;
 
-use crate::command::run_command;
+use crate::command;
 use crate::config::Config;
 use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
@@ -108,20 +108,7 @@ pub fn quick_upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-
-                    let command_output_path = format!("{}", &output_path.to_str().unwrap());
-                    let command_input_path = format!("{}/'%02'.png", dir.path().display());
-                    let command = vec![
-                        "convert",
-                        "-density",
-                        "300",
-                        &command_output_path,
-                        "-resize",
-                        "1920x1080!",
-                        &command_input_path,
-                    ];
-
-                    run_command(&command)?;
+                    command::export_slides(&output_path, dir.path())?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();

@@ -10,6 +10,7 @@ import Element.Font as Font
 import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Status
 import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
@@ -242,7 +243,7 @@ recordingsView model =
 
 
 uploadView : Acquisition.Model -> Element Core.Msg
-uploadView { details, gos, currentVideo, recording, records } =
+uploadView { details, gos, currentVideo, recording, records, status } =
     case currentVideo of
         Nothing ->
             Element.none
@@ -255,11 +256,14 @@ uploadView { details, gos, currentVideo, recording, records } =
                 t =
                     Maybe.map String.toLower (Maybe.map text record)
             in
-            case t of
-                Nothing ->
+            case ( t, status ) of
+                ( Nothing, _ ) ->
                     Element.none
 
-                Just s ->
+                ( _, Status.Sent ) ->
+                    Element.row [] [ Ui.spinner, Element.text "Envoi de l'enregistrement" ]
+
+                ( Just s, _ ) ->
                     if recording then
                         Ui.primaryButtonDisabled ("Valider \n l'" ++ s)
 

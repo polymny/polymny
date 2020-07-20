@@ -21,7 +21,7 @@ use uuid::Uuid;
 
 use tempfile::tempdir;
 
-use crate::command::run_command;
+use crate::command;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::{Capsule, PublishedType};
@@ -214,20 +214,7 @@ pub fn upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-
-                    let command_output_path = format!("{}", &output_path.to_str().unwrap());
-                    let command_input_path = format!("{}/'%02'.png", dir.path().display());
-                    let command = vec![
-                        "convert",
-                        "-density",
-                        "300",
-                        &command_output_path,
-                        "-resize",
-                        "1920x1080!",
-                        &command_input_path,
-                    ];
-
-                    run_command(&command)?;
+                    command::export_slides(&output_path, dir.path())?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -668,7 +655,7 @@ pub fn capsule_edition(
             ]
             .into_iter(),
         );
-        let child = run_command(&command)?;
+        let child = command::run_command(&command)?;
 
         if !child.status.success() {
             return Err(Error::TranscodeError);
@@ -710,7 +697,7 @@ pub fn capsule_edition(
         output,
     ];
 
-    let child = run_command(&command)?;
+    let child = command::run_command(&command)?;
 
     println!("status: {}", child.status);
     if child.status.success() {
@@ -763,7 +750,7 @@ pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: 
     let output_path = output_path.to_str().unwrap();
     let command = vec!["dash-encode", "encode", input_path, output_path];
 
-    let child = run_command(&command)?;
+    let child = command::run_command(&command)?;
 
     if child.status.success() {
         use crate::schema::capsules::dsl;

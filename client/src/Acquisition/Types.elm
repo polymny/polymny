@@ -3,6 +3,7 @@ module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, initA
 import Acquisition.Ports as Ports
 import Api
 import Json.Encode
+import Status exposing (Status)
 
 
 type Mode
@@ -33,6 +34,7 @@ type alias Model =
     , currentSlide : Int
     , mode : Mode
     , cameraReady : Bool
+    , status : Status () ()
     }
 
 
@@ -69,6 +71,7 @@ init details mode gos =
       , currentSlide = 0
       , mode = mode
       , cameraReady = False
+      , status = Status.NotSent
       }
     , Ports.init ( "video", Maybe.map Tuple.first record )
     )

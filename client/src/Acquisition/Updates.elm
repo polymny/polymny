@@ -119,7 +119,7 @@ update session msg model =
                     newDetails =
                         { details | structure = newStructure }
                 in
-                ( makeModel { model | details = newDetails }
+                ( makeModel { model | details = newDetails, status = Status.Sent }
                 , Ports.uploadStream ( url, stream, Api.encodeSlideStructure newDetails )
                 )
 

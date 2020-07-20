@@ -9,9 +9,7 @@ use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{
-    str_to_webcam_position, str_to_webcam_size, EditionOptions, WebcamPosition, WebcamSize,
-};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -86,7 +84,7 @@ pub struct Capsule {
     ///     webcam_position: WebcamPosition,
     ///  ]
     /// ```
-    pub edition_options: Option<Json>,
+    pub edition_options: Json,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -200,7 +198,7 @@ impl Capsule {
             logo_id: Some(logo_id),
             structure: json!([]),
             published: PublishedType::NotPublished,
-            edition_options: Some(json!([])),
+            edition_options: None,
         })
     }
     /// Gets a capsule from its id.
@@ -310,28 +308,32 @@ impl Capsule {
 
     /// Gets Webcam option in db or default values if not set
     pub fn get_edition_options(&self) -> Result<EditionOptions> {
-        let v = EditionOptions {
-            with_video: true,
-            webcam_size: WebcamSize::Medium,
-            webcam_position: WebcamPosition::BottomLeft,
+        let options = EditionOptions {
+            with_video: self
+                .edition_options
+                .get("with_video")
+                .unwrap()
+                .as_bool()
+                .unwrap(),
+            webcam_size: str_to_webcam_size(
+                &self
+                    .edition_options
+                    .get("webcam_size")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            webcam_position: str_to_webcam_position(
+                &self
+                    .edition_options
+                    .get("webcam_position")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
         };
-        let options = self
-            .edition_options
-            .as_ref()
-            .map(|x| EditionOptions {
-                with_video: x.get("with_video").unwrap().as_bool().unwrap(),
-                webcam_size: str_to_webcam_size(
-                    &x.get("webcam_size").unwrap().as_str().unwrap().to_string(),
-                ),
-                webcam_position: str_to_webcam_position(
-                    &x.get("webcam_position")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                ),
-            })
-            .unwrap_or(v);
         Ok(options)
     }
 }
