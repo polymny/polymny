@@ -4,7 +4,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
 
-use crate::db::asset::{Asset, AssetType, AssetsObject};
+use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
 use crate::schema::slides;
 use crate::Result;
