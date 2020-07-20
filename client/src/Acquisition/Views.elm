@@ -132,12 +132,25 @@ topView model =
         [ videoView
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
-                Element.image
-                    [ Element.width (Element.px 640)
-                    , Element.height (Element.px 480)
-                    , Element.centerX
-                    ]
-                    { src = h.asset.asset_path, description = "Slide" }
+                let
+                    canvas =
+                        Element.html
+                            (Html.canvas
+                                [ Html.Attributes.height 480
+                                , Html.Attributes.width 640
+                                , Html.Attributes.id canvasId
+                                ]
+                                []
+                            )
+                in
+                Element.el [ Element.inFront canvas ]
+                    (Element.image
+                        [ Element.width (Element.px 640)
+                        , Element.height (Element.px 480)
+                        , Element.centerX
+                        ]
+                        { src = h.asset.asset_path, description = "Slide" }
+                    )
 
             _ ->
                 Element.none
@@ -294,3 +307,8 @@ url capsuleId gosId =
 elementId : String
 elementId =
     "video"
+
+
+canvasId : String
+canvasId =
+    "canvas"

@@ -1,6 +1,47 @@
+const CANVAS_ID = "canvas";
+const POINTER_RADIUS = 10;
+
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, canvas, ctx;
+    let pointer = { down: false, x: 0, y: 0 };
+
+    function refresh(canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (pointer.down) {
+            ctx.beginPath();
+            ctx.arc(pointer.x, pointer.y, POINTER_RADIUS, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+
+    function setupCanvasListeners(canvas) {
+        ctx = canvas.getContext('2d');
+        ctx.fillStyle = "red";
+
+        canvas.addEventListener('mousedown', function(event) {
+            pointer.down = true;
+            pointer.x = event.offsetX;
+            pointer.y = event.offsetY;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('mouseup', function(event) {
+            pointer.down = false;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('moueout', function(event) {
+            pointer.down = false;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('mousemove', function(event) {
+            pointer.x = event.offsetX;
+            pointer.y = event.offsetY;
+            refresh(canvas);
+        });
+    }
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -32,6 +73,8 @@ function setupPorts(app) {
         if (maybeVideo !== null) {
             blobs.push(maybeVideo);
         }
+
+        setupCanvasListeners(document.getElementById(CANVAS_ID));
 
         initializing = true;
         setupUserMedia(() => {
