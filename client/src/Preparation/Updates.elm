@@ -1,7 +1,6 @@
 module Preparation.Updates exposing (update)
 
 import Api
-import Browser.Navigation as Nav
 import Core.Types as Core
 import Dict
 import File.Select as Select
@@ -266,7 +265,10 @@ updateUploadExtraResource msg uploadForm preparationModel =
                     ( uploadForm, Cmd.none, preparationModel )
 
                 Just file ->
-                    ( { uploadForm | status = Status.Sent }, Api.slideUploadExtraResource resultToMsg3 slideId file, preparationModel )
+                    ( { uploadForm | status = Status.Sent }
+                    , Api.slideUploadExtraResource resultToMsg3 slideId file
+                    , preparationModel
+                    )
 
         Preparation.UploadExtraResourceSuccess slide ->
             let
@@ -287,10 +289,53 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 details =
                     preparationModel.details
             in
-            -- Search a way to update only slide in preparation View (ie without page reload)
             ( { uploadForm | status = Status.Success () }
             , Cmd.none
             , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.UploadExtraResourceError ->
+            ( { uploadForm | status = Status.Error () }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.DeleteExtraResource slideId ->
+            ( { uploadForm | status = Status.Sent }
+            , Api.slideDeleteExtraResource
+                resultToMsg4
+                slideId
+            , preparationModel
+            )
+
+        Preparation.DeleteExtraResourceSuccess slide ->
+            let
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
+                details =
+                    preparationModel.details
+            in
+            ( { uploadForm | status = Status.Success () }
+            , Cmd.none
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.DeleteExtraResourceError ->
+            ( { uploadForm | status = Status.Error () }
+            , Cmd.none
+            , preparationModel
             )
 
 
@@ -456,5 +501,29 @@ resultToMsg3 result =
                         Preparation.UploadExtraResourceSuccess <|
                             x
         )
-        (\_ -> Core.Noop)
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceError
+        )
+        result
+
+
+resultToMsg4 : Result e Api.Slide -> Core.Msg
+resultToMsg4 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResourceSuccess <|
+                            x
+        )
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResourceError
+        )
         result

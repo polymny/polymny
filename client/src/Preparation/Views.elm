@@ -549,12 +549,22 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide uploadForm =
                     Preparation.EditPromptMsg <|
                         Preparation.EditPromptOpenDialog slide.id slide.prompt
 
+        deleteExtraMsg : Core.Msg
+        deleteExtraMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResource slide.id
+
         extra =
             case slide.extra of
                 Just asset ->
                     Element.column []
-                        [ Element.el [] <| Element.text asset.name
-                        , Element.el [] <| Element.text "Supprimer la reosurce"
+                        [ Element.el [] <|
+                            Element.text asset.name
+                        , Ui.primaryButton
+                            (Just deleteExtraMsg)
+                            "Supprimer la resource "
                         ]
 
                 Nothing ->

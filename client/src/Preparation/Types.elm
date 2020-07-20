@@ -133,6 +133,10 @@ type UploadExtraResourceMsg
     | UploadExtraResourceFileReady File
     | UploadExtraResourceFormSubmitted Int
     | UploadExtraResourceSuccess Api.Slide
+    | UploadExtraResourceError
+    | DeleteExtraResource Int
+    | DeleteExtraResourceSuccess Api.Slide
+    | DeleteExtraResourceError
 
 
 type UploadModel

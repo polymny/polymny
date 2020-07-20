@@ -36,6 +36,9 @@ pub struct UpdateSlideForm {
 
     /// The prompt text.
     pub prompt: Option<String>,
+
+    /// The extra field
+    pub extra_id: Option<Option<i32>>,
 }
 
 /// The route to get a asset.
@@ -163,7 +166,30 @@ pub fn upload_resource(
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
+/// Upload logo
+#[post("/slide/<id>/delete_resource")]
+pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
+    let slide = user.get_slide_by_id(id, &db)?;
 
+    match slide.extra_id {
+        Some(_extra_id) => {
+            use crate::schema::slides::dsl;
+            diesel::update(slides::table)
+                .filter(dsl::id.eq(slide.id))
+                .set(&UpdateSlideForm {
+                    asset_id: Some(slide.asset_id),
+                    capsule_id: Some(slide.capsule_id),
+                    prompt: Some(slide.prompt),
+                    extra_id: Some(None),
+                })
+                .execute(&db.0)?;
+        }
+        None => println!("No additional resource to remove"),
+    }
+
+    let slide = user.get_slide_by_id(id, &db)?;
+    Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
+}
 // TODO: unify this focntion with uploaf_file from src/route/capsule.rd
 fn upload_file(
     config: &State<Config>,

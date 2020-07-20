@@ -33,6 +33,7 @@ module Api exposing
     , resetPassword
     , setupConfig
     , signUp
+    , slideDeleteExtraResource
     , slideUploadExtraResource
     , testDatabase
     , testMailer
@@ -678,6 +679,15 @@ slideUploadExtraResource resultToMsg id content =
         { url = "/api/slide/" ++ String.fromInt id ++ "/upload_resource"
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+slideDeleteExtraResource : (Result Http.Error Slide -> msg) -> Int -> Cmd msg
+slideDeleteExtraResource resultToMsg id =
+    post
+        { url = "/api/slide/" ++ String.fromInt id ++ "/delete_resource"
+        , expect = Http.expectJson resultToMsg decodeSlide
+        , body = Http.emptyBody
         }
 
 
