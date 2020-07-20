@@ -55,16 +55,16 @@ update msg global capsuleModel =
 
         ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
             let
-                ( newFormModel, newCmd ) =
-                    updateUploadExtraResource newUploadExtraResourceMsg global model.uploadForms.extraResource
+                ( newFormModel, newCmd, newModel ) =
+                    updateUploadExtraResource newUploadExtraResourceMsg global model.uploadForms.extraResource model
 
                 oldUploadForms =
-                    model.uploadForms
+                    newModel.uploadForms
 
                 newUploadForms =
                     { oldUploadForms | extraResource = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
@@ -234,11 +234,16 @@ updateUploadLogo msg model capsuleId =
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
-updateUploadExtraResource : Preparation.UploadExtraResourceMsg -> Core.Global -> Preparation.UploadForm -> ( Preparation.UploadForm, Cmd Core.Msg )
-updateUploadExtraResource msg global model =
-    case ( msg, model ) of
+updateUploadExtraResource :
+    Preparation.UploadExtraResourceMsg
+    -> Core.Global
+    -> Preparation.UploadForm
+    -> Preparation.Model
+    -> ( Preparation.UploadForm, Cmd Core.Msg, Preparation.Model )
+updateUploadExtraResource msg global uploadForm preparationModel =
+    case ( msg, uploadForm ) of
         ( Preparation.UploadExtraResourceSelectFileRequested, _ ) ->
-            ( model
+            ( uploadForm
             , Select.file
                 [ "video/*" ]
                 (\x ->
@@ -247,27 +252,62 @@ updateUploadExtraResource msg global model =
                             Preparation.UploadExtraResourceMsg <|
                                 Preparation.UploadExtraResourceFileReady x
                 )
+            , preparationModel
             )
 
         ( Preparation.UploadExtraResourceFileReady file, form ) ->
             ( { form | file = Just file }
             , Cmd.none
+            , preparationModel
             )
 
         ( Preparation.UploadExtraResourceFormSubmitted slideId, _ ) ->
-            case model.file of
+            case uploadForm.file of
                 Nothing ->
-                    ( model, Cmd.none )
+                    ( uploadForm, Cmd.none, preparationModel )
 
                 Just file ->
-                    ( { model | status = Status.Sent }, Api.slideUploadExtraResource resultToMsg3 slideId file )
+                    ( { uploadForm | status = Status.Sent }, Api.slideUploadExtraResource resultToMsg3 slideId file, preparationModel )
 
         ( Preparation.UploadExtraResourceSuccess slide, _ ) ->
-            -- TODO Maybe here update slide in Preparation.model.details ???
+            let
+                updateMaybeSlide : Api.Slide -> Preparation.MaybeSlide -> Preparation.MaybeSlide
+                updateMaybeSlide newSlide maybeSlide =
+                    case maybeSlide of
+                        Preparation.GosId id ->
+                            Preparation.GosId id
+
+                        Preparation.JustSlide s id ->
+                            if s.id == newSlide.id then
+                                Preparation.JustSlide newSlide id
+
+                            else
+                                Preparation.JustSlide s id
+
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                oldDetails =
+                    preparationModel.details
+
+                newDetails =
+                    { oldDetails | slides = newSlides }
+            in
+            -- TODO Maybe here update slide in Preparation.model ???
             -- TODO: the page reload is an ugly waay to update view.
             -- Search a way to update only slide in preparation View (ie without page reload)
-            ( { model | status = Status.Success () }
-            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt slide.capsule_id ++ "/preparation")
+            ( { uploadForm | status = Status.Success () }
+            , Cmd.none
+            , preparationModel
+              --       ,  Preparation.init newDetails
             )
 
 
