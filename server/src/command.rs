@@ -4,6 +4,8 @@ use std::io::Result;
 use std::path::Path;
 use std::process::{Command, Output};
 
+use poppler::PopplerDocument;
+
 /// Runs a specified command.
 pub fn run_command(command: &Vec<&str>) -> Result<Output> {
     info!("Running command: {:?}", command);
@@ -27,16 +29,24 @@ pub fn run_command(command: &Vec<&str>) -> Result<Output> {
 
 /// Exports all slides from pdf to png.
 pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<()> {
-    run_command(&vec![
-        "pdftocairo",
-        "-png",
-        "-scale-to-x",
-        "1920",
-        "-scale-to-y",
-        "1080",
-        input.as_ref().to_str().unwrap(),
-        &format!("{}/", output.as_ref().to_str().unwrap()),
-    ])?;
+    let document = PopplerDocument::new_from_file(input.as_ref(), "").unwrap();
+    let n_pages = document.get_n_pages();
+
+    for i in 0..n_pages {
+        let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
+        let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), i);
+        let command = vec![
+            "convert",
+            "-density",
+            "300",
+            &command_input_path,
+            "-resize",
+            "1920x1080!",
+            &command_output_path,
+        ];
+
+        run_command(&command)?;
+    }
 
     Ok(())
 }
