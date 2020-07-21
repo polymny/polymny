@@ -587,7 +587,7 @@ pub fn capsule_edition(
                 };
 
                 let filter_complex = format!(
-                    "[1]scale={}:-1 [pip]; [0][pip] overlay={}",
+                    "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
                     size_in_pixels(&webcam_size),
                     position_in_pixels(&webcam_position)
                 );
@@ -662,6 +662,8 @@ pub fn capsule_edition(
                         "zerolatency",
                         "-acodec",
                         "aac",
+                        "-s",
+                        "hd1080",
                         "-r",
                         "25",
                         &pip_out,
