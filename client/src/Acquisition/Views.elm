@@ -193,10 +193,10 @@ recordingsView model =
     let
         webcam =
             if model.recording then
-                Ui.primaryButtonDisabled "Flux webcam"
+                Ui.primaryButtonDisabled "Voir flux webcam"
 
             else
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Flux webcam"
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Voir flux webcam"
 
         msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
@@ -217,7 +217,7 @@ recordingsView model =
                         Ui.simpleButton (msg x) ("Lire l'" ++ text x)
 
                 _ ->
-                    Ui.simpleButton (msg x) (text x)
+                    Ui.simpleButton (msg x) ("Lire l'" ++ text x)
     in
     Element.column
         [ Background.color Colors.whiteDark
@@ -232,6 +232,8 @@ recordingsView model =
         , Border.color Colors.whiteDarker
         , Border.rounded 5
         , Border.width 1
+        , Element.centerX
+        , Font.center
         ]
         [ webcam
         , if List.length model.records > 0 then
@@ -243,7 +245,7 @@ recordingsView model =
             Element.none
         , Element.column [ Element.alignLeft, Element.paddingXY 2 10, Element.spacing 10 ]
             (List.reverse (List.map button model.records))
-        , Element.el [ Font.size 16, Font.center ] <|
+        , Element.el [ Font.size 16, Font.center, Element.centerX ] <|
             uploadView model
         ]
 
@@ -289,7 +291,7 @@ text record =
         "enregistrement #" ++ String.fromInt record.id
 
     else
-        "ancien enregistrement"
+        " ancien enregistrement"
 
 
 url : Int -> Int -> String

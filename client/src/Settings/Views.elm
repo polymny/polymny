@@ -35,7 +35,7 @@ mainView global session model =
         ]
         [ Element.el [ Font.size 30 ] <|
             Element.text <|
-                "Réglage de paramètres géneraux"
+                "Réglage de paramètres généraux de l'application polymny"
         , webcamOptionsView session model
         ]
 
@@ -85,11 +85,17 @@ webcamOptionsView session { status } =
         videoFields =
             [ Input.radio
                 [ Element.padding 10
-                , Element.spacing 20
+                , Element.spacing 10
                 ]
                 { onChange = Settings.WebcamSizeChanged
                 , selected = Just webcamSize
-                , label = Input.labelAbove [] (Element.text "Taille de l'incrustation de la webcam")
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Taille de l'incrustation webcam:")
                 , options =
                     [ Input.option Webcam.Small (Element.text "Petit")
                     , Input.option Webcam.Medium (Element.text "Moyen")
@@ -98,11 +104,17 @@ webcamOptionsView session { status } =
                 }
             , Input.radio
                 [ Element.padding 10
-                , Element.spacing 20
+                , Element.spacing 10
                 ]
                 { onChange = Settings.WebcamPositionChanged
                 , selected = Just webcamPosition
-                , label = Input.labelAbove [] (Element.text "Position de l'incrustation")
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Position de l'incrustation:")
                 , options =
                     [ Input.option Webcam.TopLeft (Element.text "En haut à gauche.")
                     , Input.option Webcam.TopRight (Element.text "En haut à droite.")
@@ -121,10 +133,10 @@ webcamOptionsView session { status } =
                     Input.labelRight [] <|
                         Element.text <|
                             if withVideo then
-                                "Audio + vidéo . La vidéo et l'audio seront utilisés"
+                                "L'audio et la vidéo seront utilisés"
 
                             else
-                                "Audio. Uniquement l'audio sera utilisé"
+                                "Seul l'audio sera utilisé"
                 }
 
         fields =
@@ -135,7 +147,7 @@ webcamOptionsView session { status } =
                 [ commmonFields, submitButton ]
 
         header =
-            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options globale d'édition de la vidéo. Si besoin, elle peuvent être modifié pour une capsule lors de l'édition." ]
+            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options globales d'édition de la capsule. Si besoin, elle peuvent être modifiées pour une capsule lors de l'édition." ]
 
         form =
             case message of
@@ -147,5 +159,5 @@ webcamOptionsView session { status } =
     in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.SettingsMsg <|
-            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
                 form

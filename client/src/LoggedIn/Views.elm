@@ -132,12 +132,13 @@ uploadFormView { status, file } =
             , Font.center
             ]
             [ Element.paragraph
-                [ Element.width (Element.fill |> Element.maximum 400)
+                [ Element.width (Element.fill |> Element.maximum 500)
                 , Font.size 14
                 , Font.justify
                 ]
                 [ Element.el [ Font.bold ] <| Element.text " Pour commencer un enregistrement"
-                , Element.text ", il faut sélectionner un fichier PDF sur votre machine. "
+                , Element.text ", il faut choisir une présentation au format PDF sur votre machine. "
+                , Element.text "Par exemple un export PDF de Microsoft PowerPoint ou LibreOffice Impress en paysage au format HD. "
                 , Element.text "Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter. "
                 ]
             , Element.paragraph

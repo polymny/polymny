@@ -86,20 +86,14 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                     Element.mapAttribute Preparation.EditPromptMsg <|
                         Element.inFront (Dialog.view dialogConfig)
             ]
-            (Element.row (Element.scrollbarX :: Attributes.designAttributes)
+            (Element.row [ Element.scrollbarX ]
                 [ capsuleInfo
                 , Element.column
                     [ Element.scrollbarX
                     , Element.centerX
                     , Element.alignTop
                     ]
-                    [ Element.el
-                        [ Element.centerX
-                        , Font.color Colors.artEvening
-                        , Font.size 20
-                        ]
-                        (Element.text "Slide timeline")
-                    , Element.row (Background.color Colors.white :: Attributes.designAttributes)
+                    [ Element.row (Background.color Colors.white :: Attributes.designAttributes)
                         (List.map
                             (\( i, slide ) -> capsuleGosView global uploadForms.extraResource details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
@@ -585,12 +579,13 @@ genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm =
         extra =
             case slide.extra of
                 Just asset ->
-                    Element.column []
-                        [ Element.el [ Element.spacingXY 2 4 ] <|
+                    Element.column
+                        [ Element.centerX, Font.center, Element.spacingXY 4 4 ]
+                        [ Element.el [] <|
                             Element.text asset.name
                         , Ui.primaryButton
                             (Just deleteExtraMsg)
-                            "Supprimer la resource vidéo "
+                            "Supprimer la \n ressource vidéo "
                         ]
 
                 Nothing ->
@@ -770,7 +765,7 @@ uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element 
 uploadExtraResourceView form slideId =
     let
         text =
-            "Resource additionelle:"
+            "Ressource additionelle:"
 
         buttonSelect =
             Element.map Core.LoggedInMsg <|
@@ -782,7 +777,7 @@ uploadExtraResourceView form slideId =
             Element.map Core.LoggedInMsg <|
                 Element.map LoggedIn.PreparationMsg <|
                     Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la resource"
+                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la ressource"
 
         filename =
             case form.activeSlideId of
