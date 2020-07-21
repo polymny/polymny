@@ -662,6 +662,8 @@ pub fn capsule_edition(
                         "zerolatency",
                         "-acodec",
                         "aac",
+                        "-s",
+                        "hd1080",
                         "-r",
                         "25",
                         &pip_out,
