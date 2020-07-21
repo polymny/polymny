@@ -3,6 +3,7 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
+import Browser.Navigation as Nav
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Updates as Edition
@@ -14,23 +15,25 @@ import NewProject.Types as NewProject
 import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Settings.Types as Settings
+import Settings.Updates as Settings
 import Status
 import Utils
 
 
-update : LoggedIn.Msg -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
-update msg { session, tab } =
+update : LoggedIn.Msg -> Core.Global -> LoggedIn.Model -> ( LoggedIn.Model, Cmd Core.Msg )
+update msg global { session, tab } =
     case ( msg, tab ) of
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
                 ( newModel, cmd ) =
-                    Preparation.update preparationMsg model
+                    Preparation.update preparationMsg global model
             in
             ( { session = session, tab = LoggedIn.Preparation newModel }, cmd )
 
         ( LoggedIn.PreparationClicked capsule, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsule) }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/preparation")
             )
 
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
@@ -45,24 +48,40 @@ update msg { session, tab } =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
             in
             ( { session = session, tab = LoggedIn.Acquisition model }
-            , coreCmd
+            , Cmd.batch
+                [ coreCmd
+                , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/acquisition")
+                ]
             )
 
         ( LoggedIn.EditionMsg editionMsg, LoggedIn.Edition model ) ->
             Edition.update session editionMsg model
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
+            let
+                editionModel =
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Success (), details = capsule }
+              , tab = LoggedIn.Edition editionModel
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
 
-        ( LoggedIn.EditionClicked details True, _ ) ->
+        ( LoggedIn.EditionClicked capsule True, _ ) ->
+            let
+                editionModel =
+                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+            in
             ( { session = session
-              , tab = LoggedIn.Edition { status = Status.Sent, details = details }
+              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
               }
-            , Api.editionAuto resultToMsg3 details.capsule.id
+            , Api.editionAuto resultToMsg3
+                capsule.capsule.id
+                { withVideo = editionModel.withVideo
+                , webcamSize = editionModel.webcamSize
+                , webcamPosition = editionModel.webcamPosition
+                }
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->
@@ -74,7 +93,7 @@ update msg { session, tab } =
 
         ( LoggedIn.CapsuleReceived capsuleDetails, _ ) ->
             ( { session = session, tab = LoggedIn.Preparation (Preparation.init capsuleDetails) }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsuleDetails.capsule.id ++ "/preparation")
             )
 
         --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
@@ -94,7 +113,12 @@ update msg { session, tab } =
                 ( newSession, newModel, cmd ) =
                     NewProject.update session newProjectMsg newProjectModel
             in
-            ( { session = newSession, tab = LoggedIn.NewProject newModel }, cmd )
+            ( { session = newSession, tab = LoggedIn.NewProject newModel }
+            , Cmd.batch
+                [ cmd
+                , Nav.pushUrl global.key "/new-project"
+                ]
+            )
 
         ( LoggedIn.ProjectClicked project, _ ) ->
             ( { session = session
@@ -111,7 +135,7 @@ update msg { session, tab } =
             ( { session = newSession
               , tab = LoggedIn.Project { project | capsules = capsules } Nothing
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/project/" ++ String.fromInt project.id)
             )
 
         ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
@@ -129,7 +153,7 @@ update msg { session, tab } =
             ( { session = session
               , tab = LoggedIn.Project project (Just NewCapsule.init)
               }
-            , Cmd.none
+            , Nav.pushUrl global.key ("/new-capsule/" ++ String.fromInt project.id)
             )
 
         ( LoggedIn.CapsuleClicked capsule, _ ) ->
@@ -137,6 +161,24 @@ update msg { session, tab } =
               , tab = tab
               }
             , Api.capsuleFromId resultToMsg2 capsule.id
+            )
+
+        ( LoggedIn.SettingsClicked, _ ) ->
+            ( { session = session
+              , tab = LoggedIn.Settings Settings.init
+              }
+            , Nav.pushUrl
+                global.key
+                "/settings"
+            )
+
+        ( LoggedIn.SettingsMsg newSettingsMsg, LoggedIn.Settings settingsModel ) ->
+            let
+                ( newSession, newModel, cmd ) =
+                    Settings.update session newSettingsMsg settingsModel
+            in
+            ( { session = newSession, tab = LoggedIn.Settings newModel }
+            , cmd
             )
 
         _ ->

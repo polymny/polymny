@@ -10,6 +10,7 @@ import Element.Font as Font
 import Html
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Status
 import Ui.Colors as Colors
 import Ui.Ui as Ui
 import Utils
@@ -115,13 +116,13 @@ mainView model =
                 ]
     in
     Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
-        [ slidePos
-        , Element.row []
+        [ Element.row [ Element.spacing 10 ]
             [ recordingsView model
-            , topView
-                model
+            , topView model
             ]
-        , Element.row [ Element.centerX, Element.spacing 10 ] [ recordingButton model.cameraReady model.recording, nextButton ]
+        , Element.row [ Element.centerX, Element.spacing 10 ]
+            [ recordingButton model.cameraReady model.recording (List.length model.records), nextButton ]
+        , slidePos
         ]
 
 
@@ -132,9 +133,11 @@ topView model =
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
                 Element.image
-                    [ Element.width (Element.px 640)
-                    , Element.height (Element.px 480)
+                    [ Element.width (Element.fill |> Element.maximum 800)
                     , Element.centerX
+                    , Border.color Colors.artIrises
+                    , Border.rounded 5
+                    , Border.width 1
                     ]
                     { src = h.asset.asset_path, description = "Slide" }
 
@@ -145,13 +148,17 @@ topView model =
 
 videoView : Element Core.Msg
 videoView =
-    Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId ] []))
+    Element.el
+        [ Element.centerX
+        , Element.width (Element.px 400)
+        ]
+        (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
 
-recordingButton : Bool -> Bool -> Element Core.Msg
-recordingButton cameraReady recording =
+recordingButton : Bool -> Bool -> Int -> Element Core.Msg
+recordingButton cameraReady recording nbRecords =
     let
-        ( button, text, msg ) =
+        ( button, t, msg ) =
             if recording then
                 ( Ui.stopRecordButton, "Arrêter l'enregistrement", Just Acquisition.StopRecording )
 
@@ -163,10 +170,17 @@ recordingButton cameraReady recording =
 
                         else
                             Nothing
+
+                    buttonText =
+                        if nbRecords > 0 then
+                            "Refaire un enregistrement"
+
+                        else
+                            "Démarrer l'enregistrement"
                 in
-                ( Ui.startRecordButton, "Démarrer l'enregistrement", m )
+                ( Ui.startRecordButton, buttonText, m )
     in
-    button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) text
+    button (msg |> Maybe.map LoggedIn.AcquisitionMsg |> Maybe.map Core.LoggedInMsg) t
 
 
 nextSlideButton : Element Core.Msg
@@ -179,72 +193,103 @@ recordingsView model =
     let
         webcam =
             if model.recording then
-                Ui.primaryButtonDisabled "Webcam"
-
-            else if List.length model.records == 0 then
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Select Webcam"
+                Ui.primaryButtonDisabled "Flux webcam"
 
             else
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToStream 0) "Retour  Webcam"
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Flux webcam"
 
-        texts : List String
-        texts =
-            List.map (\x -> "Enregistrement #" ++ String.fromInt x) (List.range 1 (List.length model.records))
-
-        msg : Int -> Maybe Core.Msg
+        msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
             if model.recording then
                 Nothing
 
             else
-                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i)))
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
+
+        button : Acquisition.Record -> Element Core.Msg
+        button x =
+            case model.currentVideo of
+                Just v ->
+                    if v == x.id then
+                        Ui.successButton (msg x) ("Lire l'" ++ text x)
+
+                    else
+                        Ui.simpleButton (msg x) ("Lire l'" ++ text x)
+
+                _ ->
+                    Ui.simpleButton (msg x) (text x)
     in
     Element.column
         [ Background.color Colors.whiteDark
+        , Element.alignTop
         , Element.spacing 5
         , Element.padding 10
+        , Element.width
+            (Element.fill
+                |> Element.maximum 300
+                |> Element.minimum 250
+            )
         , Border.color Colors.whiteDarker
         , Border.rounded 5
         , Border.width 1
         ]
         [ webcam
-        , Element.text <|
-            "current ="
-                ++ String.fromInt model.currentStream
-        , Element.text
-            "Enregsitrements : "
-        , Element.column [ Element.paddingXY 10 20, Element.spacing 10 ]
-            (List.indexedMap
-                (\i ->
-                    \x ->
-                        if model.currentStream == i + 1 then
-                            Ui.successButton (msg (i + 1)) x
+        , if List.length model.records > 0 then
+            Element.el [ Element.paddingXY 0 4, Element.centerX, Font.size 16 ] <|
+                Element.text
+                    " Enregistrements : "
 
-                        else
-                            Ui.simpleButton (msg (i + 1)) x
-                )
-                texts
-            )
-        , Element.el [ Font.size 16, Font.center ] <| uploadView model.details.capsule.id model.gos model.currentStream model.recording
+          else
+            Element.none
+        , Element.column [ Element.alignLeft, Element.paddingXY 2 10, Element.spacing 10 ]
+            (List.reverse (List.map button model.records))
+        , Element.el [ Font.size 16, Font.center ] <|
+            uploadView model
         ]
 
 
-uploadView : Int -> Int -> Int -> Bool -> Element Core.Msg
-uploadView capsuleId gosId stream recording =
-    if stream == 0 then
-        Element.none
+uploadView : Acquisition.Model -> Element Core.Msg
+uploadView { details, gos, currentVideo, recording, records, status } =
+    case currentVideo of
+        Nothing ->
+            Element.none
 
-    else if recording then
-        Ui.primaryButtonDisabled ("Valider \n l'enregistrement #" ++ String.fromInt stream)
+        Just v ->
+            let
+                record =
+                    List.head (List.drop v (List.reverse records))
+
+                t =
+                    Maybe.map String.toLower (Maybe.map text record)
+            in
+            case ( t, status ) of
+                ( Nothing, _ ) ->
+                    Element.none
+
+                ( _, Status.Sent ) ->
+                    Element.row [] [ Ui.spinner, Element.text "Envoi de l'enregistrement" ]
+
+                ( Just s, _ ) ->
+                    if recording then
+                        Ui.primaryButtonDisabled ("Valider \n l'" ++ s)
+
+                    else
+                        Ui.successButton (Just (Acquisition.UploadStream (url details.capsule.id gos) v)) ("Valider \n l'" ++ s)
+                            |> Element.map LoggedIn.AcquisitionMsg
+                            |> Element.map Core.LoggedInMsg
+
+
+
+-- CONSTANTS AND UTILS
+
+
+text : Acquisition.Record -> String
+text record =
+    if record.new then
+        "enregistrement #" ++ String.fromInt record.id
 
     else
-        Ui.successButton (Just (Acquisition.UploadStream (url capsuleId gosId) stream)) ("Valider \n l'enregistrement #" ++ String.fromInt stream)
-            |> Element.map LoggedIn.AcquisitionMsg
-            |> Element.map Core.LoggedInMsg
-
-
-
--- CONSTANTS
+        "ancien enregistrement"
 
 
 url : Int -> Int -> String

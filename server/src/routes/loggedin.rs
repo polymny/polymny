@@ -10,7 +10,7 @@ use diesel::RunQueryDsl;
 
 use rocket::http::ContentType;
 use rocket::{Data, State};
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
@@ -18,7 +18,7 @@ use rocket_multipart_form_data::{
 use tempfile::tempdir;
 use uuid::Uuid;
 
-use crate::command::run_command;
+use crate::command;
 use crate::config::Config;
 use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
@@ -26,7 +26,8 @@ use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::routes::capsule::{format_capsule_data, GosStructure};
-use crate::schema::capsules;
+use crate::schema::{capsules, users};
+use crate::webcam::{webcam_position_to_str, webcam_size_to_str, EditionOptions};
 
 use crate::{Database, Error, Result};
 
@@ -107,20 +108,7 @@ pub fn quick_upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-
-                    let command_output_path = format!("{}", &output_path.to_str().unwrap());
-                    let command_input_path = format!("{}/'%02'.png", dir.path().display());
-                    let command = vec![
-                        "convert",
-                        "-density",
-                        "300",
-                        &command_output_path,
-                        "-resize",
-                        "1920x1080!",
-                        &command_input_path,
-                    ];
-
-                    run_command(&command)?;
+                    command::export_slides(&output_path, dir.path())?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -181,4 +169,27 @@ pub fn quick_upload_slides(
         todo!();
     }
     return Err(Error::NotFound);
+}
+
+/// Upload a presentation (slides)
+#[put("/options", data = "<data>")]
+pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<JsonValue> {
+    // Perform the update
+    use crate::schema::users::dsl;
+    println!("data= {:#?}", data);
+    diesel::update(users::table)
+        .filter(dsl::id.eq(user.id))
+        .set(dsl::edition_options.eq(serde_json!(data.into_inner())))
+        .execute(&db.0)?;
+
+    let nuser = User::get_by_id(user.id, &db)?;
+    let options = nuser.get_edition_options()?;
+    println!("{:#?}", options);
+    Ok(json!({"username": nuser.username,
+        "projects": nuser.projects(&db)?,
+        "active_project": "",
+        "with_video": options.with_video,
+        "webcam_size": webcam_size_to_str(options.webcam_size),
+        "webcam_position": webcam_position_to_str(options.webcam_position),
+    }))
 }

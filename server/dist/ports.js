@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, nextSlideCallbacks;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -13,15 +13,35 @@ function setupPorts(app) {
         stream = null;
         recorder = null;
         recording = false;
+        initializing = false;
         blobs = [];
         nextSlideCallbacks = [];
     }
 
-    function init(elementId) {
+    function init(elementId, maybeVideo) {
+        if (exitRequested) {
+            exitRequested = false;
+        }
+
+        if (initializing) {
+            return;
+        }
+
         initVariables();
+
+        if (maybeVideo !== null) {
+            blobs.push(maybeVideo);
+        }
+
+        initializing = true;
         setupUserMedia(() => {
             bindWebcam(elementId, () => {
-                app.ports.cameraReady.send(null);
+                initializing = false;
+                if (exitRequested) {
+                    exit();
+                } else {
+                    app.ports.cameraReady.send(null);
+                }
             });
         });
     }
@@ -43,6 +63,12 @@ function setupPorts(app) {
 
     function bindWebcam(elementId, callback) {
         let element = document.getElementById(elementId);
+
+        if (element === null) {
+            callback();
+            return;
+        }
+
         element.srcObject = stream;
         element.src = null;
         element.muted = true;
@@ -75,45 +101,57 @@ function setupPorts(app) {
         recorder.stop();
     }
 
+    function goToWebcam(id) {
+        clearCallbacks();
+        bindWebcam(id, () => {
+            app.ports.cameraReady.send(null);
+        });
+    }
+
     function goToStream(id, n, nextSlides) {
         clearCallbacks();
 
-        if (n === 0) {
-            bindWebcam(id, () => {
-                app.ports.cameraReady.send(null);
-            });
+        let video = document.getElementById(id);
+        video.srcObject = null;
+        if (typeof blobs[n] === "string" || blobs[n] instanceof String) {
+            video.src = blobs[n];
         } else {
-            let video = document.getElementById(id);
-            video.srcObject = null;
-            video.src = URL.createObjectURL(blobs[n-1]);
-            video.muted = false;
-            video.play();
-            for (let time of nextSlides) {
-                nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
-            }
+            video.src = URL.createObjectURL(blobs[n]);
+        }
+        video.muted = false;
+        video.play();
+        for (let time of nextSlides) {
+            nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
         }
     }
 
-    function uploadStream(url, n) {
-        let streamToUpload = blobs[n-1];
+    function uploadStream(url, n, json) {
+        let streamToUpload = blobs[n];
+
+        let formData = new FormData();
+        formData.append("file", streamToUpload);
+        formData.append("structure", JSON.stringify(json));
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type", "video/webm");
         xhr.onreadystatechange = () => {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 app.ports.streamUploaded.send(JSON.parse(xhr.responseText));
             }
         }
-        xhr.send(streamToUpload);
+        xhr.send(formData);
     }
 
     function exit() {
-        stream.getTracks().forEach(function(track) {
-            track.stop();
-        });
+        if (stream !== null && !initializing) {
+            stream.getTracks().forEach(function(track) {
+                track.stop();
+            });
 
-        initVariables();
+            initVariables();
+        } else {
+            exitRequested = true;
+        }
     }
 
     function subscribe(object, fun) {
@@ -122,8 +160,8 @@ function setupPorts(app) {
         }
     }
 
-    subscribe(app.ports.init, function(id) {
-        init(id);
+    subscribe(app.ports.init, function(args) {
+        init(args[0], args[1]);
     });
 
     subscribe(app.ports.bindWebcam, function(id) {
@@ -144,12 +182,16 @@ function setupPorts(app) {
         stopRecording();
     });
 
+    subscribe(app.ports.goToWebcam, function(attr) {
+        goToWebcam(attr);
+    });
+
     subscribe(app.ports.goToStream, function(attr) {
         goToStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.uploadStream, function(attr) {
-        uploadStream(attr[0], attr[1]);
+        uploadStream(attr[0], attr[1], attr[2]);
     });
 
     subscribe(app.ports.exit, function() {

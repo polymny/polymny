@@ -3,6 +3,7 @@ module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, initA
 import Acquisition.Ports as Ports
 import Api
 import Json.Encode
+import Status exposing (Status)
 
 
 type Mode
@@ -11,42 +12,68 @@ type Mode
 
 
 type alias Record =
-    { started : Int
+    { id : Int
+    , new : Bool
+    , started : Int
     , nextSlides : List Int
     }
 
 
-newRecord : Int -> Record
-newRecord started =
-    { started = started, nextSlides = [] }
+newRecord : Int -> Int -> Record
+newRecord id started =
+    { id = id, new = True, started = started, nextSlides = [] }
 
 
 type alias Model =
     { records : List Record
     , recording : Bool
-    , currentStream : Int
+    , currentVideo : Maybe Int
     , slides : Maybe (List Api.Slide)
     , details : Api.CapsuleDetails
     , gos : Int
     , currentSlide : Int
     , mode : Mode
     , cameraReady : Bool
+    , status : Status () ()
     }
 
 
 init : Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
 init details mode gos =
-    ( { records = []
+    let
+        record =
+            case List.head (List.drop gos details.structure) of
+                Just g ->
+                    case g.record of
+                        Just s ->
+                            Just ( s, Record 0 False 0 g.transitions )
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+
+        records =
+            case record of
+                Just g ->
+                    [ Tuple.second g ]
+
+                Nothing ->
+                    []
+    in
+    ( { records = records
       , recording = False
-      , currentStream = 0
+      , currentVideo = Nothing
       , slides = List.head (List.drop gos (Api.detailsSortSlides details))
       , details = details
       , gos = gos
       , currentSlide = 0
       , mode = mode
       , cameraReady = False
+      , status = Status.NotSent
       }
-    , Ports.init "video"
+    , Ports.init ( "video", Maybe.map Tuple.first record )
     )
 
 
@@ -70,24 +97,14 @@ initAtFirstNonRecorded details mode =
                 |> List.head
                 |> Maybe.withDefault 0
     in
-    ( { records = []
-      , recording = False
-      , currentStream = 0
-      , slides = List.head (List.drop gos (Api.detailsSortSlides details))
-      , details = details
-      , gos = gos
-      , currentSlide = 0
-      , mode = mode
-      , cameraReady = False
-      }
-    , Ports.init "video"
-    )
+    init details mode gos
 
 
 type Msg
     = StartRecording
     | StopRecording
     | CameraReady
+    | GoToWebcam
     | GoToStream Int
     | NextSlide Bool
     | UploadStream String Int

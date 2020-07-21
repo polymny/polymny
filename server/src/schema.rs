@@ -42,6 +42,7 @@ table! {
         video_id -> Nullable<Int4>,
         structure -> Json,
         published -> Published_type,
+        edition_options -> Json,
     }
 }
 
@@ -92,6 +93,7 @@ table! {
         asset_id -> Int4,
         capsule_id -> Int4,
         prompt -> Text,
+        extra_id -> Nullable<Int4>,
     }
 }
 
@@ -109,6 +111,7 @@ table! {
         activated -> Bool,
         activation_key -> Nullable<Varchar>,
         reset_password_key -> Nullable<Varchar>,
+        edition_options -> Json,
     }
 }
 
@@ -117,7 +120,6 @@ joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
-joinable!(slides -> assets (asset_id));
 joinable!(slides -> capsules (capsule_id));
 
 allow_tables_to_appear_in_same_query!(

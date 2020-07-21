@@ -9,6 +9,7 @@ use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -72,6 +73,18 @@ pub struct Capsule {
 
     /// Whether the capsule video is published.
     pub published: PublishedType,
+
+    /// The structure of the editions options.
+    ///
+    /// This json should be of the form
+    /// ```
+    ///  {
+    ///     with_video: bool,
+    ///     webcam_size:  WebcamSize,
+    ///     webcam_position: WebcamPosition,
+    ///  ]
+    /// ```
+    pub edition_options: Json,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -102,6 +115,9 @@ pub struct NewCapsule {
 
     /// Whether the capsule video is published.
     pub published: PublishedType,
+
+    /// The structure of the editions options.
+    pub edition_options: Option<Json>,
 }
 
 /// A link between a capsule and a project.
@@ -151,6 +167,7 @@ impl Capsule {
             logo_id: Some(logo_id),
             structure: json!([]),
             published: PublishedType::NotPublished,
+            edition_options: Some(json!([])),
         }
         .save(&database)?;
 
@@ -181,6 +198,7 @@ impl Capsule {
             logo_id: Some(logo_id),
             structure: json!([]),
             published: PublishedType::NotPublished,
+            edition_options: None,
         })
     }
     /// Gets a capsule from its id.
@@ -286,6 +304,37 @@ impl Capsule {
         Ok(diesel::delete(capsules::table)
             .filter(dsl::id.eq(self.id))
             .execute(db)?)
+    }
+
+    /// Gets Webcam option in db or default values if not set
+    pub fn get_edition_options(&self) -> Result<EditionOptions> {
+        let options = EditionOptions {
+            with_video: self
+                .edition_options
+                .get("with_video")
+                .unwrap()
+                .as_bool()
+                .unwrap(),
+            webcam_size: str_to_webcam_size(
+                &self
+                    .edition_options
+                    .get("webcam_size")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            webcam_position: str_to_webcam_position(
+                &self
+                    .edition_options
+                    .get("webcam_position")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+        };
+        Ok(options)
     }
 }
 

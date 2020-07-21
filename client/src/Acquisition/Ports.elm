@@ -5,6 +5,7 @@ port module Acquisition.Ports exposing
     , exit
     , goToNextSlide
     , goToStream
+    , goToWebcam
     , init
     , newRecord
     , nextSlideReceived
@@ -17,7 +18,7 @@ port module Acquisition.Ports exposing
 import Json.Encode
 
 
-port init : String -> Cmd msg
+port init : ( String, Maybe String ) -> Cmd msg
 
 
 port bindWebcam : String -> Cmd msg
@@ -32,10 +33,13 @@ port startRecording : () -> Cmd msg
 port stopRecording : () -> Cmd msg
 
 
+port goToWebcam : String -> Cmd msg
+
+
 port goToStream : ( String, Int, Maybe (List Int) ) -> Cmd msg
 
 
-port uploadStream : ( String, Int ) -> Cmd msg
+port uploadStream : ( String, Int, Json.Encode.Value ) -> Cmd msg
 
 
 port newRecord : (Int -> msg) -> Sub msg

@@ -1,10 +1,16 @@
-module Core.Updates exposing (update)
+module Core.Updates exposing (onUrlChange, onUrlRequest, update)
 
 import Acquisition.Ports as Ports
 import Api
+import Browser
+import Browser.Navigation as Nav
 import Core.Types as Core
+import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
 import ForgotPassword.Updates as ForgotPassword
+import Http
+import Json.Decode as Decode
+import Log
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
@@ -15,6 +21,7 @@ import ResetPassword.Types as ResetPassword
 import ResetPassword.Updates as ResetPassword
 import SignUp.Types as SignUp
 import SignUp.Updates as SignUp
+import Url
 
 
 update : Core.Msg -> Core.FullModel -> ( Core.FullModel, Cmd Core.Msg )
@@ -36,7 +43,7 @@ update msg { global, model } =
                             , tab = LoggedIn.init
                             }
                         )
-                    , Cmd.none
+                    , Nav.pushUrl global.key "/"
                     )
 
                 ( Core.LoginClicked, _ ) ->
@@ -94,11 +101,31 @@ update msg { global, model } =
                 ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
                     let
                         ( m, cmd ) =
-                            LoggedIn.update newProjectMsg (LoggedIn.Model session tab)
+                            LoggedIn.update newProjectMsg global (LoggedIn.Model session tab)
                     in
                     ( Core.FullModel global (Core.LoggedIn m), cmd )
 
-                _ ->
+                -- Url message
+                ( Core.UrlRequested (Browser.Internal url), _ ) ->
+                    ( Core.FullModel global model
+                    , Api.get
+                        { url = Url.toString url
+                        , body = Http.emptyBody
+                        , expect = Http.expectJson resultToMsg Decode.value
+                        }
+                    )
+
+                ( Core.UrlRequested (Browser.External url), _ ) ->
+                    ( Core.FullModel global model, Nav.load url )
+
+                ( Core.UrlReceived m c, _ ) ->
+                    ( Core.FullModel global m, c )
+
+                ( m, _ ) ->
+                    let
+                        _ =
+                            Log.debug "Unhandled message" m
+                    in
                     ( Core.FullModel global model, Cmd.none )
 
         -- If model is acquisition and returnModel is not, we need to turn off the camera
@@ -126,3 +153,23 @@ isAcquisition model =
 
         _ ->
             False
+
+
+resultToMsg : Result Http.Error Decode.Value -> Core.Msg
+resultToMsg result =
+    case Result.map (\x -> Core.modelFromFlags x) result of
+        Ok ( m, c ) ->
+            Core.UrlReceived m c
+
+        Err _ ->
+            Core.Noop
+
+
+onUrlChange : Url.Url -> Core.Msg
+onUrlChange url =
+    Core.UrlRequested (Browser.Internal url)
+
+
+onUrlRequest : Browser.UrlRequest -> Core.Msg
+onUrlRequest request =
+    Core.UrlRequested request

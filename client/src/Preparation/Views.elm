@@ -11,7 +11,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
-import Html
+import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
@@ -101,7 +101,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                         (Element.text "Slide timeline")
                     , Element.row (Background.color Colors.white :: Attributes.designAttributes)
                         (List.map
-                            (\( i, slide ) -> capsuleGosView global details gosModel slideModel (calculateOffset i) i slide)
+                            (\( i, slide ) -> capsuleGosView global uploadForms.extraResource details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
@@ -188,28 +188,28 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Core.Global -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView global capsule gosModel slideModel offset gosIndex gos =
+capsuleGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView global uploadForm capsule gosModel slideModel offset gosIndex gos =
     case ( global.beta, Preparation.gosSystem.info gosModel ) of
         ( False, _ ) ->
-            genericGosView global capsule Locked gosModel slideModel offset gosIndex gos
+            genericGosView global uploadForm capsule Locked gosModel slideModel offset gosIndex gos
 
         ( _, Just { dragIndex } ) ->
             if dragIndex /= gosIndex then
-                genericGosView global capsule Drop gosModel slideModel offset gosIndex gos
+                genericGosView global uploadForm capsule Drop gosModel slideModel offset gosIndex gos
 
             else
-                genericGosView global capsule EventLess gosModel slideModel offset gosIndex gos
+                genericGosView global uploadForm capsule EventLess gosModel slideModel offset gosIndex gos
 
         _ ->
-            genericGosView global capsule Drag gosModel slideModel offset gosIndex gos
+            genericGosView global uploadForm capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : Core.Global -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-gosGhostView global capsule gosModel slideModel slides =
+gosGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+gosGhostView global uploadForm capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
-            genericGosView global capsule Ghost gosModel slideModel 0 0 s
+            genericGosView global uploadForm capsule Ghost gosModel slideModel 0 0 s
 
         _ ->
             Element.none
@@ -225,8 +225,8 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-genericGosView : Core.Global -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView global capsule options gosModel slideModel offset index gos =
+genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView global uploadForm capsule options gosModel slideModel offset index gos =
     let
         gosId : String
         gosId =
@@ -287,7 +287,7 @@ genericGosView global capsule options gosModel slideModel offset index gos =
 
         slides : List (Element Core.Msg)
         slides =
-            List.indexedMap (designSlideView global (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
+            List.indexedMap (designSlideView global uploadForm (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
 
         structure : Maybe Api.Gos
         structure =
@@ -320,7 +320,7 @@ genericGosView global capsule options gosModel slideModel offset index gos =
         leftButtons =
             case Maybe.map .record structure of
                 Just (Just record) ->
-                    [ Element.link [ Element.htmlAttribute (Html.Attributes.attribute "target" "_blank") ] { url = record, label = movieButton }, cameraButton ]
+                    [ Element.newTabLink [] { url = record, label = movieButton }, cameraButton ]
 
                 _ ->
                     [ cameraButton ]
@@ -363,18 +363,18 @@ genericGosView global capsule options gosModel slideModel offset index gos =
 -- SLIDES VIEWS
 
 
-slideGhostView : Core.Global -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-slideGhostView global slideModel slides =
+slideGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+slideGhostView global uploadForm slideModel slides =
     case maybeDragSlide slideModel slides of
         Preparation.JustSlide s _ ->
-            genericDesignSlideView global Ghost slideModel 0 0 (Preparation.JustSlide s -1)
+            genericDesignSlideView global uploadForm Ghost slideModel 0 0 (Preparation.JustSlide s -1)
 
         _ ->
             Element.none
 
 
-designSlideView : Core.Global -> Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-designSlideView global enabled slideModel offset localIndex slide =
+designSlideView : Core.Global -> Preparation.UploadExtraResourceForm -> Bool -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+designSlideView global uploadForm enabled slideModel offset localIndex slide =
     let
         t =
             case ( enabled, Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
@@ -391,7 +391,7 @@ designSlideView global enabled slideModel offset localIndex slide =
                 _ ->
                     Drag
     in
-    genericDesignSlideView global t slideModel offset localIndex slide
+    genericDesignSlideView global uploadForm t slideModel offset localIndex slide
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.MaybeSlide
@@ -409,8 +409,8 @@ maybeDragSlide slideModel slides =
             Preparation.GosId -1
 
 
-genericDesignSlideView : Core.Global -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-genericDesignSlideView global options slideModel offset localIndex s =
+genericDesignSlideView : Core.Global -> Preparation.UploadExtraResourceForm -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+genericDesignSlideView global uploadForm options slideModel offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -463,11 +463,39 @@ genericDesignSlideView global options slideModel offset localIndex s =
         Preparation.JustSlide slide _ ->
             let
                 secondColumn =
-                    if global.beta then
-                        genrericDesignSlide2ndColumnView eventLessAttributes slide
+                    genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm
 
-                    else
-                        Element.none
+                filename =
+                    case uploadForm.file of
+                        Nothing ->
+                            "No file selected"
+
+                        Just realFile ->
+                            File.name realFile
+
+                message =
+                    case uploadForm.activeSlideId of
+                        Just x ->
+                            if x == slide.id then
+                                case uploadForm.status of
+                                    Status.Sent ->
+                                        Ui.messageWithSpinner
+                                            ("Téléchargement et transcodage en cours de  \n " ++ filename)
+
+                                    Status.Error () ->
+                                        Ui.errorModal "Echec du transcodage de la video. Merci de nous contacter"
+
+                                    Status.Success () ->
+                                        Ui.successModal "Upload et transcodage de la video réussis"
+
+                                    _ ->
+                                        Element.none
+
+                            else
+                                Element.none
+
+                        Nothing ->
+                            Element.none
             in
             Element.el
                 (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
@@ -490,6 +518,7 @@ genericDesignSlideView global options slideModel offset localIndex s =
                             , Font.color Colors.artEvening
                             ]
                             Element.none
+                    , message
                     , Element.row
                         [ Element.spacingXY 2 0 ]
                         [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
@@ -501,29 +530,43 @@ genericDesignSlideView global options slideModel offset localIndex s =
 
 genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Element Core.Msg
 genrericDesignSlide1stColumnView eventLessAttributes slide =
+    let
+        media =
+            case slide.extra of
+                Just asset ->
+                    Element.html <|
+                        htmlVideo asset.asset_path
+
+                Nothing ->
+                    viewSlideImage slide.asset.asset_path
+    in
     Element.column
         (Element.alignTop
             :: Element.width
                 (Element.shrink
-                    |> Element.maximum 300
+                    |> Element.maximum 600
                     |> Element.minimum 210
                 )
             :: eventLessAttributes
         )
-        [ viewSlideImage slide.asset.asset_path
-        , Element.column [ Font.size 14, Element.spacing 4 ]
-            [ Element.column [ Element.padding 4 ]
-                [ Element.el [ Element.spacingXY 2 4 ] <|
-                    Ui.addButton
-                        Nothing
-                        " Ajouter des ressources"
-                ]
-            ]
+        [ media
         ]
 
 
-genrericDesignSlide2ndColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Element Core.Msg
-genrericDesignSlide2ndColumnView eventLessAttributes slide =
+htmlVideo : String -> Html msg
+htmlVideo url =
+    Html.video
+        [ Html.Attributes.controls True
+        , Html.Attributes.width 200
+        ]
+        [ Html.source
+            [ Html.Attributes.src url ]
+            []
+        ]
+
+
+genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
+genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm =
     let
         promptMsg : Core.Msg
         promptMsg =
@@ -531,6 +574,65 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
                 LoggedIn.PreparationMsg <|
                     Preparation.EditPromptMsg <|
                         Preparation.EditPromptOpenDialog slide.id slide.prompt
+
+        deleteExtraMsg : Core.Msg
+        deleteExtraMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResource slide.id
+
+        extra =
+            case slide.extra of
+                Just asset ->
+                    Element.column []
+                        [ Element.el [ Element.spacingXY 2 4 ] <|
+                            Element.text asset.name
+                        , Ui.primaryButton
+                            (Just deleteExtraMsg)
+                            "Supprimer la resource vidéo "
+                        ]
+
+                Nothing ->
+                    Element.column [ Font.size 14, Element.spacing 4 ]
+                        [ Element.column []
+                            [ Element.el [ Element.spacingXY 2 4 ] <|
+                                uploadExtraResourceView uploadForm slide.id
+                            ]
+                        ]
+
+        prompt =
+            [ Element.el
+                [ Font.size 14
+                , Element.centerX
+                ]
+                (Element.text "Prompteur")
+            , Element.el
+                [ Border.rounded 5
+                , Border.width 2
+                , Border.color Colors.grey
+                , Background.color Colors.black
+                , Element.centerX
+                , Element.scrollbarY
+                , Element.height (Element.px 150)
+                , Element.width (Element.px 150)
+                , Element.padding 5
+                , Font.size 12
+                , Font.color Colors.white
+                ]
+                (Element.text slide.prompt)
+            , Element.row []
+                [ Ui.editButton (Just promptMsg) "Modifier"
+                , Ui.clearButton Nothing "Effacer"
+                ]
+            ]
+
+        rows =
+            if global.beta then
+                extra :: prompt
+
+            else
+                [ extra ]
     in
     Element.column
         (Element.alignTop
@@ -544,30 +646,7 @@ genrericDesignSlide2ndColumnView eventLessAttributes slide =
                 )
             :: eventLessAttributes
         )
-        [ Element.el
-            [ Font.size 14
-            , Element.centerX
-            ]
-            (Element.text "Prompteur")
-        , Element.el
-            [ Border.rounded 5
-            , Border.width 2
-            , Border.color Colors.grey
-            , Background.color Colors.black
-            , Element.centerX
-            , Element.scrollbarY
-            , Element.height (Element.px 150)
-            , Element.width (Element.px 150)
-            , Element.padding 5
-            , Font.size 12
-            , Font.color Colors.white
-            ]
-            (Element.text slide.prompt)
-        , Element.row []
-            [ Ui.editButton (Just promptMsg) "Modifier"
-            , Ui.clearButton Nothing "Effacer"
-            ]
-        ]
+        rows
 
 
 viewSlideImage : String -> Element Core.Msg
@@ -677,14 +756,58 @@ uploadView form model =
 
 uploadFormView : Preparation.UploadForm -> Preparation.UploadModel -> Element Core.Msg
 uploadFormView form model =
-    Element.column [ Element.centerX, Element.spacing 20 ]
-        [ Element.row
-            [ Element.spacing 20
+    Element.row
+        [ Element.spacing 20
+        , Element.centerX
+        ]
+        [ selectFileButton model
+        , fileNameElement form.file
+        , uploadButton model
+        ]
+
+
+uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element Core.Msg
+uploadExtraResourceView form slideId =
+    let
+        text =
+            "Resource additionelle:"
+
+        buttonSelect =
+            Element.map Core.LoggedInMsg <|
+                Element.map LoggedIn.PreparationMsg <|
+                    Element.map Preparation.UploadExtraResourceMsg <|
+                        Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Choisir :"
+
+        buttonSubmit =
+            Element.map Core.LoggedInMsg <|
+                Element.map LoggedIn.PreparationMsg <|
+                    Element.map Preparation.UploadExtraResourceMsg <|
+                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la resource"
+
+        filename =
+            case form.activeSlideId of
+                Just x ->
+                    if x == slideId then
+                        fileNameElement form.file
+
+                    else
+                        Element.text "Pas de fichier choisis"
+
+                Nothing ->
+                    fileNameElement form.file
+    in
+    Element.column
+        [ Element.padding 5
+        , Element.spacing 5
+        ]
+        [ Element.text text
+        , Element.column
+            [ Element.spacing 5
             , Element.centerX
             ]
-            [ selectFileButton model
-            , fileNameElement form.file
-            , uploadButton model
+            [ buttonSelect
+            , filename
+            , buttonSubmit
             ]
         ]
 
@@ -694,7 +817,7 @@ fileNameElement file =
     Element.text <|
         case file of
             Nothing ->
-                "No file selected"
+                ""
 
             Just realFile ->
                 File.name realFile

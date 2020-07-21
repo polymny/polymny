@@ -1,7 +1,7 @@
 //! This module helps us to run commands.
 
 use std::io::Result;
-
+use std::path::Path;
 use std::process::{Command, Output};
 
 /// Runs a specified command.
@@ -23,4 +23,20 @@ pub fn run_command(command: &Vec<&str>) -> Result<Output> {
     }
 
     child
+}
+
+/// Exports all slides from pdf to png.
+pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<()> {
+    run_command(&vec![
+        "pdftocairo",
+        "-png",
+        "-scale-to-x",
+        "1920",
+        "-scale-to-y",
+        "1080",
+        input.as_ref().to_str().unwrap(),
+        &format!("{}/", output.as_ref().to_str().unwrap()),
+    ])?;
+
+    Ok(())
 }

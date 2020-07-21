@@ -2,13 +2,14 @@ module Core.Views exposing (subscriptions, view)
 
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
+import Browser
 import Core.Types as Core
+import Core.Utils as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import ForgotPassword.Views as ForgotPassword
-import Html
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
@@ -55,9 +56,11 @@ subscriptions { model } =
             Sub.none
 
 
-view : Core.FullModel -> Html.Html Core.Msg
+view : Core.FullModel -> Browser.Document Core.Msg
 view fullModel =
-    Element.layout Attributes.fullModelAttributes (viewContent fullModel)
+    { title = "Polymny"
+    , body = [ Element.layout Attributes.fullModelAttributes (viewContent fullModel) ]
+    }
 
 
 viewContent : Core.FullModel -> Element Core.Msg
@@ -78,9 +81,9 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation { slides, slideModel, gosModel, details } ->
-                            [ Element.inFront (Preparation.gosGhostView global details gosModel slideModel (List.concat slides))
-                            , Element.inFront (Preparation.slideGhostView global slideModel (List.concat slides))
+                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms } ->
+                            [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource details gosModel slideModel (List.concat slides))
+                            , Element.inFront (Preparation.slideGhostView global uploadForms.extraResource slideModel (List.concat slides))
                             ]
 
                         _ ->
@@ -147,9 +150,9 @@ homeView model =
                 ]
                 [ Element.el Attributes.attributesHomeTitle <|
                     Element.text "Polymny Studio "
-                , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques !" ]
+                , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}!" ]
                 , Element.paragraph [] [ Element.text "Le tout à distance, sans obstacles ni prérequis, à partir de simples présentations pdf.\n" ]
-                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie" ]
+                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie." ]
                 , Element.el [ Element.paddingXY 30 5, Element.alignLeft ] <| viewLogo 100 "/dist/logoRegionOccitanie.png"
                 , Element.paragraph [] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]
                 , Element.row [ Element.spacing 10 ]
@@ -189,7 +192,9 @@ topBar model =
                     [ homeButton ]
                 , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
-                        [ Element.el [] (Element.text session.username), logoutButton ]
+                        [ settingsButton session.username
+                        , logoutButton
+                        ]
 
                      else
                         []
@@ -243,7 +248,7 @@ bottomBar global =
                     ("Polymny "
                         ++ global.version
                         ++ (if global.beta then
-                                " beta"
+                                " beta " ++ global.commit
 
                             else
                                 ""
@@ -282,6 +287,11 @@ homeButton =
 logoutButton : Element Core.Msg
 logoutButton =
     Ui.topBarButton (Just Core.LogoutClicked) "Log out"
+
+
+settingsButton : String -> Element Core.Msg
+settingsButton content =
+    Ui.topBarButton (Just <| Core.LoggedInMsg <| LoggedIn.SettingsClicked) content
 
 
 viewLogo : Int -> String -> Element Core.Msg

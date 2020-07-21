@@ -1,5 +1,7 @@
 //! This module contains the structures to manipulate users.
 
+use serde_json::Value as Json;
+
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::RunQueryDsl;
@@ -25,11 +27,12 @@ use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
     validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
 use crate::Database;
 use crate::{Error, Result};
 
-/// A user of chouette.
-#[derive(Identifiable, Queryable, PartialEq, Debug)]
+/// A user of polymny.
+#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize)]
 pub struct User {
     /// The id of the user.
     pub id: i32,
@@ -54,6 +57,18 @@ pub struct User {
 
     /// The key to reset the password user.
     pub reset_password_key: Option<String>,
+
+    /// The structure of the editions options.
+    ///
+    /// This json should be of the form
+    /// ```
+    ///  {
+    ///     with_video: bool,
+    ///     webcam_size: String or WebcamSize,
+    ///     webcam_position: String or WebcamPosition,
+    ///  ]
+    /// ```
+    pub edition_options: Json,
 }
 
 /// A user that is stored into the database yet.
@@ -80,6 +95,9 @@ pub struct NewUser {
 
     /// The key to reset the password user.
     pub reset_password_key: Option<String>,
+
+    /// The structure of the editions options.
+    pub edition_options: Option<Json>,
 }
 
 impl User {
@@ -125,6 +143,7 @@ impl User {
                     activated: false,
                     activation_key: Some(activation_key),
                     reset_password_key: None,
+                    edition_options: None,
                 })
             }
 
@@ -136,6 +155,7 @@ impl User {
                 activated: true,
                 activation_key: None,
                 reset_password_key: None,
+                edition_options: None,
             }),
         }
     }
@@ -144,6 +164,12 @@ impl User {
     pub fn get_by_email(email: &str, db: &PgConnection) -> Result<User> {
         use crate::schema::users::dsl;
         let user = dsl::users.filter(dsl::email.eq(email)).first::<User>(db);
+        Ok(user?)
+    }
+    /// Gets a user by idl.
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl;
+        let user = dsl::users.filter(dsl::id.eq(id)).first::<User>(db);
         Ok(user?)
     }
 
@@ -314,6 +340,7 @@ impl User {
                 activated,
                 activation_key,
                 reset_password_key,
+                edition_options,
             ))
             .first::<User>(db)
             .map_err(|_| Error::AuthenticationFailed)?;
@@ -393,6 +420,37 @@ impl User {
         // Check that the user owns a project containing the capsule
         self.get_capsule_by_id(slide.capsule_id, db)?;
         Ok(slide)
+    }
+
+    /// Gets Webcam option in db or default values if not set
+    pub fn get_edition_options(&self) -> Result<EditionOptions> {
+        let options = EditionOptions {
+            with_video: self
+                .edition_options
+                .get("with_video")
+                .unwrap()
+                .as_bool()
+                .unwrap(),
+            webcam_size: str_to_webcam_size(
+                &self
+                    .edition_options
+                    .get("webcam_size")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+            webcam_position: str_to_webcam_position(
+                &self
+                    .edition_options
+                    .get("webcam_position")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            ),
+        };
+        Ok(options)
     }
 }
 
