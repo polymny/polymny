@@ -122,6 +122,7 @@ type EditPromptMsg
     | EditPromptTextChanged String
     | EditPromptSubmitted
     | EditPromptSuccess Api.Slide
+    | EditPromptError
 
 
 type UploadSlideShowMsg
