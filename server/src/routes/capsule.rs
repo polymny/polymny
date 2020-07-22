@@ -478,12 +478,6 @@ pub fn upload_record(
     } else {
         todo!();
     };
-    let file_name = &format!("capsule.mp4");
-    let mut server_path = PathBuf::from(&user.username);
-    let uuid = Uuid::new_v4();
-    server_path.push(format!("{}_{}", uuid, file_name));
-    let mut output_path = config.data_path.clone();
-    output_path.push(server_path);
     let text = match multipart_form_data.texts.get("structure") {
         Some(TextField::Single(field)) => &field.text,
         _ => panic!(),

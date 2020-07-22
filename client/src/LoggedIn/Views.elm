@@ -116,7 +116,7 @@ uploadFormView { status, file } =
                         ("Préparation de l'enregistement pour le fichier\n " ++ filename)
 
                 Status.Error () ->
-                    Ui.errorModal "Echec upload pdf"
+                    Ui.errorModal "Echec de l'upoad du pdf. Merci de nous contacter"
 
                 Status.Success () ->
                     Ui.successModal "L Upload du pdf a réussis"
