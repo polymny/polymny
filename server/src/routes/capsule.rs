@@ -242,6 +242,7 @@ pub fn upload_slides(
 
                         capsule_structure.push(GosStructure {
                             record_path: None,
+                            pointer_path: None,
                             slides: vec![slide.id],
                             transitions: vec![],
                             locked: false,
@@ -379,6 +380,9 @@ pub struct GosStructure {
     /// The path to the record if any.
     pub record_path: Option<String>,
 
+    /// The path to the pointer video if any.
+    pub pointer_path: Option<String>,
+
     /// Whether the gos is locked or not.
     pub locked: bool,
 }
@@ -442,6 +446,9 @@ pub fn upload_record(
     options.allowed_fields.push(
         MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
     );
+    options.allowed_fields.push(
+        MultipartFormDataField::file("pointer").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
+    );
     options
         .allowed_fields
         .push(MultipartFormDataField::text("structure"));
@@ -478,6 +485,34 @@ pub fn upload_record(
     } else {
         todo!();
     };
+
+    let file = multipart_form_data.files.get("pointer");
+    let pointer = if let Some(file) = file {
+        match file {
+            FileField::Single(file) => {
+                let file_name = "file";
+                let path = &file.path;
+                let mut server_path = PathBuf::from(&user.username);
+                let uuid = Uuid::new_v4();
+                server_path.push(format!("{}_{}", uuid, file_name));
+                let asset = Asset::new(&db, uuid, &file_name, server_path.to_str().unwrap())?;
+                AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
+                let mut output_path = config.data_path.clone();
+                output_path.push(server_path);
+                println!("output_path {:#?}", output_path);
+                create_dir(output_path.parent().unwrap()).ok();
+                fs::copy(path, &output_path)?;
+                asset
+            }
+            FileField::Multiple(_files) => {
+                // TODO: handle mutlile files
+                todo!()
+            }
+        }
+    } else {
+        todo!();
+    };
+
     let file_name = &format!("capsule.mp4");
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
@@ -501,6 +536,7 @@ pub fn upload_record(
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     v[gos].record_path = Some(asset.asset_path.clone());
+    v[gos].pointer_path = Some(pointer.asset_path.clone());
     v[gos].locked = true;
     {
         use crate::schema::capsules::dsl::{id as cid, structure};

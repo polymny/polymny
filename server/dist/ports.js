@@ -68,33 +68,35 @@ function setupPorts(app) {
     }
 
     function init(elementId, maybeVideo) {
-        if (exitRequested) {
-            exitRequested = false;
-        }
+        setTimeout(() => {
+            if (exitRequested) {
+                exitRequested = false;
+            }
 
-        if (initializing) {
-            return;
-        }
+            if (initializing) {
+                return;
+            }
 
-        initVariables();
+            initVariables();
 
-        if (maybeVideo !== null) {
-            blobs.push(maybeVideo);
-        }
+            if (maybeVideo !== null) {
+                blobs.push(maybeVideo);
+            }
 
-        setupCanvasListeners(document.getElementById(CANVAS_ID));
+            setupCanvasListeners(document.getElementById(CANVAS_ID));
 
-        initializing = true;
-        setupUserMedia(() => {
-            bindWebcam(elementId, () => {
-                initializing = false;
-                if (exitRequested) {
-                    exit();
-                } else {
-                    app.ports.cameraReady.send(null);
-                }
+            initializing = true;
+            setupUserMedia(() => {
+                bindWebcam(elementId, () => {
+                    initializing = false;
+                    if (exitRequested) {
+                        exit();
+                    } else {
+                        app.ports.cameraReady.send(null);
+                    }
+                });
             });
-        });
+        }, 500);
     }
 
     function setupUserMedia(callback) {
@@ -145,7 +147,12 @@ function setupPorts(app) {
             blobs.push(data.data);
         };
 
-        pointerRecorder = new MediaRecorder(pointerStream, options);
+        let pointerOptions = {
+            videoBitsPerSecond : 2500000,
+            mimeType : 'video/webm;codecs=vp8'
+        };
+
+        pointerRecorder = new MediaRecorder(pointerStream, pointerOptions);
         pointerRecorder.ondataavailable = (data) => {
             pointerBlobs.push(data.data);
         };
@@ -186,6 +193,7 @@ function setupPorts(app) {
 
     function uploadStream(url, n, json) {
         let formData = new FormData();
+        console.log(pointerBlobs);
         formData.append("file", blobs[n]);
         formData.append("pointer", pointerBlobs[n]);
         formData.append("structure", JSON.stringify(json));
