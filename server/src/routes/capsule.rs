@@ -530,8 +530,9 @@ pub fn capsule_edition(
     post_data: Json<PostEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
-    let pip_list = "/tmp/pipList.txt";
-    let mut file = File::create(pip_list)?;
+    let dir = tempdir()?;
+    let pip_path = dir.path().join(format!("pipList_{}.txt", capsule.id));
+    let mut pip_file = File::create(&pip_path)?;
 
     let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
 
@@ -548,14 +549,14 @@ pub fn capsule_edition(
                 let mut extra_path = config.data_path.clone();
                 extra_path.push(asset.asset_path);
 
-                file.write(format!("file '{}'\n", extra_path.to_str().unwrap()).as_bytes())?;
+                pip_file.write(format!("file '{}'\n", extra_path.to_str().unwrap()).as_bytes())?;
             }
             None => {
                 let mut ffmpeg_command = Vec::new();
 
                 let mut slide_path = config.data_path.clone();
                 slide_path.push(slide.asset.asset_path);
-                let pip_out = format!("/tmp/pip{}.mp4", idx);
+                let pip_out = dir.path().join(format!("pip{}_{:03}.mp4", capsule.id, idx));
                 let webcam_size = {
                     match &post_data.webcam_size {
                         Some(x) => str_to_webcam_size(x),
@@ -680,7 +681,7 @@ pub fn capsule_edition(
                         "hd1080",
                         "-r",
                         "25",
-                        &pip_out,
+                        &pip_out.to_str().unwrap(),
                     ]
                     .into_iter(),
                 );
@@ -690,7 +691,7 @@ pub fn capsule_edition(
                     return Err(Error::TranscodeError);
                 }
 
-                file.write(format!("file '{}'\n", pip_out).as_bytes())?;
+                pip_file.write(format!("file '{}'\n", &pip_out.to_str().unwrap()).as_bytes())?;
             }
         }
     }
@@ -723,7 +724,7 @@ pub fn capsule_edition(
         "-safe",
         "0",
         "-i",
-        pip_list,
+        &pip_path.to_str().unwrap(),
         "-c",
         "copy",
         output,
@@ -753,6 +754,8 @@ pub fn capsule_edition(
         io::stderr().write_all(&child.stderr).unwrap();
         return Err(Error::TranscodeError);
     }
+
+    dir.close()?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
