@@ -70,6 +70,7 @@ type UploadSlideShowMsg
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
     | UploadSlideShowSuccess Api.CapsuleDetails
+    | UploadSlideShowError
 
 
 initUploadForm : UploadForm

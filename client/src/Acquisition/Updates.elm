@@ -206,5 +206,5 @@ resultToMsg result =
         (\x ->
             Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
         )
-        (\_ -> Core.Noop)
+        (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result

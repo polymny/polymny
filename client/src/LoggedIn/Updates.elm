@@ -226,6 +226,11 @@ updateUploadSlideShow msg { session } form showMenu =
             , coreCmd
             )
 
+        LoggedIn.UploadSlideShowError ->
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () } showMenu)
+            , Cmd.none
+            )
+
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
 resultToMsg project result =
@@ -244,7 +249,7 @@ resultToMsg1 result =
         (\x ->
             Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess x
         )
-        (\_ -> Core.Noop)
+        (\_ -> Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowError)
         result
 
 
@@ -265,5 +270,5 @@ resultToMsg3 result =
         (\x ->
             Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
         )
-        (\_ -> Core.Noop)
+        (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result

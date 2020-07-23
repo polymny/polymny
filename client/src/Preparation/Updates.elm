@@ -145,6 +145,11 @@ updateEditPromptMsg msg content =
             , Api.capsuleFromId resultToMsg slide.capsule_id
             )
 
+        Preparation.EditPromptError ->
+            ( { content | visible = False, status = Status.Error () }
+            , Cmd.none
+            )
+
 
 updateUploadSlideShow : Preparation.UploadSlideShowMsg -> Preparation.UploadForm -> Int -> ( Preparation.UploadForm, Cmd Core.Msg )
 updateUploadSlideShow msg model capsuleId =
