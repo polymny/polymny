@@ -44,21 +44,21 @@ headerView active details =
         buttons =
             case active of
                 "preparation" ->
-                    [ Ui.primaryButtonDisabled "Préparation"
-                    , Ui.textButton msgAcquisition "Acquisition"
-                    , Ui.textButton msgEdition "Édition"
+                    [ Ui.primaryButtonDisabled "Préparer"
+                    , Ui.textButton msgAcquisition "Acquérir"
+                    , Ui.textButton msgEdition "Éditer et Publier"
                     ]
 
                 "acquisition" ->
-                    [ Ui.textButton msgPreparation "Préparation"
-                    , Ui.primaryButtonDisabled "Acquisition"
-                    , Ui.textButton msgEdition "Édition"
+                    [ Ui.textButton msgPreparation "Préparer"
+                    , Ui.primaryButtonDisabled "Acquérir"
+                    , Ui.textButton msgEdition "Éditer et Publier"
                     ]
 
                 "edition" ->
-                    [ Ui.textButton msgPreparation "Préparation"
-                    , Ui.textButton msgAcquisition "Acquisition"
-                    , Ui.primaryButtonDisabled "Edition"
+                    [ Ui.textButton msgPreparation "Préparer"
+                    , Ui.textButton msgAcquisition "Acquérir"
+                    , Ui.primaryButtonDisabled "Éditer et Publier"
                     ]
 
                 _ ->

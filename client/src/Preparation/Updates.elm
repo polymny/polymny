@@ -10,8 +10,8 @@ import Status
 import Utils
 
 
-update : Preparation.Msg -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
-update msg capsuleModel =
+update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
+update msg global capsuleModel =
     case ( msg, capsuleModel ) of
         ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
             let
@@ -51,6 +51,19 @@ update msg capsuleModel =
                     { oldUploadForms | logo = newFormModel }
             in
             ( { model | uploadForms = newUploadForms }, newCmd )
+
+        ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
+            let
+                ( newFormModel, newCmd, newModel ) =
+                    updateUploadExtraResource newUploadExtraResourceMsg model.uploadForms.extraResource model
+
+                oldUploadForms =
+                    newModel.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | extraResource = newFormModel }
+            in
+            ( { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
@@ -220,6 +233,112 @@ updateUploadLogo msg model capsuleId =
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
 
 
+updateUploadExtraResource :
+    Preparation.UploadExtraResourceMsg
+    -> Preparation.UploadExtraResourceForm
+    -> Preparation.Model
+    -> ( Preparation.UploadExtraResourceForm, Cmd Core.Msg, Preparation.Model )
+updateUploadExtraResource msg uploadForm preparationModel =
+    case msg of
+        Preparation.UploadExtraResourceSelectFileRequested slideId ->
+            ( { uploadForm | activeSlideId = Just slideId, deleteStatus = Status.NotSent }
+            , Select.file
+                [ "video/*" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadExtraResourceMsg <|
+                                Preparation.UploadExtraResourceFileReady x slideId
+                )
+            , preparationModel
+            )
+
+        Preparation.UploadExtraResourceFileReady file slideId ->
+            ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.UploadExtraResourceFormSubmitted slideId ->
+            case uploadForm.file of
+                Nothing ->
+                    ( uploadForm, Cmd.none, preparationModel )
+
+                Just file ->
+                    ( { uploadForm | status = Status.Sent, activeSlideId = Just slideId }
+                    , Api.slideUploadExtraResource resultToMsg3 slideId file
+                    , preparationModel
+                    )
+
+        Preparation.UploadExtraResourceSuccess slide ->
+            let
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
+                details =
+                    preparationModel.details
+            in
+            ( { uploadForm | status = Status.Success (), activeSlideId = Just slide.id }
+            , Cmd.none
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.UploadExtraResourceError ->
+            ( { uploadForm | status = Status.Error () }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.DeleteExtraResource slideId ->
+            ( { uploadForm | status = Status.NotSent, file = Nothing, deleteStatus = Status.Sent }
+            , Api.slideDeleteExtraResource
+                resultToMsg4
+                slideId
+            , preparationModel
+            )
+
+        Preparation.DeleteExtraResourceSuccess slide ->
+            let
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
+                details =
+                    preparationModel.details
+            in
+            ( { uploadForm | deleteStatus = Status.Success () }
+            , Cmd.none
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.DeleteExtraResourceError ->
+            ( { uploadForm | deleteStatus = Status.Error () }
+            , Cmd.none
+            , preparationModel
+            )
+
+
 updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd Preparation.DnDMsg, Bool )
 updateDnD slideMsg data =
     case slideMsg of
@@ -369,4 +488,42 @@ resultToMsg2 result =
                             x
         )
         (\_ -> Core.Noop)
+        result
+
+
+resultToMsg3 : Result e Api.Slide -> Core.Msg
+resultToMsg3 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceSuccess <|
+                            x
+        )
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceError
+        )
+        result
+
+
+resultToMsg4 : Result e Api.Slide -> Core.Msg
+resultToMsg4 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResourceSuccess <|
+                            x
+        )
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResourceError
+        )
         result

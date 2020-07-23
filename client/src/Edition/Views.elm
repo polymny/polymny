@@ -60,7 +60,7 @@ mainView global model =
                             htmlVideo x.asset_path
 
                 Nothing ->
-                    Element.el [] <| Element.text "Pas de vdiéo éditée pour l'instant"
+                    Element.el [] <| Element.text "Pas de vidéo éditée pour l'instant"
 
         url_video : Api.Asset -> String
         url_video asset =
@@ -69,7 +69,7 @@ mainView global model =
         button =
             case ( details.capsule.published, details.video ) of
                 ( Api.NotPublished, Just _ ) ->
-                    Ui.primaryButton (Just Edition.PublishVideo) "Publier la video"
+                    Ui.primaryButton (Just Edition.PublishVideo) "Publier la vidéo"
                         |> Element.map LoggedIn.EditionMsg
                         |> Element.map Core.LoggedInMsg
 
@@ -148,16 +148,25 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                     Ui.primaryButtonDisabled "en cours ...."
 
                 _ ->
-                    Ui.primaryButton (Just Edition.OptionsSubmitted) "Valider les options et \ngénerer la vidéo de la capsule"
+                    Element.el [ Font.center ] <|
+                        Ui.primaryButton
+                            (Just Edition.OptionsSubmitted)
+                            "Valider les options et génerer \n la vidéo de la capsule"
 
         videoFields =
             [ Input.radio
                 [ Element.padding 10
-                , Element.spacing 20
+                , Element.spacing 10
                 ]
                 { onChange = Edition.WebcamSizeChanged
                 , selected = Just webcamSize
-                , label = Input.labelAbove [] (Element.text "taille de l'incrustation webcam")
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Taille de l'incrustation webcam:")
                 , options =
                     [ Input.option Webcam.Small (Element.text "Petit")
                     , Input.option Webcam.Medium (Element.text "Moyen")
@@ -166,11 +175,17 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                 }
             , Input.radio
                 [ Element.padding 10
-                , Element.spacing 20
+                , Element.spacing 10
                 ]
                 { onChange = Edition.WebcamPositionChanged
                 , selected = Just webcamPosition
-                , label = Input.labelAbove [] (Element.text "Position de l'incrustation")
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Position de l'incrustation:")
                 , options =
                     [ Input.option Webcam.TopLeft (Element.text "En haut à gauche.")
                     , Input.option Webcam.TopRight (Element.text "En haut à droite.")
@@ -189,10 +204,10 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
                     Input.labelRight [] <|
                         Element.text <|
                             if withVideo then
-                                "Audio + vidéo . La vidéo et l'audio seront utilisés"
+                                "L'audio et la vidéo seront utilisés"
 
                             else
-                                "Audio. Uniquement l'audio sera utilisé"
+                                "Seul l'audio sera utilisé"
                 }
 
         fields =
@@ -210,7 +225,7 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
     in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.EditionMsg <|
-            Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
                 form
 
 

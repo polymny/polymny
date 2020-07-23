@@ -3,7 +3,7 @@ const POINTER_RADIUS = 10;
 
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, canvas, ctx;
+    let stream, pointerStream, recorder, pointeRecorder, recording, blobs, pointerBlobs, initializing, exitRequested = false, nextSlideCallbacks, canvas, ctx;
     let pointer = { down: false, x: 0, y: 0 };
 
     function refresh(canvas) {
@@ -16,8 +16,13 @@ function setupPorts(app) {
     }
 
     function setupCanvasListeners(canvas) {
+        let slideimg = document.getElementById('slideimg');
+        canvas.width = slideimg.children[0].width;
+        canvas.height = slideimg.children[0].height;
+        console.log(slideimg);
         ctx = canvas.getContext('2d');
         ctx.fillStyle = "red";
+        pointerStream = canvas.captureStream(30);
 
         canvas.addEventListener('mousedown', function(event) {
             pointer.down = true;
@@ -52,10 +57,13 @@ function setupPorts(app) {
 
     function initVariables() {
         stream = null;
+        pointerStream = null;
         recorder = null;
+        pointeRecorder = null;
         recording = false;
         initializing = false;
         blobs = [];
+        pointerBlobs = [];
         nextSlideCallbacks = [];
     }
 
@@ -123,6 +131,7 @@ function setupPorts(app) {
         if (recording) {
             recording = false;
             recorder.stop();
+            pointerRecorder.stop();
         }
 
         let options = {
@@ -136,12 +145,19 @@ function setupPorts(app) {
             blobs.push(data.data);
         };
 
+        pointerRecorder = new MediaRecorder(pointerStream, options);
+        pointerRecorder.ondataavailable = (data) => {
+            pointerBlobs.push(data.data);
+        };
+
         callback(Math.round(performance.now()));
         recorder.start();
+        pointerRecorder.start();
     }
 
     function stopRecording() {
         recorder.stop();
+        pointerRecorder.stop();
     }
 
     function goToWebcam(id) {
@@ -169,10 +185,9 @@ function setupPorts(app) {
     }
 
     function uploadStream(url, n, json) {
-        let streamToUpload = blobs[n];
-
         let formData = new FormData();
-        formData.append("file", streamToUpload);
+        formData.append("file", blobs[n]);
+        formData.append("pointer", pointerBlobs[n]);
         formData.append("structure", JSON.stringify(json));
 
         var xhr = new XMLHttpRequest();

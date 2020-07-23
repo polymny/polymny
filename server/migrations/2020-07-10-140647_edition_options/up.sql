@@ -5,3 +5,5 @@ ADD edition_options JSON NOT NULL DEFAULT '{"with_video": true, "webcam_size": "
 ALTER TABLE capsules
 ADD edition_options JSON NOT NULL DEFAULT '{"with_video": true, "webcam_size": "Medium", "webcam_position": "BottomLeft"}';
 
+ALTER TABLE slides
+ADD extra_id INT REFERENCES assets(id);

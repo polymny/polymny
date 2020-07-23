@@ -169,6 +169,21 @@ impl Asset {
 
         Ok(asset)
     }
+    /*
+        /// Gets a asset from its name.
+        pub fn assets_by_object(
+            name: &str,
+            object_id: i32,
+            object_type: AssetType,
+            db: &PgConnection,
+        ) -> Result<Vec<(Asset, AssetsObject)>> {
+            use crate::schema::assets::dsl as dsl_asset;
+            use crate::schema::assets_objects::dsl as dsl_objects;
+            Ok(dsl_asset::assets
+                .inner_join(dsl_objects::assets_objects.filter(dsl_objects::asset_id.eq(dsl_asset::id)))
+                .load(db)?)
+        }
+    */
     /// Retrieves all assets
     pub fn all(db: &PgConnection) -> Result<Vec<Asset>> {
         use crate::schema::assets::dsl;
@@ -208,6 +223,13 @@ impl AssetsObject {
             .filter(dsl::id.eq(id))
             .first::<AssetsObject>(db)?)
     }
+    /// Get asset with the object.
+    pub fn get_by_asset(db: &PgConnection, id: i32) -> Result<AssetsObject> {
+        use crate::schema::assets_objects::dsl;
+        Ok(dsl::assets_objects
+            .filter(dsl::asset_id.eq(id))
+            .first::<AssetsObject>(db)?)
+    }
 
     /// Get asset with the object.
     pub fn get_by_object(
@@ -223,10 +245,13 @@ impl AssetsObject {
                 .load::<AssetsObject>(db)?
         };
         println!("assets_ref = {:#?}", assets_ref);
-        assets_ref
+        let mut assets = assets_ref
             .into_iter()
             .map(|x| Asset::get(x.asset_id, &db))
-            .collect::<Result<Vec<Asset>>>()
+            .collect::<Result<Vec<Asset>>>()?;
+
+        assets.sort_by(|a, b| b.upload_date.cmp(&a.upload_date));
+        Ok(assets)
     }
     /// delete an asset.
     pub fn delete(&self, db: &PgConnection) -> Result<usize> {

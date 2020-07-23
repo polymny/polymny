@@ -132,25 +132,16 @@ topView model =
         [ videoView
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
-                let
-                    canvas =
-                        Element.html
-                            (Html.canvas
-                                [ Html.Attributes.height 480
-                                , Html.Attributes.width 640
-                                , Html.Attributes.id canvasId
-                                ]
-                                []
-                            )
-                in
-                Element.el [ Element.inFront canvas ]
-                    (Element.image
-                        [ Element.width (Element.px 640)
-                        , Element.height (Element.px 480)
-                        , Element.centerX
-                        ]
-                        { src = h.asset.asset_path, description = "Slide" }
-                    )
+                Element.image
+                    [ Element.inFront (Element.html (Html.canvas [ Html.Attributes.id canvasId ] []))
+                    , Element.htmlAttribute (Html.Attributes.id "slideimg")
+                    , Element.width (Element.fill |> Element.maximum 800)
+                    , Element.centerX
+                    , Border.color Colors.artIrises
+                    , Border.rounded 5
+                    , Border.width 1
+                    ]
+                    { src = h.asset.asset_path, description = "Slide" }
 
             _ ->
                 Element.none
@@ -159,7 +150,11 @@ topView model =
 
 videoView : Element Core.Msg
 videoView =
-    Element.el [ Element.centerX ] (Element.html (Html.video [ Html.Attributes.id elementId ] []))
+    Element.el
+        [ Element.centerX
+        , Element.width (Element.px 400)
+        ]
+        (Element.html (Html.video [ Html.Attributes.id elementId ] []))
 
 
 recordingButton : Bool -> Bool -> Int -> Element Core.Msg
@@ -200,10 +195,10 @@ recordingsView model =
     let
         webcam =
             if model.recording then
-                Ui.primaryButtonDisabled "Flux webcam"
+                Ui.primaryButtonDisabled "Voir flux webcam"
 
             else
-                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Flux webcam"
+                Ui.successButton (Just <| Core.LoggedInMsg <| LoggedIn.AcquisitionMsg <| Acquisition.GoToWebcam) "Voir flux webcam"
 
         msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
@@ -224,7 +219,7 @@ recordingsView model =
                         Ui.simpleButton (msg x) ("Lire l'" ++ text x)
 
                 _ ->
-                    Ui.simpleButton (msg x) (text x)
+                    Ui.simpleButton (msg x) ("Lire l'" ++ text x)
     in
     Element.column
         [ Background.color Colors.whiteDark
@@ -239,6 +234,8 @@ recordingsView model =
         , Border.color Colors.whiteDarker
         , Border.rounded 5
         , Border.width 1
+        , Element.centerX
+        , Font.center
         ]
         [ webcam
         , if List.length model.records > 0 then
@@ -250,7 +247,7 @@ recordingsView model =
             Element.none
         , Element.column [ Element.alignLeft, Element.paddingXY 2 10, Element.spacing 10 ]
             (List.reverse (List.map button model.records))
-        , Element.el [ Font.size 16, Font.center ] <|
+        , Element.el [ Font.size 16, Font.center, Element.centerX ] <|
             uploadView model
         ]
 
@@ -296,7 +293,7 @@ text record =
         "enregistrement #" ++ String.fromInt record.id
 
     else
-        "ancien enregistrement"
+        " ancien enregistrement"
 
 
 url : Int -> Int -> String

@@ -24,6 +24,9 @@ pub struct Slide {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra resource
+    pub extra_id: Option<i32>,
 }
 
 /// A slide that isn't stored into the database yet.
@@ -38,6 +41,9 @@ pub struct NewSlide {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra resource
+    pub extra_id: Option<i32>,
 }
 
 impl Slide {
@@ -47,6 +53,7 @@ impl Slide {
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
+            extra_id: None,
         }
         .save(&db)?)
     }
@@ -57,6 +64,7 @@ impl Slide {
             asset_id,
             capsule_id,
             prompt: String::from(prompt),
+            extra_id: None,
         })
     }
 
@@ -111,6 +119,9 @@ pub struct SlideWithAsset {
 
     /// The prompt text
     pub prompt: String,
+
+    /// Extra asset
+    pub extra: Option<Asset>,
 }
 
 impl SlideWithAsset {
@@ -121,6 +132,10 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
+            extra: match slide.extra_id {
+                Some(id) => Some(Asset::get(id, &db)?),
+                None => None,
+            },
         })
     }
 
@@ -135,6 +150,10 @@ impl SlideWithAsset {
             asset: Asset::get(slide.asset_id, &db)?,
             capsule_id: slide.capsule_id,
             prompt: slide.prompt.clone(),
+            extra: match slide.extra_id {
+                Some(id) => Some(Asset::get(id, &db)?),
+                None => None,
+            },
         })
     }
 

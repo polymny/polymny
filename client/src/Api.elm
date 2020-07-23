@@ -33,6 +33,8 @@ module Api exposing
     , resetPassword
     , setupConfig
     , signUp
+    , slideDeleteExtraResource
+    , slideUploadExtraResource
     , testDatabase
     , testMailer
     , updateOptions
@@ -263,16 +265,18 @@ type alias Slide =
     , asset : Asset
     , capsule_id : Int
     , prompt : String
+    , extra : Maybe Asset
     }
 
 
 decodeSlide : Decoder Slide
 decodeSlide =
-    Decode.map4 Slide
+    Decode.map5 Slide
         (Decode.field "id" Decode.int)
         (Decode.field "asset" decodeAsset)
         (Decode.field "capsule_id" Decode.int)
         (Decode.field "prompt" Decode.string)
+        (Decode.field "extra" (Decode.maybe decodeAsset))
 
 
 type alias InnerGos =
@@ -666,6 +670,24 @@ editionAuto resultToMsg id content =
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.jsonBody (encodeEditionAutoContent content)
+        }
+
+
+slideUploadExtraResource : (Result Http.Error Slide -> msg) -> Int -> File.File -> Cmd msg
+slideUploadExtraResource resultToMsg id content =
+    post
+        { url = "/api/slide/" ++ String.fromInt id ++ "/upload_resource"
+        , expect = Http.expectJson resultToMsg decodeSlide
+        , body = Http.multipartBody [ Http.filePart "file" content ]
+        }
+
+
+slideDeleteExtraResource : (Result Http.Error Slide -> msg) -> Int -> Cmd msg
+slideDeleteExtraResource resultToMsg id =
+    post
+        { url = "/api/slide/" ++ String.fromInt id ++ "/delete_resource"
+        , expect = Http.expectJson resultToMsg decodeSlide
+        , body = Http.emptyBody
         }
 
 
