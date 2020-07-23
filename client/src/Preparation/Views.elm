@@ -60,23 +60,11 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
             else
                 Element.none
 
-        isGosLocked : Api.Gos -> Bool
-        isGosLocked gos =
-            gos.locked
-
-        isCapsuleLocked : Bool
-        isCapsuleLocked =
-            List.all isGosLocked details.structure
-
         msg =
             Core.LoggedInMsg <| LoggedIn.EditionClicked details True
 
         autoEdition =
-            if isCapsuleLocked then
-                Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
-
-            else
-                Ui.primaryButtonDisabled "Edition automatique de la vidéo"
+            Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
     in
     Element.column []
         [ Element.el
