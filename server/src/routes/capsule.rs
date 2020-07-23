@@ -308,7 +308,7 @@ fn upload_file(
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
 
-                    println!("output_path {:#?}", output_path);
+                    info!("uploaded file path output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
                     return Ok(asset);
@@ -462,7 +462,7 @@ pub fn upload_record(
                     AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
-                    println!("output_path {:#?}", output_path);
+                    info!("record  output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
                     asset
@@ -542,7 +542,7 @@ pub fn capsule_edition(
         let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
         match slide.extra {
             Some(asset) => {
-                println!(
+                info!(
                     "In slide {} merging with extra data = {:#?}",
                     idx, asset.asset_path
                 );
@@ -586,7 +586,7 @@ pub fn capsule_edition(
                             webcam_size: webcam_size,
                             webcam_position: webcam_position,
                         };
-                        println!("capsule_edition_options= {:#?}", capsule_edition_options);
+                        info!("capsule_edition_options= {:#?}", capsule_edition_options);
                         use crate::schema::capsules::dsl;
                         diesel::update(capsules::table)
                             .filter(dsl::id.eq(capsule.id))
@@ -672,9 +672,9 @@ pub fn capsule_edition(
                         "-vcodec",
                         "libx264",
                         "-preset",
-                        "fast",
+                        "medium",
                         "-tune",
-                        "zerolatency",
+                        "stillimage",
                         "-acodec",
                         "aac",
                         "-s",
@@ -714,7 +714,6 @@ pub fn capsule_edition(
 
     let output = output.to_str().unwrap();
 
-    println!("Generating video capsule ...");
     let command = vec![
         "ffmpeg",
         "-hide_banner",
@@ -732,7 +731,6 @@ pub fn capsule_edition(
 
     let child = command::run_command(&command)?;
 
-    println!("status: {}", child.status);
     if child.status.success() {
         let asset = Asset::new(&db, uuid, &file_name(), server_path.to_str().unwrap())?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
@@ -749,7 +747,7 @@ pub fn capsule_edition(
     } else {
         // for debug pupose if needed
         //
-        println!("command = {:#?}", command);
+        info!("command = {:#?}", command);
         io::stdout().write_all(&child.stdout).unwrap();
         io::stderr().write_all(&child.stderr).unwrap();
         return Err(Error::TranscodeError);
