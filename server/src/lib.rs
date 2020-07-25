@@ -15,11 +15,6 @@ extern crate rocket_contrib;
 extern crate diesel;
 #[macro_use]
 extern crate diesel_derive_enum;
-#[macro_use]
-extern crate poppler;
-
-#[macro_use]
-extern crate float_cmp;
 
 pub mod command;
 pub mod config;

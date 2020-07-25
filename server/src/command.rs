@@ -1,6 +1,5 @@
 //! This module helps us to run commands.
 
-use float_cmp::ApproxEq;
 use poppler::PopplerDocument;
 use std::io::Result;
 use std::path::Path;
@@ -35,10 +34,7 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Res
         &format!("{}/", output.as_ref().to_str().unwrap())
     );
     let document = PopplerDocument::new_from_file(&input, "").unwrap();
-    println!("poppler = {:#?}", document.get_metadata());
-    let page = document.get_page(0).unwrap();
-    let (x, y) = page.get_size();
-    let ratio = x / y;
+    info!("PDF doc = {:#?}", document.get_metadata());
     let n_pages = document.get_n_pages();
     for i in 0..n_pages {
         //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
@@ -62,16 +58,6 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Res
             &command_output_path,
         ];
         run_command(&command)?;
-    }
-
-    if ratio.approx_eq(1.3, (0.1, 2)) {
-        println!("4/3  ratio ");
-    } else if ratio.approx_eq(0.7, (0.1, 2)) {
-        println!(" A4 ratio ");
-
-    // mogrify -background black  -gravity center -extent 1920x1080  /tmp/pdf43-1.png
-    } else if ratio.approx_eq(1.7, (0.1, 2)) {
-        println!(" 16/9 ratio ");
     }
 
     Ok(())
