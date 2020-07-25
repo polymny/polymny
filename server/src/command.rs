@@ -1,5 +1,7 @@
 //! This module helps us to run commands.
 
+use float_cmp::ApproxEq;
+use poppler::PopplerDocument;
 use std::io::Result;
 use std::path::Path;
 use std::process::{Command, Output};
@@ -27,16 +29,50 @@ pub fn run_command(command: &Vec<&str>) -> Result<Output> {
 
 /// Exports all slides from pdf to png.
 pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<()> {
-    run_command(&vec![
-        "pdftocairo",
-        "-png",
-        "-scale-to-x",
-        "1920",
-        "-scale-to-y",
-        "1080",
+    println!(
+        "input = {:#?}, output = {:#?} ",
         input.as_ref().to_str().unwrap(),
-        &format!("{}/", output.as_ref().to_str().unwrap()),
-    ])?;
+        &format!("{}/", output.as_ref().to_str().unwrap())
+    );
+    let document = PopplerDocument::new_from_file(&input, "").unwrap();
+    println!("poppler = {:#?}", document.get_metadata());
+    let page = document.get_page(0).unwrap();
+    let (x, y) = page.get_size();
+    let ratio = x / y;
+    let n_pages = document.get_n_pages();
+    for i in 0..n_pages {
+        //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
+        let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
+        let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), i);
+        let command = vec![
+            "convert",
+            "-density",
+            "120",
+            &command_input_path,
+            "-colorspace",
+            "RGB",
+            "-resize",
+            "1920x1080",
+            "-background",
+            "white",
+            "-gravity",
+            "center",
+            "-extent",
+            "1920x1080",
+            &command_output_path,
+        ];
+        run_command(&command)?;
+    }
+
+    if ratio.approx_eq(1.3, (0.1, 2)) {
+        println!("4/3  ratio ");
+    } else if ratio.approx_eq(0.7, (0.1, 2)) {
+        println!(" A4 ratio ");
+
+    // mogrify -background black  -gravity center -extent 1920x1080  /tmp/pdf43-1.png
+    } else if ratio.approx_eq(1.7, (0.1, 2)) {
+        println!(" 16/9 ratio ");
+    }
 
     Ok(())
 }

@@ -25,6 +25,9 @@ log = "0.4.8"
 serde_json = "1.0"
 simplelog = { git = "https://gitlab.enseeiht.fr/tforgione/simplelog" }
 compile-time-run = "0.2.8"
+poppler = "0.3.0"
+float-cmp = "0.8.0"
+approx = "0.3.2"
 
 [dependencies.rocket_contrib]
 version = "0.4.4"
