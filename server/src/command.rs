@@ -43,10 +43,10 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Res
         let command = vec![
             "convert",
             "-density",
-            "120",
+            "380",
             &command_input_path,
             "-colorspace",
-            "RGB",
+            "sRGB",
             "-resize",
             "1920x1080",
             "-background",
