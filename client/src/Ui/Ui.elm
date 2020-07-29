@@ -393,7 +393,7 @@ mainViewAttributes2 =
 videoTuto : Element Core.Msg
 videoTuto =
     Element.column [ Element.centerX, Element.spacing 10 ]
-        [ Element.el [ Element.centerX, Font.center, Font.bold, Font.size 18 ] <| Element.text "Tutoriel vidéo: utilsation de Polymny (Réalisé avec polymny!)"
+        [ Element.el [ Element.centerX, Font.center, Font.bold, Font.size 18 ] <| Element.text "Tutoriel vidéo: utilisation de Polymny (Réalisé avec polymny!)"
         , Element.el [] <|
             Element.html
                 (Html.iframe
