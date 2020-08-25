@@ -242,6 +242,7 @@ pub fn upload_slides(
 
                         capsule_structure.push(GosStructure {
                             record_path: None,
+                            background_path: None,
                             slides: vec![slide.id],
                             transitions: vec![],
                             locked: false,
@@ -379,6 +380,9 @@ pub struct GosStructure {
     /// The path to the record if any.
     pub record_path: Option<String>,
 
+    /// The path to the background image if any.
+    pub background_path: Option<String>,
+
     /// Whether the gos is locked or not.
     pub locked: bool,
 }
@@ -442,6 +446,10 @@ pub fn upload_record(
     options.allowed_fields.push(
         MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
     );
+    options.allowed_fields.push(
+        MultipartFormDataField::file("background")
+            .size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
+    );
     options
         .allowed_fields
         .push(MultipartFormDataField::text("structure"));
@@ -449,7 +457,7 @@ pub fn upload_record(
     //TODO: handle errors from multipart form dat ?
     // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
     let file = multipart_form_data.files.get("file");
-    let asset = if let Some(file) = file {
+    let video_asset = if let Some(file) = file {
         match file {
             FileField::Single(file) => {
                 let file_name = &file.file_name;
@@ -478,6 +486,38 @@ pub fn upload_record(
     } else {
         todo!();
     };
+
+    let file = multipart_form_data.files.get("background");
+    let background_asset = if let Some(file) = file {
+        match file {
+            FileField::Single(file) => {
+                let file_name = &file.file_name;
+                let path = &file.path;
+                if let Some(file_name) = file_name {
+                    let mut server_path = PathBuf::from(&user.username);
+                    let uuid = Uuid::new_v4();
+                    server_path.push(format!("{}_{}", uuid, file_name));
+                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
+                    let mut output_path = config.data_path.clone();
+                    output_path.push(server_path);
+                    info!("record  output_path {:#?}", output_path);
+                    create_dir(output_path.parent().unwrap()).ok();
+                    fs::copy(path, &output_path)?;
+                    asset
+                } else {
+                    todo!();
+                }
+            }
+            FileField::Multiple(_files) => {
+                // TODO: handle mutlile files
+                todo!()
+            }
+        }
+    } else {
+        todo!();
+    };
+
     let text = match multipart_form_data.texts.get("structure") {
         Some(TextField::Single(field)) => &field.text,
         _ => panic!(),
@@ -494,7 +534,8 @@ pub fn upload_record(
     //     serde_json::from_str(multipart_form_data.texts.get("structure").unwrap().text).unwrap();
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
-    v[gos].record_path = Some(asset.asset_path.clone());
+    v[gos].record_path = Some(video_asset.asset_path.clone());
+    v[gos].background_path = Some(background_asset.asset_path.clone());
     v[gos].locked = true;
     {
         use crate::schema::capsules::dsl::{id as cid, structure};

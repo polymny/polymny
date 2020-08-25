@@ -139,6 +139,7 @@ pub fn quick_upload_slides(
                         fs::copy(e, &output_path)?;
                         capsule_structure.push(GosStructure {
                             record_path: None,
+                            background_path: None,
                             slides: vec![slide.id],
                             transitions: vec![],
                             locked: false,

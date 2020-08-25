@@ -65,6 +65,7 @@ pub struct Capsule {
     /// ```
     /// [ {
     ///     record_path: Option<String>,
+    ///     background_path: Option<String>,
     ///     slides: Vec<i32>,
     ///     locked: bool,
     /// } ]
