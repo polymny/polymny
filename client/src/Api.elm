@@ -294,7 +294,7 @@ decodeInnerGos =
         (Decode.field "slides" (Decode.list Decode.int))
         (Decode.field "transitions" (Decode.list Decode.int))
         (Decode.field "record_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
-        (Decode.field "background" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
+        (Decode.field "background_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.field "locked" Decode.bool)
 
 
