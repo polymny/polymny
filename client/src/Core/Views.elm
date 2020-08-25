@@ -45,6 +45,7 @@ subscriptions { model } =
                         , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
                         , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
                         , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
+                        , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
                         ]
                         |> Sub.map LoggedIn.AcquisitionMsg
                         |> Sub.map Core.LoggedInMsg
@@ -181,7 +182,7 @@ homeView model =
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { session, tab } ->
+        Core.LoggedIn { session } ->
             Element.row
                 [ Background.color Colors.primary
                 , Font.color Colors.white

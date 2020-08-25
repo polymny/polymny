@@ -35,6 +35,7 @@ type alias Model =
     , mode : Mode
     , cameraReady : Bool
     , status : Status () ()
+    , secondsRemaining : Maybe Int
     }
 
 
@@ -72,6 +73,7 @@ init details mode gos =
       , mode = mode
       , cameraReady = False
       , status = Status.NotSent
+      , secondsRemaining = Nothing
       }
     , Ports.init ( "video", Maybe.map Tuple.first record )
     )
@@ -112,3 +114,4 @@ type Msg
     | NextSlideReceived Int
     | NewRecord Int
     | CaptureBackground
+    | SecondsRemaining Int

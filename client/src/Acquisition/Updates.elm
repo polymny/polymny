@@ -12,7 +12,6 @@ import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Status
 import Utils
-import Webcam
 
 
 update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -196,6 +195,13 @@ update session msg model =
 
         Acquisition.CaptureBackground ->
             ( makeModel model, Ports.captureBackground elementId )
+
+        Acquisition.SecondsRemaining n ->
+            if n == 0 then
+                ( makeModel { model | secondsRemaining = Nothing }, Cmd.none )
+
+            else
+                ( makeModel { model | secondsRemaining = Just n }, Cmd.none )
 
 
 elementId : String

@@ -10,6 +10,7 @@ port module Acquisition.Ports exposing
     , init
     , newRecord
     , nextSlideReceived
+    , secondsRemaining
     , startRecording
     , stopRecording
     , streamUploaded
@@ -62,3 +63,6 @@ port exit : () -> Cmd msg
 
 
 port captureBackground : String -> Cmd msg
+
+
+port secondsRemaining : (Int -> msg) -> Sub msg

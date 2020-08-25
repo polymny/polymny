@@ -53,33 +53,43 @@ function setupPorts(app) {
             return;
         }
 
-        setTimeout(function() {
+        let i = 5;
+        app.ports.secondsRemaining.send(i);
 
-            backgroundCanvas.width = element.videoWidth;
-            backgroundCanvas.height = element.videoHeight;
-            backgroundCanvas.getContext('2d').drawImage(element, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
-            console.log(backgroundCanvas);
+        function lambda() {
+            setTimeout(() => {
+                i--;
+                app.ports.secondsRemaining.send(i);
+                if (i === 0) {
+                    backgroundCanvas.width = element.videoWidth;
+                    backgroundCanvas.height = element.videoHeight;
+                    backgroundCanvas.getContext('2d').drawImage(element, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
 
-            backgroundCanvas.toBlob(function(blob) {
+                    backgroundCanvas.toBlob(function(blob) {
+                        backgroundBlob = blob;
 
-                console.log(blob);
+                        // For debug purposes
+                        let newImg = document.createElement('img'),
+                            url = URL.createObjectURL(blob);
 
-                backgroundBlob = blob;
+                        newImg.onload = function() {
+                            URL.revokeObjectURL(url);
+                            backgroundBlob = blob;
+                            console.log(newImg);
+                        };
 
-                var newImg = document.createElement('img'),
-                    url = URL.createObjectURL(blob);
+                        newImg.src = url;
+                    });
 
-                newImg.onload = function() {
-                    URL.revokeObjectURL(url);
-                    backgroundBlob = blob;
-                    console.log(newImg);
-                };
 
-                newImg.src = url;
+                } else {
+                    lambda();
+                }
+            }, 1000);
+        }
 
-            });
+        lambda();
 
-        }, 5000);
     }
 
     function setupUserMedia(callback) {

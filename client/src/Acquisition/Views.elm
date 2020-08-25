@@ -130,10 +130,8 @@ topView : Acquisition.Model -> Element Core.Msg
 topView model =
     Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
         [ Element.column []
-            [ videoView
-            , Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
-                |> Element.map LoggedIn.AcquisitionMsg
-                |> Element.map Core.LoggedInMsg
+            [ backgroundView model
+            , videoView
             ]
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
@@ -284,6 +282,18 @@ uploadView { details, gos, currentVideo, recording, records, status } =
                         Ui.successButton (Just (Acquisition.UploadStream (url details.capsule.id gos) v)) ("Valider \n l'" ++ s)
                             |> Element.map LoggedIn.AcquisitionMsg
                             |> Element.map Core.LoggedInMsg
+
+
+backgroundView : Acquisition.Model -> Element Core.Msg
+backgroundView model =
+    case model.secondsRemaining of
+        Nothing ->
+            Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
+                |> Element.map LoggedIn.AcquisitionMsg
+                |> Element.map Core.LoggedInMsg
+
+        Just n ->
+            Ui.primaryButton Nothing ("Photo du fond prise dans " ++ String.fromInt n ++ " secondes")
 
 
 
