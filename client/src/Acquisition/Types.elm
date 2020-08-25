@@ -111,3 +111,4 @@ type Msg
     | StreamUploaded Json.Encode.Value
     | NextSlideReceived Int
     | NewRecord Int
+    | CaptureBackground

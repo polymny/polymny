@@ -129,7 +129,12 @@ mainView model =
 topView : Acquisition.Model -> Element Core.Msg
 topView model =
     Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
-        [ videoView
+        [ Element.column []
+            [ videoView
+            , Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
+                |> Element.map LoggedIn.AcquisitionMsg
+                |> Element.map Core.LoggedInMsg
+            ]
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
             Just h ->
                 Element.image

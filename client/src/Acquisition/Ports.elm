@@ -2,6 +2,7 @@ port module Acquisition.Ports exposing
     ( askNextSlide
     , bindWebcam
     , cameraReady
+    , captureBackground
     , exit
     , goToNextSlide
     , goToStream
@@ -58,3 +59,6 @@ port goToNextSlide : (() -> msg) -> Sub msg
 
 
 port exit : () -> Cmd msg
+
+
+port captureBackground : String -> Cmd msg

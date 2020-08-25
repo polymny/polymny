@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -44,6 +44,42 @@ function setupPorts(app) {
                 }
             });
         });
+    }
+
+    function captureBackground(elementId) {
+        let element = document.getElementById(elementId);
+
+        if (element === null) {
+            return;
+        }
+
+        setTimeout(function() {
+
+            backgroundCanvas.width = element.videoWidth;
+            backgroundCanvas.height = element.videoHeight;
+            backgroundCanvas.getContext('2d').drawImage(element, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+            console.log(backgroundCanvas);
+
+            backgroundCanvas.toBlob(function(blob) {
+
+                console.log(blob);
+
+                backgroundBlob = blob;
+
+                var newImg = document.createElement('img'),
+                    url = URL.createObjectURL(blob);
+
+                newImg.onload = function() {
+                    URL.revokeObjectURL(url);
+                    backgroundBlob = blob;
+                    console.log(newImg);
+                };
+
+                newImg.src = url;
+
+            });
+
+        }, 5000);
     }
 
     function setupUserMedia(callback) {
@@ -130,6 +166,7 @@ function setupPorts(app) {
 
         let formData = new FormData();
         formData.append("file", streamToUpload);
+        formData.append("background", backgroundBlob);
         formData.append("structure", JSON.stringify(json));
 
         var xhr = new XMLHttpRequest();
@@ -200,6 +237,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.askNextSlide, function() {
         app.ports.nextSlideReceived.send(Math.round(performance.now()));
+    });
+
+    subscribe(app.ports.captureBackground, function(attr) {
+        captureBackground(attr);
     });
 
 }

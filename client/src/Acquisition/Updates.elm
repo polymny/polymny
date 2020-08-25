@@ -194,6 +194,9 @@ update session msg model =
             in
             ( makeModel { model | records = records }, Cmd.none )
 
+        Acquisition.CaptureBackground ->
+            ( makeModel model, Ports.captureBackground elementId )
+
 
 elementId : String
 elementId =
