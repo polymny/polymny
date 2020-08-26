@@ -1,6 +1,6 @@
 [package]
 name = "server"
-version = "0.1.2"
+version = "0.1.5"
 edition = "2018"
 default-run = "server"
 
@@ -25,6 +25,7 @@ log = "0.4.8"
 serde_json = "1.0"
 simplelog = { git = "https://gitlab.enseeiht.fr/tforgione/simplelog" }
 compile-time-run = "0.2.8"
+poppler = "0.3.0"
 
 [dependencies.rocket_contrib]
 version = "0.4.4"

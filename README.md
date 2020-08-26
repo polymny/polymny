@@ -30,6 +30,14 @@ root of the repository to build the client.
 
 ### Server
 
+#### External packages 
+
+Install the following package before rust compilation:
+
+```
+apt install libpoppler-glib-dev
+```
+
 
 #### Install Rust
 

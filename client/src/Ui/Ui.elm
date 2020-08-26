@@ -30,13 +30,17 @@ module Ui.Ui exposing
     , textButton
     , topBarButton
     , trashButton
+    , videoTuto
     )
 
+import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html
+import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Ui.Colors as Colors
@@ -384,3 +388,22 @@ mainViewAttributes2 =
     , Element.width Element.fill
     , Element.scrollbarX
     ]
+
+
+videoTuto : Element Core.Msg
+videoTuto =
+    Element.column [ Element.centerX, Element.spacing 10 ]
+        [ Element.el [ Element.centerX, Font.center, Font.bold, Font.size 18 ] <| Element.text "Tutoriel vidéo: utilsation de Polymny (Réalisé avec polymny!)"
+        , Element.el [] <|
+            Element.html
+                (Html.iframe
+                    [ Html.Attributes.style "posistion" "absolute"
+                    , Html.Attributes.style "width" "800px"
+                    , Html.Attributes.style "height" "450px"
+                    , Html.Attributes.attribute "allowfullscreen" "true"
+                    , Html.Attributes.attribute "border" "0px"
+                    , Html.Attributes.src "https://video.polymny.studio/?v=3d608a84-a457-4016-a7d1-de1d4da800ad/"
+                    ]
+                    []
+                )
+        ]
