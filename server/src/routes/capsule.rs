@@ -576,7 +576,7 @@ pub fn capsule_edition(
     let mut pip_file = File::create(&pip_path)?;
 
     let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
-    let mut run_ffmpeg_command = true ;
+    let mut run_ffmpeg_command = true;
 
     for (idx, gos) in structure.into_iter().enumerate() {
         // TODO : only first slide . Assumption one slide per gos ( ie one slide per record)
@@ -619,12 +619,16 @@ pub fn capsule_edition(
                 );
 
                 let mut record = config.data_path.clone();
-                match gos.record_path {
-                    Some(record_path) => {
+                match (gos.record_path, gos.background_path) {
+                    (Some(record_path), Some(background_path)) => {
+                        let mut record_clone = record.clone();
                         record.push(record_path);
+                        record_clone.push(background_path);
+
+                        println!("{} {}", record.display(), record_clone.display());
 
                         if post_data.with_video.unwrap_or(true) {
-                            run_ffmpeg_command = false ;
+                            run_ffmpeg_command = false;
                             ffmpeg_command.extend(
                                 vec![
                                     "ffmpeg",
@@ -640,34 +644,33 @@ pub fn capsule_edition(
                                 .into_iter(),
                             );
 
-                        // extract record to frames
+                            // extract record to frames
                             // path to script
-                            let extraire_path = String::from("/home/pample/Bureau/Stage_Keying/polymny/scripts/extraire.sh");
+                            let extraire_path = String::from("../scripts/extraire.sh");
                             // command
-                            let extraire_command = vec![
-                                "bash",
-                                &extraire_path,
-                                &record.to_str().unwrap(),
-                            ];
+                            let extraire_command =
+                                vec!["bash", &extraire_path, &record.to_str().unwrap()];
                             let extraire_child = command::run_command(&extraire_command)?;
                             if !extraire_child.status.success() {
                                 return Err(Error::TranscodeError);
                             }
 
-                        // apply segmentation and matting on record frames
+                            // apply segmentation and matting on record frames
                             // path to script
-                            let traiter_path = "/home/pample/Bureau/Stage_Keying/polymny/scripts/traiter.sh";
+                            let traiter_path = "../scripts/traiter.sh";
                             // path to frames folder
                             let input_ext: &str = "_input";
-                            let record_frames = format!("{}{}", record.to_str().unwrap(), input_ext);
+                            let record_frames =
+                                format!("{}{}", record.to_str().unwrap(), input_ext);
                             // path to background image
                             let back_ext: &str = "_back.png";
-                            let background_path = format!("{}{}", record.to_str().unwrap(), back_ext);
+                            let background_path =
+                                format!("{}{}", record.to_str().unwrap(), back_ext);
                             // overlay position and scale
                             let pos_pixels_xy = format!("{}", position_in_pixels(&webcam_position));
                             let size_pixels = format!("{}", size_in_pixels(&webcam_size));
                             // command
-                            let matting_command  = vec![
+                            let matting_command = vec![
                                 "bash",
                                 traiter_path,
                                 &record_frames,
@@ -681,9 +684,9 @@ pub fn capsule_edition(
                                 return Err(Error::TranscodeError);
                             }
 
-                        // build video from incruster.py
+                            // build video from incruster.py
                             // path to script
-                            let reconstruire_path = String::from("/home/pample/Bureau/Stage_Keying/polymny/scripts/reconstruire.sh");
+                            let reconstruire_path = String::from("../scripts/reconstruire.sh");
                             // command
                             let reconstruire_command = vec![
                                 "bash",
@@ -696,19 +699,18 @@ pub fn capsule_edition(
                                 return Err(Error::TranscodeError);
                             }
 
-                        // webcam position and size info update
+                            // webcam position and size info update
                             let capsule_edition_options = EditionOptions {
-                                                            with_video: post_data.with_video.unwrap_or(true),
-                                                            webcam_size: webcam_size,
-                                                            webcam_position: webcam_position,
-                                                        };
+                                with_video: post_data.with_video.unwrap_or(true),
+                                webcam_size: webcam_size,
+                                webcam_position: webcam_position,
+                            };
                             info!("capsule_edition_options= {:#?}", capsule_edition_options);
                             use crate::schema::capsules::dsl;
                             diesel::update(capsules::table)
                                 .filter(dsl::id.eq(capsule.id))
                                 .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
                                 .execute(&db.0)?;
-                                
                         } else {
                             ffmpeg_command.extend(
                                 vec![
@@ -732,7 +734,9 @@ pub fn capsule_edition(
                         }
                     }
 
-                    None => {
+                    (Some(_), None) => todo!(),
+
+                    (None, _) => {
                         // ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i tmp/slide2.png -c:v libx264 -t 3 -pix_fmt yuv420p -s hd1080 -r 25 -shortest out.mp4
                         ffmpeg_command.extend(
                             vec![
@@ -790,7 +794,7 @@ pub fn capsule_edition(
                     let child = command::run_command(&ffmpeg_command)?;
                     if !child.status.success() {
                         return Err(Error::TranscodeError);
-                    }    
+                    }
                 }
 
                 pip_file.write(format!("file '{}'\n", &pip_out.to_str().unwrap()).as_bytes())?;

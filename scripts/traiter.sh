@@ -1,7 +1,7 @@
 # appliquer le traitement de background-matting sur le dossier des frames en entree
-# 
+#
 
-# arguments : 
+# arguments :
 # - path vers le dossier des frames
 # - path vers le background sans la personne
 # - path vers le slide (target d'incrustation)
@@ -14,12 +14,28 @@ position_in_pixels=$4
 size_in_pixels=$5
 
 # path vers les algos de background-matting
-segmentation='/home/pample/Bureau/Stage_Keying/Background-Matting/Background-Matting/test_segmentation_deeplab.py'
-back_matting='/home/pample/Bureau/Stage_Keying/Background-Matting/Background-Matting/test_background-matting_image.py'
-incruster='/home/pample/Bureau/Stage_Keying/polymny/scripts/incruster.py'
+segmentation='../../Background-Matting/test_segmentation_deeplab.py'
+back_matting='../../Background-Matting/test_background-matting_image.py'
+incruster='./incruster.py'
+
+conda-init () {
+    __conda_setup="$('$HOME/.anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]
+    then
+        eval "$__conda_setup"
+    else
+        if [ -f "$HOME/.anaconda3/etc/profile.d/conda.sh" ]
+        then
+            . "$HOME/.anaconda3/etc/profile.d/conda.sh"
+        else
+            export PATH="$HOME/.anaconda3/bin:$PATH"
+        fi
+    fi
+    unset __conda_setup
+}
 
 # activation de l'environnement conda pour background-matting
-source ~/anaconda3/etc/profile.d/conda.sh
+conda-init
 conda activate back-matting
 
 if [ -e "${frames}/done.txt" ]
