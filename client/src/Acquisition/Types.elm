@@ -82,7 +82,7 @@ init details mode gos =
       , secondsRemaining = Nothing
       , background = background
       }
-    , Ports.init ( "video", Maybe.map Tuple.first record )
+    , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )
 
 

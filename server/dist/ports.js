@@ -18,7 +18,7 @@ function setupPorts(app) {
         nextSlideCallbacks = [];
     }
 
-    function init(elementId, maybeVideo) {
+    function init(elementId, maybeVideo, maybeBackground) {
         if (exitRequested) {
             exitRequested = false;
         }
@@ -33,17 +33,34 @@ function setupPorts(app) {
             blobs.push(maybeVideo);
         }
 
-        initializing = true;
-        setupUserMedia(() => {
-            bindWebcam(elementId, () => {
-                initializing = false;
-                if (exitRequested) {
-                    exit();
-                } else {
-                    app.ports.cameraReady.send(null);
-                }
+        function keepWorking() {
+            initializing = true;
+            setupUserMedia(() => {
+                bindWebcam(elementId, () => {
+                    initializing = false;
+                    if (exitRequested) {
+                        exit();
+                    } else {
+                        app.ports.cameraReady.send(null);
+                    }
+                });
             });
-        });
+        }
+
+        if (maybeBackground !== null) {
+            let img = new Image();
+            img.onload = () => {
+                backgroundCanvas.width = img.width;
+                backgroundCanvas.height = img.height;
+                backgroundCanvas.getContext('2d').drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+                keepWorking();
+            };
+            img.src = maybeBackground;
+        } else {
+            keepWorking();
+        }
+
+
     }
 
     function captureBackground(elementId) {
@@ -68,13 +85,12 @@ function setupPorts(app) {
                     backgroundCanvas.toBlob(function(blob) {
                         backgroundBlob = blob;
 
-                        // For debug purposes
                         let url = URL.createObjectURL(blob);
                         app.ports.backgroundCaptured.send(url);
 
+                        // For debug purposes
                         // let newImg = document.createElement('img'),
                         // newImg.onload = function() {
-                        //     URL.revokeObjectURL(url);
                         //     backgroundBlob = blob;
                         //     console.log(newImg);
                         // };
@@ -209,7 +225,7 @@ function setupPorts(app) {
     }
 
     subscribe(app.ports.init, function(args) {
-        init(args[0], args[1]);
+        init(args[0], args[1], args[2]);
     });
 
     subscribe(app.ports.bindWebcam, function(id) {

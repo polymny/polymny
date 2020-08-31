@@ -21,7 +21,7 @@ port module Acquisition.Ports exposing
 import Json.Encode
 
 
-port init : ( String, Maybe String ) -> Cmd msg
+port init : ( String, Maybe String, Maybe String ) -> Cmd msg
 
 
 port bindWebcam : String -> Cmd msg
