@@ -36,6 +36,7 @@ type alias Model =
     , cameraReady : Bool
     , status : Status () ()
     , secondsRemaining : Maybe Int
+    , background : Maybe String
     }
 
 
@@ -62,6 +63,11 @@ init details mode gos =
 
                 Nothing ->
                     []
+
+        -- Last background used
+        background : Maybe String
+        background =
+            List.head (List.filterMap (\x -> x) (List.reverse (List.map (\x -> x.background) details.structure)))
     in
     ( { records = records
       , recording = False
@@ -74,6 +80,7 @@ init details mode gos =
       , cameraReady = False
       , status = Status.NotSent
       , secondsRemaining = Nothing
+      , background = background
       }
     , Ports.init ( "video", Maybe.map Tuple.first record )
     )
@@ -115,3 +122,4 @@ type Msg
     | NewRecord Int
     | CaptureBackground
     | SecondsRemaining Int
+    | BackgroundCaptured String

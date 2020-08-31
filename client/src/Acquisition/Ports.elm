@@ -1,5 +1,6 @@
 port module Acquisition.Ports exposing
     ( askNextSlide
+    , backgroundCaptured
     , bindWebcam
     , cameraReady
     , captureBackground
@@ -66,3 +67,6 @@ port captureBackground : String -> Cmd msg
 
 
 port secondsRemaining : (Int -> msg) -> Sub msg
+
+
+port backgroundCaptured : (String -> msg) -> Sub msg

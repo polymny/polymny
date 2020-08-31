@@ -46,6 +46,7 @@ subscriptions { model } =
                         , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
                         , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
                         , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
+                        , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
                         ]
                         |> Sub.map LoggedIn.AcquisitionMsg
                         |> Sub.map Core.LoggedInMsg

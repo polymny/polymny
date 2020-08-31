@@ -69,16 +69,17 @@ function setupPorts(app) {
                         backgroundBlob = blob;
 
                         // For debug purposes
-                        let newImg = document.createElement('img'),
-                            url = URL.createObjectURL(blob);
+                        let url = URL.createObjectURL(blob);
+                        app.ports.backgroundCaptured.send(url);
 
-                        newImg.onload = function() {
-                            URL.revokeObjectURL(url);
-                            backgroundBlob = blob;
-                            console.log(newImg);
-                        };
+                        // let newImg = document.createElement('img'),
+                        // newImg.onload = function() {
+                        //     URL.revokeObjectURL(url);
+                        //     backgroundBlob = blob;
+                        //     console.log(newImg);
+                        // };
 
-                        newImg.src = url;
+                        // newImg.src = url;
                     });
 
 

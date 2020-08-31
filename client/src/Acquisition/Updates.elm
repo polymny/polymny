@@ -203,6 +203,9 @@ update session msg model =
             else
                 ( makeModel { model | secondsRemaining = Just n }, Cmd.none )
 
+        Acquisition.BackgroundCaptured u ->
+            ( makeModel { model | background = Just u }, Cmd.none )
+
 
 elementId : String
 elementId =

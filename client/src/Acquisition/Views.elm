@@ -286,14 +286,26 @@ uploadView { details, gos, currentVideo, recording, records, status } =
 
 backgroundView : Acquisition.Model -> Element Core.Msg
 backgroundView model =
-    case model.secondsRemaining of
-        Nothing ->
-            Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
-                |> Element.map LoggedIn.AcquisitionMsg
-                |> Element.map Core.LoggedInMsg
+    let
+        button =
+            case model.secondsRemaining of
+                Nothing ->
+                    Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
+                        |> Element.map LoggedIn.AcquisitionMsg
+                        |> Element.map Core.LoggedInMsg
 
-        Just n ->
-            Ui.primaryButton Nothing ("Photo du fond prise dans " ++ String.fromInt n ++ " secondes")
+                Just n ->
+                    Ui.primaryButton Nothing ("Photo du fond prise dans " ++ String.fromInt n ++ " secondes")
+
+        currentBackground =
+            case model.background of
+                Nothing ->
+                    Element.text "Aucun fond"
+
+                Just s ->
+                    Element.image [ Element.width (Element.px 100) ] { src = s, description = "Background" }
+    in
+    Element.row [] [ currentBackground, button ]
 
 
 
