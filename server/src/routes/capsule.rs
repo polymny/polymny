@@ -650,6 +650,7 @@ pub fn capsule_edition(
                             // command
                             let extraire_command =
                                 vec!["bash", &extraire_path, &record.to_str().unwrap()];
+                            println!("{:?}", extraire_command);
                             let extraire_child = command::run_command(&extraire_command)?;
                             if !extraire_child.status.success() {
                                 return Err(Error::TranscodeError);

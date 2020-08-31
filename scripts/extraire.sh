@@ -2,7 +2,7 @@
 #
 
 # argument : la video
-video_name=$(echo "$1" | cut -f 1 -d '.')
+video_name=$1
 
 # creer un dossier pour contenir les frames
 outdir="${video_name}_input"

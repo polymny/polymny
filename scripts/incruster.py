@@ -19,8 +19,8 @@ position_in_pixels = sys.argv[3]    # position de l'incrustation
 size_in_pixels = sys.argv[4]        # taille de l'incrustation
 
 # recuperer les extractions et les masks alpha
-fgs = sorted([os.path.join(path, f[:-4]) for f in os.listdir(path) if f.endswith("_fg.png")])
-masks = sorted([os.path.join(path, f[:-4]) for f in os.listdir(path) if f.endswith("_out.png")])
+fgs = sorted([os.path.join(path, f[:-4]) for f in os.listdir(path) if f.endswith("_img.png")])
+masks = sorted([os.path.join(path, f[:-4]) for f in os.listdir(path) if f.endswith("_masksDL.png")])
 
 # incruster une image sur le diapo en utilisant le mask alpha
 # et positionner l'image a l'endroit fourni
