@@ -335,7 +335,12 @@ genericGosView global uploadForm capsule options gosModel slideModel offset inde
                     , Element.el
                         (Attributes.designGosTitleAttributes ++ dragAttributes)
                         (Element.text (String.fromInt (gosIndex + 1)))
-                    , Element.row [ Element.alignRight, Element.spacing 10 ] [ lockButton, Ui.trashButton Nothing "" ]
+                    , Element.row [ Element.alignRight, Element.spacing 10 ]
+                        [ lockButton
+                        , Ui.trashButton (Just (Preparation.GosDelete gosIndex)) ""
+                            |> Element.map LoggedIn.PreparationMsg
+                            |> Element.map Core.LoggedInMsg
+                        ]
                     ]
                 , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
                 ]
@@ -442,10 +447,15 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
         Preparation.GosId _ ->
             Element.none
 
-        Preparation.JustSlide slide _ ->
+        Preparation.JustSlide slide index ->
             let
+                -- TODO computing the gosid this way is ugly af
+                gosIndex : Int
+                gosIndex =
+                    (index - 1) // 2
+
                 secondColumn =
-                    genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm
+                    genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm gosIndex
 
                 filename =
                     case uploadForm.file of
@@ -503,15 +513,15 @@ genericDesignSlideView global uploadForm options slideModel offset localIndex s 
                     , message
                     , Element.row
                         [ Element.spacingXY 2 0 ]
-                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide
+                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide gosIndex
                         , secondColumn
                         ]
                     ]
                 )
 
 
-genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Element Core.Msg
-genrericDesignSlide1stColumnView eventLessAttributes slide =
+genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Int -> Element Core.Msg
+genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
     let
         media =
             case slide.extra of
@@ -547,8 +557,8 @@ htmlVideo url =
         ]
 
 
-genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
-genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm =
+genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Int -> Element Core.Msg
+genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm gosIndex =
     let
         promptMsg : Core.Msg
         promptMsg =
@@ -579,7 +589,10 @@ genrericDesignSlide2ndColumnView global eventLessAttributes slide uploadForm =
                 Nothing ->
                     Element.column [ Font.size 14, Element.spacing 4 ]
                         [ Element.column []
-                            [ Element.el [ Element.spacingXY 2 4 ] <|
+                            [ Ui.trashButton (Just (Preparation.SlideDelete gosIndex slide.id)) ""
+                                |> Element.map LoggedIn.PreparationMsg
+                                |> Element.map Core.LoggedInMsg
+                            , Element.el [ Element.spacingXY 2 4 ] <|
                                 uploadExtraResourceView uploadForm slide.id
                             ]
                         ]

@@ -122,6 +122,70 @@ update msg global capsuleModel =
             in
             ( { capsuleModel | details = newDetails }, Cmd.none )
 
+        ( Preparation.GosDelete i, _ ) ->
+            let
+                mydebug =
+                    Debug.log "GosDelete" i
+
+                newStructure : List Api.Gos
+                newStructure =
+                    List.take i capsuleModel.details.structure
+                        ++ List.drop (i + 1) capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+
+        ( Preparation.SlideDelete gos_i slide_i, _ ) ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gos_i capsuleModel.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    case gosStructure of
+                        Just gos ->
+                            let
+                                newSlides =
+                                    List.filter (\x -> x.id /= slide_i) gos.slides
+                            in
+                            Just { gos | slides = newSlides }
+
+                        _ ->
+                            Nothing
+
+                newStructure : List Api.Gos
+                newStructure =
+                    case gosUpdatedStructure of
+                        Just new ->
+                            if List.isEmpty new.slides then
+                                List.take gos_i capsuleModel.details.structure
+                                    ++ List.drop (gos_i + 1) capsuleModel.details.structure
+
+                            else
+                                List.take gos_i capsuleModel.details.structure
+                                    ++ (new :: List.drop (gos_i + 1) capsuleModel.details.structure)
+
+                        _ ->
+                            capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
 updateEditPromptMsg msg content =

@@ -104,6 +104,8 @@ initEditPrompt =
 type Msg
     = DnD DnDMsg
     | SwitchLock Int
+    | GosDelete Int
+    | SlideDelete Int Int
     | EditPromptMsg EditPromptMsg
     | UploadSlideShowMsg UploadSlideShowMsg
     | UploadBackgroundMsg UploadBackgroundMsg
