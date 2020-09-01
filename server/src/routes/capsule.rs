@@ -620,7 +620,7 @@ pub fn capsule_edition(
 
                 let mut record = config.data_path.clone();
                 match (gos.record_path, gos.background_path) {
-                    (Some(record_path), Some(background_path)) => {
+                    (Some(record_path), Some(background_path)) if config.matting_enabled => {
                         let mut record_clone = record.clone();
                         record.push(record_path);
                         record_clone.push(background_path);
@@ -733,7 +733,7 @@ pub fn capsule_edition(
                         }
                     }
 
-                    (Some(record_path), None) => {
+                    (Some(record_path), _) => {
                         record.push(record_path);
 
                         let capsule_edition_options = EditionOptions {
