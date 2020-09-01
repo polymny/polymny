@@ -504,9 +504,9 @@ pub fn upload_record(
                     info!("record  output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
-                    asset
+                    Some(asset)
                 } else {
-                    todo!();
+                    None
                 }
             }
             FileField::Multiple(_files) => {
@@ -515,7 +515,7 @@ pub fn upload_record(
             }
         }
     } else {
-        todo!();
+        None
     };
 
     let text = match multipart_form_data.texts.get("structure") {
@@ -535,7 +535,7 @@ pub fn upload_record(
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     v[gos].record_path = Some(video_asset.asset_path.clone());
-    v[gos].background_path = Some(background_asset.asset_path.clone());
+    v[gos].background_path = background_asset.map(|x| x.asset_path.clone());
     v[gos].locked = true;
     {
         use crate::schema::capsules::dsl::{id as cid, structure};
@@ -624,8 +624,6 @@ pub fn capsule_edition(
                         let mut record_clone = record.clone();
                         record.push(record_path);
                         record_clone.push(background_path);
-
-                        println!("{} {}", record.display(), record_clone.display());
 
                         if post_data.with_video.unwrap_or(true) {
                             run_ffmpeg_command = false;
@@ -735,7 +733,58 @@ pub fn capsule_edition(
                         }
                     }
 
-                    (Some(_), None) => todo!(),
+                    (Some(record_path), None) => {
+                        record.push(record_path);
+
+                        let capsule_edition_options = EditionOptions {
+                            with_video: post_data.with_video.unwrap_or(true),
+                            webcam_size: webcam_size,
+                            webcam_position: webcam_position,
+                        };
+                        info!("capsule_edition_options= {:#?}", capsule_edition_options);
+                        use crate::schema::capsules::dsl;
+                        diesel::update(capsules::table)
+                            .filter(dsl::id.eq(capsule.id))
+                            .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
+                            .execute(&db.0)?;
+
+                        if post_data.with_video.unwrap_or(true) {
+                            ffmpeg_command.extend(
+                                vec![
+                                    "ffmpeg",
+                                    "-hide_banner",
+                                    "-y",
+                                    "-i",
+                                    &slide_path.to_str().unwrap(),
+                                    "-i",
+                                    &record.to_str().unwrap(),
+                                    "-filter_complex",
+                                    &filter_complex,
+                                ]
+                                .into_iter(),
+                            );
+                        } else {
+                            ffmpeg_command.extend(
+                                vec![
+                                    "ffmpeg",
+                                    "-hide_banner",
+                                    "-y",
+                                    "-loop",
+                                    "1",
+                                    "-i",
+                                    &slide_path.to_str().unwrap(),
+                                    "-i",
+                                    &record.to_str().unwrap(),
+                                    "-map",
+                                    "0:v:0",
+                                    "-map",
+                                    "1:a:0",
+                                    "-shortest",
+                                ]
+                                .into_iter(),
+                            );
+                        }
+                    }
 
                     (None, _) => {
                         // ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i tmp/slide2.png -c:v libx264 -t 3 -pix_fmt yuv420p -s hd1080 -r 25 -shortest out.mp4
