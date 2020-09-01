@@ -6,6 +6,8 @@ module Preparation.Types exposing
     , MaybeSlide(..)
     , Model
     , Msg(..)
+    , ReplaceSlideForm
+    , ReplaceSlideMsg(..)
     , UploadBackgroundMsg(..)
     , UploadExtraResourceForm
     , UploadExtraResourceMsg(..)
@@ -71,11 +73,26 @@ initUploadExtraResourceForm =
     UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing
 
 
+type alias ReplaceSlideForm =
+    { status : Status () ()
+    , file : Maybe File
+    , ractiveSlideId : Maybe Int
+    , activeGosIndex : Maybe Int
+    , hide : Bool
+    }
+
+
+initReplaceSlideForm : ReplaceSlideForm
+initReplaceSlideForm =
+    ReplaceSlideForm Status.NotSent Nothing Nothing Nothing True
+
+
 type alias Forms =
     { slideShow : UploadForm
     , background : UploadForm
     , logo : UploadForm
     , extraResource : UploadExtraResourceForm
+    , replaceSlide : ReplaceSlideForm
     }
 
 
@@ -85,6 +102,7 @@ initForms =
     , background = initUploadForm
     , logo = initUploadForm
     , extraResource = initUploadExtraResourceForm
+    , replaceSlide = initReplaceSlideForm
     }
 
 
@@ -111,6 +129,7 @@ type Msg
     | UploadBackgroundMsg UploadBackgroundMsg
     | UploadLogoMsg UploadLogoMsg
     | UploadExtraResourceMsg UploadExtraResourceMsg
+    | ReplaceSlideMsg ReplaceSlideMsg
 
 
 type DnDMsg
@@ -154,6 +173,15 @@ type UploadExtraResourceMsg
     | DeleteExtraResource Int
     | DeleteExtraResourceSuccess Api.Slide
     | DeleteExtraResourceError
+
+
+type ReplaceSlideMsg
+    = ReplaceSlideShowForm Int Int
+    | ReplaceSlideSelectFileRequested
+    | ReplaceSlideFileReady File
+    | ReplaceSlideFormSubmitted
+    | ReplaceSlideSuccess Api.Slide
+    | ReplaceSlideError
 
 
 type UploadModel

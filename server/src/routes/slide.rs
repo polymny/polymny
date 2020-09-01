@@ -89,7 +89,7 @@ pub fn move_slide(
     Ok(json!(slide))
 }
 
-/// Upload logo
+/// Upload video resourse
 #[post("/slide/<id>/upload_resource", data = "<data>")]
 pub fn upload_resource(
     config: State<Config>,
@@ -200,6 +200,31 @@ pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
+
+/// Replace slide
+#[post("/slide/<id>/replace", data = "<data>")]
+pub fn replace_slide(
+    config: State<Config>,
+    db: Database,
+    user: User,
+    content_type: &ContentType,
+    id: i32,
+    data: Data,
+) -> Result<JsonValue> {
+    let slide = user.get_slide_by_id(id, &db)?;
+    let asset = upload_file(&config, &db, &user, id, content_type, data)?;
+    println!("asset = {:#?}", asset);
+
+    use crate::schema::slides::dsl;
+    diesel::update(slides::table)
+        .filter(dsl::id.eq(slide.id))
+        .set(dsl::asset_id.eq(asset.id))
+        .execute(&db.0)?;
+
+    let slide = user.get_slide_by_id(id, &db)?;
+    Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
+}
+
 // TODO: unify this focntion with uploaf_file from src/route/capsule.rd
 fn upload_file(
     config: &State<Config>,

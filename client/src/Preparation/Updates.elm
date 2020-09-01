@@ -65,6 +65,19 @@ update msg global capsuleModel =
             in
             ( { newModel | uploadForms = newUploadForms }, newCmd )
 
+        ( Preparation.ReplaceSlideMsg newReplaceSlideMsg, model ) ->
+            let
+                ( newFormModel, newCmd, newModel ) =
+                    updateReplaceSlide newReplaceSlideMsg model.uploadForms.replaceSlide model
+
+                oldUploadForms =
+                    newModel.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | replaceSlide = newFormModel }
+            in
+            ( { newModel | uploadForms = newUploadForms }, newCmd )
+
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
                 ( newModel, newCmd ) =
@@ -124,9 +137,6 @@ update msg global capsuleModel =
 
         ( Preparation.GosDelete i, _ ) ->
             let
-                mydebug =
-                    Debug.log "GosDelete" i
-
                 newStructure : List Api.Gos
                 newStructure =
                     List.take i capsuleModel.details.structure
@@ -300,6 +310,80 @@ updateUploadLogo msg model capsuleId =
 
                 Just file ->
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
+
+
+updateReplaceSlide :
+    Preparation.ReplaceSlideMsg
+    -> Preparation.ReplaceSlideForm
+    -> Preparation.Model
+    -> ( Preparation.ReplaceSlideForm, Cmd Core.Msg, Preparation.Model )
+updateReplaceSlide msg replaceSlideForm preparationModel =
+    case msg of
+        Preparation.ReplaceSlideShowForm gosIndex slideId ->
+            ( { replaceSlideForm | hide = False, activeGosIndex = Just gosIndex, ractiveSlideId = Just slideId }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideSelectFileRequested ->
+            ( replaceSlideForm
+            , Select.file
+                [ "image/*", "application/pdf" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.ReplaceSlideMsg <|
+                                Preparation.ReplaceSlideFileReady x
+                )
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideFileReady file ->
+            ( { replaceSlideForm | file = Just file }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideFormSubmitted ->
+            case replaceSlideForm.file of
+                Nothing ->
+                    ( replaceSlideForm, Cmd.none, preparationModel )
+
+                Just file ->
+                    ( { replaceSlideForm | status = Status.Sent }
+                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file
+                    , preparationModel
+                    )
+
+        Preparation.ReplaceSlideSuccess slide ->
+            let
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
+                details =
+                    preparationModel.details
+            in
+            ( { replaceSlideForm | status = Status.Success () }
+            , Cmd.none
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.ReplaceSlideError ->
+            ( { replaceSlideForm | status = Status.Error () }
+            , Cmd.none
+            , preparationModel
+            )
 
 
 updateUploadExtraResource :
@@ -594,5 +678,24 @@ resultToMsg4 result =
                 LoggedIn.PreparationMsg <|
                     Preparation.UploadExtraResourceMsg <|
                         Preparation.DeleteExtraResourceError
+        )
+        result
+
+
+resultToMsg5 : Result e Api.Slide -> Core.Msg
+resultToMsg5 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.ReplaceSlideMsg <|
+                        Preparation.ReplaceSlideSuccess <|
+                            x
+        )
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.ReplaceSlideMsg <|
+                        Preparation.ReplaceSlideError
         )
         result
