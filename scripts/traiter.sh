@@ -1,17 +1,21 @@
+#!/usr/bin/env bash
 # appliquer le traitement de background-matting sur le dossier des frames en entree
 #
 
 # arguments :
+# - path vers la vidéo
 # - path vers le dossier des frames
 # - path vers le background sans la personne
 # - path vers le slide (target d'incrustation)
 # - position de l'incrustation en pixels (WebcamPosition)
 # - taille de l'incrustation en pixels (WebcamSize)
-frames=$1
+# - path vers la sortie (pip)
+video_name=$1
 frames_back=$2
 slide=$3
 position_in_pixels=$4
 size_in_pixels=$5
+pip_out=$6
 
 # path vers les algos de background-matting
 segmentation='../../Background-Matting/test_segmentation_deeplab.py'
@@ -38,10 +42,13 @@ conda-init () {
 conda-init
 conda activate back-matting
 
-export LD_LIBRARY_PATH=/opt/cuda-10.0/lib64:$LID_LIBRARY_PATH
-
 export CUDA_DEVICE_ORDER=PCI_BUS_ID
 export CUDA_VISIBLE_DEVICES=0
+
+# Extraction des frames de la video
+frames="${video_name}_input"
+mkdir $frames
+ffmpeg -i $1 -r 25 "${frames}/%04d_img.png" -hide_banner
 
 if [ -e "${frames}/done.txt" ]
 then
@@ -60,3 +67,6 @@ else
     # incruster
     python ${incruster} ${frames} ${slide} ${position_in_pixels} ${size_in_pixels}
 fi
+
+# creer la video
+ffmpeg -y -r 25 -f image2 -start_number 0 -i "${frames}/%d_comp.png" -vcodec libx264 -crf 15 -s 1920x1080 -pix_fmt yuv420p ${pip_out}

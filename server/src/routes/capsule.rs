@@ -642,25 +642,9 @@ pub fn capsule_edition(
                                 .into_iter(),
                             );
 
-                            // extract record to frames
-                            // path to script
-                            let extraire_path = String::from("../scripts/extraire.sh");
-                            // command
-                            let extraire_command =
-                                vec!["bash", &extraire_path, &record.to_str().unwrap()];
-                            println!("{:?}", extraire_command);
-                            let extraire_child = command::run_command(&extraire_command)?;
-                            if !extraire_child.status.success() {
-                                return Err(Error::TranscodeError);
-                            }
-
                             // apply segmentation and matting on record frames
                             // path to script
                             let traiter_path = "../scripts/traiter.sh";
-                            // path to frames folder
-                            let input_ext: &str = "_input";
-                            let record_frames =
-                                format!("{}{}", record.to_str().unwrap(), input_ext);
                             // path to background image
                             let back_ext: &str = "_back.png";
                             let background_path =
@@ -670,31 +654,16 @@ pub fn capsule_edition(
                             let size_pixels = format!("{}", size_in_pixels(&webcam_size));
                             // command
                             let matting_command = vec![
-                                "bash",
                                 traiter_path,
-                                &record_frames,
+                                &record.to_str().unwrap(),
                                 &background_path,
                                 &slide_path.to_str().unwrap(),
                                 &pos_pixels_xy,
                                 &size_pixels,
+                                &pip_out.to_str().unwrap(),
                             ];
                             let matting_child = command::run_command(&matting_command)?;
                             if !matting_child.status.success() {
-                                return Err(Error::TranscodeError);
-                            }
-
-                            // build video from incruster.py
-                            // path to script
-                            let reconstruire_path = String::from("../scripts/reconstruire.sh");
-                            // command
-                            let reconstruire_command = vec![
-                                "bash",
-                                &reconstruire_path,
-                                &record_frames,
-                                &pip_out.to_str().unwrap(),
-                            ];
-                            let reconstruire_child = command::run_command(&reconstruire_command)?;
-                            if !reconstruire_child.status.success() {
                                 return Err(Error::TranscodeError);
                             }
 
