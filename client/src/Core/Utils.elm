@@ -69,7 +69,7 @@ init flags _ key =
             Task.perform Core.TimeZoneChanged Time.here
 
         ( initModel, initCmd ) =
-            modelFromFlags flags
+            modelFromFlags global flags
     in
     ( Core.FullModel global initModel, Cmd.batch [ initialCommand, initCmd ] )
 
@@ -93,6 +93,14 @@ globalFromFlags flags key =
                 Err _ ->
                     False
 
+        mattingEnabled =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "matting_enabled" Decode.bool)) flags of
+                Ok b ->
+                    b
+
+                Err _ ->
+                    False
+
         version =
             case Decode.decodeValue (Decode.field "global" (Decode.field "version" Decode.string)) flags of
                 Ok v ->
@@ -109,11 +117,18 @@ globalFromFlags flags key =
                 Err _ ->
                     ""
     in
-    { zone = Time.utc, beta = beta, videoRoot = root, version = version, key = key, commit = commit }
+    { zone = Time.utc
+    , beta = beta
+    , videoRoot = root
+    , version = version
+    , key = key
+    , commit = commit
+    , mattingEnabled = mattingEnabled
+    }
 
 
-modelFromFlags : Decode.Value -> ( Core.Model, Cmd Core.Msg )
-modelFromFlags flags =
+modelFromFlags : Core.Global -> Decode.Value -> ( Core.Model, Cmd Core.Msg )
+modelFromFlags global flags =
     case Decode.decodeValue (Decode.field "flags" (Decode.field "page" Decode.string)) flags of
         Ok "index" ->
             case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
@@ -159,7 +174,7 @@ modelFromFlags flags =
                 ( Ok session, Ok capsule ) ->
                     let
                         ( model, cmd ) =
-                            Acquisition.initAtFirstNonRecorded capsule Acquisition.All
+                            Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
                     in
                     ( Core.LoggedIn
                         { session = session

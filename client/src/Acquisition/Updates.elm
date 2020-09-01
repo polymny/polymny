@@ -14,8 +14,8 @@ import Status
 import Utils
 
 
-update : Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
-update session msg model =
+update : Core.Global -> Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
+update global session msg model =
     let
         makeModel : Acquisition.Model -> LoggedIn.Model
         makeModel m =
@@ -87,7 +87,7 @@ update session msg model =
                         else
                             let
                                 ( m, cmd ) =
-                                    Acquisition.init model.details model.mode (model.gos + 1)
+                                    Acquisition.init global.mattingEnabled model.details model.mode (model.gos + 1)
                             in
                             ( makeModel m, cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
 
@@ -155,7 +155,7 @@ update session msg model =
                         ( Ok v, Acquisition.All, False ) ->
                             let
                                 ( m, c ) =
-                                    Acquisition.init v model.mode (model.gos + 1)
+                                    Acquisition.init global.mattingEnabled v model.mode (model.gos + 1)
                             in
                             ( makeModel m, c |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
 

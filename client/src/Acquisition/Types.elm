@@ -40,8 +40,8 @@ type alias Model =
     }
 
 
-init : Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
-init details mode gos =
+init : Bool -> Api.CapsuleDetails -> Mode -> Int -> ( Model, Cmd Msg )
+init mattingEnabled details mode gos =
     let
         record =
             case List.head (List.drop gos details.structure) of
@@ -67,7 +67,11 @@ init details mode gos =
         -- Last background used
         background : Maybe String
         background =
-            List.head (List.filterMap (\x -> x) (List.reverse (List.map (\x -> x.background) details.structure)))
+            if mattingEnabled then
+                List.head (List.filterMap (\x -> x) (List.reverse (List.map (\x -> x.background) details.structure)))
+
+            else
+                Nothing
     in
     ( { records = records
       , recording = False
@@ -96,8 +100,8 @@ filterNonRecorded ( id, gos ) =
             Nothing
 
 
-initAtFirstNonRecorded : Api.CapsuleDetails -> Mode -> ( Model, Cmd Msg )
-initAtFirstNonRecorded details mode =
+initAtFirstNonRecorded : Bool -> Api.CapsuleDetails -> Mode -> ( Model, Cmd Msg )
+initAtFirstNonRecorded mattingEnabled details mode =
     let
         gos : Int
         gos =
@@ -106,7 +110,7 @@ initAtFirstNonRecorded details mode =
                 |> List.head
                 |> Maybe.withDefault 0
     in
-    init details mode gos
+    init mattingEnabled details mode gos
 
 
 type Msg

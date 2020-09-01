@@ -25,6 +25,7 @@ type alias FullModel =
 type alias Global =
     { zone : Time.Zone
     , beta : Bool
+    , mattingEnabled : Bool
     , videoRoot : String
     , version : String
     , commit : String

@@ -23,6 +23,9 @@ pub struct Config {
     /// Whether the server is in beta mode or not.
     pub beta: bool,
 
+    /// Whether the background matting is enabled or not.
+    pub matting_enabled: bool,
+
     /// The mailer, if any.
     pub mailer: Option<Mailer>,
 
@@ -53,6 +56,7 @@ impl Config {
             .unwrap_or_else(|_| String::from("/"));
 
         let beta = config.get_bool("beta").unwrap_or(false);
+        let matting_enabled = config.get_bool("matting_enabled").unwrap_or(false);
 
         Config {
             data_path: PathBuf::from(data_path),
@@ -60,6 +64,7 @@ impl Config {
             videos_path: PathBuf::from(videos_path),
             video_root,
             beta,
+            matting_enabled,
             mailer: Mailer::from_config(config),
             version: env!("CARGO_PKG_VERSION"),
             commit: run_command_str!("git", "rev-parse", "--short", "HEAD"),

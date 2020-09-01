@@ -37,12 +37,12 @@ update msg global { session, tab } =
             )
 
         ( LoggedIn.AcquisitionMsg acquisitionMsg, LoggedIn.Acquisition model ) ->
-            Acquisition.update session acquisitionMsg model
+            Acquisition.update global session acquisitionMsg model
 
         ( LoggedIn.AcquisitionClicked capsule, _ ) ->
             let
                 ( model, cmd ) =
-                    Acquisition.initAtFirstNonRecorded capsule Acquisition.All
+                    Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
 
                 coreCmd =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
@@ -87,7 +87,7 @@ update msg global { session, tab } =
         ( LoggedIn.Record capsule gos, _ ) ->
             let
                 ( t, cmd ) =
-                    Acquisition.init capsule Acquisition.Single gos
+                    Acquisition.init global.mattingEnabled capsule Acquisition.Single gos
             in
             ( { session = session, tab = LoggedIn.Acquisition t }, Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd )
 
@@ -101,7 +101,7 @@ update msg global { session, tab } =
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form showMenu ) ->
             let
                 ( newModel, cmd ) =
-                    updateUploadSlideShow uploadSlideShowMsg { session = session, tab = tab } form showMenu
+                    updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form showMenu
             in
             ( newModel, cmd )
 
@@ -185,8 +185,8 @@ update msg global { session, tab } =
             ( LoggedIn.Model session tab, Cmd.none )
 
 
-updateUploadSlideShow : LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> Bool -> ( LoggedIn.Model, Cmd Core.Msg )
-updateUploadSlideShow msg { session } form showMenu =
+updateUploadSlideShow : Core.Global -> LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> Bool -> ( LoggedIn.Model, Cmd Core.Msg )
+updateUploadSlideShow global msg { session } form showMenu =
     case msg of
         LoggedIn.UploadSlideShowSelectFileRequested ->
             ( LoggedIn.Model session (LoggedIn.Home form showMenu)
@@ -217,7 +217,7 @@ updateUploadSlideShow msg { session } form showMenu =
         LoggedIn.UploadSlideShowSuccess capsule ->
             let
                 ( model, cmd ) =
-                    Acquisition.initAtFirstNonRecorded capsule Acquisition.All
+                    Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
 
                 coreCmd =
                     Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd

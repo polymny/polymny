@@ -17,10 +17,10 @@ import Utils
 
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
-view _ _ model =
+view global _ model =
     let
         mainPage =
-            mainView model
+            mainView global model
 
         element =
             Element.column
@@ -74,8 +74,8 @@ slidesThumbView model =
         (List.indexedMap (\i x -> gosParser (i == model.gos) x) model.details.structure)
 
 
-mainView : Acquisition.Model -> Element Core.Msg
-mainView model =
+mainView : Core.Global -> Acquisition.Model -> Element Core.Msg
+mainView global model =
     let
         nextButton =
             case model.slides of
@@ -118,7 +118,7 @@ mainView model =
     Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
         [ Element.row [ Element.spacing 10 ]
             [ recordingsView model
-            , topView model
+            , topView global model
             ]
         , Element.row [ Element.centerX, Element.spacing 10 ]
             [ recordingButton model.cameraReady model.recording (List.length model.records), nextButton ]
@@ -126,11 +126,11 @@ mainView model =
         ]
 
 
-topView : Acquisition.Model -> Element Core.Msg
-topView model =
+topView : Core.Global -> Acquisition.Model -> Element Core.Msg
+topView global model =
     Element.row [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
         [ Element.column []
-            [ backgroundView model
+            [ backgroundView global model
             , videoView
             ]
         , case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
@@ -284,28 +284,32 @@ uploadView { details, gos, currentVideo, recording, records, status } =
                             |> Element.map Core.LoggedInMsg
 
 
-backgroundView : Acquisition.Model -> Element Core.Msg
-backgroundView model =
-    let
-        button =
-            case model.secondsRemaining of
-                Nothing ->
-                    Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
-                        |> Element.map LoggedIn.AcquisitionMsg
-                        |> Element.map Core.LoggedInMsg
+backgroundView : Core.Global -> Acquisition.Model -> Element Core.Msg
+backgroundView global model =
+    if global.mattingEnabled then
+        let
+            button =
+                case model.secondsRemaining of
+                    Nothing ->
+                        Ui.primaryButton (Just Acquisition.CaptureBackground) "Capturer le fond"
+                            |> Element.map LoggedIn.AcquisitionMsg
+                            |> Element.map Core.LoggedInMsg
 
-                Just n ->
-                    Ui.primaryButton Nothing ("Photo du fond prise dans " ++ String.fromInt n ++ " secondes")
+                    Just n ->
+                        Ui.primaryButton Nothing ("Photo du fond prise dans " ++ String.fromInt n ++ " secondes")
 
-        currentBackground =
-            case model.background of
-                Nothing ->
-                    Element.text "Aucun fond"
+            currentBackground =
+                case model.background of
+                    Nothing ->
+                        Element.text "Aucun fond"
 
-                Just s ->
-                    Element.image [ Element.width (Element.px 100) ] { src = s, description = "Background" }
-    in
-    Element.row [] [ currentBackground, button ]
+                    Just s ->
+                        Element.image [ Element.width (Element.px 100) ] { src = s, description = "Background" }
+        in
+        Element.row [] [ currentBackground, button ]
+
+    else
+        Element.none
 
 
 

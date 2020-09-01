@@ -111,7 +111,7 @@ update msg { global, model } =
                     , Api.get
                         { url = Url.toString url
                         , body = Http.emptyBody
-                        , expect = Http.expectJson resultToMsg Decode.value
+                        , expect = Http.expectJson (resultToMsg global) Decode.value
                         }
                     )
 
@@ -155,9 +155,9 @@ isAcquisition model =
             False
 
 
-resultToMsg : Result Http.Error Decode.Value -> Core.Msg
-resultToMsg result =
-    case Result.map (\x -> Core.modelFromFlags x) result of
+resultToMsg : Core.Global -> Result Http.Error Decode.Value -> Core.Msg
+resultToMsg global result =
+    case Result.map (\x -> Core.modelFromFlags global x) result of
         Ok ( m, c ) ->
             Core.UrlReceived m c
 
