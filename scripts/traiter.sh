@@ -59,7 +59,7 @@ else
     python ${segmentation} -i ${frames}
 
     # extraction de la personne (foreground + mask alpha)
-    python ${back_matting} -m real-fixed-cam -m syn-comp-adobe -i ${frames} -o ${frames} -b ${frames_back} -tb ${frames_back}
+    python ${back_matting} -m real-fixed-cam -m syn-comp-adobe-trainset-15 -i ${frames} -o ${frames} -b ${frames_back} -tb ${frames_back}
     # python ${back_matting} -m real-fixed-cam -m syn-comp-adobe-trainset-15 -i ${frames} -o ${frames} -b ${frames_back}
 
     echo "segmentation and matting : done" > "${frames}/done.txt"
