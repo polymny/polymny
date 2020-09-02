@@ -10,7 +10,7 @@ ifeq ("$(UGLIFYJS)", "")
 	UGLIFYJS=uglifyjs
 endif
 
-BUILD_DIR=./server/dist
+BUILD_DIR=server/dist
 
 all: client-dev setup-dev server-dev
 
@@ -30,7 +30,7 @@ client-release: client/src/**
 	@cp client/src/Log.elm.release client/src/Log.elm
 	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELM) make src/Main.elm --optimize --output ../$(BUILD_DIR)/main.tmp.js
-	@cd client && $(UGLIFYJS) ../$(BUILD_DIR)/main.tmp.js --compress 'pure_funcs="F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output=../$(BUILD_DIR)/main.min.js
+	@cd client && $(UGLIFYJS) ../$(BUILD_DIR)/main.tmp.js --compress 'pure_funcs="F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle > ../$(BUILD_DIR)/main.min.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m client (release)"
 
 setup-dev: client/src/**
@@ -45,7 +45,7 @@ setup-release: client/src/**
 	@cp client/src/Log.elm.release client/src/Log.elm
 	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELM) make src/Setup.elm --optimize --output ../$(BUILD_DIR)/setup.tmp.js
-	@cd client && $(UGLIFYJS) ../$(BUILD_DIR)/setup.tmp.js --compress 'pure_funcs="F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output=../$(BUILD_DIR)/setup.min.js
+	@cd client && $(UGLIFYJS) ../$(BUILD_DIR)/setup.tmp.js --compress 'pure_funcs="F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle > ../$(BUILD_DIR)/setup.min.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m setup (release)"
 
 client-watch:
