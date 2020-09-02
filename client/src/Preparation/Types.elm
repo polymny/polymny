@@ -8,6 +8,7 @@ module Preparation.Types exposing
     , Msg(..)
     , ReplaceSlideForm
     , ReplaceSlideMsg(..)
+    , Tab(..)
     , UploadBackgroundMsg(..)
     , UploadExtraResourceForm
     , UploadExtraResourceMsg(..)
@@ -41,6 +42,7 @@ type alias Model =
     , editPrompt : EditPrompt
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
+    , t : Tab
     }
 
 
@@ -119,6 +121,12 @@ initEditPrompt =
     EditPrompt Status.NotSent False "" 0
 
 
+type Tab
+    = First
+    | Second
+    | Third
+
+
 type Msg
     = DnD DnDMsg
     | SwitchLock Int
@@ -130,6 +138,7 @@ type Msg
     | UploadLogoMsg UploadLogoMsg
     | UploadExtraResourceMsg UploadExtraResourceMsg
     | ReplaceSlideMsg ReplaceSlideMsg
+    | UserSelectedTab Tab
 
 
 type DnDMsg
@@ -192,7 +201,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide

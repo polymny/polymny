@@ -196,6 +196,9 @@ update msg global capsuleModel =
             in
             ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
 
+        ( Preparation.UserSelectedTab t, _ ) ->
+            ( { capsuleModel | t = t }, Cmd.none )
+
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
 updateEditPromptMsg msg content =

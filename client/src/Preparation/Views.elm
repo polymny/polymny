@@ -8,6 +8,7 @@ import DnDList.Groups
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import File exposing (File)
@@ -40,7 +41,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
-mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel } =
+mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -87,6 +88,15 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
+                    , Element.column []
+                        [ Element.row
+                            [ Element.centerX, Element.alignLeft ]
+                            [ tabEl Preparation.First t
+                            , tabEl Preparation.Second t
+                            , tabEl Preparation.Third t
+                            ]
+                        ]
+                    , Element.text "Un texte dans le tab"
                     ]
                 ]
             )
@@ -543,6 +553,60 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                         ]
                     ]
                 )
+
+
+tabEl : Preparation.Tab -> Preparation.Tab -> Element Core.Msg
+tabEl tab selectedTab =
+    let
+        isSelected =
+            tab == selectedTab
+
+        paddingOffset =
+            if isSelected then
+                0
+
+            else
+                2
+
+        borderWidths =
+            if isSelected then
+                { left = 2, top = 2, right = 2, bottom = 0 }
+
+            else
+                { bottom = 2, top = 0, left = 0, right = 0 }
+
+        corners =
+            if isSelected then
+                { topLeft = 6, topRight = 6, bottomLeft = 0, bottomRight = 0 }
+
+            else
+                { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 0 }
+    in
+    Element.el
+        [ Border.widthEach borderWidths
+        , Border.roundEach corners
+        , Border.color Colors.grey
+        , Element.mapAttribute Core.LoggedInMsg <|
+            Element.mapAttribute LoggedIn.PreparationMsg <|
+                Events.onClick (Preparation.UserSelectedTab tab)
+        ]
+    <|
+        Element.el
+            [ Element.centerX
+            , Element.centerY
+            , Element.paddingEach { left = 30, right = 30, top = 10 + paddingOffset, bottom = 10 - paddingOffset }
+            ]
+        <|
+            Element.text <|
+                case tab of
+                    Preparation.First ->
+                        "First"
+
+                    Preparation.Second ->
+                        "Second"
+
+                    Preparation.Third ->
+                        "Third"
 
 
 genrericDesignSlide1stColumnView : List (Element.Attribute Core.Msg) -> Api.Slide -> Int -> Element Core.Msg
