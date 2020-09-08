@@ -1,15 +1,13 @@
 //! This module contains all the routes related to slides.
 
-use std::fmt;
 use std::fs::{self, create_dir, File};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use image::imageops::{self, FilterType};
-use image::{self, GenericImageView, ImageFormat};
+use image::imageops::FilterType;
+use image::{self, ImageFormat};
 
 use rocket::http::ContentType;
 use rocket::{Data, State};
@@ -30,23 +28,6 @@ use crate::db::user::User;
 use crate::schema::slides;
 use crate::{Database, Error, Result};
 
-struct Elapsed(Duration);
-impl Elapsed {
-    fn from(start: &Instant) -> Self {
-        Elapsed(start.elapsed())
-    }
-}
-impl fmt::Display for Elapsed {
-    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
-        match (self.0.as_secs(), self.0.subsec_nanos()) {
-            (0, n) if n < 1000 => write!(out, "{} ns", n),
-            (0, n) if n < 1000_000 => write!(out, "{} µs", n / 1000),
-            (0, n) => write!(out, "{} ms", n / 1000_000),
-            (s, n) if s < 10 => write!(out, "{}.{:02} s", s, n / 10_000_000),
-            (s, _) => write!(out, "{} s", s),
-        }
-    }
-}
 /// A struct to  update Slides
 #[derive(Deserialize, AsChangeset, Debug)]
 #[table_name = "slides"]
@@ -244,6 +225,13 @@ pub fn replace_slide(
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
 
     let slide_pos_in_pdf = 0;
+    let uuid = Uuid::new_v4();
+    let stem = Path::new(&asset.name)
+        .file_stem()
+        .unwrap()
+        .to_str()
+        .unwrap();
+
     match asset.asset_type.as_str() {
         "application/pdf" => {
             let temp_dir = tempdir()?;
@@ -254,12 +242,6 @@ pub fn replace_slide(
             let ret_path =
                 command::export_slides(&output_path, temp_dir.path(), Some(slide_pos_in_pdf))?;
 
-            let stem = Path::new(&asset.name)
-                .file_stem()
-                .unwrap()
-                .to_str()
-                .unwrap();
-            let uuid = Uuid::new_v4();
             let slide_name = format!("{}__{}.png", stem, slide_pos_in_pdf);
             let path_dest: PathBuf = [
                 &user.username,
@@ -279,12 +261,12 @@ pub fn replace_slide(
 
             let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
             create_dir(full_dest_path.parent().unwrap()).ok();
+            fs::copy(ret_path, &full_dest_path)?;
             use crate::schema::slides::dsl;
             diesel::update(slides::table)
                 .filter(dsl::id.eq(slide.id))
                 .set(dsl::asset_id.eq(slide_asset.id))
                 .execute(&db.0)?;
-            fs::copy(ret_path, &full_dest_path)?;
         }
         _ => {
             let img_path: PathBuf = [config.data_path.clone(), PathBuf::from(asset.asset_path)]
@@ -292,23 +274,8 @@ pub fn replace_slide(
                 .collect();
             let img = image::open(img_path).unwrap();
 
-            // The dimensions method returns the images width and height.
-            println!("dimensions {:?}", img.dimensions());
-
-            // The color method returns the image's `ColorType`.
-            println!("{:?}", img.color());
-            //let mut buffer = img.to_rgb();
-            let timer = Instant::now();
             let buffer = img.resize(1920, 1080, FilterType::Nearest);
-            println!("Scaled  in {}", Elapsed::from(&timer));
 
-            let stem = Path::new(&asset.name)
-                .file_stem()
-                .unwrap()
-                .to_str()
-                .unwrap();
-
-            let uuid = Uuid::new_v4();
             let slide_name = format!("{}__{}_resized.png", stem, slide_pos_in_pdf);
             let path_dest: PathBuf = [
                 &user.username,
@@ -338,6 +305,7 @@ pub fn replace_slide(
                 .execute(&db.0)?;
         }
     }
+
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
