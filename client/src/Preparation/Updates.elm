@@ -65,6 +65,19 @@ update msg global capsuleModel =
             in
             ( { newModel | uploadForms = newUploadForms }, newCmd )
 
+        ( Preparation.ReplaceSlideMsg newReplaceSlideMsg, model ) ->
+            let
+                ( newFormModel, newCmd, newModel ) =
+                    updateReplaceSlide newReplaceSlideMsg model.uploadForms.replaceSlide model
+
+                oldUploadForms =
+                    newModel.uploadForms
+
+                newUploadForms =
+                    { oldUploadForms | replaceSlide = newFormModel }
+            in
+            ( { newModel | uploadForms = newUploadForms }, newCmd )
+
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
                 ( newModel, newCmd ) =
@@ -121,6 +134,70 @@ update msg global capsuleModel =
                     { details | structure = newStructure }
             in
             ( { capsuleModel | details = newDetails }, Cmd.none )
+
+        ( Preparation.GosDelete i, _ ) ->
+            let
+                newStructure : List Api.Gos
+                newStructure =
+                    List.take i capsuleModel.details.structure
+                        ++ List.drop (i + 1) capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+
+        ( Preparation.SlideDelete gos_i slide_i, _ ) ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gos_i capsuleModel.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    case gosStructure of
+                        Just gos ->
+                            let
+                                newSlides =
+                                    List.filter (\x -> x.id /= slide_i) gos.slides
+                            in
+                            Just { gos | slides = newSlides }
+
+                        _ ->
+                            Nothing
+
+                newStructure : List Api.Gos
+                newStructure =
+                    case gosUpdatedStructure of
+                        Just new ->
+                            if List.isEmpty new.slides then
+                                List.take gos_i capsuleModel.details.structure
+                                    ++ List.drop (gos_i + 1) capsuleModel.details.structure
+
+                            else
+                                List.take gos_i capsuleModel.details.structure
+                                    ++ (new :: List.drop (gos_i + 1) capsuleModel.details.structure)
+
+                        _ ->
+                            capsuleModel.details.structure
+
+                details : Api.CapsuleDetails
+                details =
+                    capsuleModel.details
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    { details | structure = newStructure }
+            in
+            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+
+        ( Preparation.UserSelectedTab t, _ ) ->
+            ( { capsuleModel | t = t }, Cmd.none )
 
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
@@ -236,6 +313,80 @@ updateUploadLogo msg model capsuleId =
 
                 Just file ->
                     ( form, Api.capsuleUploadLogo resultToMsg capsuleId file )
+
+
+updateReplaceSlide :
+    Preparation.ReplaceSlideMsg
+    -> Preparation.ReplaceSlideForm
+    -> Preparation.Model
+    -> ( Preparation.ReplaceSlideForm, Cmd Core.Msg, Preparation.Model )
+updateReplaceSlide msg replaceSlideForm preparationModel =
+    case msg of
+        Preparation.ReplaceSlideShowForm gosIndex slideId ->
+            ( { replaceSlideForm | hide = False, activeGosIndex = Just gosIndex, ractiveSlideId = Just slideId }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideSelectFileRequested ->
+            ( replaceSlideForm
+            , Select.file
+                [ "image/*", "application/pdf" ]
+                (\x ->
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.ReplaceSlideMsg <|
+                                Preparation.ReplaceSlideFileReady x
+                )
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideFileReady file ->
+            ( { replaceSlideForm | file = Just file }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.ReplaceSlideFormSubmitted ->
+            case replaceSlideForm.file of
+                Nothing ->
+                    ( replaceSlideForm, Cmd.none, preparationModel )
+
+                Just file ->
+                    ( { replaceSlideForm | status = Status.Sent }
+                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file
+                    , preparationModel
+                    )
+
+        Preparation.ReplaceSlideSuccess slide ->
+            let
+                updateSlide : Api.Slide -> Api.Slide -> Api.Slide
+                updateSlide newSlide aSlide =
+                    if aSlide.id == newSlide.id then
+                        newSlide
+
+                    else
+                        aSlide
+
+                newSlides =
+                    List.map (updateSlide slide) preparationModel.details.slides
+
+                newStructure =
+                    List.map (\x -> { x | slides = List.map (updateSlide slide) x.slides }) preparationModel.details.structure
+
+                details =
+                    preparationModel.details
+            in
+            ( { replaceSlideForm | status = Status.Success () }
+            , Cmd.none
+            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            )
+
+        Preparation.ReplaceSlideError ->
+            ( { replaceSlideForm | status = Status.Error () }
+            , Cmd.none
+            , preparationModel
+            )
 
 
 updateUploadExtraResource :
@@ -530,5 +681,24 @@ resultToMsg4 result =
                 LoggedIn.PreparationMsg <|
                     Preparation.UploadExtraResourceMsg <|
                         Preparation.DeleteExtraResourceError
+        )
+        result
+
+
+resultToMsg5 : Result e Api.Slide -> Core.Msg
+resultToMsg5 result =
+    Utils.resultToMsg
+        (\x ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.ReplaceSlideMsg <|
+                        Preparation.ReplaceSlideSuccess <|
+                            x
+        )
+        (\_ ->
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.ReplaceSlideMsg <|
+                        Preparation.ReplaceSlideError
         )
         result

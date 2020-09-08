@@ -124,12 +124,18 @@ pub struct NewAssetsObject {
 
 impl Asset {
     /// Creates a new asset and stores it in the database.
-    pub fn new(database: &PgConnection, uuid: Uuid, name: &str, asset_path: &str) -> Result<Asset> {
+    pub fn new(
+        database: &PgConnection,
+        uuid: Uuid,
+        name: &str,
+        asset_path: &str,
+        asset_type: Option<&str>,
+    ) -> Result<Asset> {
         let asset = NewAsset {
             uuid,
             name: String::from(name),
             asset_path: String::from(asset_path),
-            asset_type: "file".to_string(), //TODO: extact asse type from asset_path extension
+            asset_type: asset_type.unwrap_or("file").to_string(),
             upload_date: Utc::now().naive_utc(),
         }
         .save(&database)?;

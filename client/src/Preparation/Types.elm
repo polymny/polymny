@@ -6,6 +6,9 @@ module Preparation.Types exposing
     , MaybeSlide(..)
     , Model
     , Msg(..)
+    , ReplaceSlideForm
+    , ReplaceSlideMsg(..)
+    , Tab(..)
     , UploadBackgroundMsg(..)
     , UploadExtraResourceForm
     , UploadExtraResourceMsg(..)
@@ -39,6 +42,7 @@ type alias Model =
     , editPrompt : EditPrompt
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
+    , t : Tab
     }
 
 
@@ -71,11 +75,26 @@ initUploadExtraResourceForm =
     UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing
 
 
+type alias ReplaceSlideForm =
+    { status : Status () ()
+    , file : Maybe File
+    , ractiveSlideId : Maybe Int
+    , activeGosIndex : Maybe Int
+    , hide : Bool
+    }
+
+
+initReplaceSlideForm : ReplaceSlideForm
+initReplaceSlideForm =
+    ReplaceSlideForm Status.NotSent Nothing Nothing Nothing True
+
+
 type alias Forms =
     { slideShow : UploadForm
     , background : UploadForm
     , logo : UploadForm
     , extraResource : UploadExtraResourceForm
+    , replaceSlide : ReplaceSlideForm
     }
 
 
@@ -85,6 +104,7 @@ initForms =
     , background = initUploadForm
     , logo = initUploadForm
     , extraResource = initUploadExtraResourceForm
+    , replaceSlide = initReplaceSlideForm
     }
 
 
@@ -101,14 +121,24 @@ initEditPrompt =
     EditPrompt Status.NotSent False "" 0
 
 
+type Tab
+    = First
+    | Second
+    | Third
+
+
 type Msg
     = DnD DnDMsg
     | SwitchLock Int
+    | GosDelete Int
+    | SlideDelete Int Int
     | EditPromptMsg EditPromptMsg
     | UploadSlideShowMsg UploadSlideShowMsg
     | UploadBackgroundMsg UploadBackgroundMsg
     | UploadLogoMsg UploadLogoMsg
     | UploadExtraResourceMsg UploadExtraResourceMsg
+    | ReplaceSlideMsg ReplaceSlideMsg
+    | UserSelectedTab Tab
 
 
 type DnDMsg
@@ -154,6 +184,15 @@ type UploadExtraResourceMsg
     | DeleteExtraResourceError
 
 
+type ReplaceSlideMsg
+    = ReplaceSlideShowForm Int Int
+    | ReplaceSlideSelectFileRequested
+    | ReplaceSlideFileReady File
+    | ReplaceSlideFormSubmitted
+    | ReplaceSlideSuccess Api.Slide
+    | ReplaceSlideError
+
+
 type UploadModel
     = SlideShow
     | Background
@@ -162,7 +201,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide

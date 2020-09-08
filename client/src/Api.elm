@@ -34,6 +34,7 @@ module Api exposing
     , setupConfig
     , signUp
     , slideDeleteExtraResource
+    , slideReplace
     , slideUploadExtraResource
     , testDatabase
     , testMailer
@@ -692,6 +693,15 @@ slideDeleteExtraResource resultToMsg id =
         { url = "/api/slide/" ++ String.fromInt id ++ "/delete_resource"
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.emptyBody
+        }
+
+
+slideReplace : (Result Http.Error Slide -> msg) -> Int -> File.File -> Cmd msg
+slideReplace resultToMsg id content =
+    post
+        { url = "/api/slide/" ++ String.fromInt id ++ "/replace"
+        , expect = Http.expectJson resultToMsg decodeSlide
+        , body = Http.multipartBody [ Http.filePart "file" content ]
         }
 
 

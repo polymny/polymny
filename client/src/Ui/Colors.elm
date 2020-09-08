@@ -31,15 +31,15 @@ module Ui.Colors exposing
     , whiteDarker
     )
 
-import Color exposing (Color)
 import Element
+import SolidColor exposing (SolidColor)
 
 
-colorToUi : Color -> Element.Color
+colorToUi : SolidColor -> Element.Color
 colorToUi color =
     let
         ( r, g, b ) =
-            Color.toRGB color
+            SolidColor.toRGB color
     in
     Element.rgb255 (floor r) (floor g) (floor b)
 
@@ -49,39 +49,39 @@ greyValue =
     175
 
 
-greyColor : Color
+greyColor : SolidColor
 greyColor =
-    Color.fromRGB ( greyValue, greyValue, greyValue )
+    SolidColor.fromRGB ( greyValue, greyValue, greyValue )
 
 
-whiteColor : Color
+whiteColor : SolidColor
 whiteColor =
-    Color.fromRGB ( 255, 255, 255 )
+    SolidColor.fromRGB ( 255, 255, 255 )
 
 
-blackColor : Color
+blackColor : SolidColor
 blackColor =
-    Color.fromRGB ( 0, 0, 0 )
+    SolidColor.fromRGB ( 0, 0, 0 )
 
 
-primaryColor : Color
+primaryColor : SolidColor
 primaryColor =
     irisesColor
 
 
-successColor : Color
+successColor : SolidColor
 successColor =
-    Color.fromRGB ( 40, 167, 69 )
+    SolidColor.fromRGB ( 40, 167, 69 )
 
 
-warningColor : Color
+warningColor : SolidColor
 warningColor =
-    Color.fromRGB ( 255, 221, 87 )
+    SolidColor.fromRGB ( 255, 221, 87 )
 
 
-dangerColor : Color
+dangerColor : SolidColor
 dangerColor =
-    Color.fromRGB ( 241, 70, 104 )
+    SolidColor.fromRGB ( 241, 70, 104 )
 
 
 lightParameter : Float
@@ -89,29 +89,29 @@ lightParameter =
     30
 
 
-primaryLightColor : Color
+primaryLightColor : SolidColor
 primaryLightColor =
-    Color.addLightness lightParameter primaryColor
+    SolidColor.addLightness lightParameter primaryColor
 
 
-successLightColor : Color
+successLightColor : SolidColor
 successLightColor =
-    Color.addLightness lightParameter successColor
+    SolidColor.addLightness lightParameter successColor
 
 
-warningLightColor : Color
+warningLightColor : SolidColor
 warningLightColor =
-    Color.addLightness lightParameter warningColor
+    SolidColor.addLightness lightParameter warningColor
 
 
-dangerLightColor : Color
+dangerLightColor : SolidColor
 dangerLightColor =
-    Color.addLightness lightParameter dangerColor
+    SolidColor.addLightness lightParameter dangerColor
 
 
-greyLightColor : Color
+greyLightColor : SolidColor
 greyLightColor =
-    Color.addLightness lightParameter greyColor
+    SolidColor.addLightness lightParameter greyColor
 
 
 darkParameter : Float
@@ -119,39 +119,39 @@ darkParameter =
     -30
 
 
-primaryDarkColor : Color
+primaryDarkColor : SolidColor
 primaryDarkColor =
-    Color.addLightness darkParameter primaryColor
+    SolidColor.addLightness darkParameter primaryColor
 
 
-successDarkColor : Color
+successDarkColor : SolidColor
 successDarkColor =
-    Color.addLightness darkParameter successColor
+    SolidColor.addLightness darkParameter successColor
 
 
-warningDarkColor : Color
+warningDarkColor : SolidColor
 warningDarkColor =
-    Color.addLightness darkParameter warningColor
+    SolidColor.addLightness darkParameter warningColor
 
 
-dangerDarkColor : Color
+dangerDarkColor : SolidColor
 dangerDarkColor =
-    Color.addLightness darkParameter dangerColor
+    SolidColor.addLightness darkParameter dangerColor
 
 
-greyDarkColor : Color
+greyDarkColor : SolidColor
 greyDarkColor =
-    Color.addLightness darkParameter greyColor
+    SolidColor.addLightness darkParameter greyColor
 
 
-whiteDarkColor : Color
+whiteDarkColor : SolidColor
 whiteDarkColor =
-    Color.fromRGB ( 250, 251, 252 )
+    SolidColor.fromRGB ( 250, 251, 252 )
 
 
-whiteDarkerColor : Color
+whiteDarkerColor : SolidColor
 whiteDarkerColor =
-    Color.fromRGB ( 234, 236, 239 )
+    SolidColor.fromRGB ( 234, 236, 239 )
 
 
 grey : Element.Color
@@ -258,9 +258,9 @@ link =
 -- Try palette : https://www.schemecolor.com/bright-blue-green-and-purple.php
 
 
-brandeisBlueColor : Color
+brandeisBlueColor : SolidColor
 brandeisBlueColor =
-    Color.fromRGB ( 0, 99, 255 )
+    SolidColor.fromRGB ( 0, 99, 255 )
 
 
 brandeisBlue : Element.Color
@@ -268,9 +268,9 @@ brandeisBlue =
     colorToUi brandeisBlueColor
 
 
-vividCeruleanColor : Color
+vividCeruleanColor : SolidColor
 vividCeruleanColor =
-    Color.fromRGB ( 0, 164, 255 )
+    SolidColor.fromRGB ( 0, 164, 255 )
 
 
 vividCerulean : Element.Color
@@ -278,9 +278,9 @@ vividCerulean =
     colorToUi vividCeruleanColor
 
 
-mentholColor : Color
+mentholColor : SolidColor
 mentholColor =
-    Color.fromRGB ( 176, 255, 151 )
+    SolidColor.fromRGB ( 176, 255, 151 )
 
 
 menthol : Element.Color
@@ -288,9 +288,9 @@ menthol =
     colorToUi mentholColor
 
 
-brightGreenColor : Color
+brightGreenColor : SolidColor
 brightGreenColor =
-    Color.fromRGB ( 99, 252, 1 )
+    SolidColor.fromRGB ( 99, 252, 1 )
 
 
 brightGreen : Element.Color
@@ -298,9 +298,9 @@ brightGreen =
     colorToUi brightGreenColor
 
 
-purpleHeartColor : Color
+purpleHeartColor : SolidColor
 purpleHeartColor =
-    Color.fromRGB ( 104, 53, 155 )
+    SolidColor.fromRGB ( 104, 53, 155 )
 
 
 purpleHeart : Element.Color
@@ -308,9 +308,9 @@ purpleHeart =
     colorToUi purpleHeartColor
 
 
-purplePlumColor : Color
+purplePlumColor : SolidColor
 purplePlumColor =
-    Color.fromRGB ( 153, 79, 179 )
+    SolidColor.fromRGB ( 153, 79, 179 )
 
 
 purplePlum : Element.Color
@@ -322,9 +322,9 @@ purplePlum =
 -- Art history https://www.canva.com/learn/website-color-schemes/
 
 
-sunFlowersColor : Color
+sunFlowersColor : SolidColor
 sunFlowersColor =
-    Color.fromRGB ( 255, 204, 0 )
+    SolidColor.fromRGB ( 255, 204, 0 )
 
 
 artSunFlowers : Element.Color
@@ -332,9 +332,9 @@ artSunFlowers =
     colorToUi sunFlowersColor
 
 
-starryNightColor : Color
+starryNightColor : SolidColor
 starryNightColor =
-    Color.fromRGB ( 3, 118, 180 )
+    SolidColor.fromRGB ( 3, 118, 180 )
 
 
 artStarryNight : Element.Color
@@ -342,9 +342,9 @@ artStarryNight =
     colorToUi starryNightColor
 
 
-irisesColor : Color
+irisesColor : SolidColor
 irisesColor =
-    Color.fromRGB ( 0, 120, 72 )
+    SolidColor.fromRGB ( 0, 120, 72 )
 
 
 artIrises : Element.Color
@@ -352,9 +352,9 @@ artIrises =
     colorToUi irisesColor
 
 
-eveningColor : Color
+eveningColor : SolidColor
 eveningColor =
-    Color.fromRGB ( 38, 34, 40 )
+    SolidColor.fromRGB ( 38, 34, 40 )
 
 
 artEvening : Element.Color

@@ -26,39 +26,72 @@ pub fn run_command(command: &Vec<&str>) -> Result<Output> {
     child
 }
 
-/// Exports all slides from pdf to png.
-pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<()> {
+/// Exports all slides (or one) from pdf to png.
+pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
+    input: P,
+    output: Q,
+    page: Option<i32>,
+) -> Result<String> {
     println!(
         "input = {:#?}, output = {:#?} ",
         input.as_ref().to_str().unwrap(),
         &format!("{}/", output.as_ref().to_str().unwrap())
     );
-    let document = PopplerDocument::new_from_file(&input, "").unwrap();
-    info!("PDF doc = {:#?}", document.get_metadata());
-    let n_pages = document.get_n_pages();
-    for i in 0..n_pages {
-        //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
-        let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
-        let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), i);
-        let command = vec![
-            "convert",
-            "-density",
-            "380",
-            &command_input_path,
-            "-colorspace",
-            "sRGB",
-            "-resize",
-            "1920x1080",
-            "-background",
-            "white",
-            "-gravity",
-            "center",
-            "-extent",
-            "1920x1080",
-            &command_output_path,
-        ];
-        run_command(&command)?;
-    }
 
-    Ok(())
+    match page {
+        Some(x) => {
+            let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), x);
+            let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), x);
+            let command = vec![
+                "convert",
+                "-density",
+                "380",
+                &command_input_path,
+                "-colorspace",
+                "sRGB",
+                "-resize",
+                "1920x1080",
+                "-background",
+                "white",
+                "-gravity",
+                "center",
+                "-extent",
+                "1920x1080",
+                &command_output_path,
+            ];
+            run_command(&command)?;
+            Ok(command_output_path)
+        }
+
+        None => {
+            let document = PopplerDocument::new_from_file(&input, "").unwrap();
+            info!("PDF doc = {:#?}", document.get_metadata());
+            let n_pages = document.get_n_pages();
+            for i in 0..n_pages {
+                //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
+                let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
+                let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), i);
+                let command = vec![
+                    "convert",
+                    "-density",
+                    "380",
+                    &command_input_path,
+                    "-colorspace",
+                    "sRGB",
+                    "-resize",
+                    "1920x1080",
+                    "-background",
+                    "white",
+                    "-gravity",
+                    "center",
+                    "-extent",
+                    "1920x1080",
+                    &command_output_path,
+                ];
+                run_command(&command)?;
+            }
+
+            Ok(output.as_ref().to_str().unwrap().to_string())
+        }
+    }
 }
