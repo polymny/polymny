@@ -59,7 +59,13 @@ pub fn quick_upload_slides(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
 
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
@@ -108,7 +114,7 @@ pub fn quick_upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-                    command::export_slides(&output_path, dir.path())?;
+                    command::export_slides(&output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -129,8 +135,13 @@ pub fn quick_upload_slides(
                         let mut server_path = PathBuf::from(&user.username);
                         server_path.push("extract");
                         server_path.push(format!("{}_{}", uuid, slide_name));
-                        let slide_asset =
-                            Asset::new(&db, uuid, &slide_name, server_path.to_str().unwrap())?;
+                        let slide_asset = Asset::new(
+                            &db,
+                            uuid,
+                            &slide_name,
+                            server_path.to_str().unwrap(),
+                            Some("image/png"),
+                        )?;
                         // When generated a slide take position (idx*100) and one per GOS
                         let slide = Slide::new(&db, slide_asset.id, capsule.id, "Dummy prompt")?;
                         let mut output_path = config.data_path.clone();

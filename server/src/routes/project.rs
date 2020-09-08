@@ -108,7 +108,13 @@ pub fn project_upload(
                     let uuid = Uuid::new_v4();
                     output_path.push(format!("{}_{}", uuid, file_name));
                     fs::rename(path, &output_path)?;
-                    let asset = Asset::new(&db, uuid, file_name, &output_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        &output_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, project.id, AssetType::Project)?;
                     return Ok(json!({ "file_name": file_name, "project": user.projects(&db)? }));
                 }

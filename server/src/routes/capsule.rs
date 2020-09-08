@@ -188,7 +188,13 @@ pub fn upload_slides(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
                     let mut output_path = config.data_path.clone();
@@ -214,7 +220,7 @@ pub fn upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-                    command::export_slides(&output_path, dir.path())?;
+                    command::export_slides(&output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -231,8 +237,13 @@ pub fn upload_slides(
                         let mut server_path = PathBuf::from(&user.username);
                         server_path.push("extract");
                         server_path.push(format!("{}_{}", uuid, slide_name));
-                        let asset =
-                            Asset::new(&db, uuid, &slide_name, server_path.to_str().unwrap())?;
+                        let asset = Asset::new(
+                            &db,
+                            uuid,
+                            &slide_name,
+                            server_path.to_str().unwrap(),
+                            Some("image/png"),
+                        )?;
 
                         let slide = Slide::new(&db, asset.id, id, "")?;
                         let mut output_path = config.data_path.clone();
@@ -302,7 +313,13 @@ fn upload_file(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
                     let mut output_path = config.data_path.clone();
@@ -458,7 +475,13 @@ pub fn upload_record(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
@@ -732,7 +755,13 @@ pub fn capsule_edition(
     let child = command::run_command(&command)?;
 
     if child.status.success() {
-        let asset = Asset::new(&db, uuid, &file_name(), server_path.to_str().unwrap())?;
+        let asset = Asset::new(
+            &db,
+            uuid,
+            &file_name(),
+            server_path.to_str().unwrap(),
+            Some("video"),
+        )?;
         AssetsObject::new(&db, asset.id, capsule.id, AssetType::Capsule)?;
 
         // Add video_id to capsule

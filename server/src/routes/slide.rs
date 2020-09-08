@@ -1,10 +1,15 @@
 //! This module contains all the routes related to slides.
 
-use std::fs::{self, create_dir};
+use std::fmt;
+use std::fs::{self, create_dir, File};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
+
+use image::imageops::{self, FilterType};
+use image::{self, GenericImageView, ImageFormat};
 
 use rocket::http::ContentType;
 use rocket::{Data, State};
@@ -14,9 +19,10 @@ use rocket_multipart_form_data::{
     FileField, MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 
+use tempfile::tempdir;
 use uuid::Uuid;
 
-use crate::command::run_command;
+use crate::command;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::slide::{Slide, SlideWithAsset};
@@ -24,6 +30,23 @@ use crate::db::user::User;
 use crate::schema::slides;
 use crate::{Database, Error, Result};
 
+struct Elapsed(Duration);
+impl Elapsed {
+    fn from(start: &Instant) -> Self {
+        Elapsed(start.elapsed())
+    }
+}
+impl fmt::Display for Elapsed {
+    fn fmt(&self, out: &mut fmt::Formatter) -> fmt::Result {
+        match (self.0.as_secs(), self.0.subsec_nanos()) {
+            (0, n) if n < 1000 => write!(out, "{} ns", n),
+            (0, n) if n < 1000_000 => write!(out, "{} µs", n / 1000),
+            (0, n) => write!(out, "{} ms", n / 1000_000),
+            (s, n) if s < 10 => write!(out, "{}.{:02} s", s, n / 10_000_000),
+            (s, _) => write!(out, "{} s", s),
+        }
+    }
+}
 /// A struct to  update Slides
 #[derive(Deserialize, AsChangeset, Debug)]
 #[table_name = "slides"]
@@ -116,7 +139,13 @@ pub fn upload_resource(
         let uuid = Uuid::new_v4();
         let file_name = format!("{}_transcoded.mp4", file_stem);
         server_path.push(format!("{}_{}", uuid, file_name));
-        Asset::new(&db, uuid, &file_name, server_path.to_str().unwrap())
+        Asset::new(
+            &db,
+            uuid,
+            &file_name,
+            server_path.to_str().unwrap(),
+            Some("video"),
+        )
     }?;
 
     AssetsObject::new(&db, transcoded_asset.id, slide.id, AssetType::Slide)?;
@@ -157,7 +186,7 @@ pub fn upload_resource(
         &transcoded_path.to_str().unwrap(),
     ];
 
-    let child = run_command(&command).unwrap();
+    let child = command::run_command(&command).unwrap();
     println!("Transcoded status: {}", child.status);
 
     if child.status.success() {
@@ -213,14 +242,102 @@ pub fn replace_slide(
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
-    println!("asset = {:#?}", asset);
 
-    use crate::schema::slides::dsl;
-    diesel::update(slides::table)
-        .filter(dsl::id.eq(slide.id))
-        .set(dsl::asset_id.eq(asset.id))
-        .execute(&db.0)?;
+    let slide_pos_in_pdf = 0;
+    match asset.asset_type.as_str() {
+        "application/pdf" => {
+            let temp_dir = tempdir()?;
 
+            let mut output_path = config.data_path.clone();
+            output_path.push(asset.asset_path);
+
+            let ret_path =
+                command::export_slides(&output_path, temp_dir.path(), Some(slide_pos_in_pdf))?;
+
+            let stem = Path::new(&asset.name)
+                .file_stem()
+                .unwrap()
+                .to_str()
+                .unwrap();
+            let uuid = Uuid::new_v4();
+            let slide_name = format!("{}__{}.png", stem, slide_pos_in_pdf);
+            let path_dest: PathBuf = [
+                &user.username,
+                "extract",
+                &format!("{}_{}", uuid, slide_name),
+            ]
+            .iter()
+            .collect();
+
+            let slide_asset = Asset::new(
+                &db,
+                uuid,
+                &slide_name,
+                path_dest.to_str().unwrap(),
+                Some("image/png"),
+            )?;
+
+            let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
+            create_dir(full_dest_path.parent().unwrap()).ok();
+            use crate::schema::slides::dsl;
+            diesel::update(slides::table)
+                .filter(dsl::id.eq(slide.id))
+                .set(dsl::asset_id.eq(slide_asset.id))
+                .execute(&db.0)?;
+            fs::copy(ret_path, &full_dest_path)?;
+        }
+        _ => {
+            let img_path: PathBuf = [config.data_path.clone(), PathBuf::from(asset.asset_path)]
+                .iter()
+                .collect();
+            let img = image::open(img_path).unwrap();
+
+            // The dimensions method returns the images width and height.
+            println!("dimensions {:?}", img.dimensions());
+
+            // The color method returns the image's `ColorType`.
+            println!("{:?}", img.color());
+            //let mut buffer = img.to_rgb();
+            let timer = Instant::now();
+            let buffer = img.resize(1920, 1080, FilterType::Nearest);
+            println!("Scaled  in {}", Elapsed::from(&timer));
+
+            let stem = Path::new(&asset.name)
+                .file_stem()
+                .unwrap()
+                .to_str()
+                .unwrap();
+
+            let uuid = Uuid::new_v4();
+            let slide_name = format!("{}__{}_resized.png", stem, slide_pos_in_pdf);
+            let path_dest: PathBuf = [
+                &user.username,
+                "extract",
+                &format!("{}_{}", uuid, slide_name),
+            ]
+            .iter()
+            .collect();
+            let slide_asset = Asset::new(
+                &db,
+                uuid,
+                &slide_name,
+                path_dest.to_str().unwrap(),
+                Some("image/png"),
+            )?;
+
+            let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
+            create_dir(full_dest_path.parent().unwrap()).ok();
+
+            let mut output = File::create(full_dest_path).unwrap();
+            buffer.write_to(&mut output, ImageFormat::Png).unwrap();
+
+            use crate::schema::slides::dsl;
+            diesel::update(slides::table)
+                .filter(dsl::id.eq(slide.id))
+                .set(dsl::asset_id.eq(slide_asset.id))
+                .execute(&db.0)?;
+        }
+    }
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
@@ -238,6 +355,7 @@ fn upload_file(
     options.allowed_fields.push(
         MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
     );
+    println!("content_type = {:#?}", content_type);
     let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
     //TODO: handle errors from multipart form dat ?
     // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs
@@ -253,13 +371,18 @@ fn upload_file(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, id, AssetType::Slide)?;
 
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
 
-                    println!("output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
                     return Ok(asset);

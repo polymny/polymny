@@ -117,6 +117,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             uuid,
             &sample_asset.name,
             &output_path.to_str().unwrap(),
+            None,
         )?;
     }
 
