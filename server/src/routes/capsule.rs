@@ -520,7 +520,13 @@ pub fn upload_record(
                     let mut server_path = PathBuf::from(&user.username);
                     let uuid = Uuid::new_v4();
                     server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(&db, uuid, file_name, server_path.to_str().unwrap())?;
+                    let asset = Asset::new(
+                        &db,
+                        uuid,
+                        file_name,
+                        server_path.to_str().unwrap(),
+                        Some(file.content_type.as_ref().unwrap().essence_str()),
+                    )?;
                     AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
                     let mut output_path = config.data_path.clone();
                     output_path.push(server_path);
