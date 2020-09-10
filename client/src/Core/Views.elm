@@ -97,9 +97,13 @@ viewContent { global, model } =
     Element.column
         (Element.height Element.fill
             :: Element.width Element.fill
+            :: Background.color Colors.whiteDark
             :: attributes
         )
-        [ topBar model, content, bottomBar global ]
+        [ topBar model
+        , content
+        , bottomBar global
+        ]
 
 
 homeView : Core.HomeModel -> Element Core.Msg

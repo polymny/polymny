@@ -21,11 +21,7 @@ import Ui.Colors as Colors
 
 designAttributes : List (Element.Attribute msg)
 designAttributes =
-    [ Element.padding 10
-    , Element.spacing 10
-    , Element.width Element.fill
-    , Border.rounded 5
-    , Border.width 2
+    [ Element.width Element.fill
     ]
 
 
@@ -33,7 +29,6 @@ fullModelAttributes : List (Element.Attribute msg)
 fullModelAttributes =
     [ Font.size 15
     , fontOpenSans
-    , Background.color Colors.white
     ]
 
 
@@ -62,10 +57,6 @@ designGosAttributes =
     Element.spacing 9
         :: Element.width Element.fill
         :: Element.alignTop
-        :: Element.centerX
-        :: Border.rounded 5
-        :: Border.width 2
-        :: Background.color Colors.white
         :: designAttributes
 
 
@@ -75,7 +66,6 @@ designGosTitleAttributes =
     , Border.color Colors.artIrises
     , Border.rounded 5
     , Border.width 2
-    , Element.centerX
     , Font.size 20
     ]
 
@@ -88,11 +78,6 @@ genericDesignSlideViewAttributes =
     , Border.rounded 5
     , Border.dashed
     , Border.width 3
-    , Element.width
-        (Element.shrink
-            |> Element.minimum 440
-            |> Element.maximum 430
-        )
     ]
 
 
@@ -154,7 +139,6 @@ boxAttributes =
     [ Background.color Colors.whiteDark
     , Element.width
         Element.fill
-    , Element.spacing 5
     , Element.padding 10
     , Border.color Colors.whiteDarker
     , Border.rounded 5

@@ -52,7 +52,6 @@ view global session tab =
                 [ Element.alignTop
                 , Element.padding 10
                 , Element.width Element.fill
-                , Element.scrollbarX
                 ]
                 [ mainTab
                 ]

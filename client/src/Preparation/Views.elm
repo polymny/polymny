@@ -25,19 +25,7 @@ import Utils
 
 view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
 view global session model =
-    let
-        mainPage =
-            mainView global session model
-
-        element =
-            Element.column
-                Ui.mainViewAttributes2
-                [ Utils.headerView "preparation" model.details
-                , mainPage
-                ]
-    in
-    Element.row Ui.mainViewAttributes1
-        [ element ]
+    mainView global session model
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
@@ -54,13 +42,11 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
             else
                 Nothing
 
-        capsuleInfo =
-            if global.beta then
-                capsuleInfoView session details uploadForms
-
-            else
-                Element.none
-
+        -- capsuleInfo =
+        --     if global.beta then
+        --         capsuleInfoView session details uploadForms
+        --     else
+        --         Element.none
         msg =
             Core.LoggedInMsg <| LoggedIn.EditionClicked details True
 
@@ -75,28 +61,26 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                     Element.mapAttribute Preparation.EditPromptMsg <|
                         Element.inFront (Dialog.view dialogConfig)
             ]
-            (Element.row [ Element.scrollbarX ]
-                [ capsuleInfo
-                , Element.column
-                    [ Element.scrollbarX
-                    , Element.centerX
-                    , Element.alignTop
+            (Element.row []
+                [ Element.column
+                    [ Element.alignTop
                     ]
-                    [ Element.row (Background.color Colors.white :: Attributes.designAttributes)
+                    [ Element.column Attributes.designAttributes
                         (List.map
                             (\( i, slide ) -> capsuleGosView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
                             (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                         )
                     , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
-                    , Element.column []
-                        [ Element.row
-                            [ Element.centerX, Element.alignLeft ]
-                            [ tabEl Preparation.First t
-                            , tabEl Preparation.Second t
-                            , tabEl Preparation.Third t
-                            ]
-                        ]
-                    , Element.text "Un texte dans le tab"
+
+                    --, Element.column []
+                    --    [ Element.row
+                    --        [ Element.centerX, Element.alignLeft ]
+                    --        [ tabEl Preparation.First t
+                    --        , tabEl Preparation.Second t
+                    --        , tabEl Preparation.Third t
+                    --        ]
+                    --    ]
+                    --, Element.text "Un texte dans le tab"
                     ]
                 ]
             )
@@ -321,38 +305,46 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
         [ Preparation.GosId _ ] ->
             Element.column
                 [ Element.htmlAttribute (Html.Attributes.id gosId)
-                , Element.height Element.fill
-                , Element.width (Element.px 50)
+                , Element.width Element.fill
                 ]
                 [ Element.el
                     (Element.htmlAttribute (Html.Attributes.id slideId)
-                        :: Element.width (Element.px 50)
-                        :: Element.height (Element.px 300)
+                        :: Element.height (Element.px 50)
+                        :: Element.width Element.fill
                         :: slideDropAttributes
                     )
-                    Element.none
+                    (Element.el [ Element.centerY, Element.width Element.fill ]
+                        (Element.el
+                            [ Element.width Element.fill
+                            , Border.color Colors.black
+                            , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                            ]
+                            Element.none
+                        )
+                    )
                 ]
 
         _ ->
-            Element.column
+            Element.row
                 (Element.htmlAttribute (Html.Attributes.id gosId)
                     :: dropAttributes
                     ++ ghostAttributes
                     ++ Attributes.designGosAttributes
                 )
-                [ Element.row (Element.width Element.fill :: eventLessAttributes)
-                    [ Element.row [ Element.alignLeft, Element.spacing 10 ] leftButtons
-                    , Element.el
-                        (Attributes.designGosTitleAttributes ++ dragAttributes)
-                        (Element.text (String.fromInt (gosIndex + 1)))
-                    , Element.row [ Element.alignRight, Element.spacing 10 ]
-                        [ lockButton
-                        , Ui.trashButton (Just (Preparation.GosDelete gosIndex)) ""
-                            |> Element.map LoggedIn.PreparationMsg
-                            |> Element.map Core.LoggedInMsg
-                        ]
-                    ]
-                , Element.column (Element.spacing 10 :: Attributes.designAttributes ++ eventLessAttributes) slides
+                [ -- Element.column eventLessAttributes
+                  --   [ Element.column [ Element.spacing 10 ] leftButtons
+                  --   , Element.el
+                  --       (Attributes.designGosTitleAttributes ++ dragAttributes)
+                  --       (Element.text (String.fromInt (gosIndex + 1)))
+                  --   , Element.column
+                  --       [ Element.spacing 10 ]
+                  --       [ lockButton
+                  --       , Ui.trashButton (Just (Preparation.GosDelete gosIndex)) ""
+                  --           |> Element.map LoggedIn.PreparationMsg
+                  --           |> Element.map Core.LoggedInMsg
+                  --       ]
+                  --   ],
+                  Element.row (Element.spacing 20 :: Attributes.designAttributes ++ eventLessAttributes) slides
                 ]
 
 
@@ -524,35 +516,44 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                             Element.none
             in
             Element.el
-                (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
-                (Element.column
-                    Attributes.genericDesignSlideViewAttributes
-                    [ Element.el
-                        (Element.height
-                            (Element.shrink
-                                |> Element.maximum 40
-                                |> Element.minimum 20
-                            )
-                            :: Element.width Element.fill
-                            :: eventLessAttributes
-                            ++ dragAttributes
-                        )
-                      <|
-                        Element.el
-                            [ Font.size 22
-                            , Element.centerX
-                            , Font.color Colors.artEvening
-                            ]
-                            Element.none
-                    , messageExtra
-                    , messageReplace
-                    , Element.row
-                        [ Element.spacingXY 2 0 ]
-                        [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide gosIndex
-                        , secondColumn
-                        ]
-                    ]
+                (Element.htmlAttribute (Html.Attributes.id slideId)
+                    :: dropAttributes
+                    ++ ghostAttributes
                 )
+                (genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide gosIndex)
+
+
+
+--Element.el
+--    (Element.htmlAttribute (Html.Attributes.id slideId) :: dropAttributes ++ ghostAttributes)
+--    (Element.column
+--        Attributes.genericDesignSlideViewAttributes
+--        [ Element.el
+--            (Element.height
+--                (Element.shrink
+--                    |> Element.maximum 40
+--                    |> Element.minimum 20
+--                )
+--                :: Element.width Element.fill
+--                :: eventLessAttributes
+--                ++ dragAttributes
+--            )
+--          <|
+--            Element.el
+--                [ Font.size 22
+--                , Element.centerX
+--                , Font.color Colors.artEvening
+--                ]
+--                Element.none
+--        , messageExtra
+--        , messageReplace
+--        , Element.row
+--            [ Element.spacingXY 2 0 ]
+--            [ genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide gosIndex
+--            , secondColumn
+--            ]
+--        ]
+--    )
 
 
 tabEl : Preparation.Tab -> Preparation.Tab -> Element Core.Msg
@@ -622,12 +623,11 @@ genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
                     viewSlideImage slide.asset.asset_path
     in
     Element.column
-        (Element.alignTop
-            :: Element.width
-                (Element.shrink
-                    |> Element.maximum 600
-                    |> Element.minimum 210
-                )
+        (Element.width
+            (Element.shrink
+                |> Element.maximum 310
+                |> Element.minimum 310
+            )
             :: eventLessAttributes
         )
         [ media
@@ -638,7 +638,7 @@ htmlVideo : String -> Html msg
 htmlVideo url =
     Html.video
         [ Html.Attributes.controls True
-        , Html.Attributes.width 200
+        , Html.Attributes.width 300
         ]
         [ Html.source
             [ Html.Attributes.src url ]
@@ -744,7 +744,9 @@ genrericDesignSlide2ndColumnView global eventLessAttributes slide extraResourceF
 
 viewSlideImage : String -> Element Core.Msg
 viewSlideImage url =
-    Element.image [ Element.width (Element.px 200) ] { src = url, description = "One desc" }
+    Element.image
+        [ Element.width Element.fill ]
+        { src = url, description = "One desc" }
 
 
 configPromptModal : Preparation.EditPrompt -> Dialog.Config Preparation.EditPromptMsg
