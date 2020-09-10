@@ -199,6 +199,12 @@ update msg global capsuleModel =
         ( Preparation.UserSelectedTab t, _ ) ->
             ( { capsuleModel | t = t }, Cmd.none )
 
+        ( Preparation.IncreaseNumberOfSlidesPerRow, _ ) ->
+            ( { capsuleModel | numberOfSlidesPerRow = capsuleModel.numberOfSlidesPerRow + 1 }, Cmd.none )
+
+        ( Preparation.DecreaseNumberOfSlidesPerRow, _ ) ->
+            ( { capsuleModel | numberOfSlidesPerRow = capsuleModel.numberOfSlidesPerRow - 1 }, Cmd.none )
+
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
 updateEditPromptMsg msg content =

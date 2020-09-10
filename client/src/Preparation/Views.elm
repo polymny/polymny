@@ -28,7 +28,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
-mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t } =
+mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t, numberOfSlidesPerRow } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -49,12 +49,23 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
         msg =
             Core.LoggedInMsg <| LoggedIn.EditionClicked details True
 
+        increaseMsg =
+            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
+
+        decreaseMsg =
+            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
+
         autoEdition =
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
 
         resultView =
             Element.column []
-                [ Element.el
+                [ Element.row [ Element.spacing 5, Element.alignRight ]
+                    [ Ui.primaryButton (Just decreaseMsg) "-"
+                    , Element.text (String.fromInt numberOfSlidesPerRow)
+                    , Ui.primaryButton (Just increaseMsg) "+"
+                    ]
+                , Element.el
                     [ Element.padding 10
                     , Element.mapAttribute Core.LoggedInMsg <|
                         Element.mapAttribute LoggedIn.PreparationMsg <|
@@ -68,7 +79,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                             ]
                             [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                 (List.map
-                                    (\( i, slide ) -> capsuleGosView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
+                                    (\( i, slide ) -> capsuleGosView global uploadForms.extraResource numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
                                     (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                                 )
                             , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
@@ -88,7 +99,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                 ]
     in
     if editPrompt.visible then
-        Element.el [ Element.inFront (Element.text "hello") ] resultView
+        Element.el [ Element.inFront Element.none ] resultView
 
     else
         resultView
@@ -171,28 +182,28 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView global uploadForm replaceSlideForm capsule gosModel slideModel offset gosIndex gos =
+capsuleGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Int -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule gosModel slideModel offset gosIndex gos =
     case ( global.beta, Preparation.gosSystem.info gosModel ) of
         ( False, _ ) ->
-            genericGosView global uploadForm replaceSlideForm capsule Locked gosModel slideModel offset gosIndex gos
+            genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule Locked gosModel slideModel offset gosIndex gos
 
         ( _, Just { dragIndex } ) ->
             if dragIndex /= gosIndex then
-                genericGosView global uploadForm replaceSlideForm capsule Drop gosModel slideModel offset gosIndex gos
+                genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule Drop gosModel slideModel offset gosIndex gos
 
             else
-                genericGosView global uploadForm replaceSlideForm capsule EventLess gosModel slideModel offset gosIndex gos
+                genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule EventLess gosModel slideModel offset gosIndex gos
 
         _ ->
-            genericGosView global uploadForm replaceSlideForm capsule Drag gosModel slideModel offset gosIndex gos
+            genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule Drag gosModel slideModel offset gosIndex gos
 
 
-gosGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-gosGhostView global uploadForm replaceSlideForm capsule gosModel slideModel slides =
+gosGhostView : Core.Global -> Preparation.UploadExtraResourceForm -> Int -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+gosGhostView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule gosModel slideModel slides =
     case maybeDragGos gosModel slides of
         Just s ->
-            genericGosView global uploadForm replaceSlideForm capsule Ghost gosModel slideModel 0 0 s
+            genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule Ghost gosModel slideModel 0 0 s
 
         _ ->
             Element.none
@@ -235,12 +246,9 @@ regroupSlides number list =
             (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h)) ( -1, Nothing )) :: t
 
 
-genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView global uploadForm replaceSlideForm capsule options gosModel slideModel offset index gos =
+genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Int -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule options gosModel slideModel offset index gos =
     let
-        numberOfSlidesPerRow =
-            3
-
         gosId : String
         gosId =
             if options == Ghost then

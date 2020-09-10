@@ -84,8 +84,8 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms } ->
-                            [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (List.concat slides))
+                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms, numberOfSlidesPerRow } ->
+                            [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (List.concat slides))
                             , Element.inFront (Preparation.slideGhostView global uploadForms.extraResource uploadForms.replaceSlide slideModel (List.concat slides))
                             ]
 
