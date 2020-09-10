@@ -5,6 +5,7 @@ module Ui.Icons exposing
     , clear
     , closeLock
     , edit
+    , font
     , menuPoint
     , movie
     , openLock
@@ -28,7 +29,8 @@ buttonFromIcon icon =
             [ FontAwesome.iconWithOptions
                 icon
                 FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                []
+                --[ FontAwesome.Size (FontAwesome.Mult 2) ]
                 []
             ]
         )
@@ -77,6 +79,11 @@ openLock =
 closeLock : Element msg
 closeLock =
     buttonFromIcon FontAwesome.lock
+
+
+font : Element msg
+font =
+    buttonFromIcon FontAwesome.font
 
 
 spinner : Element msg

@@ -6,6 +6,7 @@ module Ui.Ui exposing
     , closeLockButton
     , editButton
     , errorModal
+    , fontButton
     , homeButton
     , linkButton
     , mainViewAttributes1
@@ -171,11 +172,12 @@ iconButton : Element msg -> Maybe msg -> String -> Element msg
 iconButton icon onPress content =
     let
         iconAttributes =
-            buttonAttributes
-                ++ [ Font.color Colors.primary
-                   , Background.color Colors.white
-                   , Border.color Colors.primary
-                   ]
+            [ Font.color Colors.primary
+            , Background.color Colors.grey
+            , Border.color Colors.primary
+            , Element.padding 5
+            , Border.rounded 5
+            ]
     in
     Input.button iconAttributes
         { onPress = onPress
@@ -186,6 +188,11 @@ iconButton icon onPress content =
 trashButton : Maybe msg -> String -> Element msg
 trashButton onPress content =
     iconButton Icons.trash onPress content
+
+
+fontButton : Maybe msg -> String -> Element msg
+fontButton onPress content =
+    iconButton Icons.font onPress content
 
 
 addButton : Maybe msg -> String -> Element msg

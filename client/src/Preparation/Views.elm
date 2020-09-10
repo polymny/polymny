@@ -620,13 +620,22 @@ genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
 
                 Nothing ->
                     viewSlideImage slide.asset.asset_path
+
+        inFront =
+            Element.el [ Element.width Element.fill ]
+                (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
+                    [ Ui.fontButton Nothing ""
+                    , Ui.trashButton Nothing ""
+                    ]
+                )
     in
     Element.column
         (Element.width
             (Element.shrink
-                |> Element.maximum 310
-                |> Element.minimum 310
+                |> Element.maximum 500
+                |> Element.minimum 500
             )
+            :: Element.inFront inFront
             :: eventLessAttributes
         )
         [ media
