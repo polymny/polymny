@@ -61,11 +61,12 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                             Element.mapAttribute Preparation.EditPromptMsg <|
                                 Element.inFront (Dialog.view dialogConfig)
                     ]
-                    (Element.row []
+                    (Element.row [ Element.width Element.fill ]
                         [ Element.column
                             [ Element.alignTop
+                            , Element.width Element.fill
                             ]
-                            [ Element.column Attributes.designAttributes
+                            [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                 (List.map
                                     (\( i, slide ) -> capsuleGosView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
                                     (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
@@ -207,7 +208,7 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
-regroupSlidesAux : Int -> List (List ( Int, Preparation.MaybeSlide )) -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Preparation.MaybeSlide ))
+regroupSlidesAux : Int -> List (List ( Int, Maybe Preparation.MaybeSlide )) -> List ( Int, Maybe Preparation.MaybeSlide ) -> List (List ( Int, Maybe Preparation.MaybeSlide ))
 regroupSlidesAux number current list =
     case ( list, current ) of
         ( [], _ ) ->
@@ -217,16 +218,21 @@ regroupSlidesAux number current list =
             regroupSlidesAux number [ [ h ] ] t
 
         ( h :: t, h2 :: t2 ) ->
-            if List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide x) h2) < number then
+            if List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h2) < number then
                 regroupSlidesAux number ((h2 ++ [ h ]) :: t2) t
 
             else
                 regroupSlidesAux number ([ h ] :: h2 :: t2) t
 
 
-regroupSlides : Int -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Preparation.MaybeSlide ))
+regroupSlides : Int -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Maybe Preparation.MaybeSlide ))
 regroupSlides number list =
-    regroupSlidesAux number [] list
+    case regroupSlidesAux number [] (List.map (\( a, b ) -> ( a, Just b )) list) of
+        [] ->
+            []
+
+        h :: t ->
+            (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h)) ( -1, Nothing )) :: t
 
 
 genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
@@ -296,17 +302,22 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
         indexedSlides =
             List.indexedMap (\i x -> ( i, x )) gos
 
-        regroupedSlides : List (List ( Int, Preparation.MaybeSlide ))
+        regroupedSlides : List (List ( Int, Maybe Preparation.MaybeSlide ))
         regroupedSlides =
             regroupSlides numberOfSlidesPerRow indexedSlides
 
-        mapper : ( Int, Preparation.MaybeSlide ) -> Element Core.Msg
+        mapper : ( Int, Maybe Preparation.MaybeSlide ) -> Element Core.Msg
         mapper ( i, s ) =
-            designSlideView global uploadForm replaceSlideForm (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset i s
+            case s of
+                Just slide ->
+                    designSlideView global uploadForm replaceSlideForm (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset i slide
 
-        slides : List ( Int, Preparation.MaybeSlide ) -> Element Core.Msg
-        slides list =
-            Element.column [] (List.map (\x -> Element.row [] (List.map mapper x)) regroupedSlides)
+                Nothing ->
+                    Element.el [ Element.width Element.fill ] Element.none
+
+        slides : Element Core.Msg
+        slides =
+            Element.column [ Element.spacing 10, Element.width Element.fill ] (List.reverse (List.map (\x -> Element.row [ Element.width Element.fill, Element.spacing 10 ] (List.map mapper x)) regroupedSlides))
 
         structure : Maybe Api.Gos
         structure =
@@ -370,6 +381,7 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
         _ ->
             Element.row
                 (Element.htmlAttribute (Html.Attributes.id gosId)
+                    :: Element.width Element.fill
                     :: dropAttributes
                     ++ ghostAttributes
                     ++ Attributes.designGosAttributes
@@ -387,7 +399,7 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
                   --           |> Element.map Core.LoggedInMsg
                   --       ]
                   --   ],
-                  Element.el (Element.spacing 20 :: Attributes.designAttributes ++ eventLessAttributes) slides
+                  Element.el (Element.spacing 20 :: Element.width Element.fill :: Attributes.designAttributes ++ eventLessAttributes) slides
                 ]
 
 
@@ -594,20 +606,13 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                         ]
             in
             Element.el
-                [ Element.width
-                    (Element.shrink
-                        |> Element.maximum 500
-                        |> Element.minimum 500
-                    )
-                ]
-                (Element.el
-                    (Element.htmlAttribute (Html.Attributes.id slideId)
-                        :: Element.inFront inFront
-                        :: dropAttributes
-                        ++ ghostAttributes
-                    )
-                    (Element.el dragAttributes media)
+                (Element.htmlAttribute (Html.Attributes.id slideId)
+                    :: Element.inFront inFront
+                    :: Element.width Element.fill
+                    :: dropAttributes
+                    ++ ghostAttributes
                 )
+                (Element.el (Element.width Element.fill :: dragAttributes) media)
 
 
 
@@ -731,24 +736,19 @@ genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
                     ]
                 )
     in
-    Element.column
-        (Element.width
-            (Element.shrink
-                |> Element.maximum 500
-                |> Element.minimum 500
-            )
-            :: Element.inFront inFront
+    Element.el
+        (Element.inFront inFront
+            :: Element.width Element.fill
             :: eventLessAttributes
         )
-        [ media
-        ]
+        media
 
 
 htmlVideo : String -> Html msg
 htmlVideo url =
     Html.video
         [ Html.Attributes.controls True
-        , Html.Attributes.width 500
+        , Html.Attributes.class "wf"
         ]
         [ Html.source
             [ Html.Attributes.src url ]
