@@ -194,10 +194,10 @@ topBar model =
                 makeButton msg label active =
                     Input.button
                         (Element.padding 7
+                            :: Element.height Element.fill
                             :: (if active then
                                     [ Background.color Colors.white
                                     , Font.color Colors.primary
-                                    , Element.height Element.fill
                                     ]
 
                                 else
@@ -216,11 +216,17 @@ topBar model =
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" False
                             ]
 
-                        LoggedIn.Acquisition _ ->
-                            []
+                        LoggedIn.Acquisition p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" True
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" False
+                            ]
 
-                        LoggedIn.Edition _ ->
-                            []
+                        LoggedIn.Edition p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" True
+                            ]
 
                         _ ->
                             []
