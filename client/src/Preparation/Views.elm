@@ -51,39 +51,46 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
 
         autoEdition =
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
-    in
-    Element.column []
-        [ Element.el
-            [ Element.padding 10
-            , Element.mapAttribute Core.LoggedInMsg <|
-                Element.mapAttribute LoggedIn.PreparationMsg <|
-                    Element.mapAttribute Preparation.EditPromptMsg <|
-                        Element.inFront (Dialog.view dialogConfig)
-            ]
-            (Element.row []
-                [ Element.column
-                    [ Element.alignTop
-                    ]
-                    [ Element.column Attributes.designAttributes
-                        (List.map
-                            (\( i, slide ) -> capsuleGosView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
-                            (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
-                        )
-                    , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
 
-                    --, Element.column []
-                    --    [ Element.row
-                    --        [ Element.centerX, Element.alignLeft ]
-                    --        [ tabEl Preparation.First t
-                    --        , tabEl Preparation.Second t
-                    --        , tabEl Preparation.Third t
-                    --        ]
-                    --    ]
-                    --, Element.text "Un texte dans le tab"
+        resultView =
+            Element.column []
+                [ Element.el
+                    [ Element.padding 10
+                    , Element.mapAttribute Core.LoggedInMsg <|
+                        Element.mapAttribute LoggedIn.PreparationMsg <|
+                            Element.mapAttribute Preparation.EditPromptMsg <|
+                                Element.inFront (Dialog.view dialogConfig)
                     ]
+                    (Element.row []
+                        [ Element.column
+                            [ Element.alignTop
+                            ]
+                            [ Element.column Attributes.designAttributes
+                                (List.map
+                                    (\( i, slide ) -> capsuleGosView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
+                                    (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                                )
+                            , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
+
+                            --, Element.column []
+                            --    [ Element.row
+                            --        [ Element.centerX, Element.alignLeft ]
+                            --        [ tabEl Preparation.First t
+                            --        , tabEl Preparation.Second t
+                            --        , tabEl Preparation.Third t
+                            --        ]
+                            --    ]
+                            --, Element.text "Un texte dans le tab"
+                            ]
+                        ]
+                    )
                 ]
-            )
-        ]
+    in
+    if editPrompt.visible then
+        Element.el [ Element.inFront (Element.text "hello") ] resultView
+
+    else
+        resultView
 
 
 filterConsecutiveGosIds : List ( Int, List Preparation.MaybeSlide ) -> List ( Int, List Preparation.MaybeSlide )
@@ -513,13 +520,51 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
 
                         Nothing ->
                             Element.none
+
+                media =
+                    case slide.extra of
+                        Just asset ->
+                            Element.html <|
+                                htmlVideo asset.asset_path
+
+                        Nothing ->
+                            viewSlideImage slide.asset.asset_path
+
+                promptMsg : Core.Msg
+                promptMsg =
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.EditPromptMsg <|
+                                Preparation.EditPromptOpenDialog slide.id slide.prompt
+
+                deleteExtraMsg : Core.Msg
+                deleteExtraMsg =
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadExtraResourceMsg <|
+                                Preparation.DeleteExtraResource slide.id
+
+                inFront =
+                    Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
+                        [ Ui.fontButton (Just promptMsg) ""
+                        , Ui.trashButton (Just deleteExtraMsg) ""
+                        ]
             in
             Element.el
-                (Element.htmlAttribute (Html.Attributes.id slideId)
-                    :: dropAttributes
-                    ++ ghostAttributes
+                [ Element.width
+                    (Element.shrink
+                        |> Element.maximum 500
+                        |> Element.minimum 500
+                    )
+                ]
+                (Element.el
+                    (Element.htmlAttribute (Html.Attributes.id slideId)
+                        :: Element.inFront inFront
+                        :: dropAttributes
+                        ++ ghostAttributes
+                    )
+                    (Element.el dragAttributes media)
                 )
-                (genrericDesignSlide1stColumnView (eventLessAttributes ++ dragAttributes) slide gosIndex)
 
 
 
@@ -621,11 +666,25 @@ genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
                 Nothing ->
                     viewSlideImage slide.asset.asset_path
 
+        promptMsg : Core.Msg
+        promptMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.EditPromptMsg <|
+                        Preparation.EditPromptOpenDialog slide.id slide.prompt
+
+        deleteExtraMsg : Core.Msg
+        deleteExtraMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.DeleteExtraResource slide.id
+
         inFront =
             Element.el [ Element.width Element.fill ]
                 (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                    [ Ui.fontButton Nothing ""
-                    , Ui.trashButton Nothing ""
+                    [ Ui.fontButton (Just promptMsg) ""
+                    , Ui.trashButton (Just deleteExtraMsg) ""
                     ]
                 )
     in

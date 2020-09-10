@@ -316,7 +316,7 @@ nonFull model =
         , Element.spacing 30
         ]
         [ Element.row
-            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            [ Element.alignLeft, Element.paddingXY 40 10, Element.spacing 10 ]
             [ homeButton ]
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if Core.isLoggedIn model then
@@ -330,7 +330,7 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Ui.homeButton (Just Core.HomeClicked) ""
+    Element.el [ Element.padding 5 ] (Ui.homeButton (Just Core.HomeClicked) "")
 
 
 logoutButton : Element Core.Msg
