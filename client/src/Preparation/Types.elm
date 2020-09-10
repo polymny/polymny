@@ -176,7 +176,6 @@ type UploadLogoMsg
 type UploadExtraResourceMsg
     = UploadExtraResourceSelectFileRequested Int
     | UploadExtraResourceFileReady File Int
-    | UploadExtraResourceFormSubmitted Int
     | UploadExtraResourceSuccess Api.Slide
     | UploadExtraResourceError
     | DeleteExtraResource Int

@@ -6,6 +6,7 @@ module Ui.Icons exposing
     , closeLock
     , edit
     , font
+    , image
     , menuPoint
     , movie
     , openLock
@@ -84,6 +85,11 @@ closeLock =
 font : Element msg
 font =
     buttonFromIcon FontAwesome.font
+
+
+image : Element msg
+image =
+    buttonFromIcon FontAwesome.image
 
 
 spinner : Element msg

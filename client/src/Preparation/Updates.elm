@@ -411,20 +411,9 @@ updateUploadExtraResource msg uploadForm preparationModel =
 
         Preparation.UploadExtraResourceFileReady file slideId ->
             ( { uploadForm | file = Just file, activeSlideId = Just slideId }
-            , Cmd.none
+            , Api.slideUploadExtraResource resultToMsg3 slideId file
             , preparationModel
             )
-
-        Preparation.UploadExtraResourceFormSubmitted slideId ->
-            case uploadForm.file of
-                Nothing ->
-                    ( uploadForm, Cmd.none, preparationModel )
-
-                Just file ->
-                    ( { uploadForm | status = Status.Sent, activeSlideId = Just slideId }
-                    , Api.slideUploadExtraResource resultToMsg3 slideId file
-                    , preparationModel
-                    )
 
         Preparation.UploadExtraResourceSuccess slide ->
             let

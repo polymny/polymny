@@ -8,6 +8,7 @@ module Ui.Ui exposing
     , errorModal
     , fontButton
     , homeButton
+    , imageButton
     , linkButton
     , mainViewAttributes1
     , mainViewAttributes2
@@ -218,6 +219,11 @@ cancelButton onPress content =
 cameraButton : Maybe msg -> String -> Element msg
 cameraButton onPress content =
     iconButton Icons.camera onPress content
+
+
+imageButton : Maybe msg -> String -> Element msg
+imageButton onPress content =
+    iconButton Icons.image onPress content
 
 
 recordButton : Element msg -> Maybe msg -> String -> Element msg

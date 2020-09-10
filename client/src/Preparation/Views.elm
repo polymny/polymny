@@ -207,9 +207,34 @@ maybeDragGos gosModel slides =
         |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
 
 
+regroupSlidesAux : Int -> List (List ( Int, Preparation.MaybeSlide )) -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Preparation.MaybeSlide ))
+regroupSlidesAux number current list =
+    case ( list, current ) of
+        ( [], _ ) ->
+            current
+
+        ( h :: t, [] ) ->
+            regroupSlidesAux number [ [ h ] ] t
+
+        ( h :: t, h2 :: t2 ) ->
+            if List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide x) h2) < number then
+                regroupSlidesAux number ((h2 ++ [ h ]) :: t2) t
+
+            else
+                regroupSlidesAux number ([ h ] :: h2 :: t2) t
+
+
+regroupSlides : Int -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Preparation.MaybeSlide ))
+regroupSlides number list =
+    regroupSlidesAux number [] list
+
+
 genericGosView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparation.ReplaceSlideForm -> Api.CapsuleDetails -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
 genericGosView global uploadForm replaceSlideForm capsule options gosModel slideModel offset index gos =
     let
+        numberOfSlidesPerRow =
+            3
+
         gosId : String
         gosId =
             if options == Ghost then
@@ -267,9 +292,21 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
             else
                 "slide-" ++ String.fromInt offset
 
-        slides : List (Element Core.Msg)
-        slides =
-            List.indexedMap (designSlideView global uploadForm replaceSlideForm (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset) gos
+        indexedSlides : List ( Int, Preparation.MaybeSlide )
+        indexedSlides =
+            List.indexedMap (\i x -> ( i, x )) gos
+
+        regroupedSlides : List (List ( Int, Preparation.MaybeSlide ))
+        regroupedSlides =
+            regroupSlides numberOfSlidesPerRow indexedSlides
+
+        mapper : ( Int, Preparation.MaybeSlide ) -> Element Core.Msg
+        mapper ( i, s ) =
+            designSlideView global uploadForm replaceSlideForm (not (Maybe.withDefault True (Maybe.map .locked structure))) slideModel offset i s
+
+        slides : List ( Int, Preparation.MaybeSlide ) -> Element Core.Msg
+        slides list =
+            Element.column [] (List.map (\x -> Element.row [] (List.map mapper x)) regroupedSlides)
 
         structure : Maybe Api.Gos
         structure =
@@ -350,7 +387,7 @@ genericGosView global uploadForm replaceSlideForm capsule options gosModel slide
                   --           |> Element.map Core.LoggedInMsg
                   --       ]
                   --   ],
-                  Element.row (Element.spacing 20 :: Attributes.designAttributes ++ eventLessAttributes) slides
+                  Element.el (Element.spacing 20 :: Attributes.designAttributes ++ eventLessAttributes) slides
                 ]
 
 
@@ -462,9 +499,8 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                 gosIndex =
                     (index - 1) // 2
 
-                secondColumn =
-                    genrericDesignSlide2ndColumnView global eventLessAttributes slide extraResourceForm gosIndex replaceSlideForm
-
+                -- secondColumn =
+                --     genrericDesignSlide2ndColumnView global eventLessAttributes slide extraResourceForm gosIndex replaceSlideForm
                 filename =
                     case extraResourceForm.file of
                         Nothing ->
@@ -530,6 +566,13 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                         Nothing ->
                             viewSlideImage slide.asset.asset_path
 
+                extraResourceMsg : Core.Msg
+                extraResourceMsg =
+                    Core.LoggedInMsg <|
+                        LoggedIn.PreparationMsg <|
+                            Preparation.UploadExtraResourceMsg <|
+                                Preparation.UploadExtraResourceSelectFileRequested slide.id
+
                 promptMsg : Core.Msg
                 promptMsg =
                     Core.LoggedInMsg <|
@@ -541,12 +584,12 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                 deleteExtraMsg =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
-                            Preparation.UploadExtraResourceMsg <|
-                                Preparation.DeleteExtraResource slide.id
+                            Preparation.SlideDelete gosIndex slide.id
 
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ Ui.fontButton (Just promptMsg) ""
+                        [ Ui.imageButton (Just extraResourceMsg) ""
+                        , Ui.fontButton (Just promptMsg) ""
                         , Ui.trashButton (Just deleteExtraMsg) ""
                         ]
             in
@@ -705,7 +748,7 @@ htmlVideo : String -> Html msg
 htmlVideo url =
     Html.video
         [ Html.Attributes.controls True
-        , Html.Attributes.width 300
+        , Html.Attributes.width 500
         ]
         [ Html.source
             [ Html.Attributes.src url ]
@@ -713,100 +756,101 @@ htmlVideo url =
         ]
 
 
-genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Int -> Preparation.ReplaceSlideForm -> Element Core.Msg
-genrericDesignSlide2ndColumnView global eventLessAttributes slide extraResourceForm gosIndex replaceSlideForm =
-    let
-        promptMsg : Core.Msg
-        promptMsg =
-            Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.EditPromptMsg <|
-                        Preparation.EditPromptOpenDialog slide.id slide.prompt
 
-        deleteExtraMsg : Core.Msg
-        deleteExtraMsg =
-            Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.UploadExtraResourceMsg <|
-                        Preparation.DeleteExtraResource slide.id
-
-        extra =
-            case slide.extra of
-                Just asset ->
-                    Element.column
-                        [ Element.centerX, Font.center, Element.spacingXY 4 4 ]
-                        [ Element.el [] <|
-                            Element.text asset.name
-                        , Ui.primaryButton
-                            (Just deleteExtraMsg)
-                            "Supprimer la \n ressource vidéo "
-                        ]
-
-                Nothing ->
-                    Element.column [ Font.size 14, Element.spacing 4 ]
-                        [ Element.column []
-                            [ Element.row []
-                                [ Ui.trashButton (Just (Preparation.SlideDelete gosIndex slide.id)) ""
-                                    |> Element.map LoggedIn.PreparationMsg
-                                    |> Element.map Core.LoggedInMsg
-                                , Element.el [ Element.spacingXY 2 4 ] <|
-                                    replaceSlideView replaceSlideForm
-                                        gosIndex
-                                        slide.id
-                                ]
-                            , Element.el
-                                [ Element.spacingXY 2 4 ]
-                              <|
-                                uploadExtraResourceView extraResourceForm slide.id
-                            ]
-                        ]
-
-        prompt =
-            [ Element.el
-                [ Font.size 14
-                , Element.centerX
-                ]
-                (Element.text "Prompteur")
-            , Element.el
-                [ Border.rounded 5
-                , Border.width 2
-                , Border.color Colors.grey
-                , Background.color Colors.black
-                , Element.centerX
-                , Element.scrollbarY
-                , Element.height (Element.px 150)
-                , Element.width (Element.px 150)
-                , Element.padding 5
-                , Font.size 12
-                , Font.color Colors.white
-                ]
-                (Element.text slide.prompt)
-            , Element.row []
-                [ Ui.editButton (Just promptMsg) "Modifier"
-                , Ui.clearButton Nothing "Effacer"
-                ]
-            ]
-
-        rows =
-            if global.beta then
-                extra :: prompt
-
-            else
-                [ extra ]
-    in
-    Element.column
-        (Element.alignTop
-            :: Element.centerX
-            :: Element.spacing 4
-            :: Element.padding 4
-            :: Element.width
-                (Element.shrink
-                    |> Element.maximum 300
-                    |> Element.minimum 210
-                )
-            :: eventLessAttributes
-        )
-        rows
+-- genrericDesignSlide2ndColumnView : Core.Global -> List (Element.Attribute Core.Msg) -> Api.Slide -> Preparation.UploadExtraResourceForm -> Int -> Preparation.ReplaceSlideForm -> Element Core.Msg
+-- genrericDesignSlide2ndColumnView global eventLessAttributes slide extraResourceForm gosIndex replaceSlideForm =
+--     let
+--         promptMsg : Core.Msg
+--         promptMsg =
+--             Core.LoggedInMsg <|
+--                 LoggedIn.PreparationMsg <|
+--                     Preparation.EditPromptMsg <|
+--                         Preparation.EditPromptOpenDialog slide.id slide.prompt
+--
+--         deleteExtraMsg : Core.Msg
+--         deleteExtraMsg =
+--             Core.LoggedInMsg <|
+--                 LoggedIn.PreparationMsg <|
+--                     Preparation.UploadExtraResourceMsg <|
+--                         Preparation.DeleteExtraResource slide.id
+--
+--         extra =
+--             case slide.extra of
+--                 Just asset ->
+--                     Element.column
+--                         [ Element.centerX, Font.center, Element.spacingXY 4 4 ]
+--                         [ Element.el [] <|
+--                             Element.text asset.name
+--                         , Ui.primaryButton
+--                             (Just deleteExtraMsg)
+--                             "Supprimer la \n ressource vidéo "
+--                         ]
+--
+--                 Nothing ->
+--                     Element.column [ Font.size 14, Element.spacing 4 ]
+--                         [ Element.column []
+--                             [ Element.row []
+--                                 [ Ui.trashButton (Just (Preparation.SlideDelete gosIndex slide.id)) ""
+--                                     |> Element.map LoggedIn.PreparationMsg
+--                                     |> Element.map Core.LoggedInMsg
+--                                 , Element.el [ Element.spacingXY 2 4 ] <|
+--                                     replaceSlideView replaceSlideForm
+--                                         gosIndex
+--                                         slide.id
+--                                 ]
+--                             , Element.el
+--                                 [ Element.spacingXY 2 4 ]
+--                               <|
+--                                 uploadExtraResourceView extraResourceForm slide.id
+--                             ]
+--                         ]
+--
+--         prompt =
+--             [ Element.el
+--                 [ Font.size 14
+--                 , Element.centerX
+--                 ]
+--                 (Element.text "Prompteur")
+--             , Element.el
+--                 [ Border.rounded 5
+--                 , Border.width 2
+--                 , Border.color Colors.grey
+--                 , Background.color Colors.black
+--                 , Element.centerX
+--                 , Element.scrollbarY
+--                 , Element.height (Element.px 150)
+--                 , Element.width (Element.px 150)
+--                 , Element.padding 5
+--                 , Font.size 12
+--                 , Font.color Colors.white
+--                 ]
+--                 (Element.text slide.prompt)
+--             , Element.row []
+--                 [ Ui.editButton (Just promptMsg) "Modifier"
+--                 , Ui.clearButton Nothing "Effacer"
+--                 ]
+--             ]
+--
+--         rows =
+--             if global.beta then
+--                 extra :: prompt
+--
+--             else
+--                 [ extra ]
+--     in
+--     Element.column
+--         (Element.alignTop
+--             :: Element.centerX
+--             :: Element.spacing 4
+--             :: Element.padding 4
+--             :: Element.width
+--                 (Element.shrink
+--                     |> Element.maximum 300
+--                     |> Element.minimum 210
+--                 )
+--             :: eventLessAttributes
+--         )
+--         rows
 
 
 viewSlideImage : String -> Element Core.Msg
@@ -928,50 +972,51 @@ uploadFormView form model =
         ]
 
 
-uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element Core.Msg
-uploadExtraResourceView form slideId =
-    let
-        text =
-            "Ressource additionelle:"
 
-        buttonSelect =
-            Element.map Core.LoggedInMsg <|
-                Element.map LoggedIn.PreparationMsg <|
-                    Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Choisir :"
-
-        buttonSubmit =
-            Element.map Core.LoggedInMsg <|
-                Element.map LoggedIn.PreparationMsg <|
-                    Element.map Preparation.UploadExtraResourceMsg <|
-                        Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la ressource"
-
-        filename =
-            case form.activeSlideId of
-                Just x ->
-                    if x == slideId then
-                        fileNameElement form.file
-
-                    else
-                        Element.text "Pas de fichier choisis"
-
-                Nothing ->
-                    fileNameElement form.file
-    in
-    Element.column
-        [ Element.padding 5
-        , Element.spacing 5
-        ]
-        [ Element.text text
-        , Element.column
-            [ Element.spacing 5
-            , Element.centerX
-            ]
-            [ buttonSelect
-            , filename
-            , buttonSubmit
-            ]
-        ]
+-- uploadExtraResourceView : Preparation.UploadExtraResourceForm -> Int -> Element Core.Msg
+-- uploadExtraResourceView form slideId =
+--     let
+--         text =
+--             "Ressource additionelle:"
+--
+--         buttonSelect =
+--             Element.map Core.LoggedInMsg <|
+--                 Element.map LoggedIn.PreparationMsg <|
+--                     Element.map Preparation.UploadExtraResourceMsg <|
+--                         Ui.simpleButton (Just <| Preparation.UploadExtraResourceSelectFileRequested slideId) "Choisir :"
+--
+--         buttonSubmit =
+--             Element.map Core.LoggedInMsg <|
+--                 Element.map LoggedIn.PreparationMsg <|
+--                     Element.map Preparation.UploadExtraResourceMsg <|
+--                         Ui.primaryButton (Just <| Preparation.UploadExtraResourceFormSubmitted slideId) "Envoyer la ressource"
+--
+--         filename =
+--             case form.activeSlideId of
+--                 Just x ->
+--                     if x == slideId then
+--                         fileNameElement form.file
+--
+--                     else
+--                         Element.text "Pas de fichier choisis"
+--
+--                 Nothing ->
+--                     fileNameElement form.file
+--     in
+--     Element.column
+--         [ Element.padding 5
+--         , Element.spacing 5
+--         ]
+--         [ Element.text text
+--         , Element.column
+--             [ Element.spacing 5
+--             , Element.centerX
+--             ]
+--             [ buttonSelect
+--             , filename
+--             , buttonSubmit
+--             ]
+--         ]
 
 
 replaceSlideView : Preparation.ReplaceSlideForm -> Int -> Int -> Element Core.Msg
