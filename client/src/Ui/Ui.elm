@@ -259,7 +259,7 @@ homeButton : Maybe msg -> String -> Element msg
 homeButton onPress content =
     let
         icon =
-            Element.image [ Element.width (Element.px 60) ]
+            Element.image [ Element.width (Element.px 40) ]
                 { src = "/dist/logo.png"
                 , description = " Polymny home page"
                 }

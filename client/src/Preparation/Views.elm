@@ -20,7 +20,6 @@ import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
-import Utils
 
 
 view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg

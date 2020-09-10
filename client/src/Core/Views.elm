@@ -9,6 +9,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import ForgotPassword.Views as ForgotPassword
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
@@ -187,17 +188,52 @@ homeView model =
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { session } ->
+        Core.LoggedIn { session, tab } ->
+            let
+                makeButton : Maybe Core.Msg -> String -> Bool -> Element Core.Msg
+                makeButton msg label active =
+                    Input.button
+                        (Element.padding 7
+                            :: (if active then
+                                    [ Background.color Colors.white
+                                    , Font.color Colors.primary
+                                    , Element.height Element.fill
+                                    ]
+
+                                else
+                                    []
+                               )
+                        )
+                        { onPress = msg
+                        , label = Element.text label
+                        }
+
+                leftButtons =
+                    case tab of
+                        LoggedIn.Preparation p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" True
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" False
+                            ]
+
+                        LoggedIn.Acquisition _ ->
+                            []
+
+                        LoggedIn.Edition _ ->
+                            []
+
+                        _ ->
+                            []
+            in
             Element.row
                 [ Background.color Colors.primary
                 , Font.color Colors.white
                 , Element.width Element.fill
-                , Element.spacing 30
                 ]
                 [ Element.row
-                    [ Element.alignLeft, Element.padding 10, Element.spacing 5 ]
-                    [ homeButton ]
-                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                    [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
+                    [ homeButton, Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons ]
+                , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
                         [ settingsButton session.username
                         , logoutButton
@@ -288,7 +324,7 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.homeButton (Just Core.HomeClicked) "")
+    Ui.homeButton (Just Core.HomeClicked) ""
 
 
 logoutButton : Element Core.Msg
