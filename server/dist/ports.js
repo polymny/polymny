@@ -224,6 +224,13 @@ function setupPorts(app) {
         }
     }
 
+    function scrollIntoView(anchor) {
+        let element = document.getElementById(anchor);
+        if (element !== null) {
+            element.scrollIntoView();
+        }
+    }
+
     subscribe(app.ports.init, function(args) {
         init(args[0], args[1], args[2]);
     });
@@ -268,6 +275,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.captureBackground, function(attr) {
         captureBackground(attr);
+    });
+
+    subscribe(app.ports.scrollIntoView, function(arg) {
+        scrollIntoView(arg)
     });
 
 }

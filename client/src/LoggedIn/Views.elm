@@ -50,7 +50,8 @@ view global session tab =
         element =
             Element.column
                 [ Element.alignTop
-                , Element.padding 10
+
+                -- , Element.padding 10
                 , Element.width Element.fill
                 , Element.height Element.fill
                 , Element.scrollbarY

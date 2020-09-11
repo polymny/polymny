@@ -70,14 +70,6 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                     , t = t
                     , numberOfSlidesPerRow = numberOfSlidesPerRow
                     }
-                , Element.el
-                    [ Element.height Element.fill
-                    , Element.scrollbarY
-                    , Element.width (Element.px 0)
-                    , Border.color Colors.black
-                    , Border.width 1
-                    ]
-                    Element.none
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
                     [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
                         [ Ui.primaryButton (Just decreaseMsg) "-"
@@ -657,8 +649,11 @@ leftColumnView model =
                 (Preparation.GosId _) :: t ->
                     gosView t
 
-                (Preparation.JustSlide s _) :: t ->
-                    viewSlideImage s.asset.asset_path
+                (Preparation.JustSlide s i) :: _ ->
+                    Input.button []
+                        { onPress = Just (Core.ScrollIntoView ("gos-" ++ String.fromInt i))
+                        , label = viewSlideImage s.asset.asset_path
+                        }
 
         goss =
             List.map gosView model.slides
@@ -667,8 +662,8 @@ leftColumnView model =
         [ Element.width Element.fill
         , Element.height Element.fill
         , Element.scrollbarY
-        , Element.padding 5
-        , Element.spacing 5
+        , Element.padding 15
+        , Element.spacing 15
         , Element.alignTop
         , Background.color Colors.grey
         ]
