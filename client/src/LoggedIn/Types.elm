@@ -34,7 +34,7 @@ type alias UploadForm =
 
 
 type Tab
-    = Home UploadForm Bool
+    = Home UploadForm
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition Edition.Model
@@ -50,7 +50,6 @@ type Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
-    | ShowMenuToggleMsg
     | NewProjectMsg NewProject.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | CapsulesReceived Api.Project (List Api.Capsule)
@@ -80,7 +79,7 @@ initUploadForm =
 
 init : Tab
 init =
-    Home initUploadForm False
+    Home initUploadForm
 
 
 isPreparation : Tab -> Bool

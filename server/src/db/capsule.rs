@@ -221,7 +221,7 @@ impl Capsule {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
         Ok(cap_p
             .into_iter()
-            .map(|x| Project::get_by_id(x.project_id, &db))
+            .map(|x| Project::get_by_id(x.project_id, &db).map(|x| x.to_project()))
             .collect::<Result<Vec<Project>>>()?)
     }
 

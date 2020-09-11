@@ -17,6 +17,7 @@ module Api exposing
     , decodeCapsuleDetails
     , decodeCapsules
     , decodeProject
+    , decodeProjectWithCapsules
     , decodeSession
     , detailsSortSlides
     , editionAuto
@@ -89,13 +90,14 @@ type alias Project =
     { id : Int
     , name : String
     , lastVisited : Int
+    , folded : Bool
     , capsules : List Capsule
     }
 
 
 createProject : Int -> String -> Int -> Project
 createProject id name lastVisited =
-    Project id name lastVisited []
+    Project id name lastVisited True []
 
 
 type PublishedType
@@ -208,7 +210,7 @@ decodeCapsules =
 
 withCapsules : List Capsule -> Int -> String -> Int -> Project
 withCapsules capsules id name lastVisited =
-    Project id name lastVisited capsules
+    Project id name lastVisited False capsules
 
 
 decodeProject : List Capsule -> Decoder Project
@@ -217,6 +219,15 @@ decodeProject capsules =
         (Decode.field "id" Decode.int)
         (Decode.field "project_name" Decode.string)
         (Decode.field "last_visited" Decode.int)
+
+
+decodeProjectWithCapsules : Decoder Project
+decodeProjectWithCapsules =
+    Decode.map4 (\x y z t -> Project x y z False t)
+        (Decode.field "id" Decode.int)
+        (Decode.field "project_name" Decode.string)
+        (Decode.field "last_visited" Decode.int)
+        (Decode.field "capsules" decodeCapsules)
 
 
 type alias Session =
@@ -233,8 +244,8 @@ decodeSession : Decoder Session
 decodeSession =
     Decode.map6 Session
         (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
+        (Decode.field "projects" (Decode.list decodeProjectWithCapsules))
+        (Decode.field "active_project" (Decode.maybe decodeProjectWithCapsules))
         (Decode.field "with_video" (Decode.maybe Decode.bool))
         (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
         (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))

@@ -43,6 +43,38 @@ pub struct Project {
     pub last_visited: NaiveDateTime,
 }
 
+/// A project with its capsules.
+#[derive(PartialEq, Debug, Serialize)]
+pub struct ProjectWithCapsules {
+    /// The id of the project.
+    pub id: i32,
+
+    /// The owner of the project.
+    pub user_id: i32,
+
+    /// The project_name of the project.
+    pub project_name: String,
+
+    /// The last time the project was visited.
+    #[serde(serialize_with = "serialize_naive_date_time")]
+    pub last_visited: NaiveDateTime,
+
+    /// The capsules of the project.
+    pub capsules: Vec<Capsule>,
+}
+
+impl ProjectWithCapsules {
+    /// Removes the capsules from self and just returns the project.
+    pub fn to_project(self) -> Project {
+        Project {
+            id: self.id,
+            user_id: self.user_id,
+            project_name: self.project_name,
+            last_visited: self.last_visited,
+        }
+    }
+}
+
 /// A project that isn't stored into the database yet.
 #[derive(Debug, Insertable)]
 #[table_name = "projects"]
@@ -68,12 +100,19 @@ impl Project {
     }
 
     /// Retrieves a project from its id.
-    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Project> {
+    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<ProjectWithCapsules> {
         use crate::schema::projects::dsl;
 
-        let project = dsl::projects.filter(dsl::id.eq(id)).first::<Project>(db);
+        let project = dsl::projects.filter(dsl::id.eq(id)).first::<Project>(db)?;
+        let capsules = project.get_capsules(db)?;
 
-        Ok(project?)
+        Ok(ProjectWithCapsules {
+            id: project.id,
+            user_id: project.user_id,
+            project_name: project.project_name,
+            last_visited: project.last_visited,
+            capsules,
+        })
     }
 
     /// get the projects associated to a user
@@ -83,6 +122,18 @@ impl Project {
             .into_iter()
             .map(|x| Capsule::get_by_id(x.capsule_id, &db))
             .collect::<Result<Vec<Capsule>>>()?)
+    }
+
+    /// Adds the capsules to self.
+    pub fn with_capsules(self, db: &PgConnection) -> Result<ProjectWithCapsules> {
+        let capsules = self.get_capsules(db)?;
+        Ok(ProjectWithCapsules {
+            id: self.id,
+            user_id: self.user_id,
+            project_name: self.project_name,
+            last_visited: self.last_visited,
+            capsules,
+        })
     }
 
     /// Retrieves all projects

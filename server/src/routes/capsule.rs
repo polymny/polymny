@@ -113,7 +113,7 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
         &capsule.description,
         capsule.background_id,
         capsule.logo_id,
-        Some(Project::get_by_id(capsule.project_id, &db)?),
+        Some(Project::get_by_id(capsule.project_id, &db).map(|x| x.to_project())?),
     )?;
 
     Ok(json!(capsule))

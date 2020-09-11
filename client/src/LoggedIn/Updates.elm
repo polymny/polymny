@@ -98,15 +98,12 @@ update msg global { session, tab } =
 
         --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
         --   ( LoggedIn.Model session tab, Cmd.none )
-        ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form showMenu ) ->
+        ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form ) ->
             let
                 ( newModel, cmd ) =
-                    updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form showMenu
+                    updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form
             in
             ( newModel, cmd )
-
-        ( LoggedIn.ShowMenuToggleMsg, LoggedIn.Home form showMenu ) ->
-            ( { session = session, tab = LoggedIn.Home form (not showMenu) }, Cmd.none )
 
         ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
             let
@@ -185,11 +182,11 @@ update msg global { session, tab } =
             ( LoggedIn.Model session tab, Cmd.none )
 
 
-updateUploadSlideShow : Core.Global -> LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> Bool -> ( LoggedIn.Model, Cmd Core.Msg )
-updateUploadSlideShow global msg { session } form showMenu =
+updateUploadSlideShow : Core.Global -> LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> ( LoggedIn.Model, Cmd Core.Msg )
+updateUploadSlideShow global msg { session } form =
     case msg of
         LoggedIn.UploadSlideShowSelectFileRequested ->
-            ( LoggedIn.Model session (LoggedIn.Home form showMenu)
+            ( LoggedIn.Model session (LoggedIn.Home form)
             , Select.file
                 [ "application/pdf" ]
                 (\x ->
@@ -200,17 +197,17 @@ updateUploadSlideShow global msg { session } form showMenu =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent, file = Just file } showMenu)
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent, file = Just file })
             , Api.quickUploadSlideShow resultToMsg1 file
             )
 
         LoggedIn.UploadSlideShowFormSubmitted ->
             case form.file of
                 Nothing ->
-                    ( LoggedIn.Model session (LoggedIn.Home form showMenu), Cmd.none )
+                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
                 Just file ->
-                    ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent } showMenu)
+                    ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent })
                     , Api.quickUploadSlideShow resultToMsg1 file
                     )
 
@@ -227,7 +224,7 @@ updateUploadSlideShow global msg { session } form showMenu =
             )
 
         LoggedIn.UploadSlideShowError ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () } showMenu)
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () })
             , Cmd.none
             )
 

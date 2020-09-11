@@ -206,7 +206,7 @@ modelFromFlags global flags =
         Ok "project" ->
             case
                 ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
-                , Decode.decodeValue (Decode.field "flags" (Decode.field "project" (Api.decodeProject []))) flags
+                , Decode.decodeValue (Decode.field "flags" (Decode.field "project" Api.decodeProjectWithCapsules)) flags
                 , Decode.decodeValue (Decode.field "flags" (Decode.field "capsules" Api.decodeCapsules)) flags
                 )
             of

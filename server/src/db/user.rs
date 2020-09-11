@@ -18,7 +18,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use serde::Deserialize;
 
 use crate::db::capsule::Capsule;
-use crate::db::project::Project;
+use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
 use crate::mailer::Mailer;
@@ -385,16 +385,17 @@ impl User {
     }
 
     /// Returns the list of the user's projects names.
-    pub fn projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
+    pub fn projects(&self, db: &PgConnection) -> Result<Vec<ProjectWithCapsules>> {
         use crate::schema::projects::dsl::*;
-        Ok(projects.filter(user_id.eq(self.id)).load::<Project>(db)?)
+        let project = projects.filter(user_id.eq(self.id)).load::<Project>(db)?;
+        project.into_iter().map(|x| x.with_capsules(db)).collect()
     }
 
     /// Gets a project by id, returning an error if the project does not belong to the user.
     pub fn get_project_by_id(&self, project_id: i32, db: &Database) -> Result<Project> {
         let project = Project::get_by_id(project_id, &db)?;
         if project.user_id == self.id {
-            Ok(project)
+            Ok(project.to_project())
         } else {
             Err(Error::NotFound)
         }

@@ -7,7 +7,9 @@ import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Views as Edition
 import Element exposing (Element)
+import Element.Background as Background
 import Element.Font as Font
+import Element.Input as Input
 import File
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
@@ -18,6 +20,7 @@ import Preparation.Views as Preparation
 import Settings.Views as Settings
 import Status
 import TimeUtils
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -26,8 +29,8 @@ view global session tab =
     let
         mainTab =
             case tab of
-                LoggedIn.Home uploadForm showMenu ->
-                    homeView global session uploadForm showMenu
+                LoggedIn.Home uploadForm ->
+                    homeView global session uploadForm
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
@@ -68,37 +71,88 @@ view global session tab =
         [ element ]
 
 
-homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Bool -> Element Core.Msg
-homeView global session uploadForm showMenu =
-    let
-        projects =
-            if showMenu then
-                projectsView global session.projects
+homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+homeView global session uploadForm =
+    Element.row [ Element.width Element.fill, Element.padding 10 ]
+        [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
+        , newProjectsView global session uploadForm
+        ]
 
-            else
-                Element.map Core.LoggedInMsg <|
-                    Ui.menuPointButton (Just LoggedIn.ShowMenuToggleMsg) " Projets"
-    in
-    Element.column
-        [ Element.width
-            Element.fill
+
+
+--Element.column
+--    [ Element.width
+--        Element.fill
+--    ]
+--    [ Element.row
+--        [ Element.spacing 20
+--        , Element.padding 20
+--        , Element.width Element.fill
+--        ]
+--        [ Element.el
+--            [ Element.width Element.fill
+--            ]
+--          <|
+--            uploadFormView uploadForm
+--        , Element.el
+--            [ Element.width Element.shrink
+--            ]
+--            projects
+--        ]
+--    ]
+
+
+newCapsuleView : Core.Global -> Api.Capsule -> Element Core.Msg
+newCapsuleView global capsule =
+    Input.button []
+        { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
+        , label = Element.text (String.dropRight 38 capsule.name)
+        }
+
+
+newProjectView : Core.Global -> ( Api.Project, Bool ) -> Element Core.Msg
+newProjectView global ( project, even ) =
+    Element.row
+        [ Element.padding 10
+        , Element.width Element.fill
+        , Background.color
+            (if even then
+                Colors.white
+
+             else
+                Colors.whiteDark
+            )
         ]
-        [ Element.row
-            [ Element.spacing 20
-            , Element.padding 20
-            , Element.width Element.fill
-            ]
-            [ Element.el
-                [ Element.width Element.fill
+        [ let
+            title =
+                if project.folded then
+                    Element.text ("▷ " ++ String.dropRight 38 project.name)
+
+                else
+                    Element.text ("▽ " ++ String.dropRight 38 project.name)
+          in
+          if project.folded then
+            title
+
+          else
+            Element.column
+                [ Element.width Element.fill ]
+                [ title
+                , Element.column
+                    [ Element.width Element.fill, Element.paddingXY 20 10, Element.spacing 10 ]
+                    (List.map (newCapsuleView global) project.capsules)
                 ]
-              <|
-                uploadFormView uploadForm
-            , Element.el
-                [ Element.width Element.shrink
-                ]
-                projects
-            ]
         ]
+
+
+newProjectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+newProjectsView global session uploadForm =
+    Element.column [ Element.width (Element.fillPortion 6) ]
+        (List.map (newProjectView global)
+            (List.indexedMap (\i x -> ( x, modBy 2 i == 0 ))
+                (List.sortBy (\x -> -x.lastVisited) session.projects)
+            )
+        )
 
 
 uploadFormView : LoggedIn.UploadForm -> Element Core.Msg
@@ -187,9 +241,7 @@ projectsView global projects =
                     List.sortBy (\x -> -x.lastVisited) projects
             in
             Element.column [ Element.padding 10 ]
-                [ Element.map Core.LoggedInMsg <|
-                    Ui.cancelButton (Just LoggedIn.ShowMenuToggleMsg) ""
-                , Element.el [ Font.size 18 ] (Element.text "Vos projets:")
+                [ Element.el [ Font.size 18 ] (Element.text "Vos projets:")
                 , Element.column [ Element.padding 10, Element.spacing 10 ]
                     (List.map (projectHeader global) sortedProjects)
                 , if global.beta then
