@@ -97,6 +97,7 @@ viewContent { global, model } =
     in
     Element.column
         (Element.height Element.fill
+            :: Element.scrollbarY
             :: Element.width Element.fill
             :: Background.color Colors.whiteDark
             :: attributes

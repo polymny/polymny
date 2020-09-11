@@ -59,43 +59,65 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
 
         resultView =
-            Element.column []
-                [ Element.row [ Element.spacing 5, Element.alignRight ]
-                    [ Ui.primaryButton (Just decreaseMsg) "-"
-                    , Element.text (String.fromInt numberOfSlidesPerRow)
-                    , Ui.primaryButton (Just increaseMsg) "+"
-                    ]
+            Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+                [ leftColumnView
+                    { details = details
+                    , slides = slides
+                    , uploadForms = uploadForms
+                    , editPrompt = editPrompt
+                    , slideModel = slideModel
+                    , gosModel = gosModel
+                    , t = t
+                    , numberOfSlidesPerRow = numberOfSlidesPerRow
+                    }
                 , Element.el
-                    [ Element.padding 10
-                    , Element.mapAttribute Core.LoggedInMsg <|
-                        Element.mapAttribute LoggedIn.PreparationMsg <|
-                            Element.mapAttribute Preparation.EditPromptMsg <|
-                                Element.inFront (Dialog.view dialogConfig)
+                    [ Element.height Element.fill
+                    , Element.scrollbarY
+                    , Element.width (Element.px 0)
+                    , Border.color Colors.black
+                    , Border.width 1
                     ]
-                    (Element.row [ Element.width Element.fill ]
-                        [ Element.column
-                            [ Element.alignTop
-                            , Element.width Element.fill
-                            ]
-                            [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
-                                (List.map
-                                    (\( i, slide ) -> capsuleGosView global uploadForms.extraResource numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
-                                    (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
-                                )
-                            , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
-
-                            --, Element.column []
-                            --    [ Element.row
-                            --        [ Element.centerX, Element.alignLeft ]
-                            --        [ tabEl Preparation.First t
-                            --        , tabEl Preparation.Second t
-                            --        , tabEl Preparation.Third t
-                            --        ]
-                            --    ]
-                            --, Element.text "Un texte dans le tab"
-                            ]
+                    Element.none
+                , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+                    [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
+                        [ Ui.primaryButton (Just decreaseMsg) "-"
+                        , Element.text (String.fromInt numberOfSlidesPerRow)
+                        , Ui.primaryButton (Just increaseMsg) "+"
                         ]
-                    )
+                    , Element.el
+                        [ Element.padding 10
+                        , Element.mapAttribute Core.LoggedInMsg <|
+                            Element.mapAttribute LoggedIn.PreparationMsg <|
+                                Element.mapAttribute Preparation.EditPromptMsg <|
+                                    Element.inFront (Dialog.view dialogConfig)
+                        , Element.height Element.fill
+                        , Element.scrollbarY
+                        ]
+                        (Element.row [ Element.width Element.fill ]
+                            [ Element.column
+                                [ Element.alignTop
+                                , Element.width Element.fill
+                                ]
+                                [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
+                                    (List.map
+                                        (\( i, slide ) -> capsuleGosView global uploadForms.extraResource numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
+                                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                                    )
+                                , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
+
+                                --, Element.column []
+                                --    [ Element.row
+                                --        [ Element.centerX, Element.alignLeft ]
+                                --        [ tabEl Preparation.First t
+                                --        , tabEl Preparation.Second t
+                                --        , tabEl Preparation.Third t
+                                --        ]
+                                --    ]
+                                --, Element.text "Un texte dans le tab"
+                                ]
+                            ]
+                        )
+                    ]
                 ]
     in
     if editPrompt.visible then
@@ -621,6 +643,36 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                     ++ ghostAttributes
                 )
                 (Element.el (Element.width Element.fill :: dragAttributes) media)
+
+
+leftColumnView : Preparation.Model -> Element Core.Msg
+leftColumnView model =
+    let
+        gosView : List Preparation.MaybeSlide -> Element Core.Msg
+        gosView gos =
+            case gos of
+                [] ->
+                    Element.none
+
+                (Preparation.GosId _) :: t ->
+                    gosView t
+
+                (Preparation.JustSlide s _) :: t ->
+                    viewSlideImage s.asset.asset_path
+
+        goss =
+            List.map gosView model.slides
+    in
+    Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.scrollbarY
+        , Element.padding 5
+        , Element.spacing 5
+        , Element.alignTop
+        , Background.color Colors.grey
+        ]
+        goss
 
 
 

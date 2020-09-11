@@ -52,12 +52,15 @@ view global session tab =
                 [ Element.alignTop
                 , Element.padding 10
                 , Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
                 ]
                 [ mainTab
                 ]
     in
     Element.row
         [ Element.height Element.fill
+        , Element.scrollbarY
         , Element.width Element.fill
         , Element.spacing 20
         ]
