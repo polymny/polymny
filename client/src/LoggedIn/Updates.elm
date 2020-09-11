@@ -178,6 +178,21 @@ update msg global { session, tab } =
             , cmd
             )
 
+        ( LoggedIn.ToggleFoldedProject id, _ ) ->
+            let
+                newProjects =
+                    List.map
+                        (\x ->
+                            if x.id == id then
+                                { x | folded = not x.folded }
+
+                            else
+                                x
+                        )
+                        session.projects
+            in
+            ( LoggedIn.Model { session | projects = newProjects } tab, Cmd.none )
+
         _ ->
             ( LoggedIn.Model session tab, Cmd.none )
 

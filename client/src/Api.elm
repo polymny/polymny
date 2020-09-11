@@ -210,7 +210,7 @@ decodeCapsules =
 
 withCapsules : List Capsule -> Int -> String -> Int -> Project
 withCapsules capsules id name lastVisited =
-    Project id name lastVisited False capsules
+    Project id name lastVisited True capsules
 
 
 decodeProject : List Capsule -> Decoder Project
@@ -223,7 +223,7 @@ decodeProject capsules =
 
 decodeProjectWithCapsules : Decoder Project
 decodeProjectWithCapsules =
-    Decode.map4 (\x y z t -> Project x y z False t)
+    Decode.map4 (\x y z t -> Project x y z True t)
         (Decode.field "id" Decode.int)
         (Decode.field "project_name" Decode.string)
         (Decode.field "last_visited" Decode.int)

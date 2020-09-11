@@ -124,12 +124,18 @@ newProjectView global ( project, even ) =
             )
         ]
         [ let
-            title =
+            prefix =
                 if project.folded then
-                    Element.text ("▷ " ++ String.dropRight 38 project.name)
+                    "▷ "
 
                 else
-                    Element.text ("▽ " ++ String.dropRight 38 project.name)
+                    "▽ "
+
+            title =
+                Input.button []
+                    { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
+                    , label = Element.text (prefix ++ String.dropRight 38 project.name)
+                    }
           in
           if project.folded then
             title

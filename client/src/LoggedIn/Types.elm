@@ -62,6 +62,7 @@ type Msg
     | EditionClicked Api.CapsuleDetails Bool
     | SettingsClicked
     | SettingsMsg Settings.Msg
+    | ToggleFoldedProject Int
 
 
 type UploadSlideShowMsg
