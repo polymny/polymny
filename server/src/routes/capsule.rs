@@ -437,6 +437,7 @@ pub fn gos_order(
         }
     }
 
+    println!("gos_ortder structure: {:#?}", goss);
     // Perform the update
     use crate::schema::capsules::dsl::{id as cid, structure};
     diesel::update(capsules::table)
@@ -554,6 +555,7 @@ pub fn upload_record(
     let structure: Vec<GosStructure> = serde_json::from_str(text).unwrap();
     // Verifiy that the goss doesn't violate authorizations.
     // All slides must belong to the user.
+    println!("upload_record structure: {:#?}", &structure);
     for gos in &structure {
         for slide in &gos.slides {
             user.get_slide_by_id(*slide, &db)?;
@@ -561,11 +563,15 @@ pub fn upload_record(
     }
     // let mut structure: Vec<GosStructure> =
     //     serde_json::from_str(multipart_form_data.texts.get("structure").unwrap().text).unwrap();
+
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
     let mut v: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     v[gos].record_path = Some(video_asset.asset_path.clone());
     v[gos].background_path = background_asset.map(|x| x.asset_path.clone());
+    v[gos].transitions = structure[gos].transitions.clone();
     v[gos].locked = true;
+
+    println!("upload_record v: {:#?}", &v);
     {
         use crate::schema::capsules::dsl::{id as cid, structure};
         diesel::update(capsules::table)
@@ -574,6 +580,7 @@ pub fn upload_record(
             .execute(&db.0)?;
     }
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
+    println!("upload_record capsule: {:#?}", &capsule);
     format_capsule_data(&db, &capsule)
 }
 
@@ -605,98 +612,165 @@ pub fn capsule_edition(
     let mut pip_file = File::create(&pip_path)?;
 
     let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+    println!("structure: {:#?}", structure);
     let mut run_ffmpeg_command = true;
 
-    for (idx, gos) in structure.into_iter().enumerate() {
+    for (gos_index, gos) in structure.into_iter().enumerate() {
         // TODO : only first slide . Assumption one slide per gos ( ie one slide per record)
-        let slide_id = gos.slides[0];
-        let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
-        match slide.extra {
-            Some(asset) => {
-                info!(
-                    "In slide {} merging with extra data = {:#?}",
-                    idx, asset.asset_path
-                );
-                let mut extra_path = config.data_path.clone();
-                extra_path.push(asset.asset_path);
+        println!("gos: {:#?}", gos);
+        let timestamps: Vec<(i32, i32)> = {
+            let mut input = Vec::new();
+            input.push(0);
+            input.extend(gos.transitions.iter().copied());
+            let mut output = Vec::new();
 
-                pip_file.write(format!("file '{}'\n", extra_path.to_str().unwrap()).as_bytes())?;
+            for (i, x) in input.iter().enumerate() {
+                if i + 1 == input.len() {
+                    output.push((*x, -1));
+                } else {
+                    output.push((*x, input[i + 1] - 1 - *x));
+                }
             }
-            None => {
-                let mut ffmpeg_command = Vec::new();
+            output
+        };
+        println!("timestamps: {:#?}", timestamps);
+        for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
+            let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
-                let mut slide_path = config.data_path.clone();
-                slide_path.push(slide.asset.asset_path);
-                let pip_out = dir.path().join(format!("pip{}_{:03}.mp4", capsule.id, idx));
-                let webcam_size = {
-                    match &post_data.webcam_size {
-                        Some(x) => str_to_webcam_size(x),
-                        _ => WebcamSize::Medium,
-                    }
-                };
-                let webcam_position = {
-                    match &post_data.webcam_position {
-                        Some(x) => str_to_webcam_position(x),
-                        _ => WebcamPosition::BottomLeft,
-                    }
-                };
+            let offset = format!("{}ms", &timestamps[slide_index].0);
+            let duration = format!("{}ms", &timestamps[slide_index].1);
+            match slide.extra {
+                Some(asset) => {
+                    info!(
+                        " On Gos {}; in slide {} merging with extra data = {:#?}",
+                        gos_index, slide_id, asset.asset_path
+                    );
+                    let mut extra_path = config.data_path.clone();
+                    extra_path.push(asset.asset_path);
 
-                let filter_complex = format!(
+                    pip_file
+                        .write(format!("file '{}'\n", extra_path.to_str().unwrap()).as_bytes())?;
+                }
+                None => {
+                    let mut ffmpeg_command = Vec::new();
+
+                    let mut slide_path = config.data_path.clone();
+                    slide_path.push(slide.asset.asset_path);
+                    let pip_out = dir.path().join(format!(
+                        "pip{}_g{:03}_s{:03}.mp4",
+                        capsule.id, gos_index, slide_index
+                    ));
+                    let webcam_size = {
+                        match &post_data.webcam_size {
+                            Some(x) => str_to_webcam_size(x),
+                            _ => WebcamSize::Medium,
+                        }
+                    };
+                    let webcam_position = {
+                        match &post_data.webcam_position {
+                            Some(x) => str_to_webcam_position(x),
+                            _ => WebcamPosition::BottomLeft,
+                        }
+                    };
+
+                    let filter_complex = format!(
                     "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
                     size_in_pixels(&webcam_size),
                     position_in_pixels(&webcam_position)
                 );
 
-                let mut record = config.data_path.clone();
-                match (gos.record_path, gos.background_path) {
-                    (Some(record_path), Some(background_path)) if config.matting_enabled => {
-                        let mut record_clone = record.clone();
-                        record.push(record_path);
-                        record_clone.push(background_path);
+                    let mut record = config.data_path.clone();
 
-                        if post_data.with_video.unwrap_or(true) {
-                            run_ffmpeg_command = false;
-                            ffmpeg_command.extend(
-                                vec![
-                                    "ffmpeg",
-                                    "-hide_banner",
-                                    "-y",
-                                    "-i",
-                                    &slide_path.to_str().unwrap(),
-                                    "-i",
+                    match (&gos.record_path, &gos.background_path) {
+                        (Some(record_path), Some(background_path)) if config.matting_enabled => {
+                            let mut record_clone = record.clone();
+                            record.push(record_path);
+                            record_clone.push(background_path);
+
+                            if post_data.with_video.unwrap_or(true) {
+                                run_ffmpeg_command = false;
+                                ffmpeg_command.extend(
+                                    vec![
+                                        "ffmpeg",
+                                        "-hide_banner",
+                                        "-y",
+                                        "-i",
+                                        &slide_path.to_str().unwrap(),
+                                        "-i",
+                                        &record.to_str().unwrap(),
+                                        "-filter_complex",
+                                        &filter_complex,
+                                    ]
+                                    .into_iter(),
+                                );
+
+                                // apply segmentation and matting on record frames
+                                // path to script
+                                let traiter_path = "../scripts/traiter.sh";
+                                // path to background image
+                                let back_ext: &str = "_back.png";
+                                let background_path =
+                                    format!("{}{}", record.to_str().unwrap(), back_ext);
+                                // overlay position and scale
+                                let pos_pixels_xy =
+                                    format!("{}", position_in_pixels(&webcam_position));
+                                let size_pixels = format!("{}", size_in_pixels(&webcam_size));
+                                // command
+                                let matting_command = vec![
+                                    traiter_path,
                                     &record.to_str().unwrap(),
-                                    "-filter_complex",
-                                    &filter_complex,
-                                ]
-                                .into_iter(),
-                            );
+                                    &background_path,
+                                    &slide_path.to_str().unwrap(),
+                                    &pos_pixels_xy,
+                                    &size_pixels,
+                                    &pip_out.to_str().unwrap(),
+                                ];
+                                let matting_child = command::run_command(&matting_command)?;
+                                if !matting_child.status.success() {
+                                    return Err(Error::TranscodeError);
+                                }
 
-                            // apply segmentation and matting on record frames
-                            // path to script
-                            let traiter_path = "../scripts/traiter.sh";
-                            // path to background image
-                            let back_ext: &str = "_back.png";
-                            let background_path =
-                                format!("{}{}", record.to_str().unwrap(), back_ext);
-                            // overlay position and scale
-                            let pos_pixels_xy = format!("{}", position_in_pixels(&webcam_position));
-                            let size_pixels = format!("{}", size_in_pixels(&webcam_size));
-                            // command
-                            let matting_command = vec![
-                                traiter_path,
-                                &record.to_str().unwrap(),
-                                &background_path,
-                                &slide_path.to_str().unwrap(),
-                                &pos_pixels_xy,
-                                &size_pixels,
-                                &pip_out.to_str().unwrap(),
-                            ];
-                            let matting_child = command::run_command(&matting_command)?;
-                            if !matting_child.status.success() {
-                                return Err(Error::TranscodeError);
+                                // webcam position and size info update
+                                let capsule_edition_options = EditionOptions {
+                                    with_video: post_data.with_video.unwrap_or(true),
+                                    webcam_size: webcam_size,
+                                    webcam_position: webcam_position,
+                                };
+                                info!("capsule_edition_options= {:#?}", capsule_edition_options);
+                                use crate::schema::capsules::dsl;
+                                diesel::update(capsules::table)
+                                    .filter(dsl::id.eq(capsule.id))
+                                    .set(
+                                        dsl::edition_options
+                                            .eq(serde_json!(capsule_edition_options)),
+                                    )
+                                    .execute(&db.0)?;
+                            } else {
+                                ffmpeg_command.extend(
+                                    vec![
+                                        "ffmpeg",
+                                        "-hide_banner",
+                                        "-y",
+                                        "-loop",
+                                        "1",
+                                        "-i",
+                                        &slide_path.to_str().unwrap(),
+                                        "-i",
+                                        &record.to_str().unwrap(),
+                                        "-map",
+                                        "0:v:0",
+                                        "-map",
+                                        "1:a:0",
+                                        "-shortest",
+                                    ]
+                                    .into_iter(),
+                                );
                             }
+                        }
 
-                            // webcam position and size info update
+                        (Some(record_path), _) => {
+                            record.push(record_path);
+
                             let capsule_edition_options = EditionOptions {
                                 with_video: post_data.with_video.unwrap_or(true),
                                 webcam_size: webcam_size,
@@ -708,148 +782,122 @@ pub fn capsule_edition(
                                 .filter(dsl::id.eq(capsule.id))
                                 .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
                                 .execute(&db.0)?;
-                        } else {
+
+                            if post_data.with_video.unwrap_or(true) {
+                                ffmpeg_command.extend(
+                                    vec![
+                                        "ffmpeg",
+                                        "-hide_banner",
+                                        "-y",
+                                        "-i",
+                                        &slide_path.to_str().unwrap(),
+                                        "-i",
+                                        &record.to_str().unwrap(),
+                                        "-ss",
+                                        &offset,
+                                    ]
+                                    .into_iter(),
+                                );
+
+                                if slide_index + 1 != timestamps.len() {
+                                    ffmpeg_command.extend_from_slice(&["-t", &duration]);
+                                }
+
+                                ffmpeg_command
+                                    .extend(vec!["-filter_complex", &filter_complex].into_iter());
+                            } else {
+                                ffmpeg_command.extend(
+                                    vec![
+                                        "ffmpeg",
+                                        "-hide_banner",
+                                        "-y",
+                                        "-loop",
+                                        "1",
+                                        "-i",
+                                        &slide_path.to_str().unwrap(),
+                                        "-i",
+                                        &record.to_str().unwrap(),
+                                        "-map",
+                                        "0:v:0",
+                                        "-map",
+                                        "1:a:0",
+                                        "-shortest",
+                                    ]
+                                    .into_iter(),
+                                );
+                            }
+                        }
+
+                        (None, _) => {
+                            // ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i tmp/slide2.png -c:v libx264 -t 3 -pix_fmt yuv420p -s hd1080 -r 25 -shortest out.mp4
                             ffmpeg_command.extend(
                                 vec![
                                     "ffmpeg",
-                                    "-hide_banner",
                                     "-y",
+                                    "-hide_banner",
+                                    "-f",
+                                    "lavfi",
+                                    "-i",
+                                    "anullsrc=channel_layout=stereo:sample_rate=44100",
                                     "-loop",
                                     "1",
                                     "-i",
                                     &slide_path.to_str().unwrap(),
-                                    "-i",
-                                    &record.to_str().unwrap(),
-                                    "-map",
-                                    "0:v:0",
-                                    "-map",
-                                    "1:a:0",
+                                    "-t",
+                                    "3",
                                     "-shortest",
                                 ]
                                 .into_iter(),
                             );
                         }
                     }
+                    // here finalisation of output stream
+                    ffmpeg_command.extend(
+                        vec![
+                            "-profile:v",
+                            "main",
+                            "-pix_fmt",
+                            "yuv420p",
+                            "-level",
+                            "3.1",
+                            "-b:v",
+                            "440k",
+                            "-ar",
+                            "44100",
+                            "-ab",
+                            "128k",
+                            "-vcodec",
+                            "libx264",
+                            "-preset",
+                            "medium",
+                            "-tune",
+                            "stillimage",
+                            "-acodec",
+                            "aac",
+                            "-s",
+                            "hd1080",
+                            "-r",
+                            "25",
+                            &pip_out.to_str().unwrap(),
+                        ]
+                        .into_iter(),
+                    );
+                    if run_ffmpeg_command {
+                        info!(" ffmpeg_command = {:#?}", &ffmpeg_command);
 
-                    (Some(record_path), _) => {
-                        record.push(record_path);
-
-                        let capsule_edition_options = EditionOptions {
-                            with_video: post_data.with_video.unwrap_or(true),
-                            webcam_size: webcam_size,
-                            webcam_position: webcam_position,
-                        };
-                        info!("capsule_edition_options= {:#?}", capsule_edition_options);
-                        use crate::schema::capsules::dsl;
-                        diesel::update(capsules::table)
-                            .filter(dsl::id.eq(capsule.id))
-                            .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
-                            .execute(&db.0)?;
-
-                        if post_data.with_video.unwrap_or(true) {
-                            ffmpeg_command.extend(
-                                vec![
-                                    "ffmpeg",
-                                    "-hide_banner",
-                                    "-y",
-                                    "-i",
-                                    &slide_path.to_str().unwrap(),
-                                    "-i",
-                                    &record.to_str().unwrap(),
-                                    "-filter_complex",
-                                    &filter_complex,
-                                ]
-                                .into_iter(),
-                            );
-                        } else {
-                            ffmpeg_command.extend(
-                                vec![
-                                    "ffmpeg",
-                                    "-hide_banner",
-                                    "-y",
-                                    "-loop",
-                                    "1",
-                                    "-i",
-                                    &slide_path.to_str().unwrap(),
-                                    "-i",
-                                    &record.to_str().unwrap(),
-                                    "-map",
-                                    "0:v:0",
-                                    "-map",
-                                    "1:a:0",
-                                    "-shortest",
-                                ]
-                                .into_iter(),
-                            );
+                        let child = command::run_command(&ffmpeg_command)?;
+                        if !child.status.success() {
+                            return Err(Error::TranscodeError);
                         }
                     }
 
-                    (None, _) => {
-                        // ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i tmp/slide2.png -c:v libx264 -t 3 -pix_fmt yuv420p -s hd1080 -r 25 -shortest out.mp4
-                        ffmpeg_command.extend(
-                            vec![
-                                "ffmpeg",
-                                "-y",
-                                "-hide_banner",
-                                "-f",
-                                "lavfi",
-                                "-i",
-                                "anullsrc=channel_layout=stereo:sample_rate=44100",
-                                "-loop",
-                                "1",
-                                "-i",
-                                &slide_path.to_str().unwrap(),
-                                "-t",
-                                "3",
-                                "-shortest",
-                            ]
-                            .into_iter(),
-                        );
-                    }
+                    pip_file
+                        .write(format!("file '{}'\n", &pip_out.to_str().unwrap()).as_bytes())?;
                 }
-                // here finalisation of output stream
-                ffmpeg_command.extend(
-                    vec![
-                        "-profile:v",
-                        "main",
-                        "-pix_fmt",
-                        "yuv420p",
-                        "-level",
-                        "3.1",
-                        "-b:v",
-                        "440k",
-                        "-ar",
-                        "44100",
-                        "-ab",
-                        "128k",
-                        "-vcodec",
-                        "libx264",
-                        "-preset",
-                        "medium",
-                        "-tune",
-                        "stillimage",
-                        "-acodec",
-                        "aac",
-                        "-s",
-                        "hd1080",
-                        "-r",
-                        "25",
-                        &pip_out.to_str().unwrap(),
-                    ]
-                    .into_iter(),
-                );
-                if run_ffmpeg_command {
-                    let child = command::run_command(&ffmpeg_command)?;
-                    if !child.status.success() {
-                        return Err(Error::TranscodeError);
-                    }
-                }
-
-                pip_file.write(format!("file '{}'\n", &pip_out.to_str().unwrap()).as_bytes())?;
             }
-        }
+            // join all videos
+        } //end for loop slides
     }
-
     // concat all generated pip videos
     let file_name = || {
         if post_data.with_video.unwrap_or(true) {
@@ -913,7 +961,7 @@ pub fn capsule_edition(
         return Err(Error::TranscodeError);
     }
 
-    dir.close()?;
+    //dir.close()?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
