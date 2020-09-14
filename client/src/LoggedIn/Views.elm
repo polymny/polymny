@@ -73,8 +73,8 @@ view global session tab =
 
 homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 homeView global session uploadForm =
-    Element.row [ Element.width Element.fill, Element.padding 10 ]
-        [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
+    Element.row [ Element.width Element.fill, Element.height Element.fill ]
+        [ Element.el [ Element.width (Element.fillPortion 1), Background.color Colors.grey, Element.height Element.fill ] (leftColumn global session uploadForm)
         , newProjectsView global session uploadForm
         ]
 
@@ -100,6 +100,13 @@ homeView global session uploadForm =
 --            projects
 --        ]
 --    ]
+
+
+leftColumn : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+leftColumn global session uploadForm =
+    Element.row [ Element.width Element.fill, Element.padding 10 ]
+        [ Element.el [ Element.centerX ] (Ui.primaryButton (Just (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowSelectFileRequested))) "Créer un nouveau projet")
+        ]
 
 
 newCapsuleView : Core.Global -> Api.Capsule -> Element Core.Msg
@@ -153,7 +160,7 @@ newProjectView global ( project, even ) =
 
 newProjectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 newProjectsView global session uploadForm =
-    Element.column [ Element.width (Element.fillPortion 6) ]
+    Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
         (List.map (newProjectView global)
             (List.indexedMap (\i x -> ( x, modBy 2 i == 0 ))
                 (List.sortBy (\x -> -x.lastVisited) session.projects)
