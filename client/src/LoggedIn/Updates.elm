@@ -219,10 +219,22 @@ update msg global { session, tab } =
 
         ( LoggedIn.DropdownMsg dmsg, LoggedIn.Home uploadForm ) ->
             let
+                newProjectName =
+                    case dmsg of
+                        Dropdown.OnFilterTyped name ->
+                            name
+
+                        _ ->
+                            uploadForm.projectName
+
                 ( newModel, newCmd ) =
                     Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown (List.map .name session.projects)
             in
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | dropdown = newModel }), newCmd )
+            ( global
+            , LoggedIn.Model session
+                (LoggedIn.Home { uploadForm | projectName = newProjectName, dropdown = newModel })
+            , newCmd
+            )
 
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
