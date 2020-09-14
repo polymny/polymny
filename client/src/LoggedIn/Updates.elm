@@ -7,6 +7,7 @@ import Browser.Navigation as Nav
 import Core.Types as Core
 import Edition.Types as Edition
 import Edition.Updates as Edition
+import File
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
@@ -229,7 +230,15 @@ updateUploadSlideShow global msg { session } form =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent, file = Just file })
+            ( LoggedIn.Model session
+                (LoggedIn.Home
+                    { form
+                        | status = Status.Sent
+                        , file = Just file
+                        , projectName = File.name file
+                        , capsuleName = File.name file
+                    }
+                )
             , Api.quickUploadSlideShow resultToMsg1 file
             )
 
@@ -244,19 +253,31 @@ updateUploadSlideShow global msg { session } form =
                     )
 
         LoggedIn.UploadSlideShowSuccess capsule ->
-            let
-                ( model, cmd ) =
-                    Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
-
-                coreCmd =
-                    Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
-            in
-            ( LoggedIn.Model session (LoggedIn.Acquisition model)
-            , coreCmd
+            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Success (), capsule = Just capsule })
+            , Cmd.none
             )
 
+        -- let
+        --     ( model, cmd ) =
+        --         Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
+        --     coreCmd =
+        --         Cmd.map (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg x)) cmd
+        -- in
+        -- ( LoggedIn.Model session (LoggedIn.Acquisition model)
+        -- , coreCmd
+        -- )
         LoggedIn.UploadSlideShowError ->
             ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () })
+            , Cmd.none
+            )
+
+        LoggedIn.UploadSlideShowChangeProjectName newName ->
+            ( LoggedIn.Model session (LoggedIn.Home { form | projectName = newName })
+            , Cmd.none
+            )
+
+        LoggedIn.UploadSlideShowChangeCapsuleName newName ->
+            ( LoggedIn.Model session (LoggedIn.Home { form | capsuleName = newName })
             , Cmd.none
             )
 

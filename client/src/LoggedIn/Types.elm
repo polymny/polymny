@@ -30,6 +30,10 @@ type alias Model =
 type alias UploadForm =
     { status : Status () ()
     , file : Maybe File
+    , projectName : String
+    , capsuleName : String
+    , capsule : Maybe Api.CapsuleDetails
+    , numberOfSlidesPerRow : Int
     }
 
 
@@ -71,11 +75,13 @@ type UploadSlideShowMsg
     | UploadSlideShowFormSubmitted
     | UploadSlideShowSuccess Api.CapsuleDetails
     | UploadSlideShowError
+    | UploadSlideShowChangeProjectName String
+    | UploadSlideShowChangeCapsuleName String
 
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing 5
 
 
 init : Tab

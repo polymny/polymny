@@ -53,8 +53,6 @@ view global session tab =
         element =
             Element.column
                 [ Element.alignTop
-
-                -- , Element.padding 10
                 , Element.width Element.fill
                 , Element.height Element.fill
                 , Element.scrollbarY
@@ -73,9 +71,89 @@ view global session tab =
 
 homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 homeView global session uploadForm =
-    Element.row [ Element.width Element.fill, Element.height Element.fill ]
-        [ Element.el [ Element.width (Element.fillPortion 1), Background.color Colors.grey, Element.height Element.fill ] (leftColumn global session uploadForm)
-        , newProjectsView global session uploadForm
+    case uploadForm.status of
+        Status.NotSent ->
+            Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                [ Element.el
+                    [ Element.width (Element.fillPortion 1)
+                    , Background.color Colors.grey
+                    , Element.height Element.fill
+                    ]
+                    (leftColumn global session uploadForm)
+                , newProjectsView global session uploadForm
+                ]
+
+        _ ->
+            prePreparationView global session uploadForm
+
+
+prePreparationView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+prePreparationView global session uploadForm =
+    let
+        projectField =
+            Input.text []
+                { label = Input.labelAbove [] (Element.text "Nom du projet")
+                , onChange = \x -> Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowChangeProjectName x))
+                , text = uploadForm.projectName
+                , placeholder = Nothing
+                }
+
+        capsuleField =
+            Input.text []
+                { label = Input.labelAbove [] (Element.text "Nom de la capsule")
+                , onChange = \x -> Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowChangeCapsuleName x))
+                , text = uploadForm.capsuleName
+                , placeholder = Nothing
+                }
+
+        slidesLabel =
+            Element.text "Regroupement des planches"
+
+        viewSlide slide =
+            case slide of
+                Nothing ->
+                    Element.el [ Element.width Element.fill ] Element.none
+
+                Just s ->
+                    Element.image
+                        [ Element.width Element.fill, Element.padding 5 ]
+                        { description = "", src = s.asset.asset_path }
+
+        slides =
+            case uploadForm.capsule of
+                Nothing ->
+                    Ui.spinner
+
+                Just capsule ->
+                    Element.column [ Element.width Element.fill ]
+                        (List.map
+                            (\x ->
+                                Element.row [ Element.width Element.fill ]
+                                    (List.map viewSlide x)
+                            )
+                            (regroupSlides uploadForm.numberOfSlidesPerRow capsule.slides)
+                        )
+
+        buttons =
+            Element.row [ Element.width Element.fill ]
+                [ Element.row [ Element.alignLeft ]
+                    [ Ui.simpleButton Nothing "Annuler"
+                    ]
+                , Element.row [ Element.spacing 10, Element.alignRight ]
+                    [ Ui.simpleButton Nothing "Organiser les planches"
+                    , Ui.primaryButton Nothing "Commencer l'enregistrement"
+                    ]
+                ]
+
+        form =
+            Element.column
+                [ Element.spacing 10, Element.width Element.fill ]
+                [ projectField, capsuleField, slidesLabel, slides, buttons ]
+    in
+    Element.row [ Element.width Element.fill, Element.padding 10 ]
+        [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
+        , Element.el [ Element.width (Element.fillPortion 8) ] form
+        , Element.el [ Element.width (Element.fillPortion 1) ] Element.none
         ]
 
 
@@ -354,3 +432,30 @@ newCapsuleButton project =
             )
         )
         "New capsule"
+
+
+regroupSlidesAux : Int -> List (List Api.Slide) -> List Api.Slide -> List (List Api.Slide)
+regroupSlidesAux number current list =
+    case ( list, current ) of
+        ( [], _ ) ->
+            current
+
+        ( h :: t, [] ) ->
+            regroupSlidesAux number [ [ h ] ] t
+
+        ( h :: t, h2 :: t2 ) ->
+            if List.length h2 < number then
+                regroupSlidesAux number ((h2 ++ [ h ]) :: t2) t
+
+            else
+                regroupSlidesAux number ([ h ] :: h2 :: t2) t
+
+
+regroupSlides : Int -> List Api.Slide -> List (List (Maybe Api.Slide))
+regroupSlides number list =
+    case regroupSlidesAux number [] list of
+        [] ->
+            []
+
+        h :: t ->
+            List.reverse ((List.map Just h ++ List.repeat (number - List.length h) Nothing) :: List.map (\x -> List.map Just x) t)
