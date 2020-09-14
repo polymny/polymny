@@ -43,7 +43,6 @@ type alias Model =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , t : Tab
-    , numberOfSlidesPerRow : Int
     }
 
 
@@ -203,7 +202,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First 3
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide

@@ -28,7 +28,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
-mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t, numberOfSlidesPerRow } =
+mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -68,12 +68,11 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                     , slideModel = slideModel
                     , gosModel = gosModel
                     , t = t
-                    , numberOfSlidesPerRow = numberOfSlidesPerRow
                     }
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
                     [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
                         [ Ui.primaryButton (Just decreaseMsg) "-"
-                        , Element.text (String.fromInt numberOfSlidesPerRow)
+                        , Element.text (String.fromInt global.numberOfSlidesPerRow)
                         , Ui.primaryButton (Just increaseMsg) "+"
                         ]
                     , Element.el
@@ -92,7 +91,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                                 ]
                                 [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                     (List.map
-                                        (\( i, slide ) -> capsuleGosView global uploadForms.extraResource numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
+                                        (\( i, slide ) -> capsuleGosView global uploadForms.extraResource global.numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (calculateOffset i) i slide)
                                         (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                                     )
                                 , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition

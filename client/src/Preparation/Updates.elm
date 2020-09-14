@@ -10,7 +10,7 @@ import Status
 import Utils
 
 
-update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
+update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Core.Global, Preparation.Model, Cmd Core.Msg )
 update msg global capsuleModel =
     case ( msg, capsuleModel ) of
         ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
@@ -24,7 +24,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | slideShow = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadBackgroundMsg newUploadBackgroundMsg, model ) ->
             let
@@ -37,7 +37,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | background = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadLogoMsg newUploadLogoMsg, model ) ->
             let
@@ -50,7 +50,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | logo = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
             let
@@ -63,7 +63,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | extraResource = newFormModel }
             in
-            ( { newModel | uploadForms = newUploadForms }, newCmd )
+            ( global, { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.ReplaceSlideMsg newReplaceSlideMsg, model ) ->
             let
@@ -76,14 +76,14 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | replaceSlide = newFormModel }
             in
-            ( { newModel | uploadForms = newUploadForms }, newCmd )
+            ( global, { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
                 ( newModel, newCmd ) =
                     updateEditPromptMsg editPromptMsg model.editPrompt
             in
-            ( { model | editPrompt = newModel }, newCmd )
+            ( global, { model | editPrompt = newModel }, newCmd )
 
         ( Preparation.DnD slideMsg, model ) ->
             let
@@ -103,7 +103,7 @@ update msg global capsuleModel =
                     else
                         moveCmd
             in
-            ( data, cmds )
+            ( global, data, cmds )
 
         ( Preparation.SwitchLock i, _ ) ->
             let
@@ -133,7 +133,7 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Cmd.none )
+            ( global, { capsuleModel | details = newDetails }, Cmd.none )
 
         ( Preparation.GosDelete i, _ ) ->
             let
@@ -150,7 +150,7 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+            ( global, { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
 
         ( Preparation.SlideDelete gos_i slide_i, _ ) ->
             let
@@ -194,16 +194,16 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+            ( global, { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
 
         ( Preparation.UserSelectedTab t, _ ) ->
-            ( { capsuleModel | t = t }, Cmd.none )
+            ( global, { capsuleModel | t = t }, Cmd.none )
 
         ( Preparation.IncreaseNumberOfSlidesPerRow, _ ) ->
-            ( { capsuleModel | numberOfSlidesPerRow = capsuleModel.numberOfSlidesPerRow + 1 }, Cmd.none )
+            ( { global | numberOfSlidesPerRow = global.numberOfSlidesPerRow + 1 }, capsuleModel, Cmd.none )
 
         ( Preparation.DecreaseNumberOfSlidesPerRow, _ ) ->
-            ( { capsuleModel | numberOfSlidesPerRow = capsuleModel.numberOfSlidesPerRow - 1 }, Cmd.none )
+            ( { global | numberOfSlidesPerRow = global.numberOfSlidesPerRow - 1 }, capsuleModel, Cmd.none )
 
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )

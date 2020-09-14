@@ -101,10 +101,10 @@ update msg { global, model } =
 
                 ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
                     let
-                        ( m, cmd ) =
+                        ( newGlobal, m, cmd ) =
                             LoggedIn.update newProjectMsg global (LoggedIn.Model session tab)
                     in
-                    ( Core.FullModel global (Core.LoggedIn m), cmd )
+                    ( Core.FullModel newGlobal (Core.LoggedIn m), cmd )
 
                 -- Url message
                 ( Core.UrlRequested (Browser.Internal url), _ ) ->
