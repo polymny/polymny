@@ -22,6 +22,7 @@ use uuid::Uuid;
 use tempfile::tempdir;
 
 use crate::command;
+use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::{Capsule, PublishedType};
@@ -437,7 +438,7 @@ pub fn gos_order(
         }
     }
 
-    println!("gos_ortder structure: {:#?}", goss);
+    debug!("gos_ortder structure: {:#?}", goss);
     // Perform the update
     use crate::schema::capsules::dsl::{id as cid, structure};
     diesel::update(capsules::table)
@@ -497,6 +498,7 @@ pub fn upload_record(
                     info!("record  output_path {:#?}", output_path);
                     create_dir(output_path.parent().unwrap()).ok();
                     fs::copy(path, &output_path)?;
+                    let _metadata = VideoMetadata::metadata(&output_path);
                     asset
                 } else {
                     todo!();
@@ -555,7 +557,6 @@ pub fn upload_record(
     let structure: Vec<GosStructure> = serde_json::from_str(text).unwrap();
     // Verifiy that the goss doesn't violate authorizations.
     // All slides must belong to the user.
-    println!("upload_record structure: {:#?}", &structure);
     for gos in &structure {
         for slide in &gos.slides {
             user.get_slide_by_id(*slide, &db)?;
@@ -571,7 +572,6 @@ pub fn upload_record(
     v[gos].transitions = structure[gos].transitions.clone();
     v[gos].locked = true;
 
-    println!("upload_record v: {:#?}", &v);
     {
         use crate::schema::capsules::dsl::{id as cid, structure};
         diesel::update(capsules::table)
@@ -580,7 +580,7 @@ pub fn upload_record(
             .execute(&db.0)?;
     }
     let capsule = user.get_capsule_by_id(capsule_id, &db)?;
-    println!("upload_record capsule: {:#?}", &capsule);
+
     format_capsule_data(&db, &capsule)
 }
 
@@ -612,13 +612,11 @@ pub fn capsule_edition(
     let mut pip_file = File::create(&pip_path)?;
 
     let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
-    println!("structure: {:#?}", structure);
     let mut run_ffmpeg_command = true;
 
     for (gos_index, gos) in structure.into_iter().enumerate() {
         // TODO : only first slide . Assumption one slide per gos ( ie one slide per record)
-        println!("gos: {:#?}", gos);
-        let timestamps: Vec<(i32, i32)> = {
+        let timestamps: Vec<(String, Option<String>)> = {
             let mut input = Vec::new();
             input.push(0);
             input.extend(gos.transitions.iter().copied());
@@ -626,19 +624,25 @@ pub fn capsule_edition(
 
             for (i, x) in input.iter().enumerate() {
                 if i + 1 == input.len() {
-                    output.push((*x, -1));
+                    output.push((format!("{}ms", *x), None));
                 } else {
-                    output.push((*x, input[i + 1] - 1 - *x));
+                    output.push((
+                        format!("{}ms", *x),
+                        Some(format!("{}ms", input[i + 1] - 1 - *x)),
+                    ));
                 }
             }
             output
         };
-        println!("timestamps: {:#?}", timestamps);
         for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
-            let offset = format!("{}ms", &timestamps[slide_index].0);
-            let duration = format!("{}ms", &timestamps[slide_index].1);
+            let offset = vec!["-ss", &timestamps[slide_index].0];
+            let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
+                Some(x) => Some(vec!["-t", x]),
+                None => None,
+            };
+
             match slide.extra {
                 Some(asset) => {
                     info!(
@@ -793,14 +797,13 @@ pub fn capsule_edition(
                                         &slide_path.to_str().unwrap(),
                                         "-i",
                                         &record.to_str().unwrap(),
-                                        "-ss",
-                                        &offset,
                                     ]
                                     .into_iter(),
                                 );
 
-                                if slide_index + 1 != timestamps.len() {
-                                    ffmpeg_command.extend_from_slice(&["-t", &duration]);
+                                ffmpeg_command.extend_from_slice(&offset);
+                                if let Some(duration) = duration {
+                                    ffmpeg_command.extend_from_slice(&duration);
                                 }
 
                                 ffmpeg_command
@@ -825,11 +828,15 @@ pub fn capsule_edition(
                                     ]
                                     .into_iter(),
                                 );
+                                ffmpeg_command.extend_from_slice(&offset);
+                                if let Some(duration) = duration {
+                                    ffmpeg_command.extend_from_slice(&duration);
+                                }
                             }
                         }
 
                         (None, _) => {
-                            // ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -loop 1 -i tmp/slide2.png -c:v libx264 -t 3 -pix_fmt yuv420p -s hd1080 -r 25 -shortest out.mp4
+                            // No record generate a video with slide only and an empty audio track.
                             ffmpeg_command.extend(
                                 vec![
                                     "ffmpeg",
@@ -883,8 +890,6 @@ pub fn capsule_edition(
                         .into_iter(),
                     );
                     if run_ffmpeg_command {
-                        info!(" ffmpeg_command = {:#?}", &ffmpeg_command);
-
                         let child = command::run_command(&ffmpeg_command)?;
                         if !child.status.success() {
                             return Err(Error::TranscodeError);
