@@ -5,11 +5,17 @@ import Acquisition.Updates as Acquisition
 import Api
 import Browser.Navigation as Nav
 import Core.Types as Core
+import Dropdown
 import Edition.Types as Edition
 import Edition.Updates as Edition
+import Element exposing (Element)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import File
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
+import LoggedIn.Views as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Updates as NewCapsule
 import NewProject.Types as NewProject
@@ -210,6 +216,13 @@ update msg global { session, tab } =
                         session.projects
             in
             ( global, LoggedIn.Model { session | projects = newProjects } tab, Cmd.none )
+
+        ( LoggedIn.DropdownMsg dmsg, LoggedIn.Home uploadForm ) ->
+            let
+                ( newModel, newCmd ) =
+                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown (List.map .name session.projects)
+            in
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | dropdown = newModel }), newCmd )
 
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )

@@ -12,6 +12,7 @@ module LoggedIn.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Dropdown
 import Edition.Types as Edition
 import File exposing (File)
 import NewCapsule.Types as NewCapsule
@@ -34,6 +35,7 @@ type alias UploadForm =
     , capsuleName : String
     , capsule : Maybe Api.CapsuleDetails
     , numberOfSlidesPerRow : Int
+    , dropdown : Dropdown.State String
     }
 
 
@@ -67,6 +69,7 @@ type Msg
     | SettingsClicked
     | SettingsMsg Settings.Msg
     | ToggleFoldedProject Int
+    | DropdownMsg (Dropdown.Msg String)
 
 
 type UploadSlideShowMsg
@@ -81,7 +84,7 @@ type UploadSlideShowMsg
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing 5
+    UploadForm Status.NotSent Nothing "" "" Nothing 5 (Dropdown.init "")
 
 
 init : Tab

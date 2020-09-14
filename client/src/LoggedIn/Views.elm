@@ -1,13 +1,15 @@
-module LoggedIn.Views exposing (view)
+module LoggedIn.Views exposing (dropdownConfig, view)
 
 import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
+import Dropdown
 import Edition.Types as Edition
 import Edition.Views as Edition
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File
@@ -91,13 +93,17 @@ prePreparationView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Elemen
 prePreparationView global session uploadForm =
     let
         projectField =
-            Input.text []
-                { label = Input.labelAbove [] (Element.text "Nom du projet")
-                , onChange = \x -> Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowChangeProjectName x))
-                , text = uploadForm.projectName
-                , placeholder = Nothing
-                }
+            Element.column [ Element.width Element.fill, Element.spacing 10 ]
+                [ Element.text "Nom du projet"
+                , Dropdown.view dropdownConfig uploadForm.dropdown (List.map .name session.projects)
+                ]
 
+        -- Input.text []
+        --     { label = Input.labelAbove [] (Element.text "Nom du projet")
+        --     , onChange = \x -> Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowChangeProjectName x))
+        --     , text = uploadForm.projectName
+        --     , placeholder = Nothing
+        --     }
         capsuleField =
             Input.text []
                 { label = Input.labelAbove [] (Element.text "Nom de la capsule")
@@ -459,3 +465,63 @@ regroupSlides number list =
 
         h :: t ->
             List.reverse ((List.map Just h ++ List.repeat (number - List.length h) Nothing) :: List.map (\x -> List.map Just x) t)
+
+
+dropdownConfig : Dropdown.Config String Core.Msg
+dropdownConfig =
+    let
+        containerAttrs =
+            [ Element.width Element.fill ]
+
+        selectAttrs =
+            [ Border.width 1
+            , Border.rounded 5
+            , Element.paddingXY 16 8
+            , Element.spacing 10
+            , Element.width Element.fill
+            ]
+
+        searchAttrs =
+            [ Border.width 0, Element.padding 0, Element.width Element.fill ]
+
+        listAttrs =
+            [ Border.width 1
+            , Border.roundEach { topLeft = 0, topRight = 0, bottomLeft = 5, bottomRight = 5 }
+            , Element.width Element.fill
+            , Element.clip
+            , Element.scrollbarY
+            , Element.height (Element.fill |> Element.maximum 200)
+            ]
+
+        itemToPrompt item =
+            Element.text item
+
+        itemToElement selected highlighted i =
+            let
+                bgColor =
+                    if highlighted then
+                        Element.rgb255 128 128 128
+
+                    else if selected then
+                        Element.rgb255 100 100 100
+
+                    else
+                        Element.rgb255 255 255 255
+            in
+            Element.row
+                [ Background.color bgColor
+                , Element.padding 8
+                , Element.spacing 10
+                , Element.width Element.fill
+                ]
+                [ Element.el [] (Element.text "-")
+                , Element.el [ Font.size 16 ] (Element.text i)
+                ]
+    in
+    Dropdown.filterable (\x -> Core.LoggedInMsg (LoggedIn.DropdownMsg x)) (\_ -> Core.Noop) itemToPrompt itemToElement identity
+        |> Dropdown.withContainerAttributes containerAttrs
+        |> Dropdown.withSelectAttributes selectAttrs
+        |> Dropdown.withListAttributes listAttrs
+        |> Dropdown.withSearchAttributes searchAttrs
+        |> Dropdown.withFilterPlaceholder "Entrez un nom de projet"
+        |> Dropdown.withPromptElement (Element.el [ Element.width Element.fill ] (Element.text "Choisir un projet"))
