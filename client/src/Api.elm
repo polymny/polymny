@@ -243,13 +243,15 @@ type alias Session =
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map6 Session
-        (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list decodeProjectWithCapsules))
-        (Decode.field "active_project" (Decode.maybe decodeProjectWithCapsules))
-        (Decode.field "with_video" (Decode.maybe Decode.bool))
-        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
-        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+    Decode.map (\x -> x)
+        (Decode.map6 Session
+            (Decode.field "username" Decode.string)
+            (Decode.field "projects" (Decode.map (\x -> List.filter (\y -> List.length y.capsules > 0) x) (Decode.list decodeProjectWithCapsules)))
+            (Decode.field "active_project" (Decode.maybe decodeProjectWithCapsules))
+            (Decode.field "with_video" (Decode.maybe Decode.bool))
+            (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+            (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+        )
 
 
 type alias Asset =
