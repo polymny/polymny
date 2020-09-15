@@ -288,7 +288,7 @@ update (Config config) msg (State state) data =
                             else
                                 Cmd.none
                     in
-                    ( { state | isOpen = isOpen, focusedIndex = 0, filterText = "" }, Cmd.map config.dropdownMsg cmd )
+                    ( { state | isOpen = isOpen, focusedIndex = 0 }, Cmd.map config.dropdownMsg cmd )
 
                 OnSelect item ->
                     let
@@ -299,7 +299,12 @@ update (Config config) msg (State state) data =
                     ( { state | isOpen = False, selectedItem = Just item }, cmd )
 
                 OnFilterTyped val ->
-                    ( { state | filterText = val }, Cmd.none )
+                    let
+                        cmd =
+                            Task.succeed Nothing
+                                |> Task.perform config.onSelectMsg
+                    in
+                    ( { state | filterText = val, selectedItem = Nothing }, cmd )
 
                 OnKeyDown key ->
                     let
@@ -342,14 +347,13 @@ update (Config config) msg (State state) data =
 
                         ( cmd, newSelectedItem ) =
                             case key of
-                                Enter ->
-                                    ( Task.succeed focusedItem
-                                        |> Task.perform config.onSelectMsg
-                                    , focusedItem
-                                    )
-
+                                -- Enter ->
+                                --     ( Task.succeed focusedItem
+                                --         |> Task.perform config.onSelectMsg
+                                --     , focusedItem
+                                --     )
                                 _ ->
-                                    ( Cmd.none, state.selectedItem )
+                                    ( Cmd.none, Nothing )
                     in
                     ( { state | selectedItem = newSelectedItem, focusedIndex = newIndex, isOpen = isOpen }, cmd )
     in
@@ -414,7 +418,11 @@ triggerView config state =
                         config.itemToPrompt selectedItem
 
                     Nothing ->
-                        config.promptElement
+                        if state.filterText /= "" then
+                            Element.text state.filterText
+
+                        else
+                            config.promptElement
 
         search =
             case config.dropdownType of

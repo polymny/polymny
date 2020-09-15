@@ -410,13 +410,34 @@ detailsSortSlides details =
     List.map .slides details.structure
 
 
-validateCapsule : (Result Http.Error CapsuleDetails -> msg) -> String -> String -> CapsuleDetails -> Cmd msg
-validateCapsule responseToMsg projectName capsuleName content =
-    post
-        { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
-        , expect = Http.expectJson responseToMsg decodeCapsuleDetails
-        , body = Http.jsonBody (Encode.object [ ( "name", Encode.string capsuleName ) ])
-        }
+validateCapsule : (Result Http.Error CapsuleDetails -> msg) -> Maybe Project -> String -> String -> CapsuleDetails -> Cmd msg
+validateCapsule responseToMsg project projectName capsuleName content =
+    case project of
+        Nothing ->
+            post
+                { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
+                , expect = Http.expectJson responseToMsg decodeCapsuleDetails
+                , body =
+                    Http.jsonBody
+                        (Encode.object
+                            [ ( "name", Encode.string capsuleName )
+                            , ( "project_name", Encode.string projectName )
+                            ]
+                        )
+                }
+
+        Just p ->
+            post
+                { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
+                , expect = Http.expectJson responseToMsg decodeCapsuleDetails
+                , body =
+                    Http.jsonBody
+                        (Encode.object
+                            [ ( "name", Encode.string capsuleName )
+                            , ( "project_id", Encode.int p.id )
+                            ]
+                        )
+                }
 
 
 

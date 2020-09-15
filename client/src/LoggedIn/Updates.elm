@@ -309,7 +309,7 @@ updateUploadSlideShow global msg { session } form =
             case form.capsule of
                 Just c ->
                     ( LoggedIn.Model session (LoggedIn.Home form)
-                    , Api.validateCapsule resultToMsg4 form.projectName form.capsuleName c
+                    , Api.validateCapsule resultToMsg4 form.projectSelected form.projectName form.capsuleName c
                     )
 
                 Nothing ->
@@ -319,7 +319,7 @@ updateUploadSlideShow global msg { session } form =
             case form.capsule of
                 Just c ->
                     ( LoggedIn.Model session (LoggedIn.Home form)
-                    , Api.validateCapsule resultToMsg5 form.projectName form.capsuleName c
+                    , Api.validateCapsule resultToMsg5 form.projectSelected form.projectName form.capsuleName c
                     )
 
                 Nothing ->

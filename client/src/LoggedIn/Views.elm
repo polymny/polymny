@@ -527,7 +527,12 @@ dropdownConfig =
                 , Element.el [ Font.size 16 ] (Element.text i.name)
                 ]
     in
-    Dropdown.filterable (\x -> Core.LoggedInMsg (LoggedIn.DropdownMsg x)) (\_ -> Core.Noop) itemToPrompt itemToElement .name
+    Dropdown.filterable
+        (\x -> Core.LoggedInMsg (LoggedIn.DropdownMsg x))
+        (\x -> Core.LoggedInMsg (LoggedIn.OptionPicked x))
+        itemToPrompt
+        itemToElement
+        .name
         |> Dropdown.withContainerAttributes containerAttrs
         |> Dropdown.withSelectAttributes selectAttrs
         |> Dropdown.withListAttributes listAttrs

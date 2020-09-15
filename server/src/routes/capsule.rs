@@ -587,12 +587,35 @@ pub fn upload_record(
 /// Data for capsule validation.
 #[derive(AsChangeset, Deserialize, Debug)]
 #[table_name = "capsules"]
-pub struct CapsuleValidation {
+pub struct CapsuleValidationUpdate {
     /// Whether the capsule will be active or not.
     pub active: Option<bool>,
 
     /// The new name of the capsule.
     pub name: Option<String>,
+}
+
+/// Data for capsule validation.
+#[derive(Deserialize, Debug)]
+pub struct CapsuleValidation {
+    /// The new name of the capsule.
+    pub name: Option<String>,
+
+    /// The id of the project in which to add the capsule.
+    pub project_id: Option<i32>,
+
+    /// The name of the project if the user wants to create a new project.
+    pub project_name: Option<String>,
+}
+
+impl CapsuleValidation {
+    /// Extracts the capsule validation update data.
+    pub fn to_changeset(&self) -> CapsuleValidationUpdate {
+        CapsuleValidationUpdate {
+            active: Some(true),
+            name: self.name.clone(),
+        }
+    }
 }
 
 /// Validates a capsule.
@@ -604,15 +627,16 @@ pub fn validate_capsule(
     data: Json<CapsuleValidation>,
 ) -> Result<JsonValue> {
     user.get_capsule_by_id(capsule_id, &db)?;
+
     {
-        let mut data = data.into_inner();
-        data.active = Some(true);
+        let data = data.into_inner().to_changeset();
         use crate::schema::capsules::dsl::id as cid;
         diesel::update(capsules::table)
             .filter(cid.eq(capsule_id))
             .set(&data)
             .execute(&db.0)?;
     }
+
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
