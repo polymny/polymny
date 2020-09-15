@@ -646,11 +646,10 @@ pub fn validate_capsule(
 
         if let Some(project_id) = data.project_id {
             use crate::schema::capsules_projects;
-            diesel::delete(capsules_projects::table)
+            diesel::update(capsules_projects::table)
                 .filter(capsules_projects::dsl::capsule_id.eq(capsule.id))
+                .set(capsules_projects::dsl::project_id.eq(project_id))
                 .execute(&db.0)?;
-
-            CapsulesProject::new(&db.0, capsule.id, project_id)?;
         }
 
         if let Some(project_name) = data.project_name {
