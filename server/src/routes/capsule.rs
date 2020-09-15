@@ -25,7 +25,7 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::{Capsule, PublishedType};
+use crate::db::capsule::{Capsule, CapsulesProject, PublishedType};
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
@@ -626,15 +626,47 @@ pub fn validate_capsule(
     capsule_id: i32,
     data: Json<CapsuleValidation>,
 ) -> Result<JsonValue> {
-    user.get_capsule_by_id(capsule_id, &db)?;
+    let capsule = user.get_capsule_by_id(capsule_id, &db)?;
 
     {
-        let data = data.into_inner().to_changeset();
+        let data = data.into_inner();
+
+        // xor between data.project_id and data.project_name. It can be one or the other, but not
+        // both
+        if data.project_id.is_some() == data.project_name.is_some() {
+            todo!("Better error message");
+        }
+
+        let update = data.to_changeset();
         use crate::schema::capsules::dsl::id as cid;
         diesel::update(capsules::table)
             .filter(cid.eq(capsule_id))
-            .set(&data)
+            .set(&update)
             .execute(&db.0)?;
+
+        if let Some(project_id) = data.project_id {
+            use crate::schema::capsules_projects;
+            diesel::delete(capsules_projects::table)
+                .filter(capsules_projects::dsl::capsule_id.eq(capsule.id))
+                .execute(&db.0)?;
+
+            CapsulesProject::new(&db.0, capsule.id, project_id)?;
+        }
+
+        if let Some(project_name) = data.project_name {
+            // This means that the project was just created, so we will rename it.
+            use crate::schema::projects;
+
+            let old_projects = capsule.get_projects(&db)?;
+
+            // There should be only one project
+            assert!(old_projects.len() == 1);
+
+            diesel::update(projects::table)
+                .filter(projects::dsl::id.eq(old_projects[0].id))
+                .set(projects::dsl::project_name.eq(project_name))
+                .execute(&db.0)?;
+        }
     }
 
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
