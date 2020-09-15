@@ -97,7 +97,7 @@ update global session msg model =
                         List.head (List.drop model.gos model.details.structure)
 
                     newTransitions =
-                        case ( structure, transitions ) of
+                        case ( structure, Debug.log "transtions = " transitions ) of
                             ( Just s, Just { started, nextSlides } ) ->
                                 Just { s | transitions = List.reverse (List.map (\x -> x - started) nextSlides) }
 
