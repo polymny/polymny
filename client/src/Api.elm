@@ -42,6 +42,7 @@ module Api exposing
     , updateOptions
     , updateSlide
     , updateSlideStructure
+    , validateCapsule
     )
 
 import Dict exposing (Dict)
@@ -405,6 +406,15 @@ decodeCapsuleDetails =
 detailsSortSlides : CapsuleDetails -> List (List Slide)
 detailsSortSlides details =
     List.map .slides details.structure
+
+
+validateCapsule : (Result Http.Error () -> msg) -> CapsuleDetails -> Cmd msg
+validateCapsule responseToMsg content =
+    post
+        { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
+        , expect = Http.expectWhatever responseToMsg
+        , body = Http.emptyBody
+        }
 
 
 

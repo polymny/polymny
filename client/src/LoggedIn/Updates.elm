@@ -306,6 +306,14 @@ updateUploadSlideShow global msg { session } form =
             , Cmd.none
             )
 
+        LoggedIn.UploadSlideShowGoToAcquisition ->
+            case form.capsule of
+                Just c ->
+                    ( LoggedIn.Model session (LoggedIn.Home form), Api.validateCapsule resultToMsg4 c )
+
+                Nothing ->
+                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
 resultToMsg project result =
@@ -347,3 +355,8 @@ resultToMsg3 result =
         )
         (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result
+
+
+resultToMsg4 : Result e () -> Core.Msg
+resultToMsg4 result =
+    Core.Noop

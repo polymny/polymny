@@ -80,6 +80,7 @@ type UploadSlideShowMsg
     | UploadSlideShowError
     | UploadSlideShowChangeProjectName String
     | UploadSlideShowChangeCapsuleName String
+    | UploadSlideShowGoToAcquisition
 
 
 initUploadForm : UploadForm

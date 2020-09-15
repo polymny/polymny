@@ -43,6 +43,7 @@ table! {
         structure -> Json,
         published -> Published_type,
         edition_options -> Json,
+        active -> Bool,
     }
 }
 

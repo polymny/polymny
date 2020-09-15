@@ -140,6 +140,9 @@ prePreparationView global session uploadForm =
                             (regroupSlides uploadForm.numberOfSlidesPerRow capsule.slides)
                         )
 
+        goToAcquisition =
+            Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowGoToAcquisition)
+
         buttons =
             Element.row [ Element.width Element.fill ]
                 [ Element.row [ Element.alignLeft ]
@@ -147,7 +150,7 @@ prePreparationView global session uploadForm =
                     ]
                 , Element.row [ Element.spacing 10, Element.alignRight ]
                     [ Ui.simpleButton Nothing "Organiser les planches"
-                    , Ui.primaryButton Nothing "Commencer l'enregistrement"
+                    , Ui.primaryButton (Just goToAcquisition) "Commencer l'enregistrement"
                     ]
                 ]
 

@@ -86,6 +86,9 @@ pub struct Capsule {
     ///  ]
     /// ```
     pub edition_options: Json,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -119,6 +122,9 @@ pub struct NewCapsule {
 
     /// The structure of the editions options.
     pub edition_options: Option<Json>,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
 }
 
 /// A link between a capsule and a project.
@@ -169,6 +175,7 @@ impl Capsule {
             structure: json!([]),
             published: PublishedType::NotPublished,
             edition_options: Some(json!([])),
+            active: false,
         }
         .save(&database)?;
 
@@ -200,8 +207,10 @@ impl Capsule {
             structure: json!([]),
             published: PublishedType::NotPublished,
             edition_options: None,
+            active: false,
         })
     }
+
     /// Gets a capsule from its id.
     pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;

@@ -120,7 +120,19 @@ impl Project {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
         Ok(cap_p
             .into_iter()
-            .map(|x| Capsule::get_by_id(x.capsule_id, &db))
+            .filter_map(|x| {
+                let c = Capsule::get_by_id(x.capsule_id, &db);
+                match c {
+                    Ok(c) => {
+                        if c.active {
+                            Some(Ok(c))
+                        } else {
+                            None
+                        }
+                    }
+                    Err(e) => Some(Err(e)),
+                }
+            })
             .collect::<Result<Vec<Capsule>>>()?)
     }
 

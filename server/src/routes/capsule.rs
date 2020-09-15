@@ -577,6 +577,38 @@ pub fn upload_record(
     format_capsule_data(&db, &capsule)
 }
 
+/// Data for capsule validation.
+#[derive(AsChangeset, Deserialize, Debug)]
+#[table_name = "capsules"]
+pub struct CapsuleValidation {
+    /// Whether the capsule will be active or not.
+    pub active: Option<bool>,
+
+    /// The new name of the capsule.
+    pub name: Option<String>,
+}
+
+/// Validates a capsule.
+#[post("/capsule/<capsule_id>/validate", data = "<data>")]
+pub fn validate_capsule(
+    db: Database,
+    user: User,
+    capsule_id: i32,
+    data: Json<CapsuleValidation>,
+) -> Result<JsonValue> {
+    user.get_capsule_by_id(capsule_id, &db)?;
+    {
+        let mut data = data.into_inner();
+        data.active = Some(true);
+        use crate::schema::capsules::dsl::id as cid;
+        diesel::update(capsules::table)
+            .filter(cid.eq(capsule_id))
+            .set(&data)
+            .execute(&db.0)?;
+    }
+    Ok(json!(user.get_capsule_by_id(capsule_id, &db)?))
+}
+
 /// Post inout data for edition
 #[derive(Deserialize, Debug)]
 pub struct PostEdition {
