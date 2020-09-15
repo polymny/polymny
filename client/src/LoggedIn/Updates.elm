@@ -309,7 +309,7 @@ updateUploadSlideShow global msg { session } form =
         LoggedIn.UploadSlideShowGoToAcquisition ->
             case form.capsule of
                 Just c ->
-                    ( LoggedIn.Model session (LoggedIn.Home form), Api.validateCapsule resultToMsg4 c )
+                    ( LoggedIn.Model session (LoggedIn.Home form), Api.validateCapsule resultToMsg4 form.projectName form.capsuleName c )
 
                 Nothing ->
                     ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )

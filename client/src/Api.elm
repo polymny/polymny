@@ -408,12 +408,12 @@ detailsSortSlides details =
     List.map .slides details.structure
 
 
-validateCapsule : (Result Http.Error () -> msg) -> CapsuleDetails -> Cmd msg
-validateCapsule responseToMsg content =
+validateCapsule : (Result Http.Error () -> msg) -> String -> String -> CapsuleDetails -> Cmd msg
+validateCapsule responseToMsg projectName capsuleName content =
     post
         { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
         , expect = Http.expectWhatever responseToMsg
-        , body = Http.emptyBody
+        , body = Http.jsonBody (Encode.object [ ( "name", Encode.string capsuleName ) ])
         }
 
 

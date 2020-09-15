@@ -200,7 +200,7 @@ newCapsuleView : Core.Global -> Api.Capsule -> Element Core.Msg
 newCapsuleView global capsule =
     Input.button []
         { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
-        , label = Element.text (String.dropRight 38 capsule.name)
+        , label = Element.text capsule.name
         }
 
 
@@ -228,7 +228,7 @@ newProjectView global ( project, even ) =
             title =
                 Input.button []
                     { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
-                    , label = Element.text (prefix ++ String.dropRight 38 project.name)
+                    , label = Element.text (prefix ++ project.name)
                     }
           in
           if project.folded then
@@ -367,7 +367,7 @@ projectHeader global project =
                 )
             )
           <|
-            String.dropRight 38 project.name
+            project.name
         , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
         ]
 
@@ -386,7 +386,7 @@ projectView : Core.Global -> Api.Project -> Maybe NewCapsule.Model -> Element Co
 projectView global project newCapsuleModel =
     let
         headers =
-            headerView [] <| Element.text (" Projet " ++ String.dropRight 38 project.name)
+            headerView [] <| Element.text (" Projet " ++ project.name)
 
         newCapsuleForm =
             case newCapsuleModel of
@@ -427,7 +427,7 @@ capsuleView capsule =
                 )
             )
           <|
-            String.dropRight 38 capsule.name
+            capsule.name
         , Element.text capsule.description
         ]
 
