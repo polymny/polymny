@@ -8,10 +8,6 @@ import Core.Types as Core
 import Dropdown
 import Edition.Types as Edition
 import Edition.Updates as Edition
-import Element exposing (Element)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font as Font
 import File
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
@@ -228,13 +224,16 @@ update msg global { session, tab } =
                             uploadForm.projectName
 
                 ( newModel, newCmd ) =
-                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown (List.map .name session.projects)
+                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown session.projects
             in
             ( global
             , LoggedIn.Model session
                 (LoggedIn.Home { uploadForm | projectName = newProjectName, dropdown = newModel })
             , newCmd
             )
+
+        ( LoggedIn.OptionPicked option, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectSelected = option }), Cmd.none )
 
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
@@ -309,10 +308,35 @@ updateUploadSlideShow global msg { session } form =
         LoggedIn.UploadSlideShowGoToAcquisition ->
             case form.capsule of
                 Just c ->
-                    ( LoggedIn.Model session (LoggedIn.Home form), Api.validateCapsule resultToMsg4 form.projectName form.capsuleName c )
+                    ( LoggedIn.Model session (LoggedIn.Home form)
+                    , Api.validateCapsule resultToMsg4 form.projectName form.capsuleName c
+                    )
 
                 Nothing ->
                     ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+
+        LoggedIn.UploadSlideShowGoToPreparation ->
+            case form.capsule of
+                Just c ->
+                    ( LoggedIn.Model session (LoggedIn.Home form)
+                    , Api.validateCapsule resultToMsg5 form.projectName form.capsuleName c
+                    )
+
+                Nothing ->
+                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+
+        LoggedIn.UploadSlideShowCancel ->
+            ( LoggedIn.Model session
+                (LoggedIn.Home
+                    { form
+                        | status = Status.NotSent
+                        , file = Nothing
+                        , capsule = Nothing
+                        , projectSelected = Nothing
+                    }
+                )
+            , Cmd.none
+            )
 
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
@@ -357,6 +381,29 @@ resultToMsg3 result =
         result
 
 
-resultToMsg4 : Result e () -> Core.Msg
+resultToMsg4 : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg4 result =
-    Core.Noop
+    case result of
+        Ok o ->
+            Core.LoggedInMsg (LoggedIn.AcquisitionClicked o)
+
+        Err e ->
+            let
+                _ =
+                    Debug.log "Request fail" e
+            in
+            Core.Noop
+
+
+resultToMsg5 : Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg5 result =
+    case result of
+        Ok o ->
+            Core.LoggedInMsg (LoggedIn.PreparationClicked o)
+
+        Err e ->
+            let
+                _ =
+                    Debug.log "Request fail" e
+            in
+            Core.Noop

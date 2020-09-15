@@ -613,7 +613,7 @@ pub fn validate_capsule(
             .set(&data)
             .execute(&db.0)?;
     }
-    Ok(json!(user.get_capsule_by_id(capsule_id, &db)?))
+    format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
 /// Post inout data for edition

@@ -35,7 +35,8 @@ type alias UploadForm =
     , capsuleName : String
     , capsule : Maybe Api.CapsuleDetails
     , numberOfSlidesPerRow : Int
-    , dropdown : Dropdown.State String
+    , dropdown : Dropdown.State Api.Project
+    , projectSelected : Maybe Api.Project
     }
 
 
@@ -69,7 +70,8 @@ type Msg
     | SettingsClicked
     | SettingsMsg Settings.Msg
     | ToggleFoldedProject Int
-    | DropdownMsg (Dropdown.Msg String)
+    | DropdownMsg (Dropdown.Msg Api.Project)
+    | OptionPicked (Maybe Api.Project)
 
 
 type UploadSlideShowMsg
@@ -81,11 +83,13 @@ type UploadSlideShowMsg
     | UploadSlideShowChangeProjectName String
     | UploadSlideShowChangeCapsuleName String
     | UploadSlideShowGoToAcquisition
+    | UploadSlideShowGoToPreparation
+    | UploadSlideShowCancel
 
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing 5 (Dropdown.init "")
+    UploadForm Status.NotSent Nothing "" "" Nothing 5 (Dropdown.init "") Nothing
 
 
 init : Tab

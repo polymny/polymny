@@ -95,7 +95,7 @@ prePreparationView global session uploadForm =
         projectField =
             Element.column [ Element.width Element.fill, Element.spacing 10 ]
                 [ Element.text "Nom du projet"
-                , Dropdown.view dropdownConfig uploadForm.dropdown (List.map .name session.projects)
+                , Dropdown.view dropdownConfig uploadForm.dropdown session.projects
                 ]
 
         -- Input.text []
@@ -140,16 +140,22 @@ prePreparationView global session uploadForm =
                             (regroupSlides uploadForm.numberOfSlidesPerRow capsule.slides)
                         )
 
+        cancel =
+            Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowCancel)
+
         goToAcquisition =
             Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowGoToAcquisition)
+
+        goToPreparation =
+            Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowGoToPreparation)
 
         buttons =
             Element.row [ Element.width Element.fill ]
                 [ Element.row [ Element.alignLeft ]
-                    [ Ui.simpleButton Nothing "Annuler"
+                    [ Ui.simpleButton (Just cancel) "Annuler"
                     ]
                 , Element.row [ Element.spacing 10, Element.alignRight ]
-                    [ Ui.simpleButton Nothing "Organiser les planches"
+                    [ Ui.simpleButton (Just goToPreparation) "Organiser les planches"
                     , Ui.primaryButton (Just goToAcquisition) "Commencer l'enregistrement"
                     ]
                 ]
@@ -470,7 +476,7 @@ regroupSlides number list =
             List.reverse ((List.map Just h ++ List.repeat (number - List.length h) Nothing) :: List.map (\x -> List.map Just x) t)
 
 
-dropdownConfig : Dropdown.Config String Core.Msg
+dropdownConfig : Dropdown.Config Api.Project Core.Msg
 dropdownConfig =
     let
         containerAttrs =
@@ -497,7 +503,7 @@ dropdownConfig =
             ]
 
         itemToPrompt item =
-            Element.text item
+            Element.text item.name
 
         itemToElement selected highlighted i =
             let
@@ -518,10 +524,10 @@ dropdownConfig =
                 , Element.width Element.fill
                 ]
                 [ Element.el [] (Element.text "-")
-                , Element.el [ Font.size 16 ] (Element.text i)
+                , Element.el [ Font.size 16 ] (Element.text i.name)
                 ]
     in
-    Dropdown.filterable (\x -> Core.LoggedInMsg (LoggedIn.DropdownMsg x)) (\_ -> Core.Noop) itemToPrompt itemToElement identity
+    Dropdown.filterable (\x -> Core.LoggedInMsg (LoggedIn.DropdownMsg x)) (\_ -> Core.Noop) itemToPrompt itemToElement .name
         |> Dropdown.withContainerAttributes containerAttrs
         |> Dropdown.withSelectAttributes selectAttrs
         |> Dropdown.withListAttributes listAttrs
