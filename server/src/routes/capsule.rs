@@ -754,6 +754,8 @@ pub fn capsule_edition(
     for (gos_index, gos) in structure.into_iter().enumerate() {
         // GoS iteration
 
+        //TODO for robustness : check gos.transitions  == gos.slides -1
+        //if not raise inconsitenscy error
         // Slide timestamps (duration, offset) of each slides accorfing user transitions
         let timestamps: Vec<(String, Option<String>)> = {
             let mut input = Vec::new();
@@ -783,12 +785,6 @@ pub fn capsule_edition(
         for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
-            let offset = vec!["-ss", &timestamps[slide_index].0];
-            let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
-                Some(x) => Some(vec!["-t", x]),
-                None => None,
-            };
-
             match slide.extra {
                 Some(asset) => {
                     info!(
@@ -811,15 +807,18 @@ pub fn capsule_edition(
                         capsule.id, gos_index, slide_index
                     ));
                     let filter_complex = format!(
-                    "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
-                    production_choices.size_in_pixels(),
-                    production_choices.position_in_pixels(),
-                );
+                        "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
+                        production_choices.size_in_pixels(),
+                        production_choices.position_in_pixels(),
+                    );
 
                     let mut record = config.data_path.clone();
 
                     match (&gos.record_path, &gos.background_path) {
+                        // matting case
                         (Some(record_path), Some(background_path)) if config.matting_enabled => {
+                            // TODO timstamps( offset and  duration) to be computed for
+                            // matting case
                             let mut record_clone = record.clone();
                             record.push(record_path);
                             record_clone.push(background_path);
@@ -890,7 +889,14 @@ pub fn capsule_edition(
                             }
                         }
 
+                        // video production with webcam records available
                         (Some(record_path), _) => {
+                            let offset = vec!["-ss", &timestamps[slide_index].0];
+                            let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
+                                Some(x) => Some(vec!["-t", x]),
+                                None => None,
+                            };
+
                             record.push(record_path);
 
                             if post_data.with_video.unwrap_or(true) {
@@ -941,8 +947,8 @@ pub fn capsule_edition(
                             }
                         }
 
+                        // No record generate a video with slide only and an empty audio track.
                         (None, _) => {
-                            // No record generate a video with slide only and an empty audio track.
                             ffmpeg_command.extend(
                                 vec![
                                     "ffmpeg",
