@@ -792,10 +792,10 @@ pub fn capsule_edition(
                     };
 
                     let filter_complex = format!(
-                    "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
-                    size_in_pixels(&webcam_size),
-                    position_in_pixels(&webcam_position)
-                );
+                        "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
+                        size_in_pixels(&webcam_size),
+                        position_in_pixels(&webcam_position)
+                    );
 
                     let mut record = config.data_path.clone();
 

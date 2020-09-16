@@ -95,7 +95,7 @@ prePreparationView global session uploadForm =
         projectField =
             Element.column [ Element.width Element.fill, Element.spacing 10 ]
                 [ Element.text "Nom du projet"
-                , Dropdown.view dropdownConfig uploadForm.dropdown session.projects
+                , Dropdown.view dropdownConfig uploadForm.dropdown (List.sortBy (\x -> -x.lastVisited) session.projects)
                 ]
 
         -- Input.text []
