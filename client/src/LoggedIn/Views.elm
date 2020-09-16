@@ -115,29 +115,36 @@ prePreparationView global session uploadForm =
         slidesLabel =
             Element.text "Regroupement des planches"
 
-        viewSlide slide =
+        viewSlide : Int -> Maybe ( Int, Api.Slide ) -> Element Core.Msg
+        viewSlide index slide =
             case slide of
                 Nothing ->
                     Element.el [ Element.width Element.fill ] Element.none
 
-                Just s ->
-                    Element.image
-                        [ Element.width Element.fill, Element.padding 5 ]
-                        { description = "", src = s.asset.asset_path }
+                Just ( i, s ) ->
+                    Input.button
+                        [ Element.width Element.fill, Element.padding 10, Background.color (getColor i) ]
+                        { onPress =
+                            Just
+                                (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowSlideClicked index)))
+                        , label =
+                            Element.image [ Element.width Element.fill ]
+                                { description = "", src = s.asset.asset_path }
+                        }
 
         slides =
-            case uploadForm.capsule of
+            case uploadForm.slides of
                 Nothing ->
                     Ui.spinner
 
-                Just capsule ->
+                Just s ->
                     Element.column [ Element.width Element.fill ]
                         (List.map
                             (\x ->
                                 Element.row [ Element.width Element.fill ]
-                                    (List.map viewSlide x)
+                                    (List.indexedMap viewSlide x)
                             )
-                            (regroupSlides uploadForm.numberOfSlidesPerRow capsule.slides)
+                            (regroupSlides uploadForm.numberOfSlidesPerRow s)
                         )
 
         cancel =
@@ -449,7 +456,7 @@ newCapsuleButton project =
         "New capsule"
 
 
-regroupSlidesAux : Int -> List (List Api.Slide) -> List Api.Slide -> List (List Api.Slide)
+regroupSlidesAux : Int -> List (List ( Int, Api.Slide )) -> List ( Int, Api.Slide ) -> List (List ( Int, Api.Slide ))
 regroupSlidesAux number current list =
     case ( list, current ) of
         ( [], _ ) ->
@@ -466,7 +473,7 @@ regroupSlidesAux number current list =
                 regroupSlidesAux number ([ h ] :: h2 :: t2) t
 
 
-regroupSlides : Int -> List Api.Slide -> List (List (Maybe Api.Slide))
+regroupSlides : Int -> List ( Int, Api.Slide ) -> List (List (Maybe ( Int, Api.Slide )))
 regroupSlides number list =
     case regroupSlidesAux number [] list of
         [] ->
@@ -539,3 +546,25 @@ dropdownConfig =
         |> Dropdown.withSearchAttributes searchAttrs
         |> Dropdown.withFilterPlaceholder "Entrez un nom de projet"
         |> Dropdown.withPromptElement (Element.el [ Element.width Element.fill ] (Element.text "Choisir un projet"))
+
+
+getColor : Int -> Element.Color
+getColor index =
+    let
+        colors =
+            [ Element.rgb255 31 119 180
+            , Element.rgb255 255 127 14
+            , Element.rgb255 44 160 44
+            , Element.rgb255 215 39 40
+            , Element.rgb255 148 103 189
+            , Element.rgb255 140 86 75
+            , Element.rgb255 227 119 194
+            , Element.rgb255 127 127 127
+            , Element.rgb255 188 189 34
+            , Element.rgb255 23 190 207
+            ]
+
+        newIndex =
+            modBy (List.length colors) index
+    in
+    Maybe.withDefault (Element.rgb255 31 119 180) (List.head (List.drop newIndex colors))

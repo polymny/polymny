@@ -285,7 +285,14 @@ updateUploadSlideShow global msg { session, tab } form =
 
             else
                 ( global
-                , LoggedIn.Model session (LoggedIn.Home { form | status = Status.Success (), capsule = Just capsule })
+                , LoggedIn.Model session
+                    (LoggedIn.Home
+                        { form
+                            | status = Status.Success ()
+                            , capsule = Just capsule
+                            , slides = Just (List.indexedMap Tuple.pair capsule.slides)
+                        }
+                    )
                 , Cmd.none
                 )
 
@@ -349,6 +356,57 @@ updateUploadSlideShow global msg { session, tab } form =
                         , projectSelected = Nothing
                     }
                 )
+            , Cmd.none
+            )
+
+        LoggedIn.UploadSlideShowSlideClicked index ->
+            let
+                increment : List ( Int, Api.Slide ) -> List ( Int, Api.Slide )
+                increment =
+                    List.map (\( x, y ) -> ( x + 1, y ))
+
+                slides =
+                    case form.slides of
+                        Nothing ->
+                            Nothing
+
+                        Just s ->
+                            case ( List.head (List.drop (index - 1) s), List.head (List.drop index s) ) of
+                                ( _, Nothing ) ->
+                                    Nothing
+
+                                ( Nothing, _ ) ->
+                                    form.slides
+
+                                ( Just ( ip, _ ), Just ( i, slide ) ) ->
+                                    if ip == i then
+                                        Just (List.take index s ++ (( i + 1, slide ) :: List.drop (index + 1) (increment s)))
+
+                                    else
+                                        Just (List.take index s ++ (( ip, slide ) :: List.drop (index + 1) s))
+
+                reindexSlidesAux : Int -> Int -> List ( Int, Api.Slide ) -> List ( Int, Api.Slide ) -> List ( Int, Api.Slide )
+                reindexSlidesAux counter currentValue current input =
+                    case input of
+                        [] ->
+                            current
+
+                        ( i, s ) :: t ->
+                            if i /= currentValue then
+                                reindexSlidesAux (counter + 1) i (( counter + 1, s ) :: current) t
+
+                            else
+                                reindexSlidesAux counter i (( counter, s ) :: current) t
+
+                reindexSlides : List ( Int, Api.Slide ) -> List ( Int, Api.Slide )
+                reindexSlides input =
+                    List.reverse (reindexSlidesAux 0 0 [] input)
+
+                newSlides =
+                    Maybe.map reindexSlides slides
+            in
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { form | slides = newSlides })
             , Cmd.none
             )
 

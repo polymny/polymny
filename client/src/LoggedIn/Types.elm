@@ -34,6 +34,7 @@ type alias UploadForm =
     , projectName : String
     , capsuleName : String
     , capsule : Maybe Api.CapsuleDetails
+    , slides : Maybe (List ( Int, Api.Slide ))
     , numberOfSlidesPerRow : Int
     , dropdown : Dropdown.State Api.Project
     , projectSelected : Maybe Api.Project
@@ -85,11 +86,12 @@ type UploadSlideShowMsg
     | UploadSlideShowGoToAcquisition
     | UploadSlideShowGoToPreparation
     | UploadSlideShowCancel
+    | UploadSlideShowSlideClicked Int
 
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing 5 (Dropdown.init "") Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing
 
 
 init : Tab
