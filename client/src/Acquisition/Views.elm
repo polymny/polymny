@@ -38,7 +38,6 @@ promptView model =
     Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
-        , Background.color (Element.rgb255 255 0 0)
         ]
         [ Element.text "Prompt" ]
 
@@ -50,17 +49,12 @@ slideView model =
             Element.el
                 [ Element.width Element.fill
                 , Element.height (Element.fillPortion 2)
-                , Background.color (Element.rgb255 0 0 255)
+                , Element.htmlAttribute (Html.Attributes.style "background" ("url(" ++ h.asset.asset_path ++ ")"))
+                , Element.htmlAttribute (Html.Attributes.style "background-size" "contain")
+                , Element.htmlAttribute (Html.Attributes.style "background-repeat" "no-repeat")
+                , Element.htmlAttribute (Html.Attributes.style "background-position" "center")
                 ]
-                (Element.image
-                    [ Element.width Element.fill
-                    , Element.height Element.shrink
-                    , Border.color Colors.artIrises
-                    , Border.rounded 5
-                    , Border.width 1
-                    ]
-                    { src = h.asset.asset_path, description = "Slide" }
-                )
+                Element.none
 
         _ ->
             Element.none
