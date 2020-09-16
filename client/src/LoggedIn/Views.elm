@@ -115,13 +115,13 @@ prePreparationView global session uploadForm =
         slidesLabel =
             Element.text "Regroupement des planches"
 
-        viewSlide : Int -> Maybe ( Int, Api.Slide ) -> Element Core.Msg
-        viewSlide index slide =
+        viewSlide : Maybe ( Int, ( Int, Api.Slide ) ) -> Element Core.Msg
+        viewSlide slide =
             case slide of
                 Nothing ->
                     Element.el [ Element.width Element.fill ] Element.none
 
-                Just ( i, s ) ->
+                Just ( index, ( i, s ) ) ->
                     Input.button
                         [ Element.width Element.fill, Element.padding 10, Background.color (getColor i) ]
                         { onPress =
@@ -138,13 +138,17 @@ prePreparationView global session uploadForm =
                     Ui.spinner
 
                 Just s ->
+                    let
+                        enumeratedSlides =
+                            List.indexedMap (\x y -> ( x, y )) s
+                    in
                     Element.column [ Element.width Element.fill ]
                         (List.map
                             (\x ->
                                 Element.row [ Element.width Element.fill ]
-                                    (List.indexedMap viewSlide x)
+                                    (List.map viewSlide x)
                             )
-                            (regroupSlides uploadForm.numberOfSlidesPerRow s)
+                            (regroupSlides uploadForm.numberOfSlidesPerRow enumeratedSlides)
                         )
 
         cancel =
@@ -456,7 +460,7 @@ newCapsuleButton project =
         "New capsule"
 
 
-regroupSlidesAux : Int -> List (List ( Int, Api.Slide )) -> List ( Int, Api.Slide ) -> List (List ( Int, Api.Slide ))
+regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
 regroupSlidesAux number current list =
     case ( list, current ) of
         ( [], _ ) ->
@@ -473,7 +477,7 @@ regroupSlidesAux number current list =
                 regroupSlidesAux number ([ h ] :: h2 :: t2) t
 
 
-regroupSlides : Int -> List ( Int, Api.Slide ) -> List (List (Maybe ( Int, Api.Slide )))
+regroupSlides : Int -> List ( Int, ( Int, Api.Slide ) ) -> List (List (Maybe ( Int, ( Int, Api.Slide ) )))
 regroupSlides number list =
     case regroupSlidesAux number [] list of
         [] ->
