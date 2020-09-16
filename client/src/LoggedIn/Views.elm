@@ -165,10 +165,15 @@ prePreparationView global session uploadForm =
                 [ Element.row [ Element.alignLeft ]
                     [ Ui.simpleButton (Just cancel) "Annuler"
                     ]
-                , Element.row [ Element.spacing 10, Element.alignRight ]
-                    [ Ui.simpleButton (Just goToPreparation) "Organiser les planches"
-                    , Ui.primaryButton (Just goToAcquisition) "Commencer l'enregistrement"
-                    ]
+                , case uploadForm.slides of
+                    Just _ ->
+                        Element.row [ Element.spacing 10, Element.alignRight ]
+                            [ Ui.simpleButton (Just goToPreparation) "Organiser les planches"
+                            , Ui.primaryButton (Just goToAcquisition) "Commencer l'enregistrement"
+                            ]
+
+                    Nothing ->
+                        Element.none
                 ]
 
         form =
