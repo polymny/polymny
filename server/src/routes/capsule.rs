@@ -593,10 +593,13 @@ pub struct CapsuleValidationUpdate {
 
     /// The new name of the capsule.
     pub name: Option<String>,
+
+    /// The gos structure.
+    pub structure: serde_json::Value,
 }
 
 /// Data for capsule validation.
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CapsuleValidation {
     /// The new name of the capsule.
     pub name: Option<String>,
@@ -608,15 +611,29 @@ pub struct CapsuleValidation {
     pub project_name: Option<String>,
 
     /// The gos structure.
-    pub structure: Vec<GosStructure>,
+    pub structure: Vec<Vec<i32>>,
 }
 
 impl CapsuleValidation {
     /// Extracts the capsule validation update data.
     pub fn to_changeset(&self) -> CapsuleValidationUpdate {
+        let new_structure = self
+            .structure
+            .clone()
+            .into_iter()
+            .map(|x| GosStructure {
+                slides: x,
+                transitions: vec![],
+                record_path: None,
+                background_path: None,
+                locked: false,
+            })
+            .collect::<Vec<_>>();
+
         CapsuleValidationUpdate {
             active: Some(true),
             name: self.name.clone(),
+            structure: serde_json!(new_structure),
         }
     }
 }
@@ -640,7 +657,14 @@ pub fn validate_capsule(
             todo!("Better error message");
         }
 
+        for gos in &data.structure {
+            for slide in gos {
+                user.get_slide_by_id(*slide, &db)?;
+            }
+        }
+
         let update = data.to_changeset();
+
         use crate::schema::capsules::dsl::id as cid;
         diesel::update(capsules::table)
             .filter(cid.eq(capsule_id))

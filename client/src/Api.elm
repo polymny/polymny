@@ -41,7 +41,6 @@ module Api exposing
     , slideUploadExtraResource
     , testDatabase
     , testMailer
-    , toInner
     , updateOptions
     , updateSlide
     , updateSlideStructure
@@ -373,21 +372,6 @@ toGos slides gos =
     }
 
 
-toInnerGos : Gos -> InnerGos
-toInnerGos gos =
-    { slides = List.map .id gos.slides
-    , transitions = gos.transitions
-    , record = gos.record
-    , background = gos.background
-    , locked = gos.locked
-    }
-
-
-toInner : CapsuleDetails -> List InnerGos
-toInner capsule =
-    List.map toInnerGos capsule.structure
-
-
 slidesAsDict : List Slide -> Dict Int Slide
 slidesAsDict slides =
     Dict.fromList (List.map (\x -> ( x.id, x )) slides)
@@ -428,8 +412,8 @@ detailsSortSlides details =
     List.map .slides details.structure
 
 
-validateCapsule : (Result Http.Error CapsuleDetails -> msg) -> Maybe Project -> String -> String -> CapsuleDetails -> Cmd msg
-validateCapsule responseToMsg project projectName capsuleName content =
+validateCapsule : (Result Http.Error CapsuleDetails -> msg) -> List (List Int) -> Maybe Project -> String -> String -> CapsuleDetails -> Cmd msg
+validateCapsule responseToMsg structure project projectName capsuleName content =
     case project of
         Nothing ->
             post
@@ -440,6 +424,7 @@ validateCapsule responseToMsg project projectName capsuleName content =
                         (Encode.object
                             [ ( "name", Encode.string capsuleName )
                             , ( "project_name", Encode.string projectName )
+                            , ( "structure", Encode.list (Encode.list Encode.int) structure )
                             ]
                         )
                 }
@@ -453,6 +438,7 @@ validateCapsule responseToMsg project projectName capsuleName content =
                         (Encode.object
                             [ ( "name", Encode.string capsuleName )
                             , ( "project_id", Encode.int p.id )
+                            , ( "structure", Encode.list (Encode.list Encode.int) structure )
                             ]
                         )
                 }

@@ -324,25 +324,25 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
         LoggedIn.UploadSlideShowGoToAcquisition ->
-            case form.capsule of
-                Just c ->
+            case ( form.capsule, form.slides ) of
+                ( Just c, Just s ) ->
                     ( global
                     , LoggedIn.Model session (LoggedIn.Home form)
-                    , Api.validateCapsule resultToMsg4 form.projectSelected form.projectName form.capsuleName c
+                    , Api.validateCapsule resultToMsg4 (convertStructure s) form.projectSelected form.projectName form.capsuleName c
                     )
 
-                Nothing ->
+                _ ->
                     ( global, LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
         LoggedIn.UploadSlideShowGoToPreparation ->
-            case form.capsule of
-                Just c ->
+            case ( form.capsule, form.slides ) of
+                ( Just c, Just s ) ->
                     ( global
                     , LoggedIn.Model session (LoggedIn.Home form)
-                    , Api.validateCapsule resultToMsg5 form.projectSelected form.projectName form.capsuleName c
+                    , Api.validateCapsule resultToMsg5 (convertStructure s) form.projectSelected form.projectName form.capsuleName c
                     )
 
-                Nothing ->
+                _ ->
                     ( global, LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
         LoggedIn.UploadSlideShowCancel ->
@@ -411,9 +411,34 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
 
+getId : ( Int, Api.Slide ) -> Int
+getId ( _, y ) =
+    y.id
+
+
+convertStructureAux : List (List ( Int, Api.Slide )) -> List ( Int, Api.Slide ) -> List (List ( Int, Api.Slide ))
+convertStructureAux current input =
+    case ( input, current ) of
+        ( [], _ ) ->
+            current
+
+        ( h :: t, [] ) ->
+            convertStructureAux [ [ h ] ] t
+
+        ( h :: t, [] :: t2 ) ->
+            convertStructureAux ([ h ] :: t2) t
+
+        ( h :: t, (h2 :: r2) :: t2 ) ->
+            if Tuple.first h == Tuple.first h2 then
+                convertStructureAux ((h :: h2 :: r2) :: t2) t
+
+            else
+                convertStructureAux ([ h ] :: (h2 :: r2) :: t2) t
+
+
 convertStructure : List ( Int, Api.Slide ) -> List (List Int)
 convertStructure input =
-    []
+    List.reverse (List.map List.reverse (List.map (\x -> List.map getId x) (convertStructureAux [] input)))
 
 
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
