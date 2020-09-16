@@ -1,4 +1,4 @@
-module Preparation.Views exposing (gosGhostView, slideGhostView, view)
+module Preparation.Views exposing (gosGhostView, leftColumnView, slideGhostView, view)
 
 import Api
 import Core.Types as Core
@@ -60,15 +60,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-                [ leftColumnView
-                    { details = details
-                    , slides = slides
-                    , uploadForms = uploadForms
-                    , editPrompt = editPrompt
-                    , slideModel = slideModel
-                    , gosModel = gosModel
-                    , t = t
-                    }
+                [ leftColumnView details
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
                     [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
                         [ Ui.primaryButton (Just decreaseMsg) "-"
@@ -636,9 +628,12 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                 (Element.el (Element.width Element.fill :: dragAttributes) media)
 
 
-leftColumnView : Preparation.Model -> Element Core.Msg
-leftColumnView model =
+leftColumnView : Api.CapsuleDetails -> Element Core.Msg
+leftColumnView details =
     let
+        slides =
+            Preparation.setupSlides details
+
         gosView : List Preparation.MaybeSlide -> Element Core.Msg
         gosView gos =
             case gos of
@@ -655,7 +650,7 @@ leftColumnView model =
                         }
 
         goss =
-            List.map gosView model.slides
+            List.map gosView slides
     in
     Element.column
         [ Element.width Element.fill
