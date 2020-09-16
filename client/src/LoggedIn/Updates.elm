@@ -115,7 +115,7 @@ update msg global { session, tab } =
         --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
         --   ( LoggedIn.Model session tab, Cmd.none )
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form ) ->
-            flatten ( global, updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form )
+            updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form
 
         ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
             let
@@ -239,11 +239,12 @@ update msg global { session, tab } =
             ( global, LoggedIn.Model session tab, Cmd.none )
 
 
-updateUploadSlideShow : Core.Global -> LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> ( LoggedIn.Model, Cmd Core.Msg )
-updateUploadSlideShow global msg { session } form =
+updateUploadSlideShow : Core.Global -> LoggedIn.UploadSlideShowMsg -> LoggedIn.Model -> LoggedIn.UploadForm -> ( Core.Global, LoggedIn.Model, Cmd Core.Msg )
+updateUploadSlideShow global msg { session, tab } form =
     case msg of
         LoggedIn.UploadSlideShowSelectFileRequested ->
-            ( LoggedIn.Model session (LoggedIn.Home form)
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home form)
             , Select.file
                 [ "application/pdf" ]
                 (\x ->
@@ -254,7 +255,8 @@ updateUploadSlideShow global msg { session } form =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
-            ( LoggedIn.Model session
+            ( global
+            , LoggedIn.Model session
                 (LoggedIn.Home
                     { form
                         | status = Status.Sent
@@ -263,23 +265,29 @@ updateUploadSlideShow global msg { session } form =
                         , capsuleName = File.name file
                     }
                 )
-            , Api.quickUploadSlideShow resultToMsg1 file
+            , Api.quickUploadSlideShow (resultToMsg1 global.expiry) file
             )
 
         LoggedIn.UploadSlideShowFormSubmitted ->
             case form.file of
                 Nothing ->
-                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+                    ( global, LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
                 Just file ->
-                    ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent })
-                    , Api.quickUploadSlideShow resultToMsg1 file
+                    ( global
+                    , LoggedIn.Model session (LoggedIn.Home { form | status = Status.Sent })
+                    , Api.quickUploadSlideShow (resultToMsg1 global.expiry) file
                     )
 
-        LoggedIn.UploadSlideShowSuccess capsule ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Success (), capsule = Just capsule })
-            , Cmd.none
-            )
+        LoggedIn.UploadSlideShowSuccess expiry capsule ->
+            if expiry < global.expiry then
+                ( global, { session = session, tab = tab }, Cmd.none )
+
+            else
+                ( global
+                , LoggedIn.Model session (LoggedIn.Home { form | status = Status.Success (), capsule = Just capsule })
+                , Cmd.none
+                )
 
         -- let
         --     ( model, cmd ) =
@@ -291,42 +299,48 @@ updateUploadSlideShow global msg { session } form =
         -- , coreCmd
         -- )
         LoggedIn.UploadSlideShowError ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () })
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { form | status = Status.Error () })
             , Cmd.none
             )
 
         LoggedIn.UploadSlideShowChangeProjectName newName ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | projectName = newName })
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { form | projectName = newName })
             , Cmd.none
             )
 
         LoggedIn.UploadSlideShowChangeCapsuleName newName ->
-            ( LoggedIn.Model session (LoggedIn.Home { form | capsuleName = newName })
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { form | capsuleName = newName })
             , Cmd.none
             )
 
         LoggedIn.UploadSlideShowGoToAcquisition ->
             case form.capsule of
                 Just c ->
-                    ( LoggedIn.Model session (LoggedIn.Home form)
+                    ( global
+                    , LoggedIn.Model session (LoggedIn.Home form)
                     , Api.validateCapsule resultToMsg4 form.projectSelected form.projectName form.capsuleName c
                     )
 
                 Nothing ->
-                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+                    ( global, LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
         LoggedIn.UploadSlideShowGoToPreparation ->
             case form.capsule of
                 Just c ->
-                    ( LoggedIn.Model session (LoggedIn.Home form)
+                    ( global
+                    , LoggedIn.Model session (LoggedIn.Home form)
                     , Api.validateCapsule resultToMsg5 form.projectSelected form.projectName form.capsuleName c
                     )
 
                 Nothing ->
-                    ( LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
+                    ( global, LoggedIn.Model session (LoggedIn.Home form), Cmd.none )
 
         LoggedIn.UploadSlideShowCancel ->
-            ( LoggedIn.Model session
+            ( { global | expiry = global.expiry + 1 }
+            , LoggedIn.Model session
                 (LoggedIn.Home
                     { form
                         | status = Status.NotSent
@@ -350,11 +364,11 @@ resultToMsg project result =
         result
 
 
-resultToMsg1 : Result e Api.CapsuleDetails -> Core.Msg
-resultToMsg1 result =
+resultToMsg1 : Int -> Result e Api.CapsuleDetails -> Core.Msg
+resultToMsg1 expiry result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess x
+            Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowSuccess expiry x
         )
         (\_ -> Core.LoggedInMsg <| LoggedIn.UploadSlideShowMsg <| LoggedIn.UploadSlideShowError)
         result

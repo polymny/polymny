@@ -31,6 +31,7 @@ type alias Global =
     , commit : String
     , key : Browser.Navigation.Key
     , numberOfSlidesPerRow : Int
+    , expiry : Int
     }
 
 

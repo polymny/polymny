@@ -78,7 +78,7 @@ type UploadSlideShowMsg
     = UploadSlideShowSelectFileRequested
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
-    | UploadSlideShowSuccess Api.CapsuleDetails
+    | UploadSlideShowSuccess Int Api.CapsuleDetails
     | UploadSlideShowError
     | UploadSlideShowChangeProjectName String
     | UploadSlideShowChangeCapsuleName String

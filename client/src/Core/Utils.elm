@@ -125,6 +125,7 @@ globalFromFlags flags key =
     , commit = commit
     , mattingEnabled = mattingEnabled
     , numberOfSlidesPerRow = 3
+    , expiry = 0
     }
 
 
