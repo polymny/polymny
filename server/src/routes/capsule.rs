@@ -606,6 +606,9 @@ pub struct CapsuleValidation {
 
     /// The name of the project if the user wants to create a new project.
     pub project_name: Option<String>,
+
+    /// The gos structure.
+    pub structure: Vec<GosStructure>,
 }
 
 impl CapsuleValidation {

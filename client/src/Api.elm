@@ -3,6 +3,7 @@ module Api exposing
     , Capsule
     , CapsuleDetails
     , Gos
+    , InnerGos
     , Project
     , PublishedType(..)
     , Session
@@ -22,6 +23,7 @@ module Api exposing
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
+    , encodeSlideStructureFromInts
     , forgotPassword
     , get
     , logOut
@@ -39,6 +41,7 @@ module Api exposing
     , slideUploadExtraResource
     , testDatabase
     , testMailer
+    , toInner
     , updateOptions
     , updateSlide
     , updateSlideStructure
@@ -368,6 +371,21 @@ toGos slides gos =
     , locked = gos.locked
     , background = gos.background
     }
+
+
+toInnerGos : Gos -> InnerGos
+toInnerGos gos =
+    { slides = List.map .id gos.slides
+    , transitions = gos.transitions
+    , record = gos.record
+    , background = gos.background
+    , locked = gos.locked
+    }
+
+
+toInner : CapsuleDetails -> List InnerGos
+toInner capsule =
+    List.map toInnerGos capsule.structure
 
 
 slidesAsDict : List Slide -> Dict Int Slide
@@ -798,6 +816,22 @@ encodeSlideStructure capsule =
                 ]
     in
     Encode.list encodeGos capsule.structure
+
+
+encodeSlideStructureFromInts : List InnerGos -> Encode.Value
+encodeSlideStructureFromInts capsule =
+    let
+        encodeGos : InnerGos -> Encode.Value
+        encodeGos gos =
+            Encode.object
+                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                , ( "background", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.background) )
+                , ( "transitions", Encode.list Encode.int gos.transitions )
+                , ( "slides", Encode.list Encode.int gos.slides )
+                , ( "locked", Encode.bool gos.locked )
+                ]
+    in
+    Encode.list encodeGos capsule
 
 
 updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg

@@ -411,6 +411,11 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
 
+convertStructure : List ( Int, Api.Slide ) -> List (List Int)
+convertStructure input =
+    []
+
+
 resultToMsg : Api.Project -> Result e (List Api.Capsule) -> Core.Msg
 resultToMsg project result =
     Utils.resultToMsg
