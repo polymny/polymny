@@ -27,7 +27,7 @@ use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
     validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
 use crate::Database;
 use crate::{Error, Result};
 
@@ -424,8 +424,8 @@ impl User {
     }
 
     /// Gets Webcam option in db or default values if not set
-    pub fn get_edition_options(&self) -> Result<EditionOptions> {
-        let options = EditionOptions {
+    pub fn get_edition_options(&self) -> Result<ProductionChoices> {
+        let options = ProductionChoices {
             with_video: self
                 .edition_options
                 .get("with_video")

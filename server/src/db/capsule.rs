@@ -9,7 +9,7 @@ use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -317,8 +317,8 @@ impl Capsule {
     }
 
     /// Gets Webcam option in db or default values if not set
-    pub fn get_edition_options(&self) -> Result<EditionOptions> {
-        let options = EditionOptions {
+    pub fn get_edition_options(&self) -> Result<ProductionChoices> {
+        let options = ProductionChoices {
             with_video: self
                 .edition_options
                 .get("with_video")

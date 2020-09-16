@@ -2,7 +2,7 @@
 //!
 
 /// Size of webcam view
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub enum WebcamSize {
     /// Small webcam view
     Small,
@@ -14,8 +14,14 @@ pub enum WebcamSize {
     Large,
 }
 
+impl Default for WebcamSize {
+    fn default() -> Self {
+        WebcamSize::Medium
+    }
+}
+
 /// Position of webc&m view
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub enum WebcamPosition {
     /// Webcam view on the top, left of the slide
     TopLeft,
@@ -28,6 +34,12 @@ pub enum WebcamPosition {
 
     /// Webcam view on the  bottome right of the slide
     BottomRight,
+}
+
+impl Default for WebcamPosition {
+    fn default() -> Self {
+        WebcamPosition::BottomLeft
+    }
 }
 
 /// Convert string to WebcamSize enum
@@ -90,8 +102,8 @@ pub fn position_in_pixels(webcam_position: &WebcamPosition) -> String {
 }
 
 /// Set of Webcam view options
-#[derive(Serialize, Deserialize, Debug)]
-pub struct EditionOptions {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProductionChoices {
     /// Only audio, or audio + video option
     pub with_video: bool,
 
@@ -100,4 +112,24 @@ pub struct EditionOptions {
 
     /// Position of webcam view in slide
     pub webcam_position: WebcamPosition,
+}
+
+impl ProductionChoices {
+    /// Return WebcamSize in pixels
+    pub fn size_in_pixels(&self) -> String {
+        match self.webcam_size {
+            WebcamSize::Small => "200".to_string(),
+            WebcamSize::Medium => "400".to_string(),
+            WebcamSize::Large => "800".to_string(),
+        }
+    }
+    /// Return WebcamPosition in Pixesls (for overlay filter in ffmpeg)
+    pub fn position_in_pixels(&self) -> String {
+        match self.webcam_position {
+            WebcamPosition::TopLeft => "4:4".to_string(),
+            WebcamPosition::TopRight => "W-w-4:4".to_string(),
+            WebcamPosition::BottomLeft => "4:H-h-4".to_string(),
+            WebcamPosition::BottomRight => "W-w-4:H-h-4".to_string(),
+        }
+    }
 }

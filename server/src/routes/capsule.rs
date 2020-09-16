@@ -30,10 +30,7 @@ use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
-use crate::webcam::{
-    position_in_pixels, size_in_pixels, str_to_webcam_position, str_to_webcam_size, EditionOptions,
-    WebcamPosition, WebcamSize,
-};
+use crate::webcam::{ProductionChoices, WebcamPosition, WebcamSize};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -86,6 +83,52 @@ pub struct UpdateCapsuleForm {
 
     /// Reference to generated video for this capsule
     pub video_id: Option<Option<i32>>,
+}
+
+/// Production choices for video Generation
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ApiProductionChoices {
+    /// Video and audio or audio only
+    pub with_video: Option<bool>,
+
+    /// Webcam size
+    pub webcam_size: Option<WebcamSize>,
+
+    /// Webcam  Position
+    pub webcam_position: Option<WebcamPosition>,
+}
+
+impl ApiProductionChoices {
+    /// Convert received production choices
+    pub fn to_edition_options(&self) -> ProductionChoices {
+        ProductionChoices {
+            with_video: self.with_video.unwrap_or(true),
+            webcam_size: self.webcam_size.unwrap_or_default(),
+            webcam_position: self.webcam_position.unwrap_or_default(),
+        }
+    }
+}
+
+/// The structure of a gos.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GosStructure {
+    /// The ids of the slides of the gos.
+    pub slides: Vec<i32>,
+
+    /// The moments when the user went to the next slides, in milliseconds.
+    pub transitions: Vec<i32>,
+
+    /// The path to the record if any.
+    pub record_path: Option<String>,
+
+    /// The path to the background image if any.
+    pub background_path: Option<String>,
+
+    /// Whether the gos is locked or not.
+    pub locked: bool,
+
+    /// Production option
+    pub production_choices: Option<ApiProductionChoices>,
 }
 
 /// internal function for data format
@@ -258,6 +301,7 @@ pub fn upload_slides(
                             slides: vec![slide.id],
                             transitions: vec![],
                             locked: false,
+                            production_choices: None,
                         });
                     }
 
@@ -384,25 +428,6 @@ pub fn upload_logo(
         .execute(&db.0)?;
 
     format_capsule_data(&db, &user.get_capsule_by_id(id, &db)?)
-}
-
-/// The structure of a gos.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GosStructure {
-    /// The ids of the slides of the gos.
-    pub slides: Vec<i32>,
-
-    /// The moments when the user went to the next slides, in milliseconds.
-    pub transitions: Vec<i32>,
-
-    /// The path to the record if any.
-    pub record_path: Option<String>,
-
-    /// The path to the background image if any.
-    pub background_path: Option<String>,
-
-    /// Whether the gos is locked or not.
-    pub locked: bool,
 }
 
 /// order capsule gos and slide
@@ -627,6 +652,7 @@ impl CapsuleValidation {
                 record_path: None,
                 background_path: None,
                 locked: false,
+                production_choices: None,
             })
             .collect::<Vec<_>>();
 
@@ -698,19 +724,6 @@ pub fn validate_capsule(
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
-/// Post inout data for edition
-#[derive(Deserialize, Debug)]
-pub struct PostEdition {
-    /// Video and audio or audio only
-    pub with_video: Option<bool>,
-
-    /// Webcam size
-    pub webcam_size: Option<String>,
-
-    /// Webcam  Position
-    pub webcam_position: Option<String>,
-}
-
 /// order capsule gos and slide
 #[post("/capsule/<id>/edition", data = "<post_data>")]
 pub fn capsule_edition(
@@ -718,7 +731,7 @@ pub fn capsule_edition(
     db: Database,
     user: User,
     id: i32,
-    post_data: Json<PostEdition>,
+    post_data: Json<ApiProductionChoices>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
     let dir = tempdir()?;
@@ -727,9 +740,21 @@ pub fn capsule_edition(
 
     let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     let mut run_ffmpeg_command = true;
+    let capsule_production_choices = &post_data.to_edition_options();
+    info!(
+        "capsule production choices : {:#?}",
+        &capsule_production_choices
+    );
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::edition_options.eq(serde_json!(capsule_production_choices)))
+        .execute(&db.0)?;
 
     for (gos_index, gos) in structure.into_iter().enumerate() {
-        // TODO : only first slide . Assumption one slide per gos ( ie one slide per record)
+        // GoS iteration
+
+        // Slide timestamps (duration, offset) of each slides accorfing user transitions
         let timestamps: Vec<(String, Option<String>)> = {
             let mut input = Vec::new();
             input.push(0);
@@ -748,6 +773,13 @@ pub fn capsule_edition(
             }
             output
         };
+
+        // Is Production choices defined for a Gos ?
+        let production_choices = match gos.production_choices {
+            Some(choices) => choices.to_edition_options().clone(),
+            None => capsule_production_choices.clone(),
+        };
+
         for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
@@ -778,24 +810,11 @@ pub fn capsule_edition(
                         "pip{}_g{:03}_s{:03}.mp4",
                         capsule.id, gos_index, slide_index
                     ));
-                    let webcam_size = {
-                        match &post_data.webcam_size {
-                            Some(x) => str_to_webcam_size(x),
-                            _ => WebcamSize::Medium,
-                        }
-                    };
-                    let webcam_position = {
-                        match &post_data.webcam_position {
-                            Some(x) => str_to_webcam_position(x),
-                            _ => WebcamPosition::BottomLeft,
-                        }
-                    };
-
                     let filter_complex = format!(
-                        "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
-                        size_in_pixels(&webcam_size),
-                        position_in_pixels(&webcam_position)
-                    );
+                    "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
+                    production_choices.size_in_pixels(),
+                    production_choices.position_in_pixels(),
+                );
 
                     let mut record = config.data_path.clone();
 
@@ -831,8 +850,9 @@ pub fn capsule_edition(
                                     format!("{}{}", record.to_str().unwrap(), back_ext);
                                 // overlay position and scale
                                 let pos_pixels_xy =
-                                    format!("{}", position_in_pixels(&webcam_position));
-                                let size_pixels = format!("{}", size_in_pixels(&webcam_size));
+                                    format!("{}", production_choices.position_in_pixels());
+                                let size_pixels =
+                                    format!("{}", production_choices.size_in_pixels());
                                 // command
                                 let matting_command = vec![
                                     traiter_path,
@@ -847,22 +867,6 @@ pub fn capsule_edition(
                                 if !matting_child.status.success() {
                                     return Err(Error::TranscodeError);
                                 }
-
-                                // webcam position and size info update
-                                let capsule_edition_options = EditionOptions {
-                                    with_video: post_data.with_video.unwrap_or(true),
-                                    webcam_size: webcam_size,
-                                    webcam_position: webcam_position,
-                                };
-                                info!("capsule_edition_options= {:#?}", capsule_edition_options);
-                                use crate::schema::capsules::dsl;
-                                diesel::update(capsules::table)
-                                    .filter(dsl::id.eq(capsule.id))
-                                    .set(
-                                        dsl::edition_options
-                                            .eq(serde_json!(capsule_edition_options)),
-                                    )
-                                    .execute(&db.0)?;
                             } else {
                                 ffmpeg_command.extend(
                                     vec![
@@ -888,18 +892,6 @@ pub fn capsule_edition(
 
                         (Some(record_path), _) => {
                             record.push(record_path);
-
-                            let capsule_edition_options = EditionOptions {
-                                with_video: post_data.with_video.unwrap_or(true),
-                                webcam_size: webcam_size,
-                                webcam_position: webcam_position,
-                            };
-                            info!("capsule_edition_options= {:#?}", capsule_edition_options);
-                            use crate::schema::capsules::dsl;
-                            diesel::update(capsules::table)
-                                .filter(dsl::id.eq(capsule.id))
-                                .set(dsl::edition_options.eq(serde_json!(capsule_edition_options)))
-                                .execute(&db.0)?;
 
                             if post_data.with_video.unwrap_or(true) {
                                 ffmpeg_command.extend(
