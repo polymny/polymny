@@ -25,7 +25,7 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::{Capsule, CapsulesProject, PublishedType};
+use crate::db::capsule::{Capsule, PublishedType};
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
