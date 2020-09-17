@@ -302,17 +302,19 @@ type alias InnerGos =
     , record : Maybe String
     , background : Maybe String
     , locked : Bool
+    , production_choices : Maybe CapsuleEditionOptions
     }
 
 
 decodeInnerGos : Decoder InnerGos
 decodeInnerGos =
-    Decode.map5 InnerGos
+    Decode.map6 InnerGos
         (Decode.field "slides" (Decode.list Decode.int))
         (Decode.field "transitions" (Decode.list Decode.int))
         (Decode.field "record_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.maybe (Decode.field "background_path" (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.field "locked" Decode.bool)
+        (Decode.field "production_choices" (Decode.maybe decodeCapsuleEditionOptions))
 
 
 type alias Gos =
@@ -321,6 +323,7 @@ type alias Gos =
     , record : Maybe String
     , background : Maybe String
     , locked : Bool
+    , production_choices : Maybe CapsuleEditionOptions
     }
 
 
@@ -369,6 +372,7 @@ toGos slides gos =
     , record = gos.record
     , locked = gos.locked
     , background = gos.background
+    , production_choices = gos.production_choices
     }
 
 

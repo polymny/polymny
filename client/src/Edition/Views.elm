@@ -11,6 +11,7 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Preparation.Views as Preparation
 import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -19,24 +20,81 @@ import Utils
 import Webcam
 
 
+
+--view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
+--view global _ model =
+--    let
+--        mainPage =
+--            mainView global model
+--
+--        element =
+--            Element.column Ui.mainViewAttributes2
+--                [ Utils.headerView "edition" model.details
+--                , mainPage
+--                ]
+--    in
+--    Element.row Ui.mainViewAttributes1
+--
+--[ element ]
+
+
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
 view global _ model =
-    let
-        mainPage =
-            mainView global model
+    Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+        [ Preparation.leftColumnView model.details
+        , centerView global model
+        ]
 
-        element =
-            Element.column Ui.mainViewAttributes2
-                [ Utils.headerView "edition" model.details
-                , mainPage
+
+centerView : Core.Global -> Edition.Model -> Element Core.Msg
+centerView global model =
+    Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+        [ capsuleProductionView global model
+        , gossProductionView global model
+        ]
+
+
+gossProductionView : Core.Global -> Edition.Model -> Element Core.Msg
+gossProductionView global model =
+    Element.el
+        [ Element.padding 10
+        , Element.width Element.fill
+        , Element.height Element.fill
+        , Element.scrollbarY
+        ]
+        (Element.row [ Element.width Element.fill ]
+            [ Element.column
+                [ Element.alignTop
+                , Element.width Element.fill
                 ]
-    in
-    Element.row Ui.mainViewAttributes1
-        [ element ]
+                [ Element.column [ Element.width Element.fill ]
+                    (List.map (gosProductionView model) model.details.structure)
+                ]
+            ]
+        )
 
 
-mainView : Core.Global -> Edition.Model -> Element Core.Msg
-mainView global model =
+gosProductionView : Edition.Model -> Api.Gos -> Element Core.Msg
+gosProductionView model gos =
+    Element.column
+        [ Element.width Element.fill
+        , Border.color Colors.black
+        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+        ]
+        [ slidesView gos.slides
+        , Element.text "Ptoduction choices for the slide"
+        , editionOptionView model
+        ]
+
+
+slidesView : List Api.Slide -> Element Core.Msg
+slidesView slides =
+    Element.row []
+        (List.map (\x -> Element.el [ Element.padding 2 ] <| Element.text <| String.fromInt x.id) slides)
+
+
+capsuleProductionView : Core.Global -> Edition.Model -> Element Core.Msg
+capsuleProductionView global model =
     let
         details =
             model.details
@@ -118,7 +176,7 @@ mainView global model =
                 Status.NotSent ->
                     ( video, button )
     in
-    Element.row [ Element.centerX, Element.spacing 20, Element.padding 10 ]
+    Element.row []
         [ editionOptionView model
         , Element.column
             [ Element.centerX, Element.spacing 20, Element.padding 10 ]

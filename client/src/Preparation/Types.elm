@@ -402,7 +402,7 @@ extractStructureAux slides current currentGos =
                 newGos =
                     case ( h, currentGos ) of
                         ( JustSlide s _, Nothing ) ->
-                            { record = Nothing, slides = [ s ], locked = False, transitions = [], background = Nothing }
+                            { record = Nothing, slides = [ s ], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
 
                         ( JustSlide s _, Just gos ) ->
                             let
@@ -412,6 +412,6 @@ extractStructureAux slides current currentGos =
                             { gos | slides = newSlides }
 
                         ( GosId _, _ ) ->
-                            { record = Nothing, slides = [], locked = False, transitions = [], background = Nothing }
+                            { record = Nothing, slides = [], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
             in
             extractStructureAux t newCurrent (Just newGos)
