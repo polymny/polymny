@@ -55,7 +55,7 @@ update global session msg model =
         Acquisition.GoToWebcam ->
             case model.currentVideo of
                 Just _ ->
-                    ( makeModel model, Ports.goToWebcam elementId )
+                    ( makeModel { model | watchingWebcam = True }, Ports.goToWebcam elementId )
 
                 Nothing ->
                     ( makeModel model, Cmd.none )
@@ -63,7 +63,7 @@ update global session msg model =
         Acquisition.GoToStream n ->
             case List.head (List.drop n (List.reverse model.records)) of
                 Just { started, nextSlides } ->
-                    ( makeModel { model | currentVideo = Just n, currentSlide = 0 }
+                    ( makeModel { model | currentVideo = Just n, currentSlide = 0, watchingWebcam = False }
                     , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
                     )
 

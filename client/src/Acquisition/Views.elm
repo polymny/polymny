@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import FontAwesome
 import Html
 import Html.Attributes
 import Keyboard
@@ -14,6 +15,7 @@ import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
 import Status
 import Ui.Colors as Colors
+import Ui.Icons
 import Ui.Ui as Ui
 
 
@@ -77,7 +79,8 @@ promptView model =
     let
         promptAttributes : List (Element.Attribute Core.Msg)
         promptAttributes =
-            [ Font.size 30
+            [ Font.center
+            , Element.centerX
             ]
 
         currentSlide : Maybe Api.Slide
@@ -109,7 +112,7 @@ promptView model =
             case currentSentence of
                 Just h ->
                     Element.el
-                        (Font.color Colors.white :: promptAttributes)
+                        (Font.size 35 :: Font.color Colors.white :: promptAttributes)
                         (Element.paragraph [] [ Element.text h ])
 
                 _ ->
@@ -119,19 +122,17 @@ promptView model =
             case nextSentence of
                 Just h ->
                     Element.el
-                        (Font.color Colors.grey :: promptAttributes)
+                        (Font.size 25 :: Font.color Colors.grey :: promptAttributes)
                         (Element.paragraph [] [ Element.text h ])
 
                 _ ->
                     Element.none
 
         help =
-            Element.paragraph []
-                [ if model.recording then
-                    Element.text "Appuyez sur espace pour arrêter l'enregistrement"
-
-                  else
-                    Element.text "Appuyez sur espace pour commencer l'enregistrement"
+            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 5, Element.spacing 20 ]
+                [ Element.paragraph [] [ Element.text "Enregistrer : espace" ]
+                , Element.paragraph [] [ Element.text "Finir l'enregistrement : espace" ]
+                , Element.paragraph [] [ Element.text "Prochaine ligne : flèche à droite" ]
                 ]
     in
     Element.row
@@ -143,7 +144,7 @@ promptView model =
             [ Element.width (Element.fillPortion 3)
             , Element.height Element.fill
             , Element.padding 10
-            , Element.spacing 10
+            , Element.spacing 20
             , Background.color Colors.black
             ]
             [ promptText, nextPromptText ]
@@ -171,8 +172,71 @@ slideView model =
 
 rightColumn : Acquisition.Model -> Element Core.Msg
 rightColumn model =
+    let
+        backToWebcam : Element Core.Msg
+        backToWebcam =
+            let
+                m =
+                    if model.watchingWebcam then
+                        Nothing
+
+                    else
+                        Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.GoToWebcam))
+            in
+            Ui.simpleButton m "Revenir à la webcam"
+
+        recordView : Int -> Acquisition.Record -> Element Core.Msg
+        recordView index record =
+            let
+                makeButton =
+                    if model.currentVideo == Just record.id then
+                        Ui.primaryButton
+
+                    else
+                        Ui.simpleButton
+            in
+            Element.row [ Element.spacing 10 ] [ makeButton (msg record) (String.fromInt index) ]
+
+        msg : Acquisition.Record -> Maybe Core.Msg
+        msg i =
+            if model.recording then
+                Nothing
+
+            else
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
+
+        status : Element Core.Msg
+        status =
+            Element.column [ Element.width Element.fill ]
+                [ if model.recording then
+                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Element.el
+                            [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
+                            (Element.row []
+                                [ Ui.Icons.buttonFromIcon FontAwesome.circle
+                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                    (Element.text "REC")
+                                ]
+                            )
+                        ]
+
+                  else
+                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Element.el
+                            []
+                            (Element.row []
+                                [ Element.el [ Font.size 25 ] (Ui.Icons.buttonFromIcon FontAwesome.stopCircle)
+                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                    (Element.text "Enregistrement arrêté")
+                                ]
+                            )
+                        ]
+                ]
+    in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
         [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
+        , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
+            (status :: Element.text "Enregistrements" :: backToWebcam :: List.indexedMap recordView (List.reverse model.records))
         ]
 
 

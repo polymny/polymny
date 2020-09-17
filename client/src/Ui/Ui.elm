@@ -179,10 +179,17 @@ iconButton icon onPress content =
             , Element.padding 5
             , Border.rounded 5
             ]
+
+        contentElement =
+            if content == "" then
+                Element.none
+
+            else
+                Element.el [ Element.paddingEach { left = 5, right = 0, top = 0, bottom = 0 } ] (Element.text content)
     in
     Input.button iconAttributes
         { onPress = onPress
-        , label = Element.row [] [ icon, Element.text content ]
+        , label = Element.row [] [ icon, contentElement ]
         }
 
 

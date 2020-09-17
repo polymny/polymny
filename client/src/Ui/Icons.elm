@@ -1,5 +1,6 @@
 module Ui.Icons exposing
     ( add
+    , buttonFromIcon
     , camera
     , cancel
     , clear
@@ -23,12 +24,12 @@ import Html.Attributes
 
 
 buttonFromIcon : FontAwesome.Icon -> Element msg
-buttonFromIcon icon =
+buttonFromIcon i =
     Element.html
         (Html.div
             []
             [ FontAwesome.iconWithOptions
-                icon
+                i
                 FontAwesome.Solid
                 []
                 --[ FontAwesome.Size (FontAwesome.Mult 2) ]

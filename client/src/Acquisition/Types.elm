@@ -38,6 +38,7 @@ type alias Model =
     , status : Status () ()
     , secondsRemaining : Maybe Int
     , background : Maybe String
+    , watchingWebcam : Bool
     }
 
 
@@ -87,6 +88,7 @@ init mattingEnabled details mode gos =
       , status = Status.NotSent
       , secondsRemaining = Nothing
       , background = background
+      , watchingWebcam = True
       }
     , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )

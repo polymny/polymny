@@ -638,8 +638,7 @@ leftColumnView details =
         inFront i =
             Element.el [ Element.width Element.fill ]
                 (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                    [ Ui.fontButton Nothing ""
-                    , Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
+                    [ Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
                     ]
                 )
 
