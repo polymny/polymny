@@ -35,11 +35,64 @@ centerView model =
 
 promptView : Acquisition.Model -> Element Core.Msg
 promptView model =
+    let
+        promptAttributes : List (Element.Attribute Core.Msg)
+        promptAttributes =
+            [ Element.centerX
+            , Font.size 30
+            ]
+
+        currentSlide : Maybe Api.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
+
+        getLine : Int -> Api.Slide -> Maybe String
+        getLine n x =
+            List.head (List.drop n (String.split "\n" x.prompt))
+
+        currentSentence : Maybe String
+        currentSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine model.currentLine) currentSlide)
+
+        nextSentence : Maybe String
+        nextSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide)
+
+        promptText =
+            case currentSentence of
+                Just h ->
+                    Element.el
+                        (Font.color Colors.white :: promptAttributes)
+                        (Element.paragraph [] [ Element.text h ])
+
+                _ ->
+                    Element.none
+
+        nextPromptText =
+            case nextSentence of
+                Just h ->
+                    Element.el
+                        (Font.color Colors.grey :: promptAttributes)
+                        (Element.paragraph [] [ Element.text h ])
+
+                _ ->
+                    Element.none
+    in
     Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
         ]
-        [ Element.text "Prompt" ]
+        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] (Element.text "aide")
+        , Element.column
+            [ Element.width (Element.fillPortion 3)
+            , Element.height Element.fill
+            , Element.padding 10
+            , Element.spacing 10
+            , Background.color Colors.black
+            ]
+            [ promptText, nextPromptText ]
+        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
+        ]
 
 
 slideView : Acquisition.Model -> Element Core.Msg

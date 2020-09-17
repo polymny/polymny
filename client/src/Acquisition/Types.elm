@@ -32,6 +32,7 @@ type alias Model =
     , details : Api.CapsuleDetails
     , gos : Int
     , currentSlide : Int
+    , currentLine : Int
     , mode : Mode
     , cameraReady : Bool
     , status : Status () ()
@@ -80,6 +81,7 @@ init mattingEnabled details mode gos =
       , details = details
       , gos = gos
       , currentSlide = 0
+      , currentLine = 0
       , mode = mode
       , cameraReady = False
       , status = Status.NotSent
@@ -127,3 +129,4 @@ type Msg
     | CaptureBackground
     | SecondsRemaining Int
     | BackgroundCaptured String
+    | NextLine

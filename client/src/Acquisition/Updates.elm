@@ -206,6 +206,9 @@ update global session msg model =
         Acquisition.BackgroundCaptured u ->
             ( makeModel { model | background = Just u }, Cmd.none )
 
+        Acquisition.NextLine ->
+            ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
+
 
 elementId : String
 elementId =
