@@ -36,7 +36,15 @@ update global session msg model =
                         Nothing ->
                             Ports.startRecording ()
             in
-            ( makeModel { model | recording = True, currentVideo = Just (List.length model.records), currentSlide = 0 }, cmd )
+            ( makeModel
+                { model
+                    | recording = True
+                    , currentVideo = Just (List.length model.records)
+                    , currentSlide = 0
+                    , currentLine = 0
+                }
+            , cmd
+            )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
@@ -206,8 +214,39 @@ update global session msg model =
         Acquisition.BackgroundCaptured u ->
             ( makeModel { model | background = Just u }, Cmd.none )
 
-        Acquisition.NextLine ->
-            ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
+        Acquisition.NextSentence ->
+            let
+                currentSlide : Maybe Api.Slide
+                currentSlide =
+                    List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
+
+                nextSlide : Maybe Api.Slide
+                nextSlide =
+                    List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
+
+                lineNumber =
+                    case currentSlide of
+                        Just j ->
+                            List.length (String.split "\n" j.prompt)
+
+                        _ ->
+                            0
+            in
+            case ( model.currentLine + 1 < lineNumber, nextSlide ) of
+                ( True, _ ) ->
+                    ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
+
+                ( _, Just _ ) ->
+                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
+                    , if model.recording then
+                        Ports.askNextSlide ()
+
+                      else
+                        Cmd.none
+                    )
+
+                ( _, _ ) ->
+                    ( makeModel { model | currentSlide = 0, currentLine = 0 }, Cmd.none )
 
 
 elementId : String

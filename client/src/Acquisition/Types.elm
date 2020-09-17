@@ -129,4 +129,4 @@ type Msg
     | CaptureBackground
     | SecondsRemaining Int
     | BackgroundCaptured String
-    | NextLine
+    | NextSentence

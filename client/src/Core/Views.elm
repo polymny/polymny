@@ -2,6 +2,7 @@ module Core.Views exposing (subscriptions, view)
 
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
+import Acquisition.Views as Acquisition
 import Browser
 import Core.Types as Core
 import Core.Utils as Core
@@ -39,18 +40,21 @@ subscriptions { model } =
                             ]
                         )
 
-                LoggedIn.Acquisition _ ->
+                LoggedIn.Acquisition m ->
                     Sub.batch
-                        [ Acquisition.Ports.newRecord Acquisition.NewRecord
-                        , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
-                        , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
-                        , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
-                        , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
-                        , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
-                        , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
+                        [ Acquisition.subscriptions m
+                        , Sub.batch
+                            [ Acquisition.Ports.newRecord Acquisition.NewRecord
+                            , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
+                            , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
+                            , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
+                            , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
+                            , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
+                            , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
+                            ]
+                            |> Sub.map LoggedIn.AcquisitionMsg
+                            |> Sub.map Core.LoggedInMsg
                         ]
-                        |> Sub.map LoggedIn.AcquisitionMsg
-                        |> Sub.map Core.LoggedInMsg
 
                 _ ->
                     Sub.none

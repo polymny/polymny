@@ -18,6 +18,7 @@
             "elm/url": "1.0.0",
             "frandibar/elm-font-awesome-5": "1.0.0",
             "mdgriffith/elm-ui": "1.1.8",
+            "ohanhi/keyboard": "2.0.1",
             "tesk9/palette": "3.0.1"
         },
         "indirect": {

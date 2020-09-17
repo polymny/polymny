@@ -1,4 +1,4 @@
-module Acquisition.Views exposing (view)
+module Acquisition.Views exposing (subscriptions, view)
 
 import Acquisition.Types as Acquisition
 import Api
@@ -9,6 +9,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Html
 import Html.Attributes
+import Keyboard
 import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
 import Status
@@ -16,9 +17,47 @@ import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
+shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
+shortcuts model msg =
+    let
+        raw =
+            Keyboard.rawValue msg
+
+        mkmsg : Acquisition.Msg -> Core.Msg
+        mkmsg ms =
+            Core.LoggedInMsg (LoggedIn.AcquisitionMsg ms)
+    in
+    case raw of
+        " " ->
+            mkmsg
+                (if model.recording then
+                    Acquisition.StopRecording
+
+                 else
+                    Acquisition.StartRecording
+                )
+
+        "ArrowRight" ->
+            mkmsg Acquisition.NextSentence
+
+        _ ->
+            Core.Noop
+
+
+subscriptions : Acquisition.Model -> Sub Core.Msg
+subscriptions model =
+    Sub.batch
+        [ Keyboard.ups (shortcuts model)
+        ]
+
+
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
 view global _ model =
-    Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+    Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.scrollbarY
+        ]
         [ Preparation.leftColumnView model.details
         , centerView model
         , rightColumn model
@@ -38,13 +77,16 @@ promptView model =
     let
         promptAttributes : List (Element.Attribute Core.Msg)
         promptAttributes =
-            [ Element.centerX
-            , Font.size 30
+            [ Font.size 30
             ]
 
         currentSlide : Maybe Api.Slide
         currentSlide =
             List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
+
+        nextSlide : Maybe Api.Slide
+        nextSlide =
+            List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
 
         getLine : Int -> Api.Slide -> Maybe String
         getLine n x =
@@ -56,7 +98,12 @@ promptView model =
 
         nextSentence : Maybe String
         nextSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide)
+            case Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide) of
+                Nothing ->
+                    Maybe.withDefault Nothing (Maybe.map List.head (Maybe.map (\x -> String.split "\n" x.prompt) nextSlide))
+
+                x ->
+                    x
 
         promptText =
             case currentSentence of
@@ -77,12 +124,21 @@ promptView model =
 
                 _ ->
                     Element.none
+
+        help =
+            Element.paragraph []
+                [ if model.recording then
+                    Element.text "Appuyez sur espace pour arrêter l'enregistrement"
+
+                  else
+                    Element.text "Appuyez sur espace pour commencer l'enregistrement"
+                ]
     in
     Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
         ]
-        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] (Element.text "aide")
+        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] help
         , Element.column
             [ Element.width (Element.fillPortion 3)
             , Element.height Element.fill
@@ -102,10 +158,10 @@ slideView model =
             Element.el
                 [ Element.width Element.fill
                 , Element.height (Element.fillPortion 2)
-                , Element.htmlAttribute (Html.Attributes.style "background" ("url(" ++ h.asset.asset_path ++ ")"))
-                , Element.htmlAttribute (Html.Attributes.style "background-size" "contain")
-                , Element.htmlAttribute (Html.Attributes.style "background-repeat" "no-repeat")
-                , Element.htmlAttribute (Html.Attributes.style "background-position" "center")
+                , Element.htmlAttribute
+                    (Html.Attributes.style "background"
+                        ("center / contain content-box no-repeat url(" ++ h.asset.asset_path ++ ")")
+                    )
                 ]
                 Element.none
 

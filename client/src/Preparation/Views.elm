@@ -634,6 +634,15 @@ leftColumnView details =
         slides =
             Preparation.setupSlides details
 
+        inFront : Int -> Element Core.Msg
+        inFront i =
+            Element.el [ Element.width Element.fill ]
+                (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
+                    [ Ui.fontButton Nothing ""
+                    , Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
+                    ]
+                )
+
         gosView : List Preparation.MaybeSlide -> Element Core.Msg
         gosView gos =
             case gos of
@@ -644,7 +653,9 @@ leftColumnView details =
                     gosView t
 
                 (Preparation.JustSlide s i) :: _ ->
-                    Input.button []
+                    Input.button
+                        [ Element.inFront (inFront ((i - 1) // 2))
+                        ]
                         { onPress = Just (Core.ScrollIntoView ("gos-" ++ String.fromInt i))
                         , label = viewSlideImage s.asset.asset_path
                         }
