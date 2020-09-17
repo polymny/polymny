@@ -232,11 +232,22 @@ rightColumn model =
                             )
                         ]
                 ]
+
+        uploadButton =
+            case model.currentVideo of
+                Just v ->
+                    Ui.successButton (Just (Acquisition.UploadStream (url model.details.capsule.id model.gos) v)) "Uploader"
+                        |> Element.map LoggedIn.AcquisitionMsg
+                        |> Element.map Core.LoggedInMsg
+
+                Nothing ->
+                    Ui.successButton Nothing "Uploader"
     in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
         [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
-        , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
+        , Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
             (status :: Element.text "Enregistrements" :: backToWebcam :: List.indexedMap recordView (List.reverse model.records))
+        , uploadButton
         ]
 
 

@@ -232,20 +232,28 @@ update global session msg model =
                         _ ->
                             0
             in
-            case ( model.currentLine + 1 < lineNumber, nextSlide ) of
-                ( True, _ ) ->
+            case ( model.currentLine + 1 < lineNumber, nextSlide, model.recording ) of
+                ( True, _, _ ) ->
+                    -- If there is another line, go to the next line
                     ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
 
-                ( _, Just _ ) ->
+                ( _, Just _, True ) ->
+                    -- If there is no other line but a next slide, go to the next slide
                     ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
-                    , if model.recording then
-                        Ports.askNextSlide ()
-
-                      else
-                        Cmd.none
+                    , Ports.askNextSlide ()
                     )
 
-                ( _, _ ) ->
+                ( _, Just _, False ) ->
+                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
+                    , Cmd.none
+                    )
+
+                ( _, _, True ) ->
+                    -- If recording and end reach, stop recording
+                    ( makeModel { model | currentSlide = 0, currentLine = 0, recording = False }, Ports.stopRecording () )
+
+                ( _, _, _ ) ->
+                    -- Otherwise, go back to begining
                     ( makeModel { model | currentSlide = 0, currentLine = 0 }, Cmd.none )
 
 
