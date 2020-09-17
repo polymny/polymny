@@ -10,6 +10,7 @@ import Edition.Types as Edition
 import Edition.Updates as Edition
 import File
 import File.Select as Select
+import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import NewCapsule.Types as NewCapsule
@@ -32,6 +33,13 @@ flatten ( a, ( b, c ) ) =
 update : LoggedIn.Msg -> Core.Global -> LoggedIn.Model -> ( Core.Global, LoggedIn.Model, Cmd Core.Msg )
 update msg global { session, tab } =
     case ( msg, tab ) of
+        ( LoggedIn.GosClicked i, LoggedIn.Preparation _ ) ->
+            ( global, { session = session, tab = tab }, Ports.scrollIntoView ("gos-" ++ String.fromInt i) )
+
+        ( LoggedIn.GosClicked i, LoggedIn.Edition editionModel ) ->
+            -- TODO manage gosclicked correctly when in edition tab
+            ( global, { session = session, tab = LoggedIn.Edition editionModel }, Cmd.none )
+
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
                 ( newGlobal, newModel, cmd ) =

@@ -656,7 +656,7 @@ leftColumnView details =
                     Input.button
                         [ Element.inFront (inFront ((i - 1) // 2))
                         ]
-                        { onPress = Just (Core.ScrollIntoView ("gos-" ++ String.fromInt i))
+                        { onPress = Just (Core.LoggedInMsg (LoggedIn.GosClicked i))
                         , label = viewSlideImage s.asset.asset_path
                         }
 

@@ -73,6 +73,7 @@ type Msg
     | ToggleFoldedProject Int
     | DropdownMsg (Dropdown.Msg Api.Project)
     | OptionPicked (Maybe Api.Project)
+    | GosClicked Int
 
 
 type UploadSlideShowMsg
