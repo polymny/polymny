@@ -6,6 +6,7 @@ import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
 import Status
 import Utils
+import Webcam
 
 
 update : Api.Session -> Edition.Msg -> Edition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -76,7 +77,113 @@ update session msg model =
                 , webcamSize = model.webcamSize
                 , webcamPosition = model.webcamPosition
                 }
+                model.details
             )
+
+        Edition.GosWithVideoChanged gosIndex newWithVideo ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gosIndex model.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map
+                        (\x ->
+                            let
+                                newP =
+                                    case x.production_choices of
+                                        Just p ->
+                                            { p | withVideo = newWithVideo }
+
+                                        Nothing ->
+                                            Api.CapsuleEditionOptions newWithVideo (Just Webcam.Medium) (Just Webcam.BottomLeft)
+                            in
+                            { x | production_choices = Just newP }
+                        )
+                        gosStructure
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    newDetailsAux model gosIndex gosUpdatedStructure
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
+
+        Edition.GosWebcamSizeChanged gosIndex newWebcamSize ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gosIndex model.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map
+                        (\x ->
+                            let
+                                newP =
+                                    case x.production_choices of
+                                        Just p ->
+                                            { p | webcamSize = Just newWebcamSize }
+
+                                        Nothing ->
+                                            Api.CapsuleEditionOptions True (Just newWebcamSize) (Just Webcam.BottomLeft)
+                            in
+                            { x | production_choices = Just newP }
+                        )
+                        gosStructure
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    newDetailsAux model gosIndex gosUpdatedStructure
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
+
+        Edition.GosWebcamPositionChanged gosIndex newWebcamPosition ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gosIndex model.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map
+                        (\x ->
+                            let
+                                newP =
+                                    case x.production_choices of
+                                        Just p ->
+                                            { p | webcamPosition = Just newWebcamPosition }
+
+                                        Nothing ->
+                                            Api.CapsuleEditionOptions True (Just Webcam.Medium) (Just newWebcamPosition)
+                            in
+                            { x | production_choices = Just newP }
+                        )
+                        gosStructure
+
+                newDetails : Api.CapsuleDetails
+                newDetails =
+                    newDetailsAux model gosIndex gosUpdatedStructure
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
+
+
+newDetailsAux : Edition.Model -> Int -> Maybe Api.Gos -> Api.CapsuleDetails
+newDetailsAux model i gosUpdatedStructure =
+    let
+        details =
+            model.details
+
+        newStructure =
+            case gosUpdatedStructure of
+                Just new ->
+                    List.take i model.details.structure
+                        ++ (new :: List.drop (i + 1) model.details.structure)
+
+                _ ->
+                    model.details.structure
+    in
+    { details | structure = newStructure }
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg

@@ -38,7 +38,12 @@ update msg global { session, tab } =
 
         ( LoggedIn.GosClicked i, LoggedIn.Edition editionModel ) ->
             -- TODO manage gosclicked correctly when in edition tab
-            ( global, { session = session, tab = LoggedIn.Edition editionModel }, Cmd.none )
+            let
+                gosIndex : Int
+                gosIndex =
+                    (i - 1) // 2
+            in
+            ( global, { session = session, tab = LoggedIn.Edition { editionModel | currentGos = gosIndex } }, Cmd.none )
 
         ( LoggedIn.PreparationMsg preparationMsg, LoggedIn.Preparation model ) ->
             let
@@ -102,6 +107,7 @@ update msg global { session, tab } =
                 , webcamSize = editionModel.webcamSize
                 , webcamPosition = editionModel.webcamPosition
                 }
+                editionModel.details
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->
