@@ -13,6 +13,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import File
+import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import NewCapsule.Types as NewCapsule
 import NewCapsule.Views as NewCapsule
@@ -113,7 +114,10 @@ prePreparationView global session uploadForm =
                 }
 
         slidesLabel =
-            Element.text "Regroupement des planches"
+            Element.column [ Element.spacing 5 ]
+                [ Element.text "Regroupement des planches"
+                , Element.el [ Font.size 10 ] (Element.text "Les slides séparés par des pointillets seront filmés en une fois")
+                ]
 
         viewSlide : Maybe ( Int, ( Int, Api.Slide ) ) -> Element Core.Msg
         viewSlide slide =
@@ -122,16 +126,108 @@ prePreparationView global session uploadForm =
                     Element.el [ Element.width Element.fill ] Element.none
 
                 Just ( index, ( i, s ) ) ->
-                    Input.button
-                        [ Element.width Element.fill, Element.padding 10, Background.color (getColor i) ]
-                        { onPress =
-                            Just
-                                (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowSlideClicked index)))
-                        , label =
-                            Element.image [ Element.width Element.fill ]
-                                { description = "", src = s.asset.asset_path }
-                        }
+                    Element.image [ Border.color Colors.grey, Border.width 1, Element.width Element.fill ] { description = "", src = s.asset.asset_path }
 
+        buildSlides : Maybe ( Int, ( Int, Api.Slide ) ) -> List (Maybe ( Int, ( Int, Api.Slide ) )) -> List (Element Core.Msg)
+        buildSlides nextSlide input =
+            let
+                emptyPadding =
+                    Element.el [ Element.height Element.fill, Element.paddingXY 10 0 ]
+                        (Element.el
+                            [ Element.height Element.fill
+                            , Border.widthEach { left = 2, right = 0, top = 0, bottom = 0 }
+                            , Element.htmlAttribute (Html.Attributes.style "border-style" "none")
+                            ]
+                            Element.none
+                        )
+
+                emptyFilling =
+                    Element.el
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        ]
+                        Element.none
+            in
+            case input of
+                [] ->
+                    []
+
+                [ Nothing ] ->
+                    [ emptyFilling, emptyPadding ]
+
+                [ Just ( index1, ( gos1, slide1 ) ) ] ->
+                    let
+                        head =
+                            viewSlide (Just ( index1, ( gos1, slide1 ) ))
+
+                        tail =
+                            case nextSlide of
+                                Just ( index2, ( gos2, slide2 ) ) ->
+                                    let
+                                        borderStyle =
+                                            if gos1 == gos2 then
+                                                Border.dashed
+
+                                            else
+                                                Border.solid
+
+                                        delimiter =
+                                            Input.button [ Element.paddingXY 10 0, Element.height Element.fill ]
+                                                { label =
+                                                    Element.el
+                                                        [ Element.centerX
+                                                        , Border.widthEach { left = 2, right = 0, top = 0, bottom = 0 }
+                                                        , Border.color Colors.black
+                                                        , borderStyle
+                                                        , Element.height Element.fill
+                                                        ]
+                                                        Element.none
+                                                , onPress =
+                                                    Just
+                                                        (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowSlideClicked index2)))
+                                                }
+                                    in
+                                    [ delimiter ]
+
+                                _ ->
+                                    [ emptyPadding ]
+                    in
+                    head :: tail
+
+                (Just ( index1, ( gos1, slide1 ) )) :: (Just ( index2, ( gos2, slide2 ) )) :: t ->
+                    let
+                        borderStyle =
+                            if gos1 == gos2 then
+                                Border.dashed
+
+                            else
+                                Border.solid
+
+                        delimiter =
+                            Input.button [ Element.paddingXY 10 0, Element.height Element.fill ]
+                                { label =
+                                    Element.el
+                                        [ Element.centerX
+                                        , Border.widthEach { left = 2, right = 0, top = 0, bottom = 0 }
+                                        , Border.color Colors.black
+                                        , borderStyle
+                                        , Element.height Element.fill
+                                        ]
+                                        Element.none
+                                , onPress =
+                                    Just
+                                        (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowSlideClicked index2)))
+                                }
+                    in
+                    viewSlide (Just ( index1, ( gos1, slide1 ) )) :: delimiter :: buildSlides nextSlide (Just ( index2, ( gos2, slide2 ) ) :: t)
+
+                (Just ( index1, ( gos1, slide1 ) )) :: Nothing :: t ->
+                    viewSlide (Just ( index1, ( gos1, slide1 ) )) :: emptyPadding :: emptyFilling :: emptyPadding :: buildSlides nextSlide t
+
+                Nothing :: t ->
+                    emptyFilling :: emptyPadding :: buildSlides nextSlide t
+
+        slides : Element Core.Msg
         slides =
             case uploadForm.slides of
                 Nothing ->
@@ -141,16 +237,54 @@ prePreparationView global session uploadForm =
                     let
                         enumeratedSlides =
                             List.indexedMap (\x y -> ( x, y )) s
-                    in
-                    Element.column [ Element.width Element.fill ]
-                        (List.map
-                            (\x ->
-                                Element.row [ Element.width Element.fill ]
-                                    (List.map viewSlide x)
-                            )
-                            (regroupSlides uploadForm.numberOfSlidesPerRow enumeratedSlides)
-                        )
 
+                        regrouped : List (List (Maybe ( Int, ( Int, Api.Slide ) )))
+                        regrouped =
+                            regroupSlides uploadForm.numberOfSlidesPerRow enumeratedSlides
+
+                        prepare : List (List (Maybe ( Int, ( Int, Api.Slide ) ))) -> List ( Maybe ( Int, ( Int, Api.Slide ) ), List (Maybe ( Int, ( Int, Api.Slide ) )) )
+                        prepare input =
+                            case input of
+                                [] ->
+                                    []
+
+                                h :: [] ->
+                                    [ ( Nothing, h ) ]
+
+                                _ :: [] :: _ ->
+                                    -- This should be unreachable
+                                    []
+
+                                h1 :: (h2 :: t2) :: t ->
+                                    ( h2, h1 ) :: prepare ((h2 :: t2) :: t)
+
+                        elements : List (List (Element Core.Msg))
+                        elements =
+                            List.map (\( x, y ) -> buildSlides x y) (prepare regrouped)
+                    in
+                    Element.column
+                        [ Element.width Element.fill, Element.spacing 10 ]
+                        (List.map (\x -> Element.row [ Element.width Element.fill ] x) elements)
+
+        --         Just s ->
+        -- slides : Element Core.Msg
+        -- slides =
+        --     case uploadForm.slides of
+        --         Nothing ->
+        --             Ui.spinner
+        --         Just s ->
+        --             let
+        --                 enumeratedSlides =
+        --                     List.indexedMap (\x y -> ( x, y )) s
+        --             in
+        --             Element.column [ Element.width Element.fill ]
+        --                 (List.map
+        --                     (\x ->
+        --                         Element.row [ Element.width Element.fill ]
+        --                             (List.map viewSlide x)
+        --                     )
+        --                     (regroupSlides uploadForm.numberOfSlidesPerRow enumeratedSlides)
+        --                 )
         cancel =
             Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowCancel)
 
