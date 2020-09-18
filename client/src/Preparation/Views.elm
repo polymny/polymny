@@ -28,7 +28,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
-mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t } =
+mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t, broken } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -103,11 +103,55 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                     ]
                 ]
     in
-    if editPrompt.visible then
-        Element.el [ Element.inFront Element.none ] resultView
+    case ( broken, editPrompt.visible ) of
+        ( Preparation.Broken data, _ ) ->
+            let
+                reject =
+                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
 
-    else
-        resultView
+                accept =
+                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.AcceptBroken))
+
+                element =
+                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
+                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
+                            (Element.el
+                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
+                                (Element.text "ATTENTION")
+                            )
+                        , Element.el
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
+                                [ Element.el [ Element.height Element.fill ] Element.none
+                                , Element.paragraph [] [ Element.text "Ce déplacement va détruire certains de vos enregistrements." ]
+                                , Element.paragraph [] [ Element.text "Voulez-vous vraiment continuer ?" ]
+                                , Element.el [ Element.height Element.fill ] Element.none
+                                , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]
+                                ]
+                            )
+                        ]
+
+                centerWarning =
+                    Element.column
+                        [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
+                        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                        , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+                            (Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                                , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
+                                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                                ]
+                            )
+                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                        ]
+            in
+            Element.el [ Element.height Element.fill, Element.inFront centerWarning ] resultView
+
+        ( _, True ) ->
+            Element.el [ Element.inFront Element.none ] resultView
+
+        _ ->
+            resultView
 
 
 filterConsecutiveGosIds : List ( Int, List Preparation.MaybeSlide ) -> List ( Int, List Preparation.MaybeSlide )
@@ -434,11 +478,8 @@ designSlideView : Core.Global -> Preparation.UploadExtraResourceForm -> Preparat
 designSlideView global uploadForm replaceSlideForm enabled slideModel offset localIndex slide =
     let
         t =
-            case ( enabled, Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
-                ( False, _, _ ) ->
-                    Locked
-
-                ( _, Just { dragIndex }, _ ) ->
+            case ( Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
+                ( Just { dragIndex }, _ ) ->
                     if offset + localIndex == dragIndex then
                         EventLess
 

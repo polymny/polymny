@@ -1,5 +1,6 @@
 module Preparation.Types exposing
-    ( DnDMsg(..)
+    ( Broken(..)
+    , DnDMsg(..)
     , EditPrompt
     , EditPromptMsg(..)
     , Forms
@@ -43,7 +44,13 @@ type alias Model =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , t : Tab
+    , broken : Broken
     }
+
+
+type Broken
+    = NotBroken
+    | Broken Model
 
 
 type MaybeSlide
@@ -141,6 +148,8 @@ type Msg
     | UserSelectedTab Tab
     | IncreaseNumberOfSlidesPerRow
     | DecreaseNumberOfSlidesPerRow
+    | RejectBroken
+    | AcceptBroken
 
 
 type DnDMsg
@@ -202,7 +211,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First NotBroken
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide
