@@ -6,7 +6,6 @@
     "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
-            "PaackEng/elm-ui-dialog": "1.0.0",
             "annaghi/dnd-list": "6.0.1",
             "elm/browser": "1.0.2",
             "elm/core": "1.0.5",

@@ -561,7 +561,7 @@ updateDnD slideMsg data =
                         _ ->
                             Preparation.regroupSlides slides
             in
-            if Debug.log "broken" broken then
+            if broken then
                 let
                     newData =
                         { data

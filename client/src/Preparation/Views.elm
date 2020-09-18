@@ -2,7 +2,6 @@ module Preparation.Views exposing (gosGhostView, leftColumnView, slideGhostView,
 
 import Api
 import Core.Types as Core
-import Dialog
 import DnDList
 import DnDList.Groups
 import Element exposing (Element)
@@ -34,13 +33,6 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
-        dialogConfig =
-            if editPrompt.visible then
-                Just (configPromptModal editPrompt)
-
-            else
-                Nothing
-
         -- capsuleInfo =
         --     if global.beta then
         --         capsuleInfoView session details uploadForms
@@ -69,10 +61,6 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                         ]
                     , Element.el
                         [ Element.padding 10
-                        , Element.mapAttribute Core.LoggedInMsg <|
-                            Element.mapAttribute LoggedIn.PreparationMsg <|
-                                Element.mapAttribute Preparation.EditPromptMsg <|
-                                    Element.inFront (Dialog.view dialogConfig)
                         , Element.height Element.fill
                         , Element.scrollbarY
                         ]
@@ -102,9 +90,23 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                         )
                     ]
                 ]
+
+        centerElement element =
+            Element.column
+                [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
+                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+                    (Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
+                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                        ]
+                    )
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                ]
     in
     case ( broken, editPrompt.visible ) of
-        ( Preparation.Broken data, _ ) ->
+        ( Preparation.Broken _, _ ) ->
             let
                 reject =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
@@ -130,25 +132,42 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                                 ]
                             )
                         ]
-
-                centerWarning =
-                    Element.column
-                        [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
-                        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ]
-                            (Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                                , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
-                                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                                ]
-                            )
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        ]
             in
-            Element.el [ Element.height Element.fill, Element.inFront centerWarning ] resultView
+            Element.el [ Element.height Element.fill, Element.inFront (centerElement element) ] resultView
 
         ( _, True ) ->
-            Element.el [ Element.inFront Element.none ] resultView
+            let
+                cancel =
+                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptCloseDialog)))
+
+                validate =
+                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptSubmitted)))
+
+                promptModal =
+                    bodyPromptModal editPrompt
+                        |> Element.map Preparation.EditPromptMsg
+                        |> Element.map LoggedIn.PreparationMsg
+                        |> Element.map Core.LoggedInMsg
+
+                element =
+                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
+                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
+                            (Element.el
+                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
+                                (Element.text "Prompteur")
+                            )
+                        , Element.el
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
+                                [ promptModal
+                                , Element.el [ Element.height Element.fill ] Element.none
+                                , Element.row [ Element.alignRight, Element.spacing 10 ]
+                                    [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
+                                ]
+                            )
+                        ]
+            in
+            Element.el [ Element.height Element.fill, Element.inFront (centerElement element) ] resultView
 
         _ ->
             resultView
@@ -970,73 +989,40 @@ viewSlideImage url =
         { src = url, description = "One desc" }
 
 
-configPromptModal : Preparation.EditPrompt -> Dialog.Config Preparation.EditPromptMsg
-configPromptModal editPromptContent =
-    { closeMessage = Just Preparation.EditPromptCloseDialog
-    , maskAttributes = []
-    , containerAttributes =
-        [ Background.color Colors.white
-        , Border.rounded 5
-        , Element.centerX
-        , Element.padding 10
-        , Element.spacing 20
-        , Element.width (Element.px 600)
-        ]
-    , headerAttributes = [ Font.size 24, Element.padding 5 ]
-    , bodyAttributes = [ Background.color Colors.grey, Element.padding 20, Element.width Element.fill ]
-    , footerAttributes = []
-    , header = Just (Element.text "PROMPTER")
-    , body = Just (bodyPromptModal editPromptContent)
-    , footer = Nothing
-    }
+
+-- configPromptModal : Preparation.EditPrompt -> Dialog.Config Preparation.EditPromptMsg
+-- configPromptModal editPromptContent =
+--     { closeMessage = Just Preparation.EditPromptCloseDialog
+--     , maskAttributes = []
+--     , containerAttributes =
+--         [ Background.color Colors.white
+--         , Border.rounded 5
+--         , Element.centerX
+--         , Element.padding 10
+--         , Element.spacing 20
+--         , Element.width (Element.px 600)
+--         ]
+--     , headerAttributes = [ Font.size 24, Element.padding 5 ]
+--     , bodyAttributes = [ Background.color Colors.grey, Element.padding 20, Element.width Element.fill ]
+--     , footerAttributes = []
+--     , header = Just (Element.text "PROMPTER")
+--     , body = Just (bodyPromptModal editPromptContent)
+--     , footer = Nothing
+--     }
 
 
 bodyPromptModal : Preparation.EditPrompt -> Element Preparation.EditPromptMsg
-bodyPromptModal { status, prompt } =
+bodyPromptModal { prompt } =
     let
-        submitButton =
-            case status of
-                Status.Sent ->
-                    Ui.primaryButtonDisabled "Updating slide..."
-
-                Status.Success () ->
-                    Ui.primaryButtonDisabled "Slide updated"
-
-                _ ->
-                    Ui.primaryButton (Just Preparation.EditPromptSubmitted) "Update prompt"
-
-        message =
-            case status of
-                Status.Error () ->
-                    Just (Ui.errorModal "Slide update failed")
-
-                Status.Success () ->
-                    Just (Ui.successModal "Slide prommpt udpdated")
-
-                _ ->
-                    Nothing
-
-        header =
-            Element.row [ Element.centerX ] [ Element.text "Edit prompt" ]
-
         fields =
             [ Input.multiline [ Element.height (Element.px 400) ]
-                { label = Input.labelAbove [] (Element.text "Prompteur:")
+                { label = Input.labelAbove [] Element.none
                 , onChange = Preparation.EditPromptTextChanged
                 , placeholder = Nothing
                 , text = prompt
                 , spellcheck = True
                 }
-            , submitButton
             ]
-
-        form =
-            case message of
-                Just m ->
-                    header :: m :: fields
-
-                Nothing ->
-                    header :: fields
     in
     Element.column
         [ Element.centerX
@@ -1044,7 +1030,7 @@ bodyPromptModal { status, prompt } =
         , Element.spacing 10
         , Element.width Element.fill
         ]
-        form
+        fields
 
 
 uploadView : Preparation.UploadForm -> Preparation.UploadModel -> Element Core.Msg
