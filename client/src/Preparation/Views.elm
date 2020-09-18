@@ -634,11 +634,21 @@ leftColumnView details =
         slides =
             Preparation.setupSlides details
 
+        getGos : Int -> Maybe Api.Gos
+        getGos gosIndex =
+            List.head (List.drop gosIndex details.structure)
+
         inFront : Int -> Element Core.Msg
         inFront i =
             Element.el [ Element.width Element.fill ]
                 (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                    [ Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
+                    [ case Maybe.map .record (getGos i) of
+                        Just (Just record) ->
+                            Element.newTabLink [] { url = record, label = Ui.movieButton Nothing "" }
+
+                        _ ->
+                            Element.none
+                    , Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
                     ]
                 )
 
