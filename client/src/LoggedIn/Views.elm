@@ -27,31 +27,31 @@ import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
-view : Core.Global -> Api.Session -> LoggedIn.Tab -> Element Core.Msg
+view : Core.Global -> Api.Session -> LoggedIn.Tab -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view global session tab =
     let
-        mainTab =
+        ( mainTab, popup ) =
             case tab of
                 LoggedIn.Home uploadForm ->
-                    homeView global session uploadForm
+                    ( homeView global session uploadForm, Nothing )
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
 
                 LoggedIn.Acquisition acquisitionModel ->
-                    Acquisition.view global session acquisitionModel
+                    ( Acquisition.view global session acquisitionModel, Nothing )
 
                 LoggedIn.Edition editionModel ->
-                    Edition.view global session editionModel
+                    ( Edition.view global session editionModel, Nothing )
 
                 LoggedIn.NewProject newProjectModel ->
-                    NewProject.view newProjectModel
+                    ( NewProject.view newProjectModel, Nothing )
 
                 LoggedIn.Project project newCapsuleForm ->
-                    projectView global project newCapsuleForm
+                    ( projectView global project newCapsuleForm, Nothing )
 
                 LoggedIn.Settings modelSettings ->
-                    Settings.view global session modelSettings
+                    ( Settings.view global session modelSettings, Nothing )
 
         element =
             Element.column
@@ -63,13 +63,15 @@ view global session tab =
                 [ mainTab
                 ]
     in
-    Element.row
+    ( Element.row
         [ Element.height Element.fill
         , Element.scrollbarY
         , Element.width Element.fill
         , Element.spacing 20
         ]
         [ element ]
+    , popup
+    )
 
 
 homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg

@@ -21,12 +21,12 @@ import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
-view : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
+view : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view global session model =
     mainView global session model
 
 
-mainView : Core.Global -> Api.Session -> Preparation.Model -> Element Core.Msg
+mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 mainView global session { details, slides, uploadForms, editPrompt, slideModel, gosModel, t, broken } =
     let
         calculateOffset : Int -> Int
@@ -133,7 +133,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                             )
                         ]
             in
-            Element.el [ Element.height Element.fill, Element.inFront (centerElement element) ] resultView
+            ( resultView, Just (centerElement element) )
 
         ( _, True ) ->
             let
@@ -167,10 +167,10 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
                             )
                         ]
             in
-            Element.el [ Element.height Element.fill, Element.inFront (centerElement element) ] resultView
+            ( resultView, Just (centerElement element) )
 
         _ ->
-            resultView
+            ( resultView, Nothing )
 
 
 filterConsecutiveGosIds : List ( Int, List Preparation.MaybeSlide ) -> List ( Int, List Preparation.MaybeSlide )

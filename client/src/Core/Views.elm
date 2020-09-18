@@ -73,13 +73,13 @@ view fullModel =
 viewContent : Core.FullModel -> Element Core.Msg
 viewContent { global, model } =
     let
-        content =
+        ( content, popup ) =
             case model of
                 Core.Home homeModel ->
-                    homeView homeModel
+                    ( homeView homeModel, Nothing )
 
                 Core.ResetPassword resetPasswordModel ->
-                    ResetPassword.view resetPasswordModel
+                    ( ResetPassword.view resetPasswordModel, Nothing )
 
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
@@ -109,6 +109,7 @@ viewContent { global, model } =
             :: Element.scrollbarY
             :: Element.width Element.fill
             :: Background.color Colors.whiteDark
+            :: Element.inFront (Maybe.withDefault Element.none popup)
             :: attributes
         )
         [ topBar model
