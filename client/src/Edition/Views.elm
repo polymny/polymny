@@ -48,43 +48,36 @@ view global _ model =
 
 centerView : Core.Global -> Edition.Model -> Element Core.Msg
 centerView global model =
+    let
+        gos =
+            List.head (List.drop model.currentGos model.details.structure)
+    in
     Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
         [ capsuleProductionView global model
-        , gossProductionView global model
+        , gosProductionView model gos
         ]
 
 
-gossProductionView : Core.Global -> Edition.Model -> Element Core.Msg
-gossProductionView global model =
-    Element.el
-        [ Element.padding 10
-        , Element.width Element.fill
-        , Element.height Element.fill
-        , Element.scrollbarY
-        ]
-        (Element.row [ Element.width Element.fill ]
-            [ Element.column
-                [ Element.alignTop
-                , Element.width Element.fill
-                ]
-                [ Element.column [ Element.width Element.fill ]
-                    (List.map (gosProductionView model) model.details.structure)
-                ]
-            ]
-        )
-
-
-gosProductionView : Edition.Model -> Api.Gos -> Element Core.Msg
+gosProductionView : Edition.Model -> Maybe Api.Gos -> Element Core.Msg
 gosProductionView model gos =
-    Element.column
-        [ Element.width Element.fill
-        , Border.color Colors.black
-        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
-        ]
-        [ slidesView gos.slides
-        , Element.text "Ptoduction choices for the slide"
-        , editionOptionView model
-        ]
+    let
+        resultView =
+            case gos of
+                Just g ->
+                    Element.column
+                        [ Element.width Element.fill
+                        , Border.color Colors.black
+                        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                        ]
+                        [ slidesView g.slides
+                        , Element.text <| "Ptoduction choices for the gos " ++ String.fromInt model.currentGos
+                        , gosProductionChoicesView model
+                        ]
+
+                Nothing ->
+                    Element.none
+    in
+    resultView
 
 
 slidesView : List Api.Slide -> Element Core.Msg
@@ -184,6 +177,115 @@ capsuleProductionView global model =
             , publishButton
             ]
         ]
+
+
+gosProductionChoicesView : Edition.Model -> Element Core.Msg
+gosProductionChoicesView model =
+    let
+        p : Api.CapsuleEditionOptions
+        p =
+            let
+                stucture =
+                    List.head (List.drop model.currentGos model.details.structure)
+
+                production_choices =
+                    case stucture of
+                        Just x ->
+                            x.production_choices
+
+                        Nothing ->
+                            Just Edition.defaultGosProductionChoices
+            in
+            case production_choices of
+                Just x ->
+                    x
+
+                Nothing ->
+                    Edition.defaultGosProductionChoices
+
+        withVideo =
+            p.withVideo
+
+        webcamSize =
+            p.webcamSize
+
+        webcamPosition =
+            p.webcamPosition
+
+        videoFields =
+            [ Input.radio
+                [ Element.padding 10
+                , Element.spacing 10
+                ]
+                { onChange = Edition.GosWebcamSizeChanged model.currentGos
+                , selected = webcamSize
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Taille de l'incrustation webcam:")
+                , options =
+                    [ Input.option Webcam.Small (Element.text "Petit")
+                    , Input.option Webcam.Medium (Element.text "Moyen")
+                    , Input.option Webcam.Large (Element.text "Grand")
+                    ]
+                }
+            , Input.radio
+                [ Element.padding 10
+                , Element.spacing 10
+                ]
+                { onChange = Edition.GosWebcamPositionChanged model.currentGos
+                , selected = Debug.log "webcam position" webcamPosition
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Position de l'incrustation:")
+                , options =
+                    [ Input.option Webcam.TopLeft (Element.text "En haut à gauche.")
+                    , Input.option Webcam.TopRight (Element.text "En haut à droite.")
+                    , Input.option Webcam.BottomLeft (Element.text "En bas à gauche.")
+                    , Input.option Webcam.BottomRight (Element.text "En bas à droite.")
+                    ]
+                }
+            ]
+
+        commmonFields =
+            Input.checkbox []
+                { onChange = Edition.GosWithVideoChanged model.currentGos
+                , icon = Input.defaultCheckbox
+                , checked = withVideo
+                , label =
+                    Input.labelRight [] <|
+                        Element.text <|
+                            if withVideo then
+                                "L'audio et la vidéo seront utilisés"
+
+                            else
+                                "Seul l'audio sera utilisé"
+                }
+
+        fields =
+            if withVideo then
+                commmonFields :: videoFields
+
+            else
+                [ commmonFields ]
+
+        header =
+            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
+
+        form =
+            header :: fields
+    in
+    Element.map Core.LoggedInMsg <|
+        Element.map LoggedIn.EditionMsg <|
+            Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
+                form
 
 
 editionOptionView : Edition.Model -> Element Core.Msg

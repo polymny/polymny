@@ -2,6 +2,7 @@ module Api exposing
     ( Asset
     , Capsule
     , CapsuleDetails
+    , CapsuleEditionOptions
     , Gos
     , InnerGos
     , Project
