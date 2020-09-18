@@ -107,6 +107,7 @@ update msg global { session, tab } =
                 , webcamSize = editionModel.webcamSize
                 , webcamPosition = editionModel.webcamPosition
                 }
+                editionModel.details
             )
 
         ( LoggedIn.Record capsule gos, _ ) ->

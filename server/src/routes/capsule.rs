@@ -724,6 +724,16 @@ pub fn validate_capsule(
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
+/// Posted data for capsule edition
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PostCapsuleEdition {
+    /// Video and audio or audio only
+    pub capsule_production_choices: ApiProductionChoices,
+
+    /// Goss structure
+    pub goss: Vec<GosStructure>,
+}
+
 /// order capsule gos and slide
 #[post("/capsule/<id>/edition", data = "<post_data>")]
 pub fn capsule_edition(
@@ -731,16 +741,52 @@ pub fn capsule_edition(
     db: Database,
     user: User,
     id: i32,
-    post_data: Json<ApiProductionChoices>,
+    post_data: Json<PostCapsuleEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
+    // save Vec og Gos structrure
+    let data = post_data.into_inner();
+    let mut goss = data.goss;
+
+    // Verifiy that the goss doesn't violate authorizations.
+    // All slides must belong to the user.
+    for gos in &goss {
+        for slide in &gos.slides {
+            user.get_slide_by_id(*slide, &db)?;
+        }
+    }
+
+    // The user is not allowed to modify the record_path.
+    for gos in 0..goss.len() {
+        if goss[gos].record_path != None {
+            goss[gos].record_path = Some(
+                capsule.structure.as_array().unwrap()[gos]
+                    .get("record_path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            );
+        }
+    }
+
+    debug!("gos_ortder structure: {:#?}", goss);
+    // Perform the update
+    use crate::schema::capsules::dsl::{id as cid, structure};
+    diesel::update(capsules::table)
+        .filter(cid.eq(id))
+        .set(structure.eq(serde_json!(goss)))
+        .execute(&db.0)?;
+
+    let capsule = user.get_capsule_by_id(id, &db)?;
+
+    let capsule_production_choices = data.capsule_production_choices.to_edition_options();
     let dir = tempdir()?;
     let pip_path = dir.path().join(format!("pipList_{}.txt", capsule.id));
     let mut pip_file = File::create(&pip_path)?;
 
-    let structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
+    let capsule_structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
     let mut run_ffmpeg_command = true;
-    let capsule_production_choices = &post_data.to_edition_options();
     info!(
         "capsule production choices : {:#?}",
         &capsule_production_choices
@@ -751,7 +797,7 @@ pub fn capsule_edition(
         .set(dsl::edition_options.eq(serde_json!(capsule_production_choices)))
         .execute(&db.0)?;
 
-    for (gos_index, gos) in structure.into_iter().enumerate() {
+    for (gos_index, gos) in capsule_structure.into_iter().enumerate() {
         // GoS iteration
 
         //TODO for robustness : check gos.transitions  == gos.slides -1
@@ -823,7 +869,7 @@ pub fn capsule_edition(
                             record.push(record_path);
                             record_clone.push(background_path);
 
-                            if post_data.with_video.unwrap_or(true) {
+                            if production_choices.with_video {
                                 run_ffmpeg_command = false;
                                 ffmpeg_command.extend(
                                     vec![
@@ -899,7 +945,7 @@ pub fn capsule_edition(
 
                             record.push(record_path);
 
-                            if post_data.with_video.unwrap_or(true) {
+                            if production_choices.with_video {
                                 ffmpeg_command.extend(
                                     vec![
                                         "ffmpeg",
@@ -1016,17 +1062,11 @@ pub fn capsule_edition(
         } //end for loop slides
     }
     // concat all generated pip videos
-    let file_name = || {
-        if post_data.with_video.unwrap_or(true) {
-            format!("capsule_audio_and_video.mp4")
-        } else {
-            format!("capsule_audio_only.mp4")
-        }
-    };
+    let file_name = format!("capsule.mp4");
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
-    server_path.push(format!("{}_{}", uuid, &file_name()));
+    server_path.push(format!("{}_{}", uuid, &file_name));
 
     let mut output = config.data_path.clone();
     output.push(&server_path);
@@ -1054,7 +1094,7 @@ pub fn capsule_edition(
         let asset = Asset::new(
             &db,
             uuid,
-            &file_name(),
+            &file_name,
             server_path.to_str().unwrap(),
             Some("video"),
         )?;

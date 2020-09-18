@@ -722,12 +722,18 @@ encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
         ]
 
 
-editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> Cmd msg
-editionAuto resultToMsg id content =
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> CapsuleDetails -> Cmd msg
+editionAuto resultToMsg id content details =
     post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
-        , body = Http.jsonBody (encodeEditionAutoContent content)
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "capsule_production_choices", encodeEditionAutoContent content )
+                    , ( "goss", encodeSlideStructure details )
+                    ]
+                )
         }
 
 
@@ -793,6 +799,37 @@ updateSlide resultToMsg id content =
         }
 
 
+encodeProductionChoices : Maybe CapsuleEditionOptions -> Encode.Value
+encodeProductionChoices production_choices =
+    case production_choices of
+        Just p ->
+            let
+                webcamSize =
+                    case p.webcamSize of
+                        Just x ->
+                            Encode.string <| encodeWebcamSize x
+
+                        Nothing ->
+                            Encode.null
+
+                webcamPosition =
+                    case p.webcamPosition of
+                        Just x ->
+                            Encode.string <| encodeWebcamPosition x
+
+                        Nothing ->
+                            Encode.null
+            in
+            Encode.object
+                [ ( "with_video", Encode.bool p.withVideo )
+                , ( "webcam_size", webcamSize )
+                , ( "webcam_position", webcamPosition )
+                ]
+
+        Nothing ->
+            Encode.null
+
+
 encodeSlideStructure : CapsuleDetails -> Encode.Value
 encodeSlideStructure capsule =
     let
@@ -804,6 +841,7 @@ encodeSlideStructure capsule =
                 , ( "transitions", Encode.list Encode.int gos.transitions )
                 , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
                 , ( "locked", Encode.bool gos.locked )
+                , ( "production_choices", encodeProductionChoices gos.production_choices )
                 ]
     in
     Encode.list encodeGos capsule.structure

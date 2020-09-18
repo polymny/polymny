@@ -158,6 +158,7 @@ update global session msg model =
                                 , webcamSize = editionModel.webcamSize
                                 , webcamPosition = editionModel.webcamPosition
                                 }
+                                editionModel.details
                             )
 
                         ( Ok v, Acquisition.All, False ) ->

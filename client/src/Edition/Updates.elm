@@ -77,6 +77,7 @@ update session msg model =
                 , webcamSize = model.webcamSize
                 , webcamPosition = model.webcamPosition
                 }
+                model.details
             )
 
         Edition.GosWithVideoChanged gosIndex newWithVideo ->
