@@ -103,11 +103,10 @@ update session msg model =
                         )
                         gosStructure
 
-                newDetails : Api.CapsuleDetails
-                newDetails =
+                ( newDetails, cmd ) =
                     newDetailsAux model gosIndex gosUpdatedStructure
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }, cmd )
 
         Edition.GosWebcamSizeChanged gosIndex newWebcamSize ->
             let
@@ -132,11 +131,10 @@ update session msg model =
                         )
                         gosStructure
 
-                newDetails : Api.CapsuleDetails
-                newDetails =
+                ( newDetails, cmd ) =
                     newDetailsAux model gosIndex gosUpdatedStructure
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }, cmd )
 
         Edition.GosWebcamPositionChanged gosIndex newWebcamPosition ->
             let
@@ -161,14 +159,13 @@ update session msg model =
                         )
                         gosStructure
 
-                newDetails : Api.CapsuleDetails
-                newDetails =
+                ( newDetails, cmd ) =
                     newDetailsAux model gosIndex gosUpdatedStructure
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }, cmd )
 
 
-newDetailsAux : Edition.Model -> Int -> Maybe Api.Gos -> Api.CapsuleDetails
+newDetailsAux : Edition.Model -> Int -> Maybe Api.Gos -> ( Api.CapsuleDetails, Cmd Core.Msg )
 newDetailsAux model i gosUpdatedStructure =
     let
         details =
@@ -182,8 +179,11 @@ newDetailsAux model i gosUpdatedStructure =
 
                 _ ->
                     model.details.structure
+
+        newDetails =
+            { details | structure = newStructure }
     in
-    { details | structure = newStructure }
+    ( newDetails, Api.updateSlideStructure resultToMsg newDetails )
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
