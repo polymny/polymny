@@ -55,6 +55,7 @@ centerView global model =
     Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
         [ -- capsuleProductionView global model
           gosProductionView model gos
+        , bottomRow model
         ]
 
 
@@ -466,6 +467,49 @@ gosPrevisualisation model =
                     Element.none
     in
     Element.el [ Element.width Element.fill ] currentSlideView
+
+
+bottomRow : Edition.Model -> Element Core.Msg
+bottomRow model =
+    let
+        msg =
+            Just (Core.LoggedInMsg (LoggedIn.EditionClicked model.details True))
+
+        button =
+            Ui.primaryButton msg "Finaliser la vidéo"
+
+        video =
+            case model.details.video of
+                Just x ->
+                    Element.newTabLink
+                        [ Font.color Colors.link
+                        , Border.color Colors.link
+                        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                        ]
+                        { url = x.asset_path
+                        , label = Element.text "Voir la vidéo"
+                        }
+
+                Nothing ->
+                    Element.text "Pas de vidéo éditée pour l'instant"
+
+        ( element, publishButton ) =
+            case model.status of
+                Status.Sent ->
+                    ( Ui.messageWithSpinner "Edition automatique en cours", Element.none )
+
+                Status.Success () ->
+                    ( video, button )
+
+                Status.Error () ->
+                    ( Element.text "Problème rencontré lors de la compostion de la vidéo. Merci de nous contacter", Element.none )
+
+                Status.NotSent ->
+                    ( video, button )
+    in
+    Element.row
+        [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+        [ element, publishButton ]
 
 
 htmlVideo : String -> Html msg
