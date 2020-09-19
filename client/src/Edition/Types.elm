@@ -12,13 +12,12 @@ type alias Model =
     , webcamSize : Webcam.WebcamSize
     , webcamPosition : Webcam.WebcamPosition
     , currentGos : Int
-    , capsuleProductionChoices : Api.CapsuleEditionOptions
     }
 
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model Status.NotSent details True Webcam.Medium Webcam.BottomLeft 0 defaultGosProductionChoices
+    Model Status.NotSent details True Webcam.Medium Webcam.BottomLeft 0
 
 
 defaultGosProductionChoices : Api.CapsuleEditionOptions

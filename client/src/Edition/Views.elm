@@ -53,8 +53,8 @@ centerView global model =
             List.head (List.drop model.currentGos model.details.structure)
     in
     Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
-        [ capsuleProductionView global model
-        , gosProductionView model gos
+        [ -- capsuleProductionView global model
+          gosProductionView model gos
         ]
 
 
@@ -64,14 +64,12 @@ gosProductionView model gos =
         resultView =
             case gos of
                 Just g ->
-                    Element.column
+                    Element.row
                         [ Element.width Element.fill
-                        , Border.color Colors.black
-                        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                        , Element.height Element.fill
                         ]
-                        [ slidesView g.slides
-                        , Element.text <| "Ptoduction choices for the gos " ++ String.fromInt model.currentGos
-                        , gosProductionChoicesView model
+                        [ gosProductionChoicesView model
+                        , gosPrevisualisation model
                         ]
 
                 Nothing ->
@@ -237,7 +235,7 @@ gosProductionChoicesView model =
                 , Element.spacing 10
                 ]
                 { onChange = Edition.GosWebcamPositionChanged model.currentGos
-                , selected = Debug.log "webcam position" webcamPosition
+                , selected = webcamPosition
                 , label =
                     Input.labelAbove
                         [ Element.centerX
@@ -284,7 +282,7 @@ gosProductionChoicesView model =
     in
     Element.map Core.LoggedInMsg <|
         Element.map LoggedIn.EditionMsg <|
-            Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
+            Element.column [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
                 form
 
 
@@ -387,6 +385,87 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
         Element.map LoggedIn.EditionMsg <|
             Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
                 form
+
+
+gosPrevisualisation : Edition.Model -> Element Core.Msg
+gosPrevisualisation model =
+    let
+        currentGos : Maybe Api.Gos
+        currentGos =
+            List.head (List.drop model.currentGos model.details.structure)
+
+        productionChoices : Api.CapsuleEditionOptions
+        productionChoices =
+            case Maybe.map .production_choices currentGos of
+                Just (Just c) ->
+                    c
+
+                _ ->
+                    Edition.defaultGosProductionChoices
+
+        currentSlide : Maybe Api.Slide
+        currentSlide =
+            Maybe.withDefault Nothing (Maybe.map (\x -> List.head x.slides) currentGos)
+
+        position : List (Element.Attribute Core.Msg)
+        position =
+            case ( productionChoices.withVideo, Maybe.withDefault Webcam.BottomLeft productionChoices.webcamPosition ) of
+                ( True, Webcam.TopLeft ) ->
+                    [ Element.alignTop, Element.alignLeft ]
+
+                ( True, Webcam.TopRight ) ->
+                    [ Element.alignTop, Element.alignRight ]
+
+                ( True, Webcam.BottomLeft ) ->
+                    [ Element.alignBottom, Element.alignLeft ]
+
+                ( True, Webcam.BottomRight ) ->
+                    [ Element.alignBottom, Element.alignRight ]
+
+                _ ->
+                    []
+
+        size : Int
+        size =
+            case ( productionChoices.withVideo, Maybe.withDefault Webcam.Medium productionChoices.webcamSize ) of
+                ( True, Webcam.Small ) ->
+                    1
+
+                ( True, Webcam.Medium ) ->
+                    2
+
+                ( True, Webcam.Large ) ->
+                    4
+
+                _ ->
+                    0
+
+        inFront : Element Core.Msg
+        inFront =
+            if productionChoices.withVideo then
+                Element.el position
+                    (Element.image
+                        [ Element.width (Element.px (100 * size)) ]
+                        { src = "/dist/silhouette.png", description = "" }
+                    )
+
+            else
+                Element.none
+
+        currentSlideView : Element Core.Msg
+        currentSlideView =
+            case currentSlide of
+                Just s ->
+                    Element.image
+                        [ Element.width Element.fill
+                        , Element.inFront inFront
+                        ]
+                        { src = s.asset.asset_path, description = "" }
+
+                _ ->
+                    Element.none
+    in
+    Element.el [ Element.width Element.fill ] currentSlideView
 
 
 htmlVideo : String -> Html msg

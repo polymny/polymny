@@ -10,6 +10,7 @@ import Edition.Types as Edition
 import Edition.Updates as Edition
 import File
 import File.Select as Select
+import Log
 import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
@@ -37,7 +38,6 @@ update msg global { session, tab } =
             ( global, { session = session, tab = tab }, Ports.scrollIntoView ("gos-" ++ String.fromInt i) )
 
         ( LoggedIn.GosClicked i, LoggedIn.Edition editionModel ) ->
-            -- TODO manage gosclicked correctly when in edition tab
             let
                 gosIndex : Int
                 gosIndex =
@@ -506,7 +506,7 @@ resultToMsg4 result =
         Err e ->
             let
                 _ =
-                    Debug.log "Request fail" e
+                    Log.debug "Request fail" e
             in
             Core.Noop
 
@@ -520,6 +520,6 @@ resultToMsg5 result =
         Err e ->
             let
                 _ =
-                    Debug.log "Request fail" e
+                    Log.debug "Request fail" e
             in
             Core.Noop

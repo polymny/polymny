@@ -224,19 +224,19 @@ topBar model =
                         LoggedIn.Preparation p ->
                             [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" True
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" False
                             ]
 
                         LoggedIn.Acquisition p ->
                             [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" True
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" False
                             ]
 
                         LoggedIn.Edition p ->
                             [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details True))) "Edition" True
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" True
                             ]
 
                         _ ->
