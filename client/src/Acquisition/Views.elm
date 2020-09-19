@@ -60,7 +60,7 @@ view global _ model =
         , Element.height Element.fill
         , Element.scrollbarY
         ]
-        [ Preparation.leftColumnView model.details
+        [ Preparation.leftColumnView model.details Nothing
         , centerView model
         , rightColumn model
         ]

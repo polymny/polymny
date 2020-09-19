@@ -52,7 +52,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-                [ leftColumnView details
+                [ leftColumnView details Nothing
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
                     [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
                         [ Ui.primaryButton (Just decreaseMsg) "-"
@@ -688,8 +688,8 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
                 (Element.el (Element.width Element.fill :: dragAttributes) media)
 
 
-leftColumnView : Api.CapsuleDetails -> Element Core.Msg
-leftColumnView details =
+leftColumnView : Api.CapsuleDetails -> Maybe Int -> Element Core.Msg
+leftColumnView details currentGos =
     let
         slides =
             Preparation.setupSlides details
@@ -723,8 +723,19 @@ leftColumnView details =
 
                 (Preparation.JustSlide s i) :: _ ->
                     Input.button
-                        [ Element.inFront (inFront ((i - 1) // 2))
-                        ]
+                        (Element.inFront (inFront ((i - 1) // 2))
+                            :: (case currentGos of
+                                    Just gosIndex ->
+                                        if gosIndex == ((i - 1) // 2) then
+                                            [ Border.width 5, Border.color Colors.primary ]
+
+                                        else
+                                            []
+
+                                    _ ->
+                                        []
+                               )
+                        )
                         { onPress = Just (Core.LoggedInMsg (LoggedIn.GosClicked i))
                         , label = viewSlideImage s.asset.asset_path
                         }

@@ -16,7 +16,6 @@ import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
-import Utils
 import Webcam
 
 
@@ -41,7 +40,7 @@ import Webcam
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
 view global _ model =
     Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-        [ Preparation.leftColumnView model.details
+        [ Preparation.leftColumnView model.details (Just model.currentGos)
         , centerView global model
         ]
 
