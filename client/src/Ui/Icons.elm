@@ -1,10 +1,13 @@
 module Ui.Icons exposing
     ( add
+    , buttonFromIcon
     , camera
     , cancel
     , clear
     , closeLock
     , edit
+    , font
+    , image
     , menuPoint
     , movie
     , openLock
@@ -21,14 +24,15 @@ import Html.Attributes
 
 
 buttonFromIcon : FontAwesome.Icon -> Element msg
-buttonFromIcon icon =
+buttonFromIcon i =
     Element.html
         (Html.div
             []
             [ FontAwesome.iconWithOptions
-                icon
+                i
                 FontAwesome.Solid
-                [ FontAwesome.Size (FontAwesome.Mult 2) ]
+                []
+                --[ FontAwesome.Size (FontAwesome.Mult 2) ]
                 []
             ]
         )
@@ -77,6 +81,16 @@ openLock =
 closeLock : Element msg
 closeLock =
     buttonFromIcon FontAwesome.lock
+
+
+font : Element msg
+font =
+    buttonFromIcon FontAwesome.font
+
+
+image : Element msg
+image =
+    buttonFromIcon FontAwesome.image
 
 
 spinner : Element msg

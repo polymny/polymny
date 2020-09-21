@@ -6,7 +6,6 @@
     "elm-version": "0.19.1",
     "dependencies": {
         "direct": {
-            "PaackEng/elm-ui-dialog": "1.0.0",
             "annaghi/dnd-list": "6.0.1",
             "elm/browser": "1.0.2",
             "elm/core": "1.0.5",
@@ -18,6 +17,7 @@
             "elm/url": "1.0.0",
             "frandibar/elm-font-awesome-5": "1.0.0",
             "mdgriffith/elm-ui": "1.1.8",
+            "ohanhi/keyboard": "2.0.1",
             "tesk9/palette": "3.0.1"
         },
         "indirect": {

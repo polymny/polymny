@@ -18,7 +18,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use serde::Deserialize;
 
 use crate::db::capsule::Capsule;
-use crate::db::project::Project;
+use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
 use crate::mailer::Mailer;
@@ -27,7 +27,7 @@ use crate::templates::{
     reset_password_email_html, reset_password_email_plain_text, validation_email_html,
     validation_email_plain_text, validation_new_email_html, validation_new_email_plain_text,
 };
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
 use crate::Database;
 use crate::{Error, Result};
 
@@ -385,16 +385,17 @@ impl User {
     }
 
     /// Returns the list of the user's projects names.
-    pub fn projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
+    pub fn projects(&self, db: &PgConnection) -> Result<Vec<ProjectWithCapsules>> {
         use crate::schema::projects::dsl::*;
-        Ok(projects.filter(user_id.eq(self.id)).load::<Project>(db)?)
+        let project = projects.filter(user_id.eq(self.id)).load::<Project>(db)?;
+        project.into_iter().map(|x| x.with_capsules(db)).collect()
     }
 
     /// Gets a project by id, returning an error if the project does not belong to the user.
     pub fn get_project_by_id(&self, project_id: i32, db: &Database) -> Result<Project> {
         let project = Project::get_by_id(project_id, &db)?;
         if project.user_id == self.id {
-            Ok(project)
+            Ok(project.to_project())
         } else {
             Err(Error::NotFound)
         }
@@ -423,8 +424,8 @@ impl User {
     }
 
     /// Gets Webcam option in db or default values if not set
-    pub fn get_edition_options(&self) -> Result<EditionOptions> {
-        let options = EditionOptions {
+    pub fn get_edition_options(&self) -> Result<ProductionChoices> {
+        let options = ProductionChoices {
             with_video: self
                 .edition_options
                 .get("with_video")

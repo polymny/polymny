@@ -2,6 +2,7 @@ module Core.Views exposing (subscriptions, view)
 
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
+import Acquisition.Views as Acquisition
 import Browser
 import Core.Types as Core
 import Core.Utils as Core
@@ -9,6 +10,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import ForgotPassword.Views as ForgotPassword
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
@@ -38,18 +40,21 @@ subscriptions { model } =
                             ]
                         )
 
-                LoggedIn.Acquisition _ ->
+                LoggedIn.Acquisition m ->
                     Sub.batch
-                        [ Acquisition.Ports.newRecord Acquisition.NewRecord
-                        , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
-                        , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
-                        , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
-                        , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
-                        , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
-                        , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
+                        [ Acquisition.subscriptions m
+                        , Sub.batch
+                            [ Acquisition.Ports.newRecord Acquisition.NewRecord
+                            , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
+                            , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
+                            , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
+                            , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
+                            , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
+                            , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
+                            ]
+                            |> Sub.map LoggedIn.AcquisitionMsg
+                            |> Sub.map Core.LoggedInMsg
                         ]
-                        |> Sub.map LoggedIn.AcquisitionMsg
-                        |> Sub.map Core.LoggedInMsg
 
                 _ ->
                     Sub.none
@@ -68,13 +73,13 @@ view fullModel =
 viewContent : Core.FullModel -> Element Core.Msg
 viewContent { global, model } =
     let
-        content =
+        ( content, popup ) =
             case model of
                 Core.Home homeModel ->
-                    homeView homeModel
+                    ( homeView homeModel, Nothing )
 
                 Core.ResetPassword resetPasswordModel ->
-                    ResetPassword.view resetPasswordModel
+                    ( ResetPassword.view resetPasswordModel, Nothing )
 
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
@@ -83,10 +88,15 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms } ->
-                            [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource uploadForms.replaceSlide details gosModel slideModel (List.concat slides))
-                            , Element.inFront (Preparation.slideGhostView global uploadForms.extraResource uploadForms.replaceSlide slideModel (List.concat slides))
-                            ]
+                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms, broken } ->
+                            case broken of
+                                Preparation.NotBroken ->
+                                    [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource global.numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (List.concat slides))
+                                    , Element.inFront (Preparation.slideGhostView global uploadForms.extraResource uploadForms.replaceSlide slideModel (List.concat slides))
+                                    ]
+
+                                _ ->
+                                    []
 
                         _ ->
                             []
@@ -96,10 +106,16 @@ viewContent { global, model } =
     in
     Element.column
         (Element.height Element.fill
+            :: Element.scrollbarY
             :: Element.width Element.fill
+            :: Background.color Colors.whiteDark
+            :: Element.inFront (Maybe.withDefault Element.none popup)
             :: attributes
         )
-        [ topBar model, content, bottomBar global ]
+        [ topBar model
+        , content
+        , bottomBar global
+        ]
 
 
 homeView : Core.HomeModel -> Element Core.Msg
@@ -183,17 +199,58 @@ homeView model =
 topBar : Core.Model -> Element Core.Msg
 topBar model =
     case model of
-        Core.LoggedIn { session } ->
+        Core.LoggedIn { session, tab } ->
+            let
+                makeButton : Maybe Core.Msg -> String -> Bool -> Element Core.Msg
+                makeButton msg label active =
+                    Input.button
+                        (Element.padding 7
+                            :: Element.height Element.fill
+                            :: (if active then
+                                    [ Background.color Colors.white
+                                    , Font.color Colors.primary
+                                    ]
+
+                                else
+                                    []
+                               )
+                        )
+                        { onPress = msg
+                        , label = Element.text label
+                        }
+
+                leftButtons =
+                    case tab of
+                        LoggedIn.Preparation p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" True
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" False
+                            ]
+
+                        LoggedIn.Acquisition p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" True
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" False
+                            ]
+
+                        LoggedIn.Edition p ->
+                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Preparation" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Acquisition" False
+                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Edition" True
+                            ]
+
+                        _ ->
+                            []
+            in
             Element.row
                 [ Background.color Colors.primary
                 , Font.color Colors.white
                 , Element.width Element.fill
-                , Element.spacing 30
                 ]
                 [ Element.row
-                    [ Element.alignLeft, Element.padding 10, Element.spacing 5 ]
-                    [ homeButton ]
-                , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+                    [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
+                    [ homeButton, Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons ]
+                , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
                         [ settingsButton session.username
                         , logoutButton
@@ -270,7 +327,7 @@ nonFull model =
         , Element.spacing 30
         ]
         [ Element.row
-            [ Element.alignLeft, Element.padding 10, Element.spacing 10 ]
+            [ Element.alignLeft, Element.paddingXY 40 10, Element.spacing 10 ]
             [ homeButton ]
         , Element.row [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
             (if Core.isLoggedIn model then
@@ -284,7 +341,7 @@ nonFull model =
 
 homeButton : Element Core.Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.homeButton (Just Core.HomeClicked) "")
+    Element.el [ Element.padding 5 ] (Ui.homeButton (Just Core.HomeClicked) "")
 
 
 logoutButton : Element Core.Msg

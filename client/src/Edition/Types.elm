@@ -1,4 +1,4 @@
-module Edition.Types exposing (Model, Msg(..), init, selectEditionOptions)
+module Edition.Types exposing (Model, Msg(..), defaultGosProductionChoices, init, selectEditionOptions)
 
 import Api
 import Status exposing (Status)
@@ -11,12 +11,18 @@ type alias Model =
     , withVideo : Bool
     , webcamSize : Webcam.WebcamSize
     , webcamPosition : Webcam.WebcamPosition
+    , currentGos : Int
     }
 
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model Status.NotSent details True Webcam.Medium Webcam.BottomLeft
+    Model Status.NotSent details True Webcam.Medium Webcam.BottomLeft 0
+
+
+defaultGosProductionChoices : Api.CapsuleEditionOptions
+defaultGosProductionChoices =
+    Api.CapsuleEditionOptions True (Just Webcam.Medium) (Just Webcam.BottomLeft)
 
 
 selectEditionOptions : Api.Session -> Api.Capsule -> Model -> Model
@@ -52,4 +58,7 @@ type Msg
     | WithVideoChanged Bool
     | WebcamSizeChanged Webcam.WebcamSize
     | WebcamPositionChanged Webcam.WebcamPosition
+    | GosWithVideoChanged Int Bool
+    | GosWebcamSizeChanged Int Webcam.WebcamSize
+    | GosWebcamPositionChanged Int Webcam.WebcamPosition
     | OptionsSubmitted

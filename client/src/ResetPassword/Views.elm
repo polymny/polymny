@@ -91,5 +91,5 @@ view { password, passwordConfirmation, status } =
     in
     Element.map Core.ResetPasswordMsg <|
         Element.column
-            [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+            [ Element.centerX, Element.padding 10, Element.spacing 10, Element.height Element.fill ]
             form

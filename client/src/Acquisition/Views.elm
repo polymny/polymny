@@ -1,4 +1,4 @@
-module Acquisition.Views exposing (view)
+module Acquisition.Views exposing (subscriptions, view)
 
 import Acquisition.Types as Acquisition
 import Api
@@ -7,123 +7,318 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
+import FontAwesome
 import Html
 import Html.Attributes
+import Keyboard
 import LoggedIn.Types as LoggedIn
+import Preparation.Views as Preparation
 import Status
 import Ui.Colors as Colors
+import Ui.Icons
 import Ui.Ui as Ui
-import Utils
+
+
+shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
+shortcuts model msg =
+    let
+        raw =
+            Keyboard.rawValue msg
+
+        mkmsg : Acquisition.Msg -> Core.Msg
+        mkmsg ms =
+            if model.cameraReady then
+                Core.LoggedInMsg (LoggedIn.AcquisitionMsg ms)
+
+            else
+                Core.Noop
+    in
+    case raw of
+        " " ->
+            mkmsg
+                (if model.recording then
+                    Acquisition.StopRecording
+
+                 else
+                    Acquisition.StartRecording
+                )
+
+        "ArrowRight" ->
+            mkmsg Acquisition.NextSentence
+
+        _ ->
+            Core.Noop
+
+
+subscriptions : Acquisition.Model -> Sub Core.Msg
+subscriptions model =
+    Sub.batch
+        [ Keyboard.ups (shortcuts model)
+        ]
 
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
 view global _ model =
     let
-        mainPage =
-            mainView global model
-
-        element =
-            Element.column
-                Ui.mainViewAttributes2
-                [ Utils.headerView "acquisition" model.details
-                , mainPage
+        attributes =
+            if model.cameraReady then
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
                 ]
-    in
-    Element.row Ui.mainViewAttributes1
-        [ element ]
-
-
-viewSlideImage : String -> Element Core.Msg
-viewSlideImage urlImage =
-    Element.image
-        [ Element.width (Element.px 150) ]
-        { src = urlImage, description = "One desc" }
-
-
-slideThumbView : Bool -> Api.Slide -> Element Core.Msg
-slideThumbView isActive slide =
-    let
-        background =
-            if isActive then
-                Background.color Colors.artIrises
 
             else
-                Background.color Colors.whiteDark
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
+                , Element.htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                ]
+    in
+    Element.row
+        attributes
+        [ Preparation.leftColumnView model.details (Just model.gos)
+        , centerView model
+        , rightColumn model
+        ]
 
-        attributes =
-            [ background
-            , Border.color Colors.whiteDarker
-            , Border.rounded 5
-            , Border.width 1
-            , Element.padding 10
+
+centerView : Acquisition.Model -> Element Core.Msg
+centerView model =
+    Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+        [ promptView model
+        , slideView model
+        ]
+
+
+promptView : Acquisition.Model -> Element Core.Msg
+promptView model =
+    let
+        promptAttributes : List (Element.Attribute Core.Msg)
+        promptAttributes =
+            [ Font.center
+            , Element.centerX
             ]
-    in
-    Element.el attributes <|
-        viewSlideImage slide.asset.asset_path
 
+        currentSlide : Maybe Api.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
 
-slidesThumbView : Acquisition.Model -> Element Core.Msg
-slidesThumbView model =
-    let
-        gosParser : Bool -> Api.Gos -> Element Core.Msg
-        gosParser isActive gos =
-            Element.row []
-                (List.map (slideThumbView isActive) gos.slides)
-    in
-    Element.row []
-        (List.indexedMap (\i x -> gosParser (i == model.gos) x) model.details.structure)
+        nextSlide : Maybe Api.Slide
+        nextSlide =
+            List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
 
+        getLine : Int -> Api.Slide -> Maybe String
+        getLine n x =
+            List.head (List.drop n (String.split "\n" x.prompt))
 
-mainView : Core.Global -> Acquisition.Model -> Element Core.Msg
-mainView global model =
-    let
-        nextButton =
-            case model.slides of
-                Just x ->
-                    case List.length x of
-                        0 ->
-                            Element.none
+        currentSentence : Maybe String
+        currentSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine model.currentLine) currentSlide)
 
-                        1 ->
-                            Element.none
-
-                        _ ->
-                            nextSlideButton
-
+        nextSentence : Maybe String
+        nextSentence =
+            case Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide) of
                 Nothing ->
+                    Maybe.withDefault Nothing (Maybe.map List.head (Maybe.map (\x -> String.split "\n" x.prompt) nextSlide))
+
+                x ->
+                    x
+
+        promptText =
+            case currentSentence of
+                Just h ->
+                    Element.el
+                        (Font.size 35 :: Font.color Colors.white :: promptAttributes)
+                        (Element.paragraph [] [ Element.text h ])
+
+                _ ->
                     Element.none
 
-        slidePos =
-            Element.column
-                [ Element.paddingXY 50 10
-                , Font.size 28
-                , Font.center
-                , Background.color Colors.whiteDark
-                , Border.color Colors.whiteDarker
-                , Border.rounded 5
-                , Border.width 1
-                , Element.width Element.shrink
-                , Element.centerX
-                , Element.spacing 5
-                ]
-                [ Element.paragraph []
-                    [ Element.text "Slide "
-                    , Element.el [ Font.bold ] <| Element.text <| String.fromInt (model.gos + 1)
-                    , Element.text "/"
-                    , Element.el [ Font.bold ] <| Element.text <| String.fromInt <| List.length model.details.slides
-                    ]
-                , slidesThumbView model
+        nextPromptText =
+            case nextSentence of
+                Just h ->
+                    Element.el
+                        (Font.size 25 :: Font.color Colors.grey :: promptAttributes)
+                        (Element.paragraph [] [ Element.text h ])
+
+                _ ->
+                    Element.none
+
+        help =
+            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 5, Element.spacing 20 ]
+                [ Element.paragraph [] [ Element.text "Enregistrer : espace" ]
+                , Element.paragraph [] [ Element.text "Finir l'enregistrement : espace" ]
+                , Element.paragraph [] [ Element.text "Prochaine ligne : flèche à droite" ]
                 ]
     in
-    Element.column [ Element.spacing 10, Element.padding 20, Element.width Element.fill ]
-        [ Element.row [ Element.spacing 10 ]
-            [ recordingsView model
-            , topView global model
-            ]
-        , Element.row [ Element.centerX, Element.spacing 10 ]
-            [ recordingButton model.cameraReady model.recording (List.length model.records), nextButton ]
-        , slidePos
+    Element.row
+        [ Element.width Element.fill
+        , Element.height Element.fill
         ]
+        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] help
+        , Element.column
+            [ Element.width (Element.fillPortion 3)
+            , Element.height Element.fill
+            , Element.padding 10
+            , Element.spacing 20
+            , Background.color Colors.black
+            ]
+            [ promptText, nextPromptText ]
+        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
+        ]
+
+
+slideView : Acquisition.Model -> Element Core.Msg
+slideView model =
+    case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
+        Just h ->
+            Element.el
+                [ Input.focusedOnLoad
+                , Element.width Element.fill
+                , Element.height (Element.fillPortion 2)
+                , Element.htmlAttribute
+                    (Html.Attributes.style "background"
+                        ("center / contain content-box no-repeat url(" ++ h.asset.asset_path ++ ")")
+                    )
+                ]
+                Element.none
+
+        _ ->
+            Element.none
+
+
+rightColumn : Acquisition.Model -> Element Core.Msg
+rightColumn model =
+    let
+        backToWebcam : Element Core.Msg
+        backToWebcam =
+            let
+                m =
+                    if model.watchingWebcam then
+                        Nothing
+
+                    else
+                        Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.GoToWebcam))
+            in
+            Ui.simpleButton m "Revenir à la webcam"
+
+        recordView : Int -> Acquisition.Record -> Element Core.Msg
+        recordView index record =
+            let
+                makeButton =
+                    if model.currentVideo == Just record.id then
+                        Ui.primaryButton
+
+                    else
+                        Ui.simpleButton
+            in
+            Element.row [ Element.spacing 10 ] [ makeButton (msg record) (String.fromInt index) ]
+
+        msg : Acquisition.Record -> Maybe Core.Msg
+        msg i =
+            if model.recording then
+                Nothing
+
+            else
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
+
+        status : Element Core.Msg
+        status =
+            Element.column [ Element.width Element.fill ]
+                [ if model.recording then
+                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Element.el
+                            [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
+                            (Element.row []
+                                [ Ui.Icons.buttonFromIcon FontAwesome.circle
+                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                    (Element.text "REC")
+                                ]
+                            )
+                        ]
+
+                  else
+                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Element.el
+                            []
+                            (Element.row []
+                                [ Element.el [ Font.size 25 ] (Ui.Icons.buttonFromIcon FontAwesome.stopCircle)
+                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                    (Element.text "Enregistrement arrêté")
+                                ]
+                            )
+                        ]
+                ]
+
+        uploadButton =
+            case model.currentVideo of
+                Just v ->
+                    Ui.successButton (Just (Acquisition.UploadStream (url model.details.capsule.id model.gos) v)) "Uploader"
+                        |> Element.map LoggedIn.AcquisitionMsg
+                        |> Element.map Core.LoggedInMsg
+
+                Nothing ->
+                    Ui.successButton Nothing "Uploader"
+    in
+    Element.column [ Element.width Element.fill, Element.height Element.fill ]
+        [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
+        , Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
+            (status :: Element.text "Enregistrements" :: backToWebcam :: List.indexedMap recordView (List.reverse model.records))
+        , uploadButton
+        ]
+
+
+
+-- mainView : Core.Global -> Acquisition.Model -> Element Core.Msg
+-- mainView global model =
+--     let
+--         nextButton =
+--             case model.slides of
+--                 Just x ->
+--                     case List.length x of
+--                         0 ->
+--                             Element.none
+--
+--                         1 ->
+--                             Element.none
+--
+--                         _ ->
+--                             nextSlideButton
+--
+--                 Nothing ->
+--                     Element.none
+--
+--         slidePos =
+--             Element.column
+--                 [ Element.paddingXY 50 10
+--                 , Font.size 28
+--                 , Font.center
+--                 , Background.color Colors.whiteDark
+--                 , Border.color Colors.whiteDarker
+--                 , Border.rounded 5
+--                 , Border.width 1
+--                 , Element.width Element.shrink
+--                 , Element.centerX
+--                 , Element.spacing 5
+--                 ]
+--                 [ Element.paragraph []
+--                     [ Element.text "Slide "
+--                     , Element.el [ Font.bold ] <| Element.text <| String.fromInt (model.gos + 1)
+--                     , Element.text "/"
+--                     , Element.el [ Font.bold ] <| Element.text <| String.fromInt <| List.length model.details.slides
+--                     ]
+--                 ]
+--     in
+--     Element.column [ Element.spacing 10, Element.padding 20, Element.width (Element.fillPortion 6), Element.height Element.fill ]
+--         [ Element.row [ Element.spacing 10 ]
+--             [ recordingsView model
+--             , topView global model
+--             ]
+--         , Element.row [ Element.centerX, Element.spacing 10 ]
+--             [ recordingButton model.cameraReady model.recording (List.length model.records), nextButton ]
+--         , slidePos
+--         ]
 
 
 topView : Core.Global -> Acquisition.Model -> Element Core.Msg

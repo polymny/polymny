@@ -9,7 +9,7 @@ use crate::db::asset::Asset;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, EditionOptions};
+use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -86,6 +86,9 @@ pub struct Capsule {
     ///  ]
     /// ```
     pub edition_options: Json,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -119,6 +122,9 @@ pub struct NewCapsule {
 
     /// The structure of the editions options.
     pub edition_options: Option<Json>,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
 }
 
 /// A link between a capsule and a project.
@@ -169,6 +175,7 @@ impl Capsule {
             structure: json!([]),
             published: PublishedType::NotPublished,
             edition_options: Some(json!([])),
+            active: false,
         }
         .save(&database)?;
 
@@ -200,8 +207,10 @@ impl Capsule {
             structure: json!([]),
             published: PublishedType::NotPublished,
             edition_options: None,
+            active: false,
         })
     }
+
     /// Gets a capsule from its id.
     pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
@@ -221,7 +230,7 @@ impl Capsule {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
         Ok(cap_p
             .into_iter()
-            .map(|x| Project::get_by_id(x.project_id, &db))
+            .map(|x| Project::get_by_id(x.project_id, &db).map(|x| x.to_project()))
             .collect::<Result<Vec<Project>>>()?)
     }
 
@@ -308,8 +317,8 @@ impl Capsule {
     }
 
     /// Gets Webcam option in db or default values if not set
-    pub fn get_edition_options(&self) -> Result<EditionOptions> {
-        let options = EditionOptions {
+    pub fn get_edition_options(&self) -> Result<ProductionChoices> {
+        let options = ProductionChoices {
             with_video: self
                 .edition_options
                 .get("with_video")

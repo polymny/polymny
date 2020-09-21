@@ -1,5 +1,6 @@
 module Preparation.Types exposing
-    ( DnDMsg(..)
+    ( Broken(..)
+    , DnDMsg(..)
     , EditPrompt
     , EditPromptMsg(..)
     , Forms
@@ -43,7 +44,13 @@ type alias Model =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , t : Tab
+    , broken : Broken
     }
+
+
+type Broken
+    = NotBroken
+    | Broken Model
 
 
 type MaybeSlide
@@ -139,6 +146,10 @@ type Msg
     | UploadExtraResourceMsg UploadExtraResourceMsg
     | ReplaceSlideMsg ReplaceSlideMsg
     | UserSelectedTab Tab
+    | IncreaseNumberOfSlidesPerRow
+    | DecreaseNumberOfSlidesPerRow
+    | RejectBroken
+    | AcceptBroken
 
 
 type DnDMsg
@@ -176,7 +187,6 @@ type UploadLogoMsg
 type UploadExtraResourceMsg
     = UploadExtraResourceSelectFileRequested Int
     | UploadExtraResourceFileReady File Int
-    | UploadExtraResourceFormSubmitted Int
     | UploadExtraResourceSuccess Api.Slide
     | UploadExtraResourceError
     | DeleteExtraResource Int
@@ -201,7 +211,7 @@ type UploadModel
 
 init : Api.CapsuleDetails -> Model
 init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First
+    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First NotBroken
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide
@@ -392,7 +402,7 @@ extractStructureAux slides current currentGos =
                 newGos =
                     case ( h, currentGos ) of
                         ( JustSlide s _, Nothing ) ->
-                            { record = Nothing, slides = [ s ], locked = False, transitions = [], background = Nothing }
+                            { record = Nothing, slides = [ s ], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
 
                         ( JustSlide s _, Just gos ) ->
                             let
@@ -402,6 +412,6 @@ extractStructureAux slides current currentGos =
                             { gos | slides = newSlides }
 
                         ( GosId _, _ ) ->
-                            { record = Nothing, slides = [], locked = False, transitions = [], background = Nothing }
+                            { record = Nothing, slides = [], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
             in
             extractStructureAux t newCurrent (Just newGos)

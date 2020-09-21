@@ -6,7 +6,9 @@ module Ui.Ui exposing
     , closeLockButton
     , editButton
     , errorModal
+    , fontButton
     , homeButton
+    , imageButton
     , linkButton
     , mainViewAttributes1
     , mainViewAttributes2
@@ -171,21 +173,34 @@ iconButton : Element msg -> Maybe msg -> String -> Element msg
 iconButton icon onPress content =
     let
         iconAttributes =
-            buttonAttributes
-                ++ [ Font.color Colors.primary
-                   , Background.color Colors.white
-                   , Border.color Colors.primary
-                   ]
+            [ Font.color Colors.primary
+            , Background.color Colors.grey
+            , Border.color Colors.primary
+            , Element.padding 5
+            , Border.rounded 5
+            ]
+
+        contentElement =
+            if content == "" then
+                Element.none
+
+            else
+                Element.el [ Element.paddingEach { left = 5, right = 0, top = 0, bottom = 0 } ] (Element.text content)
     in
     Input.button iconAttributes
         { onPress = onPress
-        , label = Element.row [] [ icon, Element.text content ]
+        , label = Element.row [] [ icon, contentElement ]
         }
 
 
 trashButton : Maybe msg -> String -> Element msg
 trashButton onPress content =
     iconButton Icons.trash onPress content
+
+
+fontButton : Maybe msg -> String -> Element msg
+fontButton onPress content =
+    iconButton Icons.font onPress content
 
 
 addButton : Maybe msg -> String -> Element msg
@@ -211,6 +226,11 @@ cancelButton onPress content =
 cameraButton : Maybe msg -> String -> Element msg
 cameraButton onPress content =
     iconButton Icons.camera onPress content
+
+
+imageButton : Maybe msg -> String -> Element msg
+imageButton onPress content =
+    iconButton Icons.image onPress content
 
 
 recordButton : Element msg -> Maybe msg -> String -> Element msg
@@ -259,7 +279,7 @@ homeButton : Maybe msg -> String -> Element msg
 homeButton onPress content =
     let
         icon =
-            Element.image [ Element.width (Element.px 60) ]
+            Element.image [ Element.width (Element.px 40) ]
                 { src = "/dist/logo.png"
                 , description = " Polymny home page"
                 }

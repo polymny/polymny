@@ -10,7 +10,7 @@ import Status
 import Utils
 
 
-update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Preparation.Model, Cmd Core.Msg )
+update : Preparation.Msg -> Core.Global -> Preparation.Model -> ( Core.Global, Preparation.Model, Cmd Core.Msg )
 update msg global capsuleModel =
     case ( msg, capsuleModel ) of
         ( Preparation.UploadSlideShowMsg newUploadSlideShowMsg, model ) ->
@@ -24,7 +24,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | slideShow = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadBackgroundMsg newUploadBackgroundMsg, model ) ->
             let
@@ -37,7 +37,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | background = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadLogoMsg newUploadLogoMsg, model ) ->
             let
@@ -50,7 +50,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | logo = newFormModel }
             in
-            ( { model | uploadForms = newUploadForms }, newCmd )
+            ( global, { model | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.UploadExtraResourceMsg newUploadExtraResourceMsg, model ) ->
             let
@@ -63,7 +63,7 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | extraResource = newFormModel }
             in
-            ( { newModel | uploadForms = newUploadForms }, newCmd )
+            ( global, { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.ReplaceSlideMsg newReplaceSlideMsg, model ) ->
             let
@@ -76,14 +76,14 @@ update msg global capsuleModel =
                 newUploadForms =
                     { oldUploadForms | replaceSlide = newFormModel }
             in
-            ( { newModel | uploadForms = newUploadForms }, newCmd )
+            ( global, { newModel | uploadForms = newUploadForms }, newCmd )
 
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
                 ( newModel, newCmd ) =
                     updateEditPromptMsg editPromptMsg model.editPrompt
             in
-            ( { model | editPrompt = newModel }, newCmd )
+            ( global, { model | editPrompt = newModel }, newCmd )
 
         ( Preparation.DnD slideMsg, model ) ->
             let
@@ -103,7 +103,7 @@ update msg global capsuleModel =
                     else
                         moveCmd
             in
-            ( data, cmds )
+            ( global, data, cmds )
 
         ( Preparation.SwitchLock i, _ ) ->
             let
@@ -133,7 +133,7 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Cmd.none )
+            ( global, { capsuleModel | details = newDetails }, Cmd.none )
 
         ( Preparation.GosDelete i, _ ) ->
             let
@@ -150,7 +150,7 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+            ( global, { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
 
         ( Preparation.SlideDelete gos_i slide_i, _ ) ->
             let
@@ -194,10 +194,35 @@ update msg global capsuleModel =
                 newDetails =
                     { details | structure = newStructure }
             in
-            ( { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+            ( global, { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
 
         ( Preparation.UserSelectedTab t, _ ) ->
-            ( { capsuleModel | t = t }, Cmd.none )
+            ( global, { capsuleModel | t = t }, Cmd.none )
+
+        ( Preparation.IncreaseNumberOfSlidesPerRow, _ ) ->
+            ( { global | numberOfSlidesPerRow = global.numberOfSlidesPerRow + 1 }, capsuleModel, Cmd.none )
+
+        ( Preparation.DecreaseNumberOfSlidesPerRow, _ ) ->
+            ( { global | numberOfSlidesPerRow = global.numberOfSlidesPerRow - 1 }, capsuleModel, Cmd.none )
+
+        ( Preparation.RejectBroken, _ ) ->
+            ( global
+            , { capsuleModel
+                | broken = Preparation.NotBroken
+                , slides = Preparation.setupSlides capsuleModel.details
+                , slideModel = Preparation.slideSystem.model
+                , gosModel = Preparation.gosSystem.model
+              }
+            , Cmd.none
+            )
+
+        ( Preparation.AcceptBroken, _ ) ->
+            case capsuleModel.broken of
+                Preparation.Broken m ->
+                    ( global, m, Api.updateSlideStructure resultToMsg m.details )
+
+                _ ->
+                    ( global, capsuleModel, Cmd.none )
 
 
 updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
@@ -411,20 +436,9 @@ updateUploadExtraResource msg uploadForm preparationModel =
 
         Preparation.UploadExtraResourceFileReady file slideId ->
             ( { uploadForm | file = Just file, activeSlideId = Just slideId }
-            , Cmd.none
+            , Api.slideUploadExtraResource resultToMsg3 slideId file
             , preparationModel
             )
-
-        Preparation.UploadExtraResourceFormSubmitted slideId ->
-            case uploadForm.file of
-                Nothing ->
-                    ( uploadForm, Cmd.none, preparationModel )
-
-                Just file ->
-                    ( { uploadForm | status = Status.Sent, activeSlideId = Just slideId }
-                    , Api.slideUploadExtraResource resultToMsg3 slideId file
-                    , preparationModel
-                    )
 
         Preparation.UploadExtraResourceSuccess slide ->
             let
@@ -517,13 +531,13 @@ updateDnD slideMsg data =
                         _ ->
                             data.details.slides
 
-                updatedStructure =
+                ( broken, updatedStructure ) =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
                             fixStructure data.details.structure (Preparation.extractStructure slides)
 
                         _ ->
-                            data.details.structure
+                            ( False, data.details.structure )
 
                 shouldSync =
                     case ( pre, post, data.details.structure /= updatedStructure ) of
@@ -547,10 +561,26 @@ updateDnD slideMsg data =
                         _ ->
                             Preparation.regroupSlides slides
             in
-            ( { data | details = updatedDetails, slideModel = slideModel, slides = updatedSlidesView }
-            , Preparation.slideSystem.commands slideModel
-            , shouldSync
-            )
+            if broken then
+                let
+                    newData =
+                        { data
+                            | details = updatedDetails
+                            , slideModel = slideModel
+                            , slides = updatedSlidesView
+                            , broken = Preparation.NotBroken
+                        }
+                in
+                ( { data | broken = Preparation.Broken newData }
+                , Preparation.slideSystem.commands slideModel
+                , False
+                )
+
+            else
+                ( { data | details = updatedDetails, slideModel = slideModel, slides = updatedSlidesView }
+                , Preparation.slideSystem.commands slideModel
+                , shouldSync
+                )
 
         Preparation.GosMoved msg ->
             let
@@ -574,7 +604,7 @@ updateDnD slideMsg data =
                         _ ->
                             data.details.slides
 
-                updatedStructure =
+                ( _, updatedStructure ) =
                     fixStructure data.details.structure (Preparation.extractStructure concat)
 
                 shouldSync =
@@ -602,25 +632,50 @@ updateDnD slideMsg data =
             ( { data | details = updatedDetails, gosModel = gosModel, slides = updatedSlidesView }, Preparation.gosSystem.commands gosModel, shouldSync )
 
 
-fixStructure : List Api.Gos -> List Api.Gos -> List Api.Gos
+fixStructure : List Api.Gos -> List Api.Gos -> ( Bool, List Api.Gos )
 fixStructure old new =
     let
-        dict =
+        -- The dict that associates the list of slides id to the gos in the previous list of gos
+        oldGos : Dict.Dict (List Int) Api.Gos
+        oldGos =
             Dict.fromList (List.map (\x -> ( List.map .id x.slides, x )) old)
 
+        -- The dict that associates the list of slides id to the gos in the new
+        -- list of gos, which doesn't contain any records or other stuff
+        newGos : Dict.Dict (List Int) Api.Gos
+        newGos =
+            Dict.fromList (List.map (\x -> ( List.map .id x.slides, x )) new)
+
+        -- Retrieves the old gos from the new gos, allownig to get the record and other stuff back
         fix : Api.Gos -> Api.Gos
         fix gos =
-            case Dict.get (List.map .id gos.slides) dict of
+            case Dict.get (List.map .id gos.slides) oldGos of
                 Nothing ->
                     gos
 
                 Just x ->
                     x
 
+        -- Retrieves the new gos from the old gos, if not found and the old gos
+        -- has records and stuff, it will be lost
+        isBroken : Api.Gos -> Bool
+        isBroken gos =
+            case ( Dict.get (List.map .id gos.slides) newGos, gos.record ) of
+                -- if not found but the previous gos has a record, the record will be lost
+                ( Nothing, Just _ ) ->
+                    True
+
+                -- otherwise, everything is fine
+                _ ->
+                    False
+
+        broken =
+            List.any isBroken old
+
         ret =
             List.map fix new
     in
-    ret
+    ( broken, ret )
 
 
 resultToMsg : Result e Api.CapsuleDetails -> Core.Msg

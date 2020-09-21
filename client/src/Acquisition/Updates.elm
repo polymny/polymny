@@ -36,7 +36,15 @@ update global session msg model =
                         Nothing ->
                             Ports.startRecording ()
             in
-            ( makeModel { model | recording = True, currentVideo = Just (List.length model.records), currentSlide = 0 }, cmd )
+            ( makeModel
+                { model
+                    | recording = True
+                    , currentVideo = Just (List.length model.records)
+                    , currentSlide = 0
+                    , currentLine = 0
+                }
+            , cmd
+            )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )
@@ -47,7 +55,7 @@ update global session msg model =
         Acquisition.GoToWebcam ->
             case model.currentVideo of
                 Just _ ->
-                    ( makeModel model, Ports.goToWebcam elementId )
+                    ( makeModel { model | watchingWebcam = True }, Ports.goToWebcam elementId )
 
                 Nothing ->
                     ( makeModel model, Cmd.none )
@@ -55,7 +63,7 @@ update global session msg model =
         Acquisition.GoToStream n ->
             case List.head (List.drop n (List.reverse model.records)) of
                 Just { started, nextSlides } ->
-                    ( makeModel { model | currentVideo = Just n, currentSlide = 0 }
+                    ( makeModel { model | currentVideo = Just n, currentSlide = 0, watchingWebcam = False }
                     , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
                     )
 
@@ -150,6 +158,7 @@ update global session msg model =
                                 , webcamSize = editionModel.webcamSize
                                 , webcamPosition = editionModel.webcamPosition
                                 }
+                                editionModel.details
                             )
 
                         ( Ok v, Acquisition.All, False ) ->
@@ -205,6 +214,48 @@ update global session msg model =
 
         Acquisition.BackgroundCaptured u ->
             ( makeModel { model | background = Just u }, Cmd.none )
+
+        Acquisition.NextSentence ->
+            let
+                currentSlide : Maybe Api.Slide
+                currentSlide =
+                    List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
+
+                nextSlide : Maybe Api.Slide
+                nextSlide =
+                    List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
+
+                lineNumber =
+                    case currentSlide of
+                        Just j ->
+                            List.length (String.split "\n" j.prompt)
+
+                        _ ->
+                            0
+            in
+            case ( model.currentLine + 1 < lineNumber, nextSlide, model.recording ) of
+                ( True, _, _ ) ->
+                    -- If there is another line, go to the next line
+                    ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
+
+                ( _, Just _, True ) ->
+                    -- If there is no other line but a next slide, go to the next slide
+                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
+                    , Ports.askNextSlide ()
+                    )
+
+                ( _, Just _, False ) ->
+                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
+                    , Cmd.none
+                    )
+
+                ( _, _, True ) ->
+                    -- If recording and end reach, stop recording
+                    ( makeModel { model | currentSlide = 0, currentLine = 0, recording = False }, Ports.stopRecording () )
+
+                ( _, _, _ ) ->
+                    -- Otherwise, go back to begining
+                    ( makeModel { model | currentSlide = 0, currentLine = 0 }, Cmd.none )
 
 
 elementId : String

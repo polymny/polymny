@@ -12,6 +12,7 @@ module LoggedIn.Types exposing
 
 import Acquisition.Types as Acquisition
 import Api
+import Dropdown
 import Edition.Types as Edition
 import File exposing (File)
 import NewCapsule.Types as NewCapsule
@@ -30,11 +31,18 @@ type alias Model =
 type alias UploadForm =
     { status : Status () ()
     , file : Maybe File
+    , projectName : String
+    , capsuleName : String
+    , capsule : Maybe Api.CapsuleDetails
+    , slides : Maybe (List ( Int, Api.Slide ))
+    , numberOfSlidesPerRow : Int
+    , dropdown : Dropdown.State Api.Project
+    , projectSelected : Maybe Api.Project
     }
 
 
 type Tab
-    = Home UploadForm Bool
+    = Home UploadForm
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition Edition.Model
@@ -50,7 +58,6 @@ type Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
-    | ShowMenuToggleMsg
     | NewProjectMsg NewProject.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | CapsulesReceived Api.Project (List Api.Capsule)
@@ -63,24 +70,34 @@ type Msg
     | EditionClicked Api.CapsuleDetails Bool
     | SettingsClicked
     | SettingsMsg Settings.Msg
+    | ToggleFoldedProject Int
+    | DropdownMsg (Dropdown.Msg Api.Project)
+    | OptionPicked (Maybe Api.Project)
+    | GosClicked Int
 
 
 type UploadSlideShowMsg
     = UploadSlideShowSelectFileRequested
     | UploadSlideShowFileReady File
     | UploadSlideShowFormSubmitted
-    | UploadSlideShowSuccess Api.CapsuleDetails
+    | UploadSlideShowSuccess Int Api.CapsuleDetails
     | UploadSlideShowError
+    | UploadSlideShowChangeProjectName String
+    | UploadSlideShowChangeCapsuleName String
+    | UploadSlideShowGoToAcquisition
+    | UploadSlideShowGoToPreparation
+    | UploadSlideShowCancel
+    | UploadSlideShowSlideClicked Int
 
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing
 
 
 init : Tab
 init =
-    Home initUploadForm False
+    Home initUploadForm
 
 
 isPreparation : Tab -> Bool

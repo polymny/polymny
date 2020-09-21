@@ -27,7 +27,7 @@ use crate::db::slide::Slide;
 use crate::db::user::User;
 use crate::routes::capsule::{format_capsule_data, GosStructure};
 use crate::schema::{capsules, users};
-use crate::webcam::{webcam_position_to_str, webcam_size_to_str, EditionOptions};
+use crate::webcam::ProductionChoices;
 
 use crate::{Database, Error, Result};
 
@@ -154,6 +154,7 @@ pub fn quick_upload_slides(
                             slides: vec![slide.id],
                             transitions: vec![],
                             locked: false,
+                            production_choices: None,
                         });
                     }
 
@@ -185,7 +186,7 @@ pub fn quick_upload_slides(
 
 /// Upload a presentation (slides)
 #[put("/options", data = "<data>")]
-pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<JsonValue> {
+pub fn options(db: Database, user: User, data: Json<ProductionChoices>) -> Result<JsonValue> {
     // Perform the update
     use crate::schema::users::dsl;
     println!("data= {:#?}", data);
@@ -201,7 +202,7 @@ pub fn options(db: Database, user: User, data: Json<EditionOptions>) -> Result<J
         "projects": nuser.projects(&db)?,
         "active_project": "",
         "with_video": options.with_video,
-        "webcam_size": webcam_size_to_str(options.webcam_size),
-        "webcam_position": webcam_position_to_str(options.webcam_position),
+        "webcam_size": options.webcam_size,
+        "webcam_position": options.webcam_position,
     }))
 }

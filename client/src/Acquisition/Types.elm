@@ -32,11 +32,13 @@ type alias Model =
     , details : Api.CapsuleDetails
     , gos : Int
     , currentSlide : Int
+    , currentLine : Int
     , mode : Mode
     , cameraReady : Bool
     , status : Status () ()
     , secondsRemaining : Maybe Int
     , background : Maybe String
+    , watchingWebcam : Bool
     }
 
 
@@ -80,11 +82,13 @@ init mattingEnabled details mode gos =
       , details = details
       , gos = gos
       , currentSlide = 0
+      , currentLine = 0
       , mode = mode
       , cameraReady = False
       , status = Status.NotSent
       , secondsRemaining = Nothing
       , background = background
+      , watchingWebcam = True
       }
     , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )
@@ -127,3 +131,4 @@ type Msg
     | CaptureBackground
     | SecondsRemaining Int
     | BackgroundCaptured String
+    | NextSentence

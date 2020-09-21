@@ -21,6 +21,7 @@ use tempfile::tempdir;
 use uuid::Uuid;
 
 use crate::command;
+use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::slide::{Slide, SlideWithAsset};
@@ -62,8 +63,6 @@ pub fn update_slide(
 ) -> Result<JsonValue> {
     user.get_slide_by_id(slide_id, &db)?;
 
-    println!("slide info to update : {:#?}", slide_form);
-
     use crate::schema::slides::dsl::id;
     diesel::update(slides::table)
         .filter(id.eq(slide_id))
@@ -82,7 +81,6 @@ pub fn move_slide(
     move_slide: Json<UpdateSlideForm>,
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(slide_id, &db)?;
-    println!("Move slide : {:#?}", move_slide);
 
     use crate::schema::slides::dsl::id;
     diesel::update(slides::table)
@@ -105,10 +103,11 @@ pub fn upload_resource(
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
-    println!("asset = {:#?}", asset);
 
     let mut asset_path = config.data_path.clone();
-    asset_path.push(asset.asset_path);
+    asset_path.push(&asset.asset_path);
+
+    let metadata = VideoMetadata::metadata(&asset_path)?;
 
     let transcoded_asset = {
         let file_stem = Path::new(&asset.name)
@@ -130,48 +129,93 @@ pub fn upload_resource(
     }?;
 
     AssetsObject::new(&db, transcoded_asset.id, slide.id, AssetType::Slide)?;
-    println!("transcoded_asset = {:#?}", transcoded_asset);
     let mut transcoded_path = config.data_path.clone();
     transcoded_path.push(transcoded_asset.asset_path);
 
-    let command = vec![
-        "ffmpeg",
-        "-hide_banner",
-        "-y",
-        "-i",
-        &asset_path.to_str().unwrap(),
-        "-profile:v",
-        "main",
-        "-pix_fmt",
-        "yuv420p",
-        "-level",
-        "3.1",
-        "-b:v",
-        "440k",
-        "-ar",
-        "44100",
-        "-ab",
-        "128k",
-        "-vcodec",
-        "libx264",
-        "-preset",
-        "fast",
-        "-tune",
-        "zerolatency",
-        "-acodec",
-        "aac",
-        "-s",
-        "hd1080",
-        "-r",
-        "25",
-        &transcoded_path.to_str().unwrap(),
-    ];
+    let mut ffmpeg_command = Vec::new();
+    if metadata.with_audio {
+        ffmpeg_command.extend(
+            vec![
+                "ffmpeg",
+                "-hide_banner",
+                "-y",
+                "-i",
+                &asset_path.to_str().unwrap(),
+                "-profile:v",
+                "main",
+                "-pix_fmt",
+                "yuv420p",
+                "-level",
+                "3.1",
+                "-b:v",
+                "440k",
+                "-ar",
+                "44100",
+                "-ab",
+                "128k",
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "fast",
+                "-tune",
+                "zerolatency",
+                "-acodec",
+                "aac",
+                "-s",
+                "hd1080",
+                "-r",
+                "25",
+                &transcoded_path.to_str().unwrap(),
+            ]
+            .into_iter(),
+        );
+    } else {
+        ffmpeg_command.extend(
+            vec![
+                "ffmpeg",
+                "-hide_banner",
+                "-y",
+                "-i",
+                &asset_path.to_str().unwrap(),
+                "-f",
+                "lavfi",
+                "-i",
+                "anullsrc=channel_layout=stereo:sample_rate=44100",
+                "-profile:v",
+                "main",
+                "-pix_fmt",
+                "yuv420p",
+                "-level",
+                "3.1",
+                "-b:v",
+                "440k",
+                "-ar",
+                "44100",
+                "-ab",
+                "128k",
+                "-vcodec",
+                "libx264",
+                "-preset",
+                "fast",
+                "-tune",
+                "zerolatency",
+                "-acodec",
+                "aac",
+                "-s",
+                "hd1080",
+                "-r",
+                "25",
+                "-shortest",
+                &transcoded_path.to_str().unwrap(),
+            ]
+            .into_iter(),
+        );
+    }
 
-    let child = command::run_command(&command).unwrap();
-    println!("Transcoded status: {}", child.status);
+    let child = command::run_command(&ffmpeg_command).unwrap();
 
     if child.status.success() {
-        println!("status: {}", child.status);
+        info!("status: {}", child.status);
         use crate::schema::slides::dsl;
         diesel::update(slides::table)
             .filter(dsl::id.eq(slide.id))
@@ -180,12 +224,14 @@ pub fn upload_resource(
     } else {
         AssetsObject::get_by_asset(&db, transcoded_asset.id)?.delete(&db)?;
         Asset::get(transcoded_asset.id, &db)?.delete(&db)?;
+        error!("transcode error : {:#?}", &asset);
         return Err(Error::TranscodeError);
     };
 
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }
+
 /// Upload logo
 #[post("/slide/<id>/delete_resource")]
 pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
@@ -204,7 +250,7 @@ pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
                 })
                 .execute(&db.0)?;
         }
-        None => println!("No additional resource to remove"),
+        None => info!("No additional resource to remove"),
     }
 
     let slide = user.get_slide_by_id(id, &db)?;
@@ -323,7 +369,6 @@ fn upload_file(
     options.allowed_fields.push(
         MultipartFormDataField::file("file").size_limit(128 * 1024 * 1024 * 1024 * 1024 * 1024),
     );
-    println!("content_type = {:#?}", content_type);
     let multipart_form_data = MultipartFormData::parse(content_type, data, options).unwrap();
     //TODO: handle errors from multipart form dat ?
     // cf.https://github.com/magiclen/rocket-multipart-form-data/blob/master/examples/image_uploader.rs

@@ -11,32 +11,81 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
+import Preparation.Views as Preparation
 import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
-import Utils
 import Webcam
+
+
+
+--view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
+--view global _ model =
+--    let
+--        mainPage =
+--            mainView global model
+--
+--        element =
+--            Element.column Ui.mainViewAttributes2
+--                [ Utils.headerView "edition" model.details
+--                , mainPage
+--                ]
+--    in
+--    Element.row Ui.mainViewAttributes1
+--
+--[ element ]
 
 
 view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
 view global _ model =
+    Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+        [ Preparation.leftColumnView model.details (Just model.currentGos)
+        , centerView global model
+        ]
+
+
+centerView : Core.Global -> Edition.Model -> Element Core.Msg
+centerView global model =
     let
-        mainPage =
-            mainView global model
-
-        element =
-            Element.column Ui.mainViewAttributes2
-                [ Utils.headerView "edition" model.details
-                , mainPage
-                ]
+        gos =
+            List.head (List.drop model.currentGos model.details.structure)
     in
-    Element.row Ui.mainViewAttributes1
-        [ element ]
+    Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+        [ -- capsuleProductionView global model
+          gosProductionView model gos
+        , bottomRow model
+        ]
 
 
-mainView : Core.Global -> Edition.Model -> Element Core.Msg
-mainView global model =
+gosProductionView : Edition.Model -> Maybe Api.Gos -> Element Core.Msg
+gosProductionView model gos =
+    let
+        resultView =
+            case gos of
+                Just g ->
+                    Element.row
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        ]
+                        [ gosProductionChoicesView model
+                        , gosPrevisualisation model
+                        ]
+
+                Nothing ->
+                    Element.none
+    in
+    resultView
+
+
+slidesView : List Api.Slide -> Element Core.Msg
+slidesView slides =
+    Element.row []
+        (List.map (\x -> Element.el [ Element.padding 2 ] <| Element.text <| String.fromInt x.id) slides)
+
+
+capsuleProductionView : Core.Global -> Edition.Model -> Element Core.Msg
+capsuleProductionView global model =
     let
         details =
             model.details
@@ -118,7 +167,7 @@ mainView global model =
                 Status.NotSent ->
                     ( video, button )
     in
-    Element.row [ Element.centerX, Element.spacing 20, Element.padding 10 ]
+    Element.row []
         [ editionOptionView model
         , Element.column
             [ Element.centerX, Element.spacing 20, Element.padding 10 ]
@@ -126,6 +175,115 @@ mainView global model =
             , publishButton
             ]
         ]
+
+
+gosProductionChoicesView : Edition.Model -> Element Core.Msg
+gosProductionChoicesView model =
+    let
+        p : Api.CapsuleEditionOptions
+        p =
+            let
+                stucture =
+                    List.head (List.drop model.currentGos model.details.structure)
+
+                production_choices =
+                    case stucture of
+                        Just x ->
+                            x.production_choices
+
+                        Nothing ->
+                            Just Edition.defaultGosProductionChoices
+            in
+            case production_choices of
+                Just x ->
+                    x
+
+                Nothing ->
+                    Edition.defaultGosProductionChoices
+
+        withVideo =
+            p.withVideo
+
+        webcamSize =
+            p.webcamSize
+
+        webcamPosition =
+            p.webcamPosition
+
+        videoFields =
+            [ Input.radio
+                [ Element.padding 10
+                , Element.spacing 10
+                ]
+                { onChange = Edition.GosWebcamSizeChanged model.currentGos
+                , selected = webcamSize
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Taille de l'incrustation webcam:")
+                , options =
+                    [ Input.option Webcam.Small (Element.text "Petit")
+                    , Input.option Webcam.Medium (Element.text "Moyen")
+                    , Input.option Webcam.Large (Element.text "Grand")
+                    ]
+                }
+            , Input.radio
+                [ Element.padding 10
+                , Element.spacing 10
+                ]
+                { onChange = Edition.GosWebcamPositionChanged model.currentGos
+                , selected = webcamPosition
+                , label =
+                    Input.labelAbove
+                        [ Element.centerX
+                        , Font.bold
+                        , Element.padding 1
+                        ]
+                        (Element.text "Position de l'incrustation:")
+                , options =
+                    [ Input.option Webcam.TopLeft (Element.text "En haut à gauche.")
+                    , Input.option Webcam.TopRight (Element.text "En haut à droite.")
+                    , Input.option Webcam.BottomLeft (Element.text "En bas à gauche.")
+                    , Input.option Webcam.BottomRight (Element.text "En bas à droite.")
+                    ]
+                }
+            ]
+
+        commmonFields =
+            Input.checkbox []
+                { onChange = Edition.GosWithVideoChanged model.currentGos
+                , icon = Input.defaultCheckbox
+                , checked = withVideo
+                , label =
+                    Input.labelRight [] <|
+                        Element.text <|
+                            if withVideo then
+                                "L'audio et la vidéo seront utilisés"
+
+                            else
+                                "Seul l'audio sera utilisé"
+                }
+
+        fields =
+            if withVideo then
+                commmonFields :: videoFields
+
+            else
+                [ commmonFields ]
+
+        header =
+            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
+
+        form =
+            header :: fields
+    in
+    Element.map Core.LoggedInMsg <|
+        Element.map LoggedIn.EditionMsg <|
+            Element.column [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
+                form
 
 
 editionOptionView : Edition.Model -> Element Core.Msg
@@ -227,6 +385,130 @@ editionOptionView { status, withVideo, webcamSize, webcamPosition } =
         Element.map LoggedIn.EditionMsg <|
             Element.column [ Element.centerX, Element.padding 10, Element.spacing 30 ]
                 form
+
+
+gosPrevisualisation : Edition.Model -> Element Core.Msg
+gosPrevisualisation model =
+    let
+        currentGos : Maybe Api.Gos
+        currentGos =
+            List.head (List.drop model.currentGos model.details.structure)
+
+        productionChoices : Api.CapsuleEditionOptions
+        productionChoices =
+            case Maybe.map .production_choices currentGos of
+                Just (Just c) ->
+                    c
+
+                _ ->
+                    Edition.defaultGosProductionChoices
+
+        currentSlide : Maybe Api.Slide
+        currentSlide =
+            Maybe.withDefault Nothing (Maybe.map (\x -> List.head x.slides) currentGos)
+
+        position : List (Element.Attribute Core.Msg)
+        position =
+            case ( productionChoices.withVideo, Maybe.withDefault Webcam.BottomLeft productionChoices.webcamPosition ) of
+                ( True, Webcam.TopLeft ) ->
+                    [ Element.alignTop, Element.alignLeft ]
+
+                ( True, Webcam.TopRight ) ->
+                    [ Element.alignTop, Element.alignRight ]
+
+                ( True, Webcam.BottomLeft ) ->
+                    [ Element.alignBottom, Element.alignLeft ]
+
+                ( True, Webcam.BottomRight ) ->
+                    [ Element.alignBottom, Element.alignRight ]
+
+                _ ->
+                    []
+
+        size : Int
+        size =
+            case ( productionChoices.withVideo, Maybe.withDefault Webcam.Medium productionChoices.webcamSize ) of
+                ( True, Webcam.Small ) ->
+                    1
+
+                ( True, Webcam.Medium ) ->
+                    2
+
+                ( True, Webcam.Large ) ->
+                    4
+
+                _ ->
+                    0
+
+        inFront : Element Core.Msg
+        inFront =
+            if productionChoices.withVideo then
+                Element.el position
+                    (Element.image
+                        [ Element.width (Element.px (100 * size)) ]
+                        { src = "/dist/silhouette.png", description = "" }
+                    )
+
+            else
+                Element.none
+
+        currentSlideView : Element Core.Msg
+        currentSlideView =
+            case currentSlide of
+                Just s ->
+                    Element.image
+                        [ Element.width Element.fill
+                        , Element.inFront inFront
+                        ]
+                        { src = s.asset.asset_path, description = "" }
+
+                _ ->
+                    Element.none
+    in
+    Element.el [ Element.width Element.fill ] currentSlideView
+
+
+bottomRow : Edition.Model -> Element Core.Msg
+bottomRow model =
+    let
+        msg =
+            Just (Core.LoggedInMsg (LoggedIn.EditionClicked model.details True))
+
+        button =
+            Ui.primaryButton msg "Finaliser la vidéo"
+
+        video =
+            case model.details.video of
+                Just x ->
+                    Element.newTabLink
+                        [ Font.color Colors.link
+                        , Border.color Colors.link
+                        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                        ]
+                        { url = x.asset_path
+                        , label = Element.text "Voir la vidéo"
+                        }
+
+                Nothing ->
+                    Element.text "Pas de vidéo éditée pour l'instant"
+
+        ( element, publishButton ) =
+            case model.status of
+                Status.Sent ->
+                    ( Ui.messageWithSpinner "Edition automatique en cours", Element.none )
+
+                Status.Success () ->
+                    ( video, button )
+
+                Status.Error () ->
+                    ( Element.text "Problème rencontré lors de la compostion de la vidéo. Merci de nous contacter", Element.none )
+
+                Status.NotSent ->
+                    ( video, button )
+    in
+    Element.row
+        [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
+        [ element, publishButton ]
 
 
 htmlVideo : String -> Html msg

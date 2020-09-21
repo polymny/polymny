@@ -2,7 +2,9 @@ module Api exposing
     ( Asset
     , Capsule
     , CapsuleDetails
+    , CapsuleEditionOptions
     , Gos
+    , InnerGos
     , Project
     , PublishedType(..)
     , Session
@@ -17,10 +19,12 @@ module Api exposing
     , decodeCapsuleDetails
     , decodeCapsules
     , decodeProject
+    , decodeProjectWithCapsules
     , decodeSession
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
+    , encodeSlideStructureFromInts
     , forgotPassword
     , get
     , logOut
@@ -41,6 +45,7 @@ module Api exposing
     , updateOptions
     , updateSlide
     , updateSlideStructure
+    , validateCapsule
     )
 
 import Dict exposing (Dict)
@@ -89,13 +94,14 @@ type alias Project =
     { id : Int
     , name : String
     , lastVisited : Int
+    , folded : Bool
     , capsules : List Capsule
     }
 
 
 createProject : Int -> String -> Int -> Project
 createProject id name lastVisited =
-    Project id name lastVisited []
+    Project id name lastVisited True []
 
 
 type PublishedType
@@ -208,7 +214,7 @@ decodeCapsules =
 
 withCapsules : List Capsule -> Int -> String -> Int -> Project
 withCapsules capsules id name lastVisited =
-    Project id name lastVisited capsules
+    Project id name lastVisited True capsules
 
 
 decodeProject : List Capsule -> Decoder Project
@@ -217,6 +223,15 @@ decodeProject capsules =
         (Decode.field "id" Decode.int)
         (Decode.field "project_name" Decode.string)
         (Decode.field "last_visited" Decode.int)
+
+
+decodeProjectWithCapsules : Decoder Project
+decodeProjectWithCapsules =
+    Decode.map4 (\x y z t -> Project x y z True t)
+        (Decode.field "id" Decode.int)
+        (Decode.field "project_name" Decode.string)
+        (Decode.field "last_visited" Decode.int)
+        (Decode.field "capsules" decodeCapsules)
 
 
 type alias Session =
@@ -231,13 +246,15 @@ type alias Session =
 
 decodeSession : Decoder Session
 decodeSession =
-    Decode.map6 Session
-        (Decode.field "username" Decode.string)
-        (Decode.field "projects" (Decode.list (decodeProject [])))
-        (Decode.field "active_project" (Decode.maybe (decodeProject [])))
-        (Decode.field "with_video" (Decode.maybe Decode.bool))
-        (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
-        (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+    Decode.map (\x -> x)
+        (Decode.map6 Session
+            (Decode.field "username" Decode.string)
+            (Decode.field "projects" (Decode.map (\x -> List.filter (\y -> List.length y.capsules > 0) x) (Decode.list decodeProjectWithCapsules)))
+            (Decode.field "active_project" (Decode.maybe decodeProjectWithCapsules))
+            (Decode.field "with_video" (Decode.maybe Decode.bool))
+            (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
+            (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
+        )
 
 
 type alias Asset =
@@ -286,17 +303,19 @@ type alias InnerGos =
     , record : Maybe String
     , background : Maybe String
     , locked : Bool
+    , production_choices : Maybe CapsuleEditionOptions
     }
 
 
 decodeInnerGos : Decoder InnerGos
 decodeInnerGos =
-    Decode.map5 InnerGos
+    Decode.map6 InnerGos
         (Decode.field "slides" (Decode.list Decode.int))
         (Decode.field "transitions" (Decode.list Decode.int))
         (Decode.field "record_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.maybe (Decode.field "background_path" (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.field "locked" Decode.bool)
+        (Decode.field "production_choices" (Decode.maybe decodeCapsuleEditionOptions))
 
 
 type alias Gos =
@@ -305,6 +324,7 @@ type alias Gos =
     , record : Maybe String
     , background : Maybe String
     , locked : Bool
+    , production_choices : Maybe CapsuleEditionOptions
     }
 
 
@@ -353,6 +373,7 @@ toGos slides gos =
     , record = gos.record
     , locked = gos.locked
     , background = gos.background
+    , production_choices = gos.production_choices
     }
 
 
@@ -394,6 +415,38 @@ decodeCapsuleDetails =
 detailsSortSlides : CapsuleDetails -> List (List Slide)
 detailsSortSlides details =
     List.map .slides details.structure
+
+
+validateCapsule : (Result Http.Error CapsuleDetails -> msg) -> List (List Int) -> Maybe Project -> String -> String -> CapsuleDetails -> Cmd msg
+validateCapsule responseToMsg structure project projectName capsuleName content =
+    case project of
+        Nothing ->
+            post
+                { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
+                , expect = Http.expectJson responseToMsg decodeCapsuleDetails
+                , body =
+                    Http.jsonBody
+                        (Encode.object
+                            [ ( "name", Encode.string capsuleName )
+                            , ( "project_name", Encode.string projectName )
+                            , ( "structure", Encode.list (Encode.list Encode.int) structure )
+                            ]
+                        )
+                }
+
+        Just p ->
+            post
+                { url = "/api/capsule/" ++ String.fromInt content.capsule.id ++ "/validate"
+                , expect = Http.expectJson responseToMsg decodeCapsuleDetails
+                , body =
+                    Http.jsonBody
+                        (Encode.object
+                            [ ( "name", Encode.string capsuleName )
+                            , ( "project_id", Encode.int p.id )
+                            , ( "structure", Encode.list (Encode.list Encode.int) structure )
+                            ]
+                        )
+                }
 
 
 
@@ -669,12 +722,18 @@ encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
         ]
 
 
-editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> Cmd msg
-editionAuto resultToMsg id content =
+editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> CapsuleDetails -> Cmd msg
+editionAuto resultToMsg id content details =
     post
         { url = "/api/capsule/" ++ String.fromInt id ++ "/edition"
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
-        , body = Http.jsonBody (encodeEditionAutoContent content)
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "capsule_production_choices", encodeEditionAutoContent content )
+                    , ( "goss", encodeSlideStructure details )
+                    ]
+                )
         }
 
 
@@ -740,6 +799,37 @@ updateSlide resultToMsg id content =
         }
 
 
+encodeProductionChoices : Maybe CapsuleEditionOptions -> Encode.Value
+encodeProductionChoices production_choices =
+    case production_choices of
+        Just p ->
+            let
+                webcamSize =
+                    case p.webcamSize of
+                        Just x ->
+                            Encode.string <| encodeWebcamSize x
+
+                        Nothing ->
+                            Encode.null
+
+                webcamPosition =
+                    case p.webcamPosition of
+                        Just x ->
+                            Encode.string <| encodeWebcamPosition x
+
+                        Nothing ->
+                            Encode.null
+            in
+            Encode.object
+                [ ( "with_video", Encode.bool p.withVideo )
+                , ( "webcam_size", webcamSize )
+                , ( "webcam_position", webcamPosition )
+                ]
+
+        Nothing ->
+            Encode.null
+
+
 encodeSlideStructure : CapsuleDetails -> Encode.Value
 encodeSlideStructure capsule =
     let
@@ -751,9 +841,26 @@ encodeSlideStructure capsule =
                 , ( "transitions", Encode.list Encode.int gos.transitions )
                 , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
                 , ( "locked", Encode.bool gos.locked )
+                , ( "production_choices", encodeProductionChoices gos.production_choices )
                 ]
     in
     Encode.list encodeGos capsule.structure
+
+
+encodeSlideStructureFromInts : List InnerGos -> Encode.Value
+encodeSlideStructureFromInts capsule =
+    let
+        encodeGos : InnerGos -> Encode.Value
+        encodeGos gos =
+            Encode.object
+                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                , ( "background", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.background) )
+                , ( "transitions", Encode.list Encode.int gos.transitions )
+                , ( "slides", Encode.list Encode.int gos.slides )
+                , ( "locked", Encode.bool gos.locked )
+                ]
+    in
+    Encode.list encodeGos capsule
 
 
 updateSlideStructure : (Result Http.Error CapsuleDetails -> msg) -> CapsuleDetails -> Cmd msg
