@@ -315,7 +315,7 @@ decodeInnerGos =
         (Decode.field "record_path" (Decode.nullable (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.maybe (Decode.field "background_path" (Decode.map (\x -> "/data/" ++ x) Decode.string)))
         (Decode.field "locked" Decode.bool)
-        (Decode.field "production_choices" (Decode.maybe decodeCapsuleEditionOptions))
+        (Decode.maybe (Decode.field "production_choices" decodeCapsuleEditionOptions))
 
 
 type alias Gos =
