@@ -405,7 +405,7 @@ newProjectView global ( project, even, edited ) =
                             }
 
             rename =
-                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameProject ( project.id, project.name )))) "" ""
+                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameProject ( project.id, project.name )))) "" "Renommer le projet"
 
             row =
                 Element.row [ Element.spacing 10, Element.width Element.fill ] [ title, rename ]
