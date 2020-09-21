@@ -219,7 +219,7 @@ update msg global capsuleModel =
         ( Preparation.AcceptBroken, _ ) ->
             case capsuleModel.broken of
                 Preparation.Broken m ->
-                    ( global, m, Cmd.none )
+                    ( global, m, Api.updateSlideStructure resultToMsg m.details )
 
                 _ ->
                     ( global, capsuleModel, Cmd.none )
