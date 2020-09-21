@@ -27,7 +27,11 @@ shortcuts model msg =
 
         mkmsg : Acquisition.Msg -> Core.Msg
         mkmsg ms =
-            Core.LoggedInMsg (LoggedIn.AcquisitionMsg ms)
+            if model.cameraReady then
+                Core.LoggedInMsg (LoggedIn.AcquisitionMsg ms)
+
+            else
+                Core.Noop
     in
     case raw of
         " " ->
