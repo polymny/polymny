@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import FontAwesome
 import Html
 import Html.Attributes
@@ -59,12 +60,24 @@ subscriptions model =
 
 view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
 view global _ model =
+    let
+        attributes =
+            if model.cameraReady then
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
+                ]
+
+            else
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
+                , Element.htmlAttribute (Html.Attributes.style "visibility" "hidden")
+                ]
+    in
     Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.scrollbarY
-        ]
-        [ Preparation.leftColumnView model.details Nothing
+        attributes
+        [ Preparation.leftColumnView model.details (Just model.gos)
         , centerView model
         , rightColumn model
         ]
@@ -161,7 +174,8 @@ slideView model =
     case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
         Just h ->
             Element.el
-                [ Element.width Element.fill
+                [ Input.focusedOnLoad
+                , Element.width Element.fill
                 , Element.height (Element.fillPortion 2)
                 , Element.htmlAttribute
                     (Html.Attributes.style "background"

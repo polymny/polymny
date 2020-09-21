@@ -132,6 +132,8 @@ function setupPorts(app) {
             return;
         }
 
+        element.focus();
+
         element.srcObject = stream;
         element.src = null;
         element.muted = true;

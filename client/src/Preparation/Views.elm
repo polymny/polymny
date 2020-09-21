@@ -708,7 +708,19 @@ leftColumnView details currentGos =
 
                         _ ->
                             Element.none
-                    , Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record details i))) ""
+                    , Ui.cameraButton
+                        (case currentGos of
+                            Just gosIndex ->
+                                if gosIndex == i then
+                                    Nothing
+
+                                else
+                                    Just (Core.LoggedInMsg (LoggedIn.Record details i))
+
+                            _ ->
+                                Just (Core.LoggedInMsg (LoggedIn.Record details i))
+                        )
+                        ""
                     ]
                 )
 
