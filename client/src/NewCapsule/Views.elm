@@ -35,7 +35,7 @@ view { status, name, title, description } =
                     Ui.primaryButton (Just NewCapsule.Submitted) "Create capsule"
 
         cancelButton =
-            Ui.cancelButton (Just NewCapsule.Cancel) ""
+            Ui.cancelButton (Just NewCapsule.Cancel) "" "Annuler"
 
         message =
             case status of
