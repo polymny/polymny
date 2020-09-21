@@ -31,4 +31,7 @@ update msg content =
 
 resultToMsg : Result e Api.Session -> Core.Msg
 resultToMsg result =
-    Utils.resultToMsg (\x -> Core.ResetPasswordMsg (ResetPassword.Success x)) (\_ -> Core.ResetPasswordMsg ResetPassword.Failed) result
+    Utils.resultToMsg
+        (\x -> Core.ResetPasswordMsg (ResetPassword.Success x))
+        (\_ -> Core.ResetPasswordMsg ResetPassword.Failed)
+        result

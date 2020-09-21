@@ -249,6 +249,43 @@ update msg global { session, tab } =
         ( LoggedIn.OptionPicked option, LoggedIn.Home uploadForm ) ->
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectSelected = option }), Cmd.none )
 
+        ( LoggedIn.CancelRename, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Nothing }), Cmd.none )
+
+        ( LoggedIn.RenameProject ( projectId, name ), LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Just ( projectId, name ) }), Cmd.none )
+
+        ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
+            let
+                cmd =
+                    case uploadForm.projectRenamed of
+                        Just ( i, s ) ->
+                            Api.renameProject (\_ -> Core.Noop) i s
+
+                        _ ->
+                            Cmd.none
+
+                mapper : Int -> String -> Api.Project -> Api.Project
+                mapper id newName project =
+                    if project.id == id then
+                        { project | name = newName }
+
+                    else
+                        project
+
+                projects =
+                    case uploadForm.projectRenamed of
+                        Just ( id, s ) ->
+                            List.map (mapper id s) session.projects
+
+                        _ ->
+                            session.projects
+            in
+            ( global
+            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | projectRenamed = Nothing })
+            , cmd
+            )
+
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
 

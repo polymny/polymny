@@ -38,6 +38,7 @@ type alias UploadForm =
     , numberOfSlidesPerRow : Int
     , dropdown : Dropdown.State Api.Project
     , projectSelected : Maybe Api.Project
+    , projectRenamed : Maybe ( Int, String )
     }
 
 
@@ -74,6 +75,9 @@ type Msg
     | DropdownMsg (Dropdown.Msg Api.Project)
     | OptionPicked (Maybe Api.Project)
     | GosClicked Int
+    | CancelRename
+    | RenameProject ( Int, String )
+    | ValidateRenameProject
 
 
 type UploadSlideShowMsg
@@ -92,7 +96,7 @@ type UploadSlideShowMsg
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing Nothing
 
 
 init : Tab

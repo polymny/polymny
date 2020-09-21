@@ -11,6 +11,7 @@ module Ui.Icons exposing
     , menuPoint
     , movie
     , openLock
+    , pen
     , spinner
     , startRecord
     , stopRecord
@@ -91,6 +92,11 @@ font =
 image : Element msg
 image =
     buttonFromIcon FontAwesome.image
+
+
+pen : Element msg
+pen =
+    buttonFromIcon FontAwesome.pen
 
 
 spinner : Element msg

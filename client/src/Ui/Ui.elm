@@ -17,7 +17,9 @@ module Ui.Ui exposing
     , messageWithSpinner
     , movieButton
     , onEnter
+    , onEscape
     , openLockButton
+    , penButton
     , primaryButton
     , primaryButtonDisabled
     , simpleButton
@@ -57,6 +59,23 @@ onEnter msg =
                 |> Decode.andThen
                     (\key ->
                         if key == "Enter" then
+                            Decode.succeed msg
+
+                        else
+                            Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
+
+onEscape : msg -> Element.Attribute msg
+onEscape msg =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Escape" then
                             Decode.succeed msg
 
                         else
@@ -274,6 +293,11 @@ closeLockButton onPress content =
 menuPointButton : Maybe msg -> String -> String -> Element msg
 menuPointButton onPress content =
     iconButton Icons.menuPoint onPress content
+
+
+penButton : Maybe msg -> String -> String -> Element msg
+penButton onPress content =
+    iconButton Icons.pen onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg

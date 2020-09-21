@@ -34,6 +34,7 @@ module Api exposing
     , post
     , publishVideo
     , quickUploadSlideShow
+    , renameProject
     , resetPassword
     , setupConfig
     , signUp
@@ -77,6 +78,19 @@ post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
 post { url, body, expect } =
     Http.request
         { method = "POST"
+        , headers = [ Http.header "Accept" "application/json" ]
+        , url = url
+        , body = body
+        , expect = expect
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+put : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+put { url, body, expect } =
+    Http.request
+        { method = "PUT"
         , headers = [ Http.header "Accept" "application/json" ]
         , url = url
         , body = body
@@ -591,6 +605,15 @@ newProject resultToMsg content =
         { url = "/api/new-project"
         , expect = Http.expectJson resultToMsg (decodeProject [])
         , body = Http.jsonBody (encodeNewProjectContent content)
+        }
+
+
+renameProject : (Result Http.Error Project -> msg) -> Int -> String -> Cmd msg
+renameProject resultToMsg projectId name =
+    put
+        { url = "/api/project/" ++ String.fromInt projectId ++ "/"
+        , expect = Http.expectJson resultToMsg (decodeProject [])
+        , body = Http.jsonBody (encodeNewProjectContent { name = name })
         }
 
 
