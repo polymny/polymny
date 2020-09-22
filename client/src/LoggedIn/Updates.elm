@@ -250,20 +250,20 @@ update msg global { session, tab } =
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectSelected = option }), Cmd.none )
 
         ( LoggedIn.CancelRename, LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Nothing }), Cmd.none )
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Nothing }), Cmd.none )
 
         ( LoggedIn.RenameMsg rename, LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Just rename }), Cmd.none )
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Just rename }), Cmd.none )
 
         ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
             let
-                _ =
-                    Debug.log "validate called" ()
-
                 cmd =
-                    case uploadForm.projectRenamed of
+                    case uploadForm.rename of
                         Just (LoggedIn.RenameProject ( i, s )) ->
                             Api.renameProject (\_ -> Core.Noop) i s
+
+                        Just (LoggedIn.RenameCapsule ( _, j, s )) ->
+                            Api.renameCapsule (\_ -> Core.Noop) j s
 
                         _ ->
                             Cmd.none
@@ -276,16 +276,34 @@ update msg global { session, tab } =
                     else
                         project
 
+                mapperCapsule : Int -> String -> Api.Project -> Api.Project
+                mapperCapsule id newName project =
+                    { project
+                        | capsules =
+                            List.map
+                                (\capsule ->
+                                    if capsule.id == id then
+                                        { capsule | name = newName }
+
+                                    else
+                                        capsule
+                                )
+                                project.capsules
+                    }
+
                 projects =
-                    case uploadForm.projectRenamed of
+                    case uploadForm.rename of
                         Just (LoggedIn.RenameProject ( id, s )) ->
                             List.map (mapper id s) session.projects
+
+                        Just (LoggedIn.RenameCapsule ( _, id, s )) ->
+                            List.map (mapperCapsule id s) session.projects
 
                         _ ->
                             session.projects
             in
             ( global
-            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | projectRenamed = Nothing })
+            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | rename = Nothing })
             , cmd
             )
 

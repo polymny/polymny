@@ -355,13 +355,43 @@ leftColumn global session uploadForm =
         ]
 
 
-newCapsuleView : Core.Global -> Api.Capsule -> Element Core.Msg
-newCapsuleView global capsule =
-    Element.row [ Element.width Element.fill ]
-        [ Input.button []
-            { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
-            , label = Element.text capsule.name
-            }
+newCapsuleView : Core.Global -> Api.Project -> Maybe LoggedIn.Rename -> Api.Capsule -> Element Core.Msg
+newCapsuleView global project rename capsule =
+    let
+        title =
+            let
+                default =
+                    Input.button []
+                        { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
+                        , label = Element.text capsule.name
+                        }
+            in
+            case rename of
+                Just (LoggedIn.RenameCapsule ( i, j, s )) ->
+                    if i == project.id && j == capsule.id then
+                        Element.row [ Element.width Element.fill ]
+                            [ Input.text
+                                [ Ui.onEnterEscape
+                                    (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
+                                    (Core.LoggedInMsg LoggedIn.CancelRename)
+                                , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                                ]
+                                { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameCapsule ( project.id, capsule.id, x )))
+                                , placeholder = Nothing
+                                , text = s
+                                , label = Input.labelHidden ""
+                                }
+                            ]
+
+                    else
+                        default
+
+                _ ->
+                    default
+    in
+    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+        [ title
+        , Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameCapsule ( project.id, capsule.id, capsule.name ))))) "" "Renommer la capsule"
         ]
 
 
@@ -397,17 +427,20 @@ newProjectView global ( project, even, edited ) =
                 case edited of
                     Just (LoggedIn.RenameProject ( i, s )) ->
                         if i == project.id then
-                            Input.text
-                                [ Ui.onEnterEscape
-                                    (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
-                                    (Core.LoggedInMsg LoggedIn.CancelRename)
-                                , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                            Element.row [ Element.width Element.fill ]
+                                [ Element.text prefix
+                                , Input.text
+                                    [ Ui.onEnterEscape
+                                        (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
+                                        (Core.LoggedInMsg LoggedIn.CancelRename)
+                                    , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                                    ]
+                                    { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, x )))
+                                    , placeholder = Nothing
+                                    , text = s
+                                    , label = Input.labelHidden ""
+                                    }
                                 ]
-                                { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, x )))
-                                , placeholder = Nothing
-                                , text = s
-                                , label = Input.labelHidden ""
-                                }
 
                         else
                             default
@@ -430,7 +463,7 @@ newProjectView global ( project, even, edited ) =
                 [ row
                 , Element.column
                     [ Element.width Element.fill, Element.paddingXY 20 10, Element.spacing 10 ]
-                    (List.map (newCapsuleView global) project.capsules)
+                    (List.map (newCapsuleView global project edited) project.capsules)
                 ]
         ]
 
@@ -443,7 +476,7 @@ newProjectsView global session uploadForm =
                 (\i x ->
                     ( x
                     , modBy 2 i == 0
-                    , uploadForm.projectRenamed
+                    , uploadForm.rename
                     )
                 )
                 (List.sortBy (\x -> -x.lastVisited) session.projects)

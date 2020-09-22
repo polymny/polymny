@@ -39,7 +39,7 @@ type alias UploadForm =
     , numberOfSlidesPerRow : Int
     , dropdown : Dropdown.State Api.Project
     , projectSelected : Maybe Api.Project
-    , projectRenamed : Maybe Rename
+    , rename : Maybe Rename
     }
 
 
