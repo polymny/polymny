@@ -25,7 +25,8 @@ use crate::{Database, Result};
 
 fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
-        Some((user, user.projects(&db)?))
+        let x = user.get_capsule_by_id(id, &db)?;
+        Some((user, x.get_projects_with_capsules(&db)?))
     } else {
         None
     };

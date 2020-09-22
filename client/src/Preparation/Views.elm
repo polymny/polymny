@@ -50,14 +50,22 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
         autoEdition =
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
 
+        projectName =
+            Maybe.withDefault "" <| Maybe.map .name (List.head details.projects)
+
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
                 [ leftColumnView details Nothing
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
-                    [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                        [ Ui.primaryButton (Just decreaseMsg) "-"
-                        , Element.text (String.fromInt global.numberOfSlidesPerRow)
-                        , Ui.primaryButton (Just increaseMsg) "+"
+                    [ Element.column [ Element.width Element.fill ]
+                        [ Element.row [ Element.width Element.fill ]
+                            [ Element.el [ Element.spacing 5, Element.padding 5, Element.alignLeft ] <| Element.text <| projectName ++ " :: " ++ details.capsule.name
+                            , Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
+                                [ Ui.primaryButton (Just decreaseMsg) "-"
+                                , Element.text (String.fromInt global.numberOfSlidesPerRow)
+                                , Ui.primaryButton (Just increaseMsg) "+"
+                                ]
+                            ]
                         ]
                     , Element.el
                         [ Element.padding 10
