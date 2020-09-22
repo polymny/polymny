@@ -238,7 +238,7 @@ update msg global { session, tab } =
                             uploadForm.projectName
 
                 ( newModel, newCmd ) =
-                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown session.projects
+                    Dropdown.update (LoggedIn.dropdownConfig newProjectName) dmsg uploadForm.dropdown session.projects
             in
             ( global
             , LoggedIn.Model session
@@ -327,14 +327,23 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
+            let
+                name =
+                    File.name file
+                        |> String.split "."
+                        |> List.reverse
+                        |> List.drop 1
+                        |> List.reverse
+                        |> String.join "."
+            in
             ( global
             , LoggedIn.Model session
                 (LoggedIn.Home
                     { form
                         | status = Status.Sent
                         , file = Just file
-                        , projectName = File.name file
-                        , capsuleName = File.name file
+                        , projectName = name
+                        , capsuleName = name
                     }
                 )
             , Api.quickUploadSlideShow (resultToMsg1 global.expiry) file

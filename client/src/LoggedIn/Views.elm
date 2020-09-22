@@ -99,7 +99,7 @@ prePreparationView global session uploadForm =
         projectField =
             Element.column [ Element.width Element.fill, Element.spacing 10 ]
                 [ Element.text "Nom du projet"
-                , Dropdown.view dropdownConfig uploadForm.dropdown (List.sortBy (\x -> -x.lastVisited) session.projects)
+                , Dropdown.view (dropdownConfig uploadForm.projectName) uploadForm.dropdown (List.sortBy (\x -> -x.lastVisited) session.projects)
                 ]
 
         -- Input.text []
@@ -714,8 +714,8 @@ regroupSlides number list =
             List.reverse ((List.map Just h ++ List.repeat (number - List.length h) Nothing) :: List.map (\x -> List.map Just x) t)
 
 
-dropdownConfig : Dropdown.Config Api.Project Core.Msg
-dropdownConfig =
+dropdownConfig : String -> Dropdown.Config Api.Project Core.Msg
+dropdownConfig name =
     let
         containerAttrs =
             [ Element.width Element.fill ]
@@ -776,7 +776,7 @@ dropdownConfig =
         |> Dropdown.withListAttributes listAttrs
         |> Dropdown.withSearchAttributes searchAttrs
         |> Dropdown.withFilterPlaceholder "Entrez un nom de projet"
-        |> Dropdown.withPromptElement (Element.el [ Element.width Element.fill ] (Element.text "Choisir un projet"))
+        |> Dropdown.withPromptElement (Element.el [ Element.width Element.fill ] (Element.text name))
 
 
 getColor : Int -> Element.Color
