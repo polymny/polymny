@@ -3,6 +3,7 @@ module Ui.Icons exposing
     , buttonFromIcon
     , camera
     , cancel
+    , chain
     , clear
     , closeLock
     , edit
@@ -97,6 +98,11 @@ image =
 pen : Element msg
 pen =
     buttonFromIcon FontAwesome.pen
+
+
+chain : Element msg
+chain =
+    buttonFromIcon FontAwesome.link
 
 
 spinner : Element msg

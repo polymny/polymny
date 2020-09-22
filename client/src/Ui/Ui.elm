@@ -2,6 +2,7 @@ module Ui.Ui exposing
     ( addButton
     , cameraButton
     , cancelButton
+    , chainButton
     , clearButton
     , closeLockButton
     , editButton
@@ -319,6 +320,11 @@ menuPointButton onPress content =
 penButton : Maybe msg -> String -> String -> Element msg
 penButton onPress content =
     iconButton Icons.pen onPress content
+
+
+chainButton : Maybe msg -> String -> String -> Element msg
+chainButton onPress content =
+    iconButton Icons.chain onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg
