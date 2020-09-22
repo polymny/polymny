@@ -451,8 +451,23 @@ newProjectView global ( project, even, edited ) =
             rename =
                 Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, project.name ))))) "" "Renommer le projet"
 
+            numberOfCapsules =
+                let
+                    l =
+                        List.length project.capsules
+
+                    plural =
+                        if l < 2 then
+                            ""
+
+                        else
+                            "s"
+                in
+                Element.el [ Font.italic ]
+                    (Element.text ("(" ++ String.fromInt l ++ " capsule" ++ plural ++ ")"))
+
             row =
-                Element.row [ Element.spacing 10, Element.width Element.fill ] [ title, rename ]
+                Element.row [ Element.spacing 10, Element.width Element.fill ] [ title, rename, numberOfCapsules ]
           in
           if project.folded then
             row
