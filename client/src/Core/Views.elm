@@ -222,21 +222,21 @@ topBar model =
                 leftButtons =
                     case tab of
                         LoggedIn.Preparation p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" True
+                            [ makeButton Nothing "Préparer" True
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
                             ]
 
                         LoggedIn.Acquisition p ->
                             [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" True
+                            , makeButton Nothing "Filmer" True
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
                             ]
 
                         LoggedIn.Edition p ->
                             [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
                             , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" True
+                            , makeButton Nothing "Produire" True
                             ]
 
                         _ ->
