@@ -357,13 +357,15 @@ leftColumn global session uploadForm =
 
 newCapsuleView : Core.Global -> Api.Capsule -> Element Core.Msg
 newCapsuleView global capsule =
-    Input.button []
-        { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
-        , label = Element.text capsule.name
-        }
+    Element.row [ Element.width Element.fill ]
+        [ Input.button []
+            { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked capsule))
+            , label = Element.text capsule.name
+            }
+        ]
 
 
-newProjectView : Core.Global -> ( Api.Project, Bool, Maybe String ) -> Element Core.Msg
+newProjectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
 newProjectView global ( project, even, edited ) =
     Element.row
         [ Element.padding 10
@@ -385,27 +387,36 @@ newProjectView global ( project, even, edited ) =
                     "▽ "
 
             title =
-                case edited of
-                    Just s ->
-                        Input.text
-                            [ Ui.onEnter (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
-                            , Ui.onEscape (Core.LoggedInMsg LoggedIn.CancelRename)
-                            , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
-                            ]
-                            { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameProject ( project.id, x ))
-                            , placeholder = Nothing
-                            , text = s
-                            , label = Input.labelHidden ""
-                            }
-
-                    _ ->
+                let
+                    default =
                         Input.button []
                             { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
                             , label = Element.text (prefix ++ project.name)
                             }
+                in
+                case edited of
+                    Just (LoggedIn.RenameProject ( i, s )) ->
+                        if i == project.id then
+                            Input.text
+                                [ Ui.onEnterEscape
+                                    (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
+                                    (Core.LoggedInMsg LoggedIn.CancelRename)
+                                , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                                ]
+                                { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, x )))
+                                , placeholder = Nothing
+                                , text = s
+                                , label = Input.labelHidden ""
+                                }
+
+                        else
+                            default
+
+                    _ ->
+                        default
 
             rename =
-                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameProject ( project.id, project.name )))) "" "Renommer le projet"
+                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, project.name ))))) "" "Renommer le projet"
 
             row =
                 Element.row [ Element.spacing 10, Element.width Element.fill ] [ title, rename ]
@@ -432,16 +443,7 @@ newProjectsView global session uploadForm =
                 (\i x ->
                     ( x
                     , modBy 2 i == 0
-                    , case uploadForm.projectRenamed of
-                        Just ( id, text ) ->
-                            if id == x.id then
-                                Just text
-
-                            else
-                                Nothing
-
-                        _ ->
-                            Nothing
+                    , uploadForm.projectRenamed
                     )
                 )
                 (List.sortBy (\x -> -x.lastVisited) session.projects)

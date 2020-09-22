@@ -252,14 +252,17 @@ update msg global { session, tab } =
         ( LoggedIn.CancelRename, LoggedIn.Home uploadForm ) ->
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Nothing }), Cmd.none )
 
-        ( LoggedIn.RenameProject ( projectId, name ), LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Just ( projectId, name ) }), Cmd.none )
+        ( LoggedIn.RenameMsg rename, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Just rename }), Cmd.none )
 
         ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
             let
+                _ =
+                    Debug.log "validate called" ()
+
                 cmd =
                     case uploadForm.projectRenamed of
-                        Just ( i, s ) ->
+                        Just (LoggedIn.RenameProject ( i, s )) ->
                             Api.renameProject (\_ -> Core.Noop) i s
 
                         _ ->
@@ -275,7 +278,7 @@ update msg global { session, tab } =
 
                 projects =
                     case uploadForm.projectRenamed of
-                        Just ( id, s ) ->
+                        Just (LoggedIn.RenameProject ( id, s )) ->
                             List.map (mapper id s) session.projects
 
                         _ ->
