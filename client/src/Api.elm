@@ -34,6 +34,8 @@ module Api exposing
     , post
     , publishVideo
     , quickUploadSlideShow
+    , renameCapsule
+    , renameProject
     , resetPassword
     , setupConfig
     , signUp
@@ -77,6 +79,19 @@ post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
 post { url, body, expect } =
     Http.request
         { method = "POST"
+        , headers = [ Http.header "Accept" "application/json" ]
+        , url = url
+        , body = body
+        , expect = expect
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+put : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+put { url, body, expect } =
+    Http.request
+        { method = "PUT"
         , headers = [ Http.header "Accept" "application/json" ]
         , url = url
         , body = body
@@ -594,6 +609,15 @@ newProject resultToMsg content =
         }
 
 
+renameProject : (Result Http.Error Project -> msg) -> Int -> String -> Cmd msg
+renameProject resultToMsg projectId name =
+    put
+        { url = "/api/project/" ++ String.fromInt projectId ++ "/"
+        , expect = Http.expectJson resultToMsg (decodeProject [])
+        , body = Http.jsonBody (encodeNewProjectContent { name = name })
+        }
+
+
 
 -- Project page
 
@@ -634,6 +658,15 @@ newCapsule resultToMsg projectId content =
         { url = "/api/new-capsule"
         , expect = Http.expectJson resultToMsg decodeCapsule
         , body = Http.jsonBody (encodeNewCapsuleContent projectId content)
+        }
+
+
+renameCapsule : (Result Http.Error Capsule -> msg) -> Int -> String -> Cmd msg
+renameCapsule resultToMsg projectId name =
+    put
+        { url = "/api/capsule/" ++ String.fromInt projectId ++ "/"
+        , expect = Http.expectJson resultToMsg decodeCapsule
+        , body = Http.jsonBody (Encode.object [ ( "name", Encode.string name ) ])
         }
 
 

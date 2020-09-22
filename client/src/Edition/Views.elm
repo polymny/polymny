@@ -54,7 +54,7 @@ centerView global model =
     Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
         [ -- capsuleProductionView global model
           gosProductionView model gos
-        , bottomRow model
+        , bottomRow global model
         ]
 
 
@@ -468,14 +468,14 @@ gosPrevisualisation model =
     Element.el [ Element.width Element.fill ] currentSlideView
 
 
-bottomRow : Edition.Model -> Element Core.Msg
-bottomRow model =
+bottomRow : Core.Global -> Edition.Model -> Element Core.Msg
+bottomRow global model =
     let
         msg =
             Just (Core.LoggedInMsg (LoggedIn.EditionClicked model.details True))
 
         button =
-            Ui.primaryButton msg "Finaliser la vidéo"
+            Ui.primaryButton msg "Produire la vidéo"
 
         video =
             case model.details.video of
@@ -492,7 +492,7 @@ bottomRow model =
                 Nothing ->
                     Element.text "Pas de vidéo éditée pour l'instant"
 
-        ( element, publishButton ) =
+        ( element, editButton ) =
             case model.status of
                 Status.Sent ->
                     ( Ui.messageWithSpinner "Edition automatique en cours", Element.none )
@@ -505,10 +505,65 @@ bottomRow model =
 
                 Status.NotSent ->
                     ( video, button )
+
+        videoUrl : Api.Asset -> String
+        videoUrl asset =
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
+        publishButton =
+            case ( model.details.capsule.published, model.details.video ) of
+                ( Api.NotPublished, Just _ ) ->
+                    Ui.primaryButton (Just Edition.PublishVideo) "Publier la vidéo"
+                        |> Element.map LoggedIn.EditionMsg
+                        |> Element.map Core.LoggedInMsg
+
+                ( Api.Publishing, _ ) ->
+                    Ui.messageWithSpinner "Publication de vidéo en cours..."
+
+                ( Api.Published, Just v ) ->
+                    Element.row [ Element.spacing 10 ]
+                        [ Element.newTabLink []
+                            { url = videoUrl v
+                            , label =
+                                Element.el
+                                    [ Font.color Colors.link
+                                    , Border.color Colors.link
+                                    , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
+                                    ]
+                                    (Element.text "Vidéo publiée")
+                            }
+                        , Ui.chainButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg (Edition.CopyUrl (videoUrl v))))) "" "Copier l'url de la vidéo"
+                        ]
+
+                -- Element.column
+                --     (Attributes.boxAttributes
+                --         ++ [ Element.spacing 20 ]
+                --     )
+                --     [ Element.newTabLink
+                --         [ Element.centerX
+                --         ]
+                --         { url = videoUrl v
+                --         , label = Ui.primaryButton Nothing "Voir la vidéo publiée"
+                --         }
+                --     , Element.text "Lien vers la vidéo publiée : "
+                --     , Element.el
+                --         [ Background.color Colors.white
+                --         , Border.color Colors.whiteDarker
+                --         , Border.rounded 5
+                --         , Border.width 1
+                --         , Element.paddingXY 10 10
+                --         , Attributes.fontMono
+                --         ]
+                --       <|
+                --         Element.text <|
+                --             videoUrl v
+                --     ]
+                ( _, _ ) ->
+                    Element.none
     in
     Element.row
         [ Element.alignRight, Element.padding 10, Element.spacing 10 ]
-        [ element, publishButton ]
+        [ element, editButton, publishButton ]
 
 
 htmlVideo : String -> Html msg

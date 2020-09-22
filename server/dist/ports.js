@@ -233,6 +233,17 @@ function setupPorts(app) {
         }
     }
 
+    function copyStringToClipboard(str) {
+        var el = document.createElement('textarea');
+        el.value = str;
+        el.setAttribute('readonly', '');
+        el.style = {position: 'absolute', left: '-9999px'};
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+    }
+
     subscribe(app.ports.init, function(args) {
         init(args[0], args[1], args[2]);
     });
@@ -281,6 +292,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.scrollIntoView, function(arg) {
         scrollIntoView(arg)
+    });
+
+    subscribe(app.ports.copyString, function(arg) {
+        copyStringToClipboard(arg)
     });
 
 }

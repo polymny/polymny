@@ -1,6 +1,7 @@
 module LoggedIn.Types exposing
     ( Model
     , Msg(..)
+    , Rename(..)
     , Tab(..)
     , UploadForm
     , UploadSlideShowMsg(..)
@@ -38,7 +39,13 @@ type alias UploadForm =
     , numberOfSlidesPerRow : Int
     , dropdown : Dropdown.State Api.Project
     , projectSelected : Maybe Api.Project
+    , rename : Maybe Rename
     }
+
+
+type Rename
+    = RenameProject ( Int, String )
+    | RenameCapsule ( Int, Int, String )
 
 
 type Tab
@@ -74,6 +81,9 @@ type Msg
     | DropdownMsg (Dropdown.Msg Api.Project)
     | OptionPicked (Maybe Api.Project)
     | GosClicked Int
+    | CancelRename
+    | RenameMsg Rename
+    | ValidateRenameProject
 
 
 type UploadSlideShowMsg
@@ -92,7 +102,7 @@ type UploadSlideShowMsg
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing Nothing
 
 
 init : Tab

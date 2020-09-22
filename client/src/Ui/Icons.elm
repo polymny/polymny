@@ -3,6 +3,7 @@ module Ui.Icons exposing
     , buttonFromIcon
     , camera
     , cancel
+    , chain
     , clear
     , closeLock
     , edit
@@ -11,6 +12,7 @@ module Ui.Icons exposing
     , menuPoint
     , movie
     , openLock
+    , pen
     , spinner
     , startRecord
     , stopRecord
@@ -91,6 +93,16 @@ font =
 image : Element msg
 image =
     buttonFromIcon FontAwesome.image
+
+
+pen : Element msg
+pen =
+    buttonFromIcon FontAwesome.pen
+
+
+chain : Element msg
+chain =
+    buttonFromIcon FontAwesome.link
 
 
 spinner : Element msg

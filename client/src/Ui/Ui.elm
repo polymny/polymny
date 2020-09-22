@@ -2,6 +2,7 @@ module Ui.Ui exposing
     ( addButton
     , cameraButton
     , cancelButton
+    , chainButton
     , clearButton
     , closeLockButton
     , editButton
@@ -17,7 +18,10 @@ module Ui.Ui exposing
     , messageWithSpinner
     , movieButton
     , onEnter
+    , onEnterEscape
+    , onEscape
     , openLockButton
+    , penButton
     , primaryButton
     , primaryButtonDisabled
     , simpleButton
@@ -61,6 +65,43 @@ onEnter msg =
 
                         else
                             Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
+
+onEscape : msg -> Element.Attribute msg
+onEscape msg =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Escape" then
+                            Decode.succeed msg
+
+                        else
+                            Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
+
+onEnterEscape : msg -> msg -> Element.Attribute msg
+onEnterEscape msgEnter msgEscape =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Escape" then
+                            Decode.succeed msgEscape
+
+                        else if key == "Enter" then
+                            Decode.succeed msgEnter
+
+                        else
+                            Decode.fail "Not the right key"
                     )
             )
         )
@@ -169,8 +210,8 @@ primaryButton onPress content =
         }
 
 
-iconButton : Element msg -> Maybe msg -> String -> Element msg
-iconButton icon onPress content =
+iconButton : Element msg -> Maybe msg -> String -> String -> Element msg
+iconButton icon onPress content tooltip =
     let
         iconAttributes =
             [ Font.color Colors.primary
@@ -178,6 +219,7 @@ iconButton icon onPress content =
             , Border.color Colors.primary
             , Element.padding 5
             , Border.rounded 5
+            , Element.htmlAttribute (Html.Attributes.title tooltip)
             ]
 
         contentElement =
@@ -193,42 +235,42 @@ iconButton icon onPress content =
         }
 
 
-trashButton : Maybe msg -> String -> Element msg
+trashButton : Maybe msg -> String -> String -> Element msg
 trashButton onPress content =
     iconButton Icons.trash onPress content
 
 
-fontButton : Maybe msg -> String -> Element msg
+fontButton : Maybe msg -> String -> String -> Element msg
 fontButton onPress content =
     iconButton Icons.font onPress content
 
 
-addButton : Maybe msg -> String -> Element msg
+addButton : Maybe msg -> String -> String -> Element msg
 addButton onPress content =
     iconButton Icons.add onPress content
 
 
-editButton : Maybe msg -> String -> Element msg
+editButton : Maybe msg -> String -> String -> Element msg
 editButton onPress content =
     iconButton Icons.edit onPress content
 
 
-clearButton : Maybe msg -> String -> Element msg
+clearButton : Maybe msg -> String -> String -> Element msg
 clearButton onPress content =
     iconButton Icons.clear onPress content
 
 
-cancelButton : Maybe msg -> String -> Element msg
+cancelButton : Maybe msg -> String -> String -> Element msg
 cancelButton onPress content =
     iconButton Icons.cancel onPress content
 
 
-cameraButton : Maybe msg -> String -> Element msg
+cameraButton : Maybe msg -> String -> String -> Element msg
 cameraButton onPress content =
     iconButton Icons.camera onPress content
 
 
-imageButton : Maybe msg -> String -> Element msg
+imageButton : Maybe msg -> String -> String -> Element msg
 imageButton onPress content =
     iconButton Icons.image onPress content
 
@@ -255,24 +297,34 @@ stopRecordButton onPress content =
     recordButton Icons.stopRecord onPress content
 
 
-movieButton : Maybe msg -> String -> Element msg
+movieButton : Maybe msg -> String -> String -> Element msg
 movieButton onPress content =
     iconButton Icons.movie onPress content
 
 
-openLockButton : Maybe msg -> String -> Element msg
+openLockButton : Maybe msg -> String -> String -> Element msg
 openLockButton onPress content =
     iconButton Icons.openLock onPress content
 
 
-closeLockButton : Maybe msg -> String -> Element msg
+closeLockButton : Maybe msg -> String -> String -> Element msg
 closeLockButton onPress content =
     iconButton Icons.closeLock onPress content
 
 
-menuPointButton : Maybe msg -> String -> Element msg
+menuPointButton : Maybe msg -> String -> String -> Element msg
 menuPointButton onPress content =
     iconButton Icons.menuPoint onPress content
+
+
+penButton : Maybe msg -> String -> String -> Element msg
+penButton onPress content =
+    iconButton Icons.pen onPress content
+
+
+chainButton : Maybe msg -> String -> String -> Element msg
+chainButton onPress content =
+    iconButton Icons.chain onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg

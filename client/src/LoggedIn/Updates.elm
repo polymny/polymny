@@ -238,7 +238,7 @@ update msg global { session, tab } =
                             uploadForm.projectName
 
                 ( newModel, newCmd ) =
-                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown session.projects
+                    Dropdown.update (LoggedIn.dropdownConfig newProjectName) dmsg uploadForm.dropdown session.projects
             in
             ( global
             , LoggedIn.Model session
@@ -248,6 +248,64 @@ update msg global { session, tab } =
 
         ( LoggedIn.OptionPicked option, LoggedIn.Home uploadForm ) ->
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectSelected = option }), Cmd.none )
+
+        ( LoggedIn.CancelRename, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Nothing }), Cmd.none )
+
+        ( LoggedIn.RenameMsg rename, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Just rename }), Cmd.none )
+
+        ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
+            let
+                cmd =
+                    case uploadForm.rename of
+                        Just (LoggedIn.RenameProject ( i, s )) ->
+                            Api.renameProject (\_ -> Core.Noop) i s
+
+                        Just (LoggedIn.RenameCapsule ( _, j, s )) ->
+                            Api.renameCapsule (\_ -> Core.Noop) j s
+
+                        _ ->
+                            Cmd.none
+
+                mapper : Int -> String -> Api.Project -> Api.Project
+                mapper id newName project =
+                    if project.id == id then
+                        { project | name = newName }
+
+                    else
+                        project
+
+                mapperCapsule : Int -> String -> Api.Project -> Api.Project
+                mapperCapsule id newName project =
+                    { project
+                        | capsules =
+                            List.map
+                                (\capsule ->
+                                    if capsule.id == id then
+                                        { capsule | name = newName }
+
+                                    else
+                                        capsule
+                                )
+                                project.capsules
+                    }
+
+                projects =
+                    case uploadForm.rename of
+                        Just (LoggedIn.RenameProject ( id, s )) ->
+                            List.map (mapper id s) session.projects
+
+                        Just (LoggedIn.RenameCapsule ( _, id, s )) ->
+                            List.map (mapperCapsule id s) session.projects
+
+                        _ ->
+                            session.projects
+            in
+            ( global
+            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | rename = Nothing })
+            , cmd
+            )
 
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
@@ -269,14 +327,23 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
+            let
+                name =
+                    File.name file
+                        |> String.split "."
+                        |> List.reverse
+                        |> List.drop 1
+                        |> List.reverse
+                        |> String.join "."
+            in
             ( global
             , LoggedIn.Model session
                 (LoggedIn.Home
                     { form
                         | status = Status.Sent
                         , file = Just file
-                        , projectName = File.name file
-                        , capsuleName = File.name file
+                        , projectName = name
+                        , capsuleName = name
                     }
                 )
             , Api.quickUploadSlideShow (resultToMsg1 global.expiry) file

@@ -50,14 +50,22 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
         autoEdition =
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
 
+        projectName =
+            Maybe.withDefault "" <| Maybe.map .name (List.head details.projects)
+
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
                 [ leftColumnView details Nothing
                 , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
-                    [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                        [ Ui.primaryButton (Just decreaseMsg) "-"
-                        , Element.text (String.fromInt global.numberOfSlidesPerRow)
-                        , Ui.primaryButton (Just increaseMsg) "+"
+                    [ Element.column [ Element.width Element.fill ]
+                        [ Element.row [ Element.width Element.fill ]
+                            [ Element.el [ Element.spacing 5, Element.padding 5, Element.alignLeft ] <| Element.text <| projectName ++ " :: " ++ details.capsule.name
+                            , Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
+                                [ Ui.primaryButton (Just decreaseMsg) "-"
+                                , Element.text (String.fromInt global.numberOfSlidesPerRow)
+                                , Ui.primaryButton (Just increaseMsg) "+"
+                                ]
+                            ]
                         ]
                     , Element.el
                         [ Element.padding 10
@@ -401,27 +409,24 @@ genericGosView global uploadForm numberOfSlidesPerRow replaceSlideForm capsule o
 
         cameraButton : Element Core.Msg
         cameraButton =
-            Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record capsule gosIndex))) ""
+            Ui.cameraButton (Just (Core.LoggedInMsg (LoggedIn.Record capsule gosIndex))) "" "Filmer"
 
         movieButton : Element Core.Msg
         movieButton =
-            Ui.movieButton Nothing ""
+            Ui.movieButton Nothing "" "Voir la vidéo enregistrée"
 
-        lockButton : Element Core.Msg
-        lockButton =
-            if global.beta then
-                (if Maybe.withDefault False (Maybe.map .locked structure) then
-                    Ui.closeLockButton (Just (Preparation.SwitchLock gosIndex)) ""
-
-                 else
-                    Ui.openLockButton (Just (Preparation.SwitchLock gosIndex)) ""
-                )
-                    |> Element.map LoggedIn.PreparationMsg
-                    |> Element.map Core.LoggedInMsg
-
-            else
-                Element.none
-
+        --lockButton : Element Core.Msg
+        --lockButton =
+        --    if global.beta then
+        --        (if Maybe.withDefault False (Maybe.map .locked structure) then
+        --            Ui.closeLockButton (Just (Preparation.SwitchLock gosIndex)) ""
+        --         else
+        --            Ui.openLockButton (Just (Preparation.SwitchLock gosIndex)) ""
+        --        )
+        --            |> Element.map LoggedIn.PreparationMsg
+        --            |> Element.map Core.LoggedInMsg
+        --    else
+        --        Element.none
         leftButtons : List (Element Core.Msg)
         leftButtons =
             case Maybe.map .record structure of
@@ -673,9 +678,9 @@ genericDesignSlideView global extraResourceForm replaceSlideForm options slideMo
 
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ Ui.imageButton (Just extraResourceMsg) ""
-                        , Ui.fontButton (Just promptMsg) ""
-                        , Ui.trashButton (Just deleteExtraMsg) ""
+                        [ Ui.imageButton (Just extraResourceMsg) "" "Ajouter une ressource externe"
+                        , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
+                        , Ui.trashButton (Just deleteExtraMsg) "" "Supprimer le slide"
                         ]
             in
             Element.el
@@ -704,7 +709,7 @@ leftColumnView details currentGos =
                 (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
                     [ case Maybe.map .record (getGos i) of
                         Just (Just record) ->
-                            Element.newTabLink [] { url = record, label = Ui.movieButton Nothing "" }
+                            Element.newTabLink [] { url = record, label = Ui.movieButton Nothing "" "Voir la vidéo enregistrée" }
 
                         _ ->
                             Element.none
@@ -721,6 +726,7 @@ leftColumnView details currentGos =
                                 Just (Core.LoggedInMsg (LoggedIn.Record details i))
                         )
                         ""
+                        "Filmer"
                     ]
                 )
 
@@ -883,8 +889,8 @@ genrericDesignSlide1stColumnView eventLessAttributes slide gosIndex =
         inFront =
             Element.el [ Element.width Element.fill ]
                 (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                    [ Ui.fontButton (Just promptMsg) ""
-                    , Ui.trashButton (Just deleteExtraMsg) ""
+                    [ Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
+                    , Ui.trashButton (Just deleteExtraMsg) "" "Supprimer le slide"
                     ]
                 )
     in

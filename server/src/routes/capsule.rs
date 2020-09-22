@@ -192,7 +192,7 @@ pub fn update_capsule(
         .set(&capsule_form.into_inner())
         .execute(&db.0)?;
 
-    Ok(json!({ "capsule": Capsule::get_by_id(capsule_id, &db)? }))
+    Ok(json!(Capsule::get_by_id(capsule_id, &db)?))
 }
 /// Delete a capsule
 #[delete("/capsule/<id>")]
