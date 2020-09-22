@@ -17,6 +17,7 @@ module Ui.Ui exposing
     , messageWithSpinner
     , movieButton
     , onEnter
+    , onEnterEscape
     , onEscape
     , openLockButton
     , penButton
@@ -80,6 +81,26 @@ onEscape msg =
 
                         else
                             Decode.fail "Not the enter key"
+                    )
+            )
+        )
+
+
+onEnterEscape : msg -> msg -> Element.Attribute msg
+onEnterEscape msgEnter msgEscape =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Escape" then
+                            Decode.succeed msgEscape
+
+                        else if key == "Enter" then
+                            Decode.succeed msgEnter
+
+                        else
+                            Decode.fail "Not the right key"
                     )
             )
         )
