@@ -230,7 +230,7 @@ rightColumn model =
                     Element.row [ Element.width Element.fill, Element.spacing 10 ]
                         [ Element.el
                             [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
-                            (Element.row []
+                            (Element.row [ Ui.blink ]
                                 [ Ui.Icons.buttonFromIcon FontAwesome.circle
                                 , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
                                     (Element.text "REC")

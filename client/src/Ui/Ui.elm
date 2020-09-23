@@ -1,5 +1,6 @@
 module Ui.Ui exposing
     ( addButton
+    , blink
     , cameraButton
     , cancelButton
     , chainButton
@@ -118,6 +119,11 @@ buttonAttributes =
     , Border.width 1
     , Font.color Colors.white
     ]
+
+
+blink : Element.Attribute msg
+blink =
+    Element.htmlAttribute (Html.Attributes.class "blink")
 
 
 textButton : Maybe msg -> String -> Element msg
