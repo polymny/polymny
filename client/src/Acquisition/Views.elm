@@ -171,19 +171,16 @@ promptView model =
             List.length (Maybe.withDefault [] model.slides)
 
         totalLines =
-            model.slides
-                |> Maybe.withDefault []
-                |> List.map (\x -> List.length (String.split "\n" x.prompt))
-                |> List.foldl (\a b -> a + b) 0
+            Maybe.withDefault [] model.slides
+                |> List.map (.prompt >> String.lines >> List.length)
+                |> List.foldl (+) 0
 
+        -- Some mattpiz wizardry
         currentLine =
-            model.slides
-                |> Maybe.withDefault []
-                |> List.indexedMap (\x y -> ( x, y ))
-                |> List.filter (\( i, _ ) -> i < model.currentSlide)
-                |> List.map (\( _, x ) -> List.length (String.split "\n" x.prompt))
-                |> List.foldl (\a b -> a + b) 0
-                |> (\x -> x + model.currentLine + 1)
+            Maybe.withDefault [] model.slides
+                |> List.take model.currentSlide
+                |> List.map (.prompt >> String.lines >> List.length)
+                |> List.foldl (+) (model.currentLine + 1)
 
         info =
             Element.column [ Element.padding 10, Element.spacing 10, Element.width Element.fill, Element.height Element.fill ]
