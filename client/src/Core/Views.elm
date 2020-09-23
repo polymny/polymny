@@ -88,11 +88,11 @@ viewContent { global, model } =
             case model of
                 Core.LoggedIn { tab } ->
                     case tab of
-                        LoggedIn.Preparation { slides, slideModel, gosModel, details, uploadForms, broken } ->
+                        LoggedIn.Preparation { slides, slideModel, gosModel, broken } ->
                             case broken of
                                 Preparation.NotBroken ->
-                                    [ Element.inFront (Preparation.gosGhostView global uploadForms.extraResource global.numberOfSlidesPerRow uploadForms.replaceSlide details gosModel slideModel (List.concat slides))
-                                    , Element.inFront (Preparation.slideGhostView global uploadForms.extraResource uploadForms.replaceSlide slideModel (List.concat slides))
+                                    [ Element.inFront (Preparation.gosGhostView global global.numberOfSlidesPerRow gosModel slideModel (List.concat slides))
+                                    , Element.inFront (Preparation.slideGhostView global slideModel (List.concat slides))
                                     ]
 
                                 _ ->
@@ -219,28 +219,34 @@ topBar model =
                         , label = Element.text label
                         }
 
-                leftButtons =
+                ( details, leftButtons ) =
                     case tab of
                         LoggedIn.Preparation p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" True
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
-                            ]
+                            ( Just p.details
+                            , [ makeButton Nothing "Préparer" True
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              ]
+                            )
 
                         LoggedIn.Acquisition p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" True
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
-                            ]
+                            ( Just p.details
+                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
+                              , makeButton Nothing "Filmer" True
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              ]
+                            )
 
                         LoggedIn.Edition p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" True
-                            ]
+                            ( Just p.details
+                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
+                              , makeButton Nothing "Produire" True
+                              ]
+                            )
 
                         _ ->
-                            []
+                            ( Nothing, [] )
             in
             Element.row
                 [ Background.color Colors.primary

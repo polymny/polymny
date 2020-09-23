@@ -14,10 +14,6 @@ import Log
 import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Updates as NewCapsule
-import NewProject.Types as NewProject
-import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Settings.Types as Settings
@@ -126,63 +122,8 @@ update msg global { session, tab } =
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsuleDetails.capsule.id ++ "/preparation")
             )
 
-        --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-        --   ( LoggedIn.Model session tab, Cmd.none )
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form ) ->
             updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form
-
-        ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
-            let
-                ( newSession, newModel, cmd ) =
-                    NewProject.update session newProjectMsg newProjectModel
-            in
-            ( global
-            , { session = newSession, tab = LoggedIn.NewProject newModel }
-            , Cmd.batch
-                [ cmd
-                , Nav.pushUrl global.key "/new-project"
-                ]
-            )
-
-        ( LoggedIn.ProjectClicked project, _ ) ->
-            ( global
-            , { session = session
-              , tab = LoggedIn.Project project Nothing
-              }
-            , Api.capsulesFromProjectId (resultToMsg project) project.id
-            )
-
-        ( LoggedIn.CapsulesReceived project capsules, _ ) ->
-            let
-                newSession =
-                    { session | active_project = Just project }
-            in
-            ( global
-            , { session = newSession
-              , tab = LoggedIn.Project { project | capsules = capsules } Nothing
-              }
-            , Nav.pushUrl global.key ("/project/" ++ String.fromInt project.id)
-            )
-
-        ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
-            let
-                ( newModel, cmd ) =
-                    NewCapsule.update project newCapsuleMsg newCapsuleModel
-            in
-            ( global
-            , { session = session
-              , tab = newModel
-              }
-            , cmd
-            )
-
-        ( LoggedIn.NewCapsuleClicked project, _ ) ->
-            ( global
-            , { session = session
-              , tab = LoggedIn.Project project (Just NewCapsule.init)
-              }
-            , Nav.pushUrl global.key ("/new-capsule/" ++ String.fromInt project.id)
-            )
 
         ( LoggedIn.CapsuleClicked capsule, _ ) ->
             ( global
@@ -238,7 +179,7 @@ update msg global { session, tab } =
                             uploadForm.projectName
 
                 ( newModel, newCmd ) =
-                    Dropdown.update LoggedIn.dropdownConfig dmsg uploadForm.dropdown session.projects
+                    Dropdown.update (LoggedIn.dropdownConfig newProjectName) dmsg uploadForm.dropdown session.projects
             in
             ( global
             , LoggedIn.Model session
@@ -250,17 +191,20 @@ update msg global { session, tab } =
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectSelected = option }), Cmd.none )
 
         ( LoggedIn.CancelRename, LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Nothing }), Cmd.none )
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Nothing }), Cmd.none )
 
-        ( LoggedIn.RenameProject ( projectId, name ), LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | projectRenamed = Just ( projectId, name ) }), Cmd.none )
+        ( LoggedIn.RenameMsg rename, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Just rename }), Cmd.none )
 
         ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
             let
                 cmd =
-                    case uploadForm.projectRenamed of
-                        Just ( i, s ) ->
+                    case uploadForm.rename of
+                        Just (LoggedIn.RenameProject ( i, s )) ->
                             Api.renameProject (\_ -> Core.Noop) i s
+
+                        Just (LoggedIn.RenameCapsule ( _, j, s )) ->
+                            Api.renameCapsule (\_ -> Core.Noop) j s
 
                         _ ->
                             Cmd.none
@@ -273,16 +217,34 @@ update msg global { session, tab } =
                     else
                         project
 
+                mapperCapsule : Int -> String -> Api.Project -> Api.Project
+                mapperCapsule id newName project =
+                    { project
+                        | capsules =
+                            List.map
+                                (\capsule ->
+                                    if capsule.id == id then
+                                        { capsule | name = newName }
+
+                                    else
+                                        capsule
+                                )
+                                project.capsules
+                    }
+
                 projects =
-                    case uploadForm.projectRenamed of
-                        Just ( id, s ) ->
+                    case uploadForm.rename of
+                        Just (LoggedIn.RenameProject ( id, s )) ->
                             List.map (mapper id s) session.projects
+
+                        Just (LoggedIn.RenameCapsule ( _, id, s )) ->
+                            List.map (mapperCapsule id s) session.projects
 
                         _ ->
                             session.projects
             in
             ( global
-            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | projectRenamed = Nothing })
+            , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | rename = Nothing })
             , cmd
             )
 
@@ -306,14 +268,23 @@ updateUploadSlideShow global msg { session, tab } form =
             )
 
         LoggedIn.UploadSlideShowFileReady file ->
+            let
+                name =
+                    File.name file
+                        |> String.split "."
+                        |> List.reverse
+                        |> List.drop 1
+                        |> List.reverse
+                        |> String.join "."
+            in
             ( global
             , LoggedIn.Model session
                 (LoggedIn.Home
                     { form
                         | status = Status.Sent
                         , file = Just file
-                        , projectName = File.name file
-                        , capsuleName = File.name file
+                        , projectName = name
+                        , capsuleName = name
                     }
                 )
             , Api.quickUploadSlideShow (resultToMsg1 global.expiry) file

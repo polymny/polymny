@@ -1,7 +1,10 @@
 module Ui.Ui exposing
     ( addButton
+    , arrowCircleRightButton
+    , blink
     , cameraButton
     , cancelButton
+    , chainButton
     , clearButton
     , closeLockButton
     , editButton
@@ -17,6 +20,7 @@ module Ui.Ui exposing
     , messageWithSpinner
     , movieButton
     , onEnter
+    , onEnterEscape
     , onEscape
     , openLockButton
     , penButton
@@ -85,6 +89,26 @@ onEscape msg =
         )
 
 
+onEnterEscape : msg -> msg -> Element.Attribute msg
+onEnterEscape msgEnter msgEscape =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Escape" then
+                            Decode.succeed msgEscape
+
+                        else if key == "Enter" then
+                            Decode.succeed msgEnter
+
+                        else
+                            Decode.fail "Not the right key"
+                    )
+            )
+        )
+
+
 buttonAttributes : List (Element.Attribute msg)
 buttonAttributes =
     [ Font.color Colors.white
@@ -96,6 +120,11 @@ buttonAttributes =
     , Border.width 1
     , Font.color Colors.white
     ]
+
+
+blink : Element.Attribute msg
+blink =
+    Element.htmlAttribute (Html.Attributes.class "blink")
 
 
 textButton : Maybe msg -> String -> Element msg
@@ -298,6 +327,16 @@ menuPointButton onPress content =
 penButton : Maybe msg -> String -> String -> Element msg
 penButton onPress content =
     iconButton Icons.pen onPress content
+
+
+chainButton : Maybe msg -> String -> String -> Element msg
+chainButton onPress content =
+    iconButton Icons.chain onPress content
+
+
+arrowCircleRightButton : Maybe msg -> String -> String -> Element msg
+arrowCircleRightButton onPress content =
+    iconButton Icons.arrowCircleRight onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg

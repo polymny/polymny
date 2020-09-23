@@ -1,6 +1,7 @@
 module LoggedIn.Types exposing
     ( Model
     , Msg(..)
+    , Rename(..)
     , Tab(..)
     , UploadForm
     , UploadSlideShowMsg(..)
@@ -15,8 +16,6 @@ import Api
 import Dropdown
 import Edition.Types as Edition
 import File exposing (File)
-import NewCapsule.Types as NewCapsule
-import NewProject.Types as NewProject
 import Preparation.Types as Preparation
 import Settings.Types as Settings
 import Status exposing (Status)
@@ -38,8 +37,13 @@ type alias UploadForm =
     , numberOfSlidesPerRow : Int
     , dropdown : Dropdown.State Api.Project
     , projectSelected : Maybe Api.Project
-    , projectRenamed : Maybe ( Int, String )
+    , rename : Maybe Rename
     }
+
+
+type Rename
+    = RenameProject ( Int, String )
+    | RenameCapsule ( Int, Int, String )
 
 
 type Tab
@@ -47,8 +51,6 @@ type Tab
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
     | Edition Edition.Model
-    | NewProject NewProject.Model
-    | Project Api.Project (Maybe NewCapsule.Model)
     | Settings Settings.Model
 
 
@@ -59,12 +61,8 @@ type Msg
     | PublicationMsg
     | Record Api.CapsuleDetails Int
     | UploadSlideShowMsg UploadSlideShowMsg
-    | NewProjectMsg NewProject.Msg
-    | NewCapsuleMsg NewCapsule.Msg
     | CapsulesReceived Api.Project (List Api.Capsule)
     | CapsuleClicked Api.Capsule
-    | ProjectClicked Api.Project
-    | NewCapsuleClicked Api.Project
     | CapsuleReceived Api.CapsuleDetails
     | PreparationClicked Api.CapsuleDetails
     | AcquisitionClicked Api.CapsuleDetails
@@ -76,7 +74,7 @@ type Msg
     | OptionPicked (Maybe Api.Project)
     | GosClicked Int
     | CancelRename
-    | RenameProject ( Int, String )
+    | RenameMsg Rename
     | ValidateRenameProject
 
 

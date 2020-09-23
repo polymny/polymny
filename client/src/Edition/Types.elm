@@ -62,3 +62,4 @@ type Msg
     | GosWebcamSizeChanged Int Webcam.WebcamSize
     | GosWebcamPositionChanged Int Webcam.WebcamPosition
     | OptionsSubmitted
+    | CopyUrl String
