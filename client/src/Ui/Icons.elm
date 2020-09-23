@@ -1,5 +1,6 @@
 module Ui.Icons exposing
     ( add
+    , arrowCircleRight
     , buttonFromIcon
     , camera
     , cancel
@@ -103,6 +104,11 @@ pen =
 chain : Element msg
 chain =
     buttonFromIcon FontAwesome.link
+
+
+arrowCircleRight : Element msg
+arrowCircleRight =
+    buttonFromIcon FontAwesome.arrowCircleRight
 
 
 spinner : Element msg

@@ -14,10 +14,6 @@ import Log
 import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Updates as NewCapsule
-import NewProject.Types as NewProject
-import NewProject.Updates as NewProject
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Settings.Types as Settings
@@ -126,63 +122,8 @@ update msg global { session, tab } =
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsuleDetails.capsule.id ++ "/preparation")
             )
 
-        --( LoggedIn.AcquisitionMsg Acquisition.AcquisitionClicked, _ ) ->
-        --   ( LoggedIn.Model session tab, Cmd.none )
         ( LoggedIn.UploadSlideShowMsg uploadSlideShowMsg, LoggedIn.Home form ) ->
             updateUploadSlideShow global uploadSlideShowMsg { session = session, tab = tab } form
-
-        ( LoggedIn.NewProjectMsg newProjectMsg, LoggedIn.NewProject newProjectModel ) ->
-            let
-                ( newSession, newModel, cmd ) =
-                    NewProject.update session newProjectMsg newProjectModel
-            in
-            ( global
-            , { session = newSession, tab = LoggedIn.NewProject newModel }
-            , Cmd.batch
-                [ cmd
-                , Nav.pushUrl global.key "/new-project"
-                ]
-            )
-
-        ( LoggedIn.ProjectClicked project, _ ) ->
-            ( global
-            , { session = session
-              , tab = LoggedIn.Project project Nothing
-              }
-            , Api.capsulesFromProjectId (resultToMsg project) project.id
-            )
-
-        ( LoggedIn.CapsulesReceived project capsules, _ ) ->
-            let
-                newSession =
-                    { session | active_project = Just project }
-            in
-            ( global
-            , { session = newSession
-              , tab = LoggedIn.Project { project | capsules = capsules } Nothing
-              }
-            , Nav.pushUrl global.key ("/project/" ++ String.fromInt project.id)
-            )
-
-        ( LoggedIn.NewCapsuleMsg newCapsuleMsg, LoggedIn.Project project (Just newCapsuleModel) ) ->
-            let
-                ( newModel, cmd ) =
-                    NewCapsule.update project newCapsuleMsg newCapsuleModel
-            in
-            ( global
-            , { session = session
-              , tab = newModel
-              }
-            , cmd
-            )
-
-        ( LoggedIn.NewCapsuleClicked project, _ ) ->
-            ( global
-            , { session = session
-              , tab = LoggedIn.Project project (Just NewCapsule.init)
-              }
-            , Nav.pushUrl global.key ("/new-capsule/" ++ String.fromInt project.id)
-            )
 
         ( LoggedIn.CapsuleClicked capsule, _ ) ->
             ( global

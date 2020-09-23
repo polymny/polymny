@@ -1,5 +1,7 @@
 module Ui.Ui exposing
     ( addButton
+    , arrowCircleRightButton
+    , blink
     , cameraButton
     , cancelButton
     , chainButton
@@ -118,6 +120,11 @@ buttonAttributes =
     , Border.width 1
     , Font.color Colors.white
     ]
+
+
+blink : Element.Attribute msg
+blink =
+    Element.htmlAttribute (Html.Attributes.class "blink")
 
 
 textButton : Maybe msg -> String -> Element msg
@@ -325,6 +332,11 @@ penButton onPress content =
 chainButton : Maybe msg -> String -> String -> Element msg
 chainButton onPress content =
     iconButton Icons.chain onPress content
+
+
+arrowCircleRightButton : Maybe msg -> String -> String -> Element msg
+arrowCircleRightButton onPress content =
+    iconButton Icons.arrowCircleRight onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg
