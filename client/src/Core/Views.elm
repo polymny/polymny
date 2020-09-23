@@ -219,28 +219,34 @@ topBar model =
                         , label = Element.text label
                         }
 
-                leftButtons =
+                ( details, leftButtons ) =
                     case tab of
                         LoggedIn.Preparation p ->
-                            [ makeButton Nothing "Préparer" True
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
-                            ]
+                            ( Just p.details
+                            , [ makeButton Nothing "Préparer" True
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              ]
+                            )
 
                         LoggedIn.Acquisition p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                            , makeButton Nothing "Filmer" True
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
-                            ]
+                            ( Just p.details
+                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
+                              , makeButton Nothing "Filmer" True
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              ]
+                            )
 
                         LoggedIn.Edition p ->
-                            [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                            , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                            , makeButton Nothing "Produire" True
-                            ]
+                            ( Just p.details
+                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
+                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
+                              , makeButton Nothing "Produire" True
+                              ]
+                            )
 
                         _ ->
-                            []
+                            ( Nothing, [] )
             in
             Element.row
                 [ Background.color Colors.primary
