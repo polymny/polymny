@@ -26,6 +26,7 @@ module Ui.Ui exposing
     , penButton
     , primaryButton
     , primaryButtonDisabled
+    , primaryButtonWithTooltip
     , simpleButton
     , simpleButtonDisabled
     , spinner
@@ -212,6 +213,15 @@ primaryButton : Maybe msg -> String -> Element msg
 primaryButton onPress content =
     Input.button
         buttonAttributes
+        { onPress = onPress
+        , label = Element.text content
+        }
+
+
+primaryButtonWithTooltip : Maybe msg -> String -> String -> Element msg
+primaryButtonWithTooltip onPress content tooltip =
+    Input.button
+        (Element.htmlAttribute (Html.Attributes.title tooltip) :: buttonAttributes)
         { onPress = onPress
         , label = Element.text content
         }
