@@ -1,5 +1,6 @@
 module Ui.Ui exposing
     ( addButton
+    , arrowCircleRightButton
     , blink
     , cameraButton
     , cancelButton
@@ -331,6 +332,11 @@ penButton onPress content =
 chainButton : Maybe msg -> String -> String -> Element msg
 chainButton onPress content =
     iconButton Icons.chain onPress content
+
+
+arrowCircleRightButton : Maybe msg -> String -> String -> Element msg
+arrowCircleRightButton onPress content =
+    iconButton Icons.arrowCircleRight onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg

@@ -116,14 +116,29 @@ promptView model =
         currentSentence =
             Maybe.withDefault Nothing (Maybe.map (getLine model.currentLine) currentSlide)
 
+        nextSentenceCurrentSlide : Maybe String
+        nextSentenceCurrentSlide =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide)
+
         nextSentence : Maybe String
         nextSentence =
-            case Maybe.withDefault Nothing (Maybe.map (getLine (model.currentLine + 1)) currentSlide) of
+            case nextSentenceCurrentSlide of
                 Nothing ->
                     Maybe.withDefault Nothing (Maybe.map List.head (Maybe.map (\x -> String.split "\n" x.prompt) nextSlide))
 
                 x ->
                     x
+
+        nextSlideIcon =
+            if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
+                Element.html
+                    (Html.span [ Html.Attributes.style "padding-right" "10px" ]
+                        [ FontAwesome.iconWithOptions FontAwesome.arrowCircleRight FontAwesome.Solid [] []
+                        ]
+                    )
+
+            else
+                Element.none
 
         promptText =
             case currentSentence of
@@ -138,9 +153,9 @@ promptView model =
         nextPromptText =
             case nextSentence of
                 Just h ->
-                    Element.el
+                    Element.row
                         (Font.size 25 :: Font.color Colors.grey :: promptAttributes)
-                        (Element.paragraph [] [ Element.text h ])
+                        [ Element.paragraph [] [ nextSlideIcon, Element.text h ] ]
 
                 _ ->
                     Element.none
@@ -150,6 +165,30 @@ promptView model =
                 [ Element.paragraph [] [ Element.text "Enregistrer : espace" ]
                 , Element.paragraph [] [ Element.text "Finir l'enregistrement : espace" ]
                 , Element.paragraph [] [ Element.text "Prochaine ligne : flèche à droite" ]
+                ]
+
+        totalSlides =
+            List.length (Maybe.withDefault [] model.slides)
+
+        totalLines =
+            model.slides
+                |> Maybe.withDefault []
+                |> List.map (\x -> List.length (String.split "\n" x.prompt))
+                |> List.foldl (\a b -> a + b) 0
+
+        currentLine =
+            model.slides
+                |> Maybe.withDefault []
+                |> List.indexedMap (\x y -> ( x, y ))
+                |> List.filter (\( i, _ ) -> i < model.currentSlide)
+                |> List.map (\( _, x ) -> List.length (String.split "\n" x.prompt))
+                |> List.foldl (\a b -> a + b) 0
+                |> (\x -> x + model.currentLine + 1)
+
+        info =
+            Element.column [ Element.padding 10, Element.spacing 10, Element.width Element.fill, Element.height Element.fill ]
+                [ Element.text ("Ligne " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
+                , Element.text ("Slide " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
                 ]
     in
     Element.row
@@ -165,7 +204,7 @@ promptView model =
             , Background.color Colors.black
             ]
             [ promptText, nextPromptText ]
-        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
+        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] info
         ]
 
 
