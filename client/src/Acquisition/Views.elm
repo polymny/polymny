@@ -62,30 +62,28 @@ view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
 view _ _ model =
     let
         attributes =
-            if model.cameraReady then
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.scrollbarY
-                ]
+            Element.height Element.fill
+                :: (if model.cameraReady then
+                        []
 
-            else
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.scrollbarY
-                , Element.htmlAttribute (Html.Attributes.style "visibility" "hidden")
-                ]
+                    else
+                        [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
+                   )
     in
     Element.row
-        attributes
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.scrollbarY
+        ]
         [ Preparation.leftColumnView model.details (Just model.gos)
-        , centerView model
-        , rightColumn model
+        , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
+        , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
         ]
 
 
 centerView : Acquisition.Model -> Element Core.Msg
 centerView model =
-    Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+    Element.column [ Element.width Element.fill, Element.height Element.fill ]
         [ promptView model
         , slideView model
         ]
@@ -278,24 +276,26 @@ rightColumn model =
     let
         recordView : Int -> Acquisition.Record -> Element Core.Msg
         recordView index record =
-            let
-                makeButton =
-                    Ui.primaryButton
-            in
             Element.row [ Element.spacing 10 ]
                 [ Element.text (String.fromInt (index + 1))
-                , makeButton (msg record)
+                , Ui.primaryButtonWithTooltip (msg record)
                     (if model.currentVideo == Just index && not model.watchingWebcam then
                         "◼"
 
                      else
                         "▶"
                     )
+                    (if model.currentVideo == Just index && not model.watchingWebcam then
+                        "Revenir à la webcam"
+
+                     else
+                        "Lire l'enregistrement"
+                    )
                 , Acquisition.UploadStream (url model.details.capsule.id model.gos) index
                     |> LoggedIn.AcquisitionMsg
                     |> Core.LoggedInMsg
                     |> Just
-                    |> (\x -> makeButton x "✔")
+                    |> (\x -> Ui.primaryButtonWithTooltip x "✔" "Valider cet enregistrement")
                 ]
 
         msg : Acquisition.Record -> Maybe Core.Msg
@@ -311,10 +311,12 @@ rightColumn model =
     in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
         [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
-        , Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
-            (Element.el [ Element.centerX ] (Element.text "Enregistrements")
-                :: List.indexedMap recordView (List.reverse model.records)
-            )
+        , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
+            [ Element.el [ Element.centerX ] (Element.text "Enregistrements")
+            , Element.column
+                [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+                (List.indexedMap recordView (List.reverse model.records))
+            ]
         ]
 
 
