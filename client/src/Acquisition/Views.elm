@@ -20,23 +20,24 @@ import Ui.Icons
 import Ui.Ui as Ui
 
 
+mkmsg : Acquisition.Model -> Acquisition.Msg -> Core.Msg
+mkmsg model msg =
+    if model.cameraReady then
+        Core.LoggedInMsg (LoggedIn.AcquisitionMsg msg)
+
+    else
+        Core.Noop
+
+
 shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
 shortcuts model msg =
     let
         raw =
             Keyboard.rawValue msg
-
-        mkmsg : Acquisition.Msg -> Core.Msg
-        mkmsg ms =
-            if model.cameraReady then
-                Core.LoggedInMsg (LoggedIn.AcquisitionMsg ms)
-
-            else
-                Core.Noop
     in
     case raw of
         " " ->
-            mkmsg
+            mkmsg model
                 (if model.recording then
                     Acquisition.StopRecording
 
@@ -45,7 +46,7 @@ shortcuts model msg =
                 )
 
         "ArrowRight" ->
-            mkmsg Acquisition.NextSentence
+            mkmsg model Acquisition.NextSentence
 
         _ ->
             Core.Noop
@@ -182,10 +183,53 @@ promptView model =
                 |> List.map (.prompt >> String.lines >> List.length)
                 |> List.foldl (+) (model.currentLine + 1)
 
+        status : Element Core.Msg
+        status =
+            Input.button []
+                { label =
+                    Element.column [ Element.padding 5, Border.color Colors.primary, Border.width 2, Border.rounded 5 ]
+                        [ if model.recording then
+                            Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                                [ Element.el
+                                    [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
+                                    (Element.row [ Ui.blink ]
+                                        [ Ui.Icons.buttonFromIcon FontAwesome.circle
+                                        , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                            (Element.text "REC")
+                                        ]
+                                    )
+                                ]
+
+                          else
+                            Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                                [ Element.el
+                                    []
+                                    (Element.row []
+                                        [ Element.el [ Font.size 25 ] (Ui.Icons.buttonFromIcon FontAwesome.stopCircle)
+                                        , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
+                                            (Element.text "Enregistrement arrêté")
+                                        ]
+                                    )
+                                ]
+                        ]
+                , onPress =
+                    Just
+                        (mkmsg model
+                            (if model.recording then
+                                Acquisition.StopRecording
+
+                             else
+                                Acquisition.StartRecording
+                            )
+                        )
+                }
+
         info =
-            Element.column [ Element.padding 10, Element.spacing 10, Element.width Element.fill, Element.height Element.fill ]
-                [ Element.text ("Ligne " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
+            Element.row [ Element.padding 10, Element.spacing 30, Element.width Element.fill ]
+                [ status
+                , Element.el [ Element.width Element.fill ] Element.none
                 , Element.text ("Slide " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
+                , Element.text ("Ligne " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
                 ]
     in
     Element.row
@@ -196,12 +240,18 @@ promptView model =
         , Element.column
             [ Element.width (Element.fillPortion 3)
             , Element.height Element.fill
-            , Element.padding 10
-            , Element.spacing 20
-            , Background.color Colors.black
             ]
-            [ promptText, nextPromptText ]
-        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] info
+            [ Element.column
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Background.color Colors.black
+                , Element.padding 10
+                , Element.spacing 20
+                ]
+                [ promptText, nextPromptText ]
+            , info
+            ]
+        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
         ]
 
 
@@ -227,81 +277,45 @@ slideView model =
 rightColumn : Acquisition.Model -> Element Core.Msg
 rightColumn model =
     let
-        backToWebcam : Element Core.Msg
-        backToWebcam =
-            let
-                m =
-                    if model.watchingWebcam then
-                        Nothing
-
-                    else
-                        Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.GoToWebcam))
-            in
-            Ui.simpleButton m "Revenir à la webcam"
-
         recordView : Int -> Acquisition.Record -> Element Core.Msg
         recordView index record =
             let
                 makeButton =
-                    if model.currentVideo == Just record.id then
-                        Ui.primaryButton
-
-                    else
-                        Ui.simpleButton
+                    Ui.primaryButton
             in
-            Element.row [ Element.spacing 10 ] [ makeButton (msg record) (String.fromInt index) ]
+            Element.row [ Element.spacing 10 ]
+                [ Element.text (String.fromInt (index + 1))
+                , makeButton (msg record)
+                    (if model.currentVideo == Just index && not model.watchingWebcam then
+                        "◼"
+
+                     else
+                        "▶"
+                    )
+                , Acquisition.UploadStream (url model.details.capsule.id model.gos) index
+                    |> LoggedIn.AcquisitionMsg
+                    |> Core.LoggedInMsg
+                    |> Just
+                    |> (\x -> makeButton x "✔")
+                ]
 
         msg : Acquisition.Record -> Maybe Core.Msg
         msg i =
             if model.recording then
                 Nothing
 
+            else if model.currentVideo == Just i.id && not model.watchingWebcam then
+                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.GoToWebcam))
+
             else
                 Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
-
-        status : Element Core.Msg
-        status =
-            Element.column [ Element.width Element.fill ]
-                [ if model.recording then
-                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
-                        [ Element.el
-                            [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
-                            (Element.row [ Ui.blink ]
-                                [ Ui.Icons.buttonFromIcon FontAwesome.circle
-                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
-                                    (Element.text "REC")
-                                ]
-                            )
-                        ]
-
-                  else
-                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
-                        [ Element.el
-                            []
-                            (Element.row []
-                                [ Element.el [ Font.size 25 ] (Ui.Icons.buttonFromIcon FontAwesome.stopCircle)
-                                , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
-                                    (Element.text "Enregistrement arrêté")
-                                ]
-                            )
-                        ]
-                ]
-
-        uploadButton =
-            case model.currentVideo of
-                Just v ->
-                    Ui.successButton (Just (Acquisition.UploadStream (url model.details.capsule.id model.gos) v)) "Uploader"
-                        |> Element.map LoggedIn.AcquisitionMsg
-                        |> Element.map Core.LoggedInMsg
-
-                Nothing ->
-                    Ui.successButton Nothing "Uploader"
     in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
         [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
         , Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
-            (status :: Element.text "Enregistrements" :: backToWebcam :: List.indexedMap recordView (List.reverse model.records))
-        , uploadButton
+            (Element.el [ Element.centerX ] (Element.text "Enregistrements")
+                :: List.indexedMap recordView (List.reverse model.records)
+            )
         ]
 
 
