@@ -15,8 +15,6 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
 import Login.Updates as Login
-import NewProject.Types as NewProject
-import NewProject.Updates as NewProject
 import ResetPassword.Types as ResetPassword
 import ResetPassword.Updates as ResetPassword
 import SignUp.Types as SignUp
@@ -57,17 +55,6 @@ update msg { global, model } =
 
                 ( Core.ForgotPasswordClicked, _ ) ->
                     ( Core.FullModel global (Core.homeForgotPassword ForgotPassword.init), Cmd.none )
-
-                ( Core.NewProjectClicked, Core.LoggedIn { session } ) ->
-                    ( Core.FullModel global
-                        (Core.LoggedIn
-                            { session = session
-                            , tab =
-                                LoggedIn.NewProject NewProject.init
-                            }
-                        )
-                    , Cmd.none
-                    )
 
                 -- OTHER MODULES MESSAGES
                 ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->

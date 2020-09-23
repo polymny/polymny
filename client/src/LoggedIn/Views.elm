@@ -12,13 +12,9 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import File
 import Html.Attributes
 import Html.Events
 import LoggedIn.Types as LoggedIn
-import NewCapsule.Types as NewCapsule
-import NewCapsule.Views as NewCapsule
-import NewProject.Views as NewProject
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import Settings.Views as Settings
@@ -44,12 +40,6 @@ view global session tab =
 
                 LoggedIn.Edition editionModel ->
                     ( Edition.view global session editionModel, Nothing )
-
-                LoggedIn.NewProject newProjectModel ->
-                    ( NewProject.view newProjectModel, Nothing )
-
-                LoggedIn.Project project newCapsuleForm ->
-                    ( projectView global project newCapsuleForm, Nothing )
 
                 LoggedIn.Settings modelSettings ->
                     ( Settings.view global session modelSettings, Nothing )
@@ -86,7 +76,7 @@ homeView global session uploadForm =
                     , Element.height Element.fill
                     ]
                     (leftColumn global session uploadForm)
-                , newProjectsView global session uploadForm
+                , projectsView global session uploadForm
                 ]
 
         _ ->
@@ -94,7 +84,7 @@ homeView global session uploadForm =
 
 
 prePreparationView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
-prePreparationView global session uploadForm =
+prePreparationView _ session uploadForm =
     let
         projectField =
             Element.column [ Element.width Element.fill, Element.spacing 10 ]
@@ -102,12 +92,6 @@ prePreparationView global session uploadForm =
                 , Dropdown.view (dropdownConfig uploadForm.projectName) uploadForm.dropdown (List.sortBy (\x -> -x.lastVisited) session.projects)
                 ]
 
-        -- Input.text []
-        --     { label = Input.labelAbove [] (Element.text "Nom du projet")
-        --     , onChange = \x -> Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg (LoggedIn.UploadSlideShowChangeProjectName x))
-        --     , text = uploadForm.projectName
-        --     , placeholder = Nothing
-        --     }
         capsuleField =
             Input.text []
                 { label = Input.labelAbove [] (Element.text "Nom de la capsule")
@@ -128,7 +112,7 @@ prePreparationView global session uploadForm =
                 Nothing ->
                     Element.el [ Element.width Element.fill ] Element.none
 
-                Just ( index, ( i, s ) ) ->
+                Just ( _, ( _, s ) ) ->
                     Element.image [ Border.color Colors.grey, Border.width 1, Element.width Element.fill ] { description = "", src = s.asset.asset_path }
 
         buildSlides : Maybe ( Int, ( Int, Api.Slide ) ) -> List (Maybe ( Int, ( Int, Api.Slide ) )) -> List (Element Core.Msg)
@@ -165,7 +149,7 @@ prePreparationView global session uploadForm =
 
                         tail =
                             case nextSlide of
-                                Just ( index2, ( gos2, slide2 ) ) ->
+                                Just ( index2, ( gos2, _ ) ) ->
                                     let
                                         borderStyle =
                                             if gos1 == gos2 then
@@ -269,25 +253,6 @@ prePreparationView global session uploadForm =
                         [ Element.width Element.fill, Element.spacing 10 ]
                         (List.map (\x -> Element.row [ Element.width Element.fill ] x) elements)
 
-        --         Just s ->
-        -- slides : Element Core.Msg
-        -- slides =
-        --     case uploadForm.slides of
-        --         Nothing ->
-        --             Ui.spinner
-        --         Just s ->
-        --             let
-        --                 enumeratedSlides =
-        --                     List.indexedMap (\x y -> ( x, y )) s
-        --             in
-        --             Element.column [ Element.width Element.fill ]
-        --                 (List.map
-        --                     (\x ->
-        --                         Element.row [ Element.width Element.fill ]
-        --                             (List.map viewSlide x)
-        --                     )
-        --                     (regroupSlides uploadForm.numberOfSlidesPerRow enumeratedSlides)
-        --                 )
         cancel =
             Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowCancel)
 
@@ -325,38 +290,15 @@ prePreparationView global session uploadForm =
         ]
 
 
-
---Element.column
---    [ Element.width
---        Element.fill
---    ]
---    [ Element.row
---        [ Element.spacing 20
---        , Element.padding 20
---        , Element.width Element.fill
---        ]
---        [ Element.el
---            [ Element.width Element.fill
---            ]
---          <|
---            uploadFormView uploadForm
---        , Element.el
---            [ Element.width Element.shrink
---            ]
---            projects
---        ]
---    ]
-
-
 leftColumn : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
-leftColumn global session uploadForm =
+leftColumn _ _ _ =
     Element.row [ Element.width Element.fill, Element.padding 10 ]
         [ Element.el [ Element.centerX ] (Ui.primaryButton (Just (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowSelectFileRequested))) "Créer un nouveau projet")
         ]
 
 
-newCapsuleView : Core.Global -> Api.Project -> Maybe LoggedIn.Rename -> Api.Capsule -> Element Core.Msg
-newCapsuleView global project rename capsule =
+capsuleView : Core.Global -> Api.Project -> Maybe LoggedIn.Rename -> Api.Capsule -> Element Core.Msg
+capsuleView _ project rename capsule =
     let
         title =
             let
@@ -395,8 +337,8 @@ newCapsuleView global project rename capsule =
         ]
 
 
-newProjectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
-newProjectView global ( project, even, edited ) =
+projectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
+projectView global ( project, even, edited ) =
     Element.row
         [ Element.padding 10
         , Element.width Element.fill
@@ -466,8 +408,17 @@ newProjectView global ( project, even, edited ) =
                 Element.el [ Font.italic ]
                     (Element.text ("(" ++ String.fromInt l ++ " capsule" ++ plural ++ ")"))
 
+            created =
+                Element.text ("crée le " ++ TimeUtils.timeToString global.zone project.lastVisited)
+
             row =
-                Element.row [ Element.spacing 10, Element.width Element.fill ] [ title, rename, numberOfCapsules ]
+                Element.row [ Element.spacing 10, Element.width Element.fill ]
+                    [ title
+                    , rename
+                    , numberOfCapsules
+                    , Element.el [ Element.width Element.fill ] Element.none
+                    , created
+                    ]
           in
           if project.folded then
             row
@@ -478,15 +429,15 @@ newProjectView global ( project, even, edited ) =
                 [ row
                 , Element.column
                     [ Element.width Element.fill, Element.paddingXY 20 10, Element.spacing 10 ]
-                    (List.map (newCapsuleView global project edited) project.capsules)
+                    (List.map (capsuleView global project edited) project.capsules)
                 ]
         ]
 
 
-newProjectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
-newProjectsView global session uploadForm =
+projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+projectsView global session uploadForm =
     Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
-        (List.map (newProjectView global)
+        (List.map (projectView global)
             (List.indexedMap
                 (\i x ->
                     ( x
@@ -497,194 +448,6 @@ newProjectsView global session uploadForm =
                 (List.sortBy (\x -> -x.lastVisited) session.projects)
             )
         )
-
-
-uploadFormView : LoggedIn.UploadForm -> Element Core.Msg
-uploadFormView { status, file } =
-    let
-        filename =
-            case file of
-                Nothing ->
-                    ""
-
-                Just realFile ->
-                    File.name realFile
-
-        message =
-            case status of
-                Status.Sent ->
-                    Ui.messageWithSpinner
-                        ("Préparation de l'enregistement pour le fichier\n " ++ filename)
-
-                Status.Error () ->
-                    Ui.errorModal "Echec de l'upoad du pdf. Merci de nous contacter"
-
-                Status.Success () ->
-                    Ui.successModal "L Upload du pdf a réussis"
-
-                _ ->
-                    Element.none
-    in
-    Element.row [ Element.centerX, Element.spacing 20 ]
-        [ Element.column
-            [ Element.spacing 20
-            , Element.centerX
-            , Font.size 18
-            , Font.center
-            ]
-            [ Element.paragraph
-                [ Element.width (Element.fill |> Element.maximum 500)
-                , Font.size 14
-                , Font.justify
-                ]
-                [ Element.el [ Font.bold ] <| Element.text " Pour commencer un enregistrement"
-                , Element.text ", il faut choisir une présentation au format PDF sur votre machine. "
-                , Element.text "Par exemple un export PDF de Microsoft PowerPoint ou LibreOffice Impress en paysage au format HD. "
-                , Element.text "Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter. "
-                ]
-            , Element.paragraph
-                [ Element.width (Element.fill |> Element.maximum 400)
-                , Font.size 14
-                , Font.justify
-                ]
-                [ Element.text "Pour "
-                , Element.el [ Font.bold ] <| Element.text "modifier des vidéos existantes"
-                , Element.text " cliquer sur \"Projets\". "
-                ]
-            , message
-            , selectFileButton
-            ]
-        ]
-
-
-selectFileButton : Element Core.Msg
-selectFileButton =
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.UploadSlideShowMsg <|
-            Ui.primaryButton (Just LoggedIn.UploadSlideShowSelectFileRequested) "Choisir un fichier PDF"
-
-
-projectsView : Core.Global -> List Api.Project -> Element Core.Msg
-projectsView global projects =
-    case projects of
-        [] ->
-            Element.paragraph [ Element.padding 10, Font.size 18 ]
-                [ Element.text "You have no projects yet. "
-                , if global.beta then
-                    Ui.linkButton
-                        (Just Core.NewProjectClicked)
-                        "Click here to create a new project!"
-
-                  else
-                    Element.none
-                ]
-
-        _ ->
-            let
-                sortedProjects =
-                    List.sortBy (\x -> -x.lastVisited) projects
-            in
-            Element.column [ Element.padding 10 ]
-                [ Element.el [ Font.size 18 ] (Element.text "Vos projets:")
-                , Element.column [ Element.padding 10, Element.spacing 10 ]
-                    (List.map (projectHeader global) sortedProjects)
-                , if global.beta then
-                    newProjectButton
-
-                  else
-                    Element.none
-                ]
-
-
-newProjectButton : Element Core.Msg
-newProjectButton =
-    Ui.primaryButton (Just Core.NewProjectClicked) "Créer un nouveau projet"
-
-
-projectHeader : Core.Global -> Api.Project -> Element Core.Msg
-projectHeader global project =
-    Element.row [ Element.spacing 10 ]
-        [ Ui.linkButton
-            (Just
-                (Core.LoggedInMsg <|
-                    LoggedIn.ProjectClicked project
-                )
-            )
-          <|
-            project.name
-        , Element.text (TimeUtils.timeToString global.zone project.lastVisited)
-        ]
-
-
-headerView : List (Element Core.Msg) -> Element Core.Msg -> List (Element Core.Msg)
-headerView header el =
-    case List.length header of
-        0 ->
-            [ el ]
-
-        _ ->
-            header ++ [ el ]
-
-
-projectView : Core.Global -> Api.Project -> Maybe NewCapsule.Model -> Element Core.Msg
-projectView global project newCapsuleModel =
-    let
-        headers =
-            headerView [] <| Element.text (" Projet " ++ project.name)
-
-        newCapsuleForm =
-            case newCapsuleModel of
-                Just m ->
-                    NewCapsule.view m
-
-                Nothing ->
-                    Element.none
-    in
-    Element.column
-        [ Element.width (Element.fill |> Element.maximum 800)
-        ]
-        [ Element.row [ Font.size 18 ] <| headers
-        , Element.row [ Element.width Element.fill, Element.alignTop, Element.padding 20, Element.spacing 30 ]
-            [ Element.column [ Element.alignLeft, Element.width Element.fill, Element.alignTop, Element.padding 10 ]
-                [ Element.el [ Element.alignLeft ] <|
-                    if global.beta then
-                        newCapsuleButton project
-
-                    else
-                        Element.none
-                , Element.el [] <| Element.text "Capsule(s) du projet:"
-                , Element.column [ Element.padding 10, Element.spacing 10 ]
-                    (List.map capsuleView project.capsules)
-                ]
-            , Element.el [ Element.alignRight ] newCapsuleForm
-            ]
-        ]
-
-
-capsuleView : Api.Capsule -> Element Core.Msg
-capsuleView capsule =
-    Element.column [ Element.spacing 10 ]
-        [ Ui.linkButton
-            (Just
-                (Core.LoggedInMsg <|
-                    LoggedIn.CapsuleClicked capsule
-                )
-            )
-          <|
-            capsule.name
-        , Element.text capsule.description
-        ]
-
-
-newCapsuleButton : Api.Project -> Element Core.Msg
-newCapsuleButton project =
-    Ui.primaryButton
-        (Just
-            (Core.LoggedInMsg <|
-                LoggedIn.NewCapsuleClicked project
-            )
-        )
-        "New capsule"
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
@@ -777,25 +540,3 @@ dropdownConfig name =
         |> Dropdown.withSearchAttributes searchAttrs
         |> Dropdown.withFilterPlaceholder "Entrez un nom de projet"
         |> Dropdown.withPromptElement (Element.el [ Element.width Element.fill ] (Element.text name))
-
-
-getColor : Int -> Element.Color
-getColor index =
-    let
-        colors =
-            [ Element.rgb255 31 119 180
-            , Element.rgb255 255 127 14
-            , Element.rgb255 44 160 44
-            , Element.rgb255 215 39 40
-            , Element.rgb255 148 103 189
-            , Element.rgb255 140 86 75
-            , Element.rgb255 227 119 194
-            , Element.rgb255 127 127 127
-            , Element.rgb255 188 189 34
-            , Element.rgb255 23 190 207
-            ]
-
-        newIndex =
-            modBy (List.length colors) index
-    in
-    Maybe.withDefault (Element.rgb255 31 119 180) (List.head (List.drop newIndex colors))

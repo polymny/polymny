@@ -7,40 +7,40 @@ monthToString : Time.Month -> String
 monthToString month =
     case month of
         Time.Jan ->
-            "january"
+            "Janvier"
 
         Time.Feb ->
-            "february"
+            "Février"
 
         Time.Mar ->
-            "march"
+            "Mars"
 
         Time.Apr ->
-            "april"
+            "Avril"
 
         Time.May ->
-            "may"
+            "Mai"
 
         Time.Jun ->
-            "june"
+            "Juin"
 
         Time.Jul ->
-            "july"
+            "Juillet"
 
         Time.Aug ->
-            "august"
+            "Août"
 
         Time.Sep ->
-            "september"
+            "Septembre"
 
         Time.Oct ->
-            "october"
+            "Octobre"
 
         Time.Nov ->
-            "november"
+            "Novembre"
 
         Time.Dec ->
-            "december"
+            "Décembre"
 
 
 dateToString : Time.Zone -> Int -> String
@@ -58,7 +58,7 @@ dateToString z t =
         day =
             String.fromInt (Time.toDay z time)
     in
-    month ++ " " ++ day ++ " " ++ year
+    day ++ " " ++ month ++ " " ++ year
 
 
 timeToString : Time.Zone -> Int -> String
@@ -79,4 +79,4 @@ timeToString z t =
         seconds =
             String.pad 2 '0' (String.fromInt (Time.toSecond z time))
     in
-    date ++ " " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds
+    date ++ " à " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds
