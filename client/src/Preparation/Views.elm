@@ -56,7 +56,7 @@ mainView global session { details, slides, uploadForms, editPrompt, slideModel, 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
                 [ leftColumnView details Nothing
-                , Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+                , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
                         [ Element.row [ Element.width Element.fill ]
                             [ Element.el [ Element.spacing 5, Element.padding 5, Element.alignLeft ] <| Element.text <| projectName ++ " :: " ++ details.capsule.name

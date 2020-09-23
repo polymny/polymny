@@ -51,7 +51,7 @@ centerView global model =
         gos =
             List.head (List.drop model.currentGos model.details.structure)
     in
-    Element.column [ Element.width (Element.fillPortion 6), Element.height Element.fill ]
+    Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
         [ -- capsuleProductionView global model
           gosProductionView model gos
         , bottomRow global model
