@@ -298,7 +298,7 @@ leftColumn _ _ _ =
 
 
 capsuleView : Core.Global -> Api.Project -> Maybe LoggedIn.Rename -> Api.Capsule -> Element Core.Msg
-capsuleView _ project rename capsule =
+capsuleView global project rename capsule =
     let
         title =
             let
@@ -330,11 +330,48 @@ capsuleView _ project rename capsule =
 
                 _ ->
                     default
+
+        pen =
+            LoggedIn.RenameCapsule ( project.id, capsule.id, capsule.name )
+                |> LoggedIn.RenameMsg
+                |> Core.LoggedInMsg
+                |> Just
+                |> (\x -> Ui.penButton x "" "Renommer la capsule")
+
+        videoUrl : Api.Asset -> String
+        videoUrl asset =
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
+        link =
+            case ( capsule.video, capsule.published ) of
+                ( Just v, Api.Published ) ->
+                    Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                        { url = videoUrl v, label = Element.text "Voir la vidéo publiée" }
+
+                ( Just v, _ ) ->
+                    Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                        { url = v.asset_path, label = Element.text "Voir la vidéo produite" }
+
+                _ ->
+                    Element.none
+
+        copy =
+            case ( capsule.video, capsule.published ) of
+                ( Just v, Api.Published ) ->
+                    Edition.CopyUrl (videoUrl v)
+                        |> LoggedIn.EditionMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+                        |> (\x -> Ui.chainButton x "" "Copier l'url de la video")
+
+                _ ->
+                    Element.none
+
+        video =
+            Element.row [ Element.spacing 10 ] [ link, copy ]
     in
     Element.row [ Element.width Element.fill, Element.spacing 10 ]
-        [ title
-        , Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameCapsule ( project.id, capsule.id, capsule.name ))))) "" "Renommer la capsule"
-        ]
+        [ title, pen, video ]
 
 
 projectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
@@ -393,20 +430,42 @@ projectView global ( project, even, edited ) =
             rename =
                 Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, project.name ))))) "" "Renommer le projet"
 
-            numberOfCapsules =
+            extraInfo =
                 let
-                    l =
-                        List.length project.capsules
-
-                    plural =
-                        if l < 2 then
+                    plural : Int -> String
+                    plural n =
+                        if n < 2 then
                             ""
 
                         else
                             "s"
+
+                    capsules =
+                        List.length project.capsules
+
+                    capsulesEdited =
+                        project.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
+
+                    capsulesPublished =
+                        project.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
                 in
                 Element.el [ Font.italic ]
-                    (Element.text ("(" ++ String.fromInt l ++ " capsule" ++ plural ++ ")"))
+                    (Element.text
+                        ("("
+                            ++ String.fromInt capsules
+                            ++ " capsule"
+                            ++ plural capsules
+                            ++ ", "
+                            ++ String.fromInt capsulesEdited
+                            ++ " produite"
+                            ++ plural capsulesEdited
+                            ++ ", "
+                            ++ String.fromInt capsulesPublished
+                            ++ " publiée"
+                            ++ plural capsulesPublished
+                            ++ ")"
+                        )
+                    )
 
             created =
                 Element.text ("crée le " ++ TimeUtils.timeToString global.zone project.lastVisited)
@@ -415,7 +474,7 @@ projectView global ( project, even, edited ) =
                 Element.row [ Element.spacing 10, Element.width Element.fill ]
                     [ title
                     , rename
-                    , numberOfCapsules
+                    , extraInfo
                     , Element.el [ Element.width Element.fill ] Element.none
                     , created
                     ]
