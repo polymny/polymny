@@ -228,7 +228,6 @@ impl Capsule {
     /// get the projects associated to a user
     pub fn get_projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        println!("cap_p =  {:#?}", cap_p);
         Ok(cap_p
             .into_iter()
             .map(|x| Project::get_by_id(x.project_id, &db).map(|x| x.to_project()))
@@ -241,7 +240,6 @@ impl Capsule {
         db: &PgConnection,
     ) -> Result<Vec<ProjectWithCapsules>> {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        println!("cap_p =  {:#?}", cap_p);
         Ok(cap_p
             .into_iter()
             .map(|x| Project::get_by_id(x.project_id, &db).unwrap())

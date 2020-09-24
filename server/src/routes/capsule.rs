@@ -799,10 +799,23 @@ pub fn capsule_edition(
 
     for (gos_index, gos) in capsule_structure.into_iter().enumerate() {
         // GoS iteration
+        let mut fake_records = vec![false; gos.slides.len()];
 
         //TODO for robustness : check gos.transitions  == gos.slides -1
         //if not raise inconsitenscy error
         // Slide timestamps (duration, offset) of each slides accorfing user transitions
+        if let Some(_) = gos.record_path {
+            if (gos.transitions.len() + 1) < gos.slides.len() {
+                for index in (gos.transitions.len() + 1)..gos.slides.len() {
+                    fake_records[index] = true;
+                }
+            } else if (gos.transitions.len() + 1) > gos.slides.len() {
+                // Toom many trasnsition cannot edit video
+                error!(" Too many transtion for this GOS. Cannot generate video");
+                return Err(Error::TranscodeError);
+            }
+        }
+
         let timestamps: Vec<(String, Option<String>)> = {
             let mut input = Vec::new();
             input.push(0);
@@ -829,6 +842,7 @@ pub fn capsule_edition(
         };
 
         for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
+            // Slide in GoS iteration
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
             match slide.extra {
@@ -937,59 +951,83 @@ pub fn capsule_edition(
 
                         // video production with webcam records available
                         (Some(record_path), _) => {
-                            let offset = vec!["-ss", &timestamps[slide_index].0];
-                            let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
-                                Some(x) => Some(vec!["-t", x]),
-                                None => None,
-                            };
+                            if !fake_records[slide_index] {
+                                let offset = vec!["-ss", &timestamps[slide_index].0];
+                                let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
+                                    Some(x) => Some(vec!["-t", x]),
+                                    None => None,
+                                };
 
-                            record.push(record_path);
+                                record.push(record_path);
 
-                            if production_choices.with_video {
-                                ffmpeg_command.extend(
-                                    vec![
-                                        "ffmpeg",
-                                        "-hide_banner",
-                                        "-y",
-                                        "-i",
-                                        &slide_path.to_str().unwrap(),
-                                        "-i",
-                                        &record.to_str().unwrap(),
-                                    ]
-                                    .into_iter(),
-                                );
+                                if production_choices.with_video {
+                                    ffmpeg_command.extend(
+                                        vec![
+                                            "ffmpeg",
+                                            "-hide_banner",
+                                            "-y",
+                                            "-i",
+                                            &slide_path.to_str().unwrap(),
+                                            "-i",
+                                            &record.to_str().unwrap(),
+                                        ]
+                                        .into_iter(),
+                                    );
 
-                                ffmpeg_command.extend_from_slice(&offset);
-                                if let Some(duration) = duration {
-                                    ffmpeg_command.extend_from_slice(&duration);
+                                    ffmpeg_command.extend_from_slice(&offset);
+                                    if let Some(duration) = duration {
+                                        ffmpeg_command.extend_from_slice(&duration);
+                                    }
+
+                                    ffmpeg_command.extend(
+                                        vec!["-filter_complex", &filter_complex].into_iter(),
+                                    );
+                                } else {
+                                    ffmpeg_command.extend(
+                                        vec![
+                                            "ffmpeg",
+                                            "-hide_banner",
+                                            "-y",
+                                            "-loop",
+                                            "1",
+                                            "-i",
+                                            &slide_path.to_str().unwrap(),
+                                            "-i",
+                                            &record.to_str().unwrap(),
+                                            "-map",
+                                            "0:v:0",
+                                            "-map",
+                                            "1:a:0",
+                                            "-shortest",
+                                        ]
+                                        .into_iter(),
+                                    );
+                                    ffmpeg_command.extend_from_slice(&offset);
+                                    if let Some(duration) = duration {
+                                        ffmpeg_command.extend_from_slice(&duration);
+                                    }
                                 }
-
-                                ffmpeg_command
-                                    .extend(vec!["-filter_complex", &filter_complex].into_iter());
                             } else {
+                                // generate slide only video due to missin records
                                 ffmpeg_command.extend(
                                     vec![
                                         "ffmpeg",
-                                        "-hide_banner",
                                         "-y",
+                                        "-hide_banner",
+                                        "-f",
+                                        "lavfi",
+                                        "-i",
+                                        "anullsrc=channel_layout=stereo:sample_rate=44100",
                                         "-loop",
                                         "1",
                                         "-i",
                                         &slide_path.to_str().unwrap(),
-                                        "-i",
-                                        &record.to_str().unwrap(),
-                                        "-map",
-                                        "0:v:0",
-                                        "-map",
-                                        "1:a:0",
+                                        "-t",
+                                        "3",
                                         "-shortest",
                                     ]
                                     .into_iter(),
                                 );
-                                ffmpeg_command.extend_from_slice(&offset);
-                                if let Some(duration) = duration {
-                                    ffmpeg_command.extend_from_slice(&duration);
-                                }
                             }
                         }
 
