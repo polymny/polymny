@@ -4,6 +4,7 @@ module Ui.Ui exposing
     , blink
     , cameraButton
     , cancelButton
+    , centerElement
     , chainButton
     , clearButton
     , closeLockButton
@@ -498,4 +499,20 @@ videoTuto =
                     ]
                     []
                 )
+        ]
+
+
+centerElement : Element msg -> Element msg
+centerElement element =
+    Element.column
+        [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
+        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+        , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+            (Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                ]
+            )
+        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
         ]

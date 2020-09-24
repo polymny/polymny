@@ -154,7 +154,7 @@ gosProductionChoicesView model =
                 { onChange = Edition.GosWithVideoChanged model.currentGos |> msgIfNotDefault
                 , icon = Input.defaultCheckbox
                 , checked = withVideo
-                , label = Input.labelRight [] (Element.text "Utiliser la vidéo pour le montage")
+                , label = Input.labelRight [] (Element.text "Incruster la vidéo")
                 }
 
         useGlobalConfig =

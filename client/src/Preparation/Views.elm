@@ -80,20 +80,6 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                         )
                     ]
                 ]
-
-        centerElement element =
-            Element.column
-                [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
-                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ]
-                    (Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        ]
-                    )
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                ]
     in
     case ( broken, editPrompt.visible ) of
         ( Preparation.Broken _, _ ) ->
@@ -123,7 +109,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                             )
                         ]
             in
-            ( resultView, Just (centerElement element) )
+            ( resultView, Just (Ui.centerElement element) )
 
         ( _, True ) ->
             let
@@ -157,7 +143,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                             )
                         ]
             in
-            ( resultView, Just (centerElement element) )
+            ( resultView, Just (Ui.centerElement element) )
 
         _ ->
             ( resultView, Nothing )
