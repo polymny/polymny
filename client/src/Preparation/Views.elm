@@ -42,21 +42,15 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
         autoEdition =
             Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
 
-        projectName =
-            Maybe.withDefault "" <| Maybe.map .name (List.head details.projects)
-
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
                 [ leftColumnView details Nothing
                 , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
-                        [ Element.row [ Element.width Element.fill ]
-                            [ Element.el [ Element.spacing 5, Element.padding 5, Element.alignLeft ] <| Element.text <| projectName ++ " :: " ++ details.capsule.name
-                            , Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                                [ Ui.primaryButton (Just increaseMsg) "-"
-                                , Element.text "Zoom"
-                                , Ui.primaryButton (Just decreaseMsg) "+"
-                                ]
+                        [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
+                            [ Ui.primaryButton (Just increaseMsg) "-"
+                            , Element.text "Zoom"
+                            , Ui.primaryButton (Just decreaseMsg) "+"
                             ]
                         ]
                     , Element.el
