@@ -10,7 +10,7 @@ use diesel::RunQueryDsl;
 
 use chrono::{NaiveDateTime, Utc};
 
-use crate::db::capsule::{Capsule, CapsulesProject};
+use crate::db::capsule::{Capsule, CapsuleWithVideo, CapsulesProject};
 use crate::db::user::User;
 use crate::schema::projects;
 use crate::Result;
@@ -60,7 +60,7 @@ pub struct ProjectWithCapsules {
     pub last_visited: NaiveDateTime,
 
     /// The capsules of the project.
-    pub capsules: Vec<Capsule>,
+    pub capsules: Vec<CapsuleWithVideo>,
 }
 
 impl ProjectWithCapsules {
@@ -104,7 +104,11 @@ impl Project {
         use crate::schema::projects::dsl;
 
         let project = dsl::projects.filter(dsl::id.eq(id)).first::<Project>(db)?;
-        let capsules = project.get_capsules(db)?;
+        let capsules = project
+            .get_capsules(db)?
+            .into_iter()
+            .map(|x| x.with_video(&db))
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(ProjectWithCapsules {
             id: project.id,
@@ -138,7 +142,11 @@ impl Project {
 
     /// Adds the capsules to self.
     pub fn with_capsules(self, db: &PgConnection) -> Result<ProjectWithCapsules> {
-        let capsules = self.get_capsules(db)?;
+        let capsules = self
+            .get_capsules(db)?
+            .into_iter()
+            .map(|x| x.with_video(&db))
+            .collect::<Result<Vec<_>>>()?;
         Ok(ProjectWithCapsules {
             id: self.id,
             user_id: self.user_id,

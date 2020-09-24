@@ -133,7 +133,7 @@ pub struct GosStructure {
 
 /// internal function for data format
 pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
-    Ok(json!({ "capsule":     capsule,
+    Ok(json!({ "capsule":     capsule.with_video(&db)?,
                "slide_show":  capsule.get_slide_show(&db)?,
                "slides":      capsule.get_slides(&db)? ,
                "projects":    capsule.get_projects(&db)?,
@@ -149,7 +149,7 @@ pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue
 pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> Result<JsonValue> {
     user.get_project_by_id(capsule.project_id, &db)?;
 
-    let capsule = Capsule::new(
+    Ok(json!(Capsule::new(
         &db,
         &capsule.name,
         &capsule.title,
@@ -158,9 +158,8 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
         capsule.background_id,
         capsule.logo_id,
         Some(Project::get_by_id(capsule.project_id, &db).map(|x| x.to_project())?),
-    )?;
-
-    Ok(json!(capsule))
+    )?
+    .with_video(&db)?))
 }
 
 /// The route to get a capsule.

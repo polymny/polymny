@@ -255,7 +255,7 @@ bottomRow global model =
             Ui.primaryButton msg "Produire la vidéo"
 
         video =
-            case model.details.video of
+            case model.details.capsule.video of
                 Just x ->
                     Element.newTabLink
                         [ Font.color Colors.link
@@ -288,7 +288,7 @@ bottomRow global model =
             global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
 
         publishButton =
-            case ( model.details.capsule.published, model.details.video ) of
+            case ( model.details.capsule.published, model.details.capsule.video ) of
                 ( Api.NotPublished, Just _ ) ->
                     Ui.primaryButton (Just Edition.PublishVideo) "Publier la vidéo"
                         |> Element.map LoggedIn.EditionMsg

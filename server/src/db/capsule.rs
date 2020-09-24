@@ -15,7 +15,7 @@ use crate::Result;
 #[allow(missing_docs)]
 mod published_type {
     /// The different published states possible.
-    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize)]
+    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize, Copy, Clone)]
     pub enum PublishedType {
         /// Not published at all.
         NotPublished,
@@ -58,6 +58,65 @@ pub struct Capsule {
 
     /// Reference to generated video for this capsule
     pub video_id: Option<i32>,
+
+    /// The structure of the capsule.
+    ///
+    /// This json should be of the form
+    /// ```
+    /// [ {
+    ///     record_path: Option<String>,
+    ///     background_path: Option<String>,
+    ///     slides: Vec<i32>,
+    ///     locked: bool,
+    /// } ]
+    /// ```
+    pub structure: Json,
+
+    /// Whether the capsule video is published.
+    pub published: PublishedType,
+
+    /// The structure of the editions options.
+    ///
+    /// This json should be of the form
+    /// ```
+    ///  {
+    ///     with_video: bool,
+    ///     webcam_size:  WebcamSize,
+    ///     webcam_position: WebcamPosition,
+    ///  ]
+    /// ```
+    pub edition_options: Json,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
+}
+
+/// The capsule with the video as an asset.
+#[derive(PartialEq, Debug, Serialize)]
+pub struct CapsuleWithVideo {
+    /// The id of the capsule.
+    pub id: i32,
+
+    /// The (unique) name of the capsule.
+    pub name: String,
+
+    /// The title the capsule.
+    pub title: String,
+
+    /// Reference to slide show in asset table
+    pub slide_show_id: Option<i32>,
+
+    /// The description of the capsule.
+    pub description: String,
+
+    /// Reference to capsule backgound image
+    pub background_id: Option<i32>,
+
+    /// Reference to capsule logo
+    pub logo_id: Option<i32>,
+
+    /// Reference to generated video for this capsule
+    pub video: Option<Asset>,
 
     /// The structure of the capsule.
     ///
@@ -188,6 +247,7 @@ impl Capsule {
         }
         Ok(capsule)
     }
+
     /// Creates a new capsule.
     pub fn create(
         name: &str,
@@ -208,6 +268,25 @@ impl Capsule {
             published: PublishedType::NotPublished,
             edition_options: None,
             active: false,
+        })
+    }
+
+    /// Adds the video to the capsule.
+    pub fn with_video(&self, db: &PgConnection) -> Result<CapsuleWithVideo> {
+        let v = self.get_video(&db)?;
+        Ok(CapsuleWithVideo {
+            id: self.id,
+            name: self.name.clone(),
+            title: self.title.clone(),
+            slide_show_id: self.slide_show_id,
+            description: self.description.clone(),
+            background_id: self.background_id,
+            logo_id: self.logo_id,
+            video: v,
+            structure: self.structure.clone(),
+            published: self.published,
+            edition_options: self.edition_options.clone(),
+            active: self.active,
         })
     }
 
