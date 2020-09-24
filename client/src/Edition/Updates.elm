@@ -81,6 +81,38 @@ update session msg model =
                 model.details
             )
 
+        Edition.GosUseDefaultChanged gosIndex newUseDefault ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gosIndex model.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map
+                        (\x ->
+                            let
+                                newP =
+                                    if newUseDefault then
+                                        Nothing
+
+                                    else
+                                        case model.details.capsule.capsuleEditionOptions of
+                                            Just o ->
+                                                Just o
+
+                                            Nothing ->
+                                                Just Edition.defaultGosProductionChoices
+                            in
+                            { x | production_choices = newP }
+                        )
+                        gosStructure
+
+                ( newDetails, cmd ) =
+                    newDetailsAux model gosIndex gosUpdatedStructure
+            in
+            ( makeModel { model | details = newDetails }, cmd )
+
         Edition.GosWithVideoChanged gosIndex newWithVideo ->
             let
                 gosStructure : Maybe Api.Gos

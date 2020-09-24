@@ -58,6 +58,7 @@ type Msg
     | WithVideoChanged Bool
     | WebcamSizeChanged Webcam.WebcamSize
     | WebcamPositionChanged Webcam.WebcamPosition
+    | GosUseDefaultChanged Int Bool
     | GosWithVideoChanged Int Bool
     | GosWebcamSizeChanged Int Webcam.WebcamSize
     | GosWebcamPositionChanged Int Webcam.WebcamPosition

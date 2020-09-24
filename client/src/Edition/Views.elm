@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
 import Status
@@ -58,26 +59,35 @@ gosProductionView model gos =
 gosProductionChoicesView : Edition.Model -> Element Core.Msg
 gosProductionChoicesView model =
     let
+        msgIfNotDefault : (a -> Edition.Msg) -> (a -> Core.Msg)
+        msgIfNotDefault onEvent =
+            if useDefault then
+                \_ ->
+                    Core.Noop
+
+            else
+                \x ->
+                    Core.LoggedInMsg (LoggedIn.EditionMsg (onEvent x))
+
+        gos : Maybe Api.Gos
+        gos =
+            List.head (List.drop model.currentGos model.details.structure)
+
+        gosProductionChoices : Maybe (Maybe Api.CapsuleEditionOptions)
+        gosProductionChoices =
+            Maybe.map .production_choices gos
+
+        productionChoices : Maybe Api.CapsuleEditionOptions
+        productionChoices =
+            Maybe.withDefault model.details.capsule.capsuleEditionOptions gosProductionChoices
+
         p : Api.CapsuleEditionOptions
         p =
-            let
-                stucture =
-                    List.head (List.drop model.currentGos model.details.structure)
+            Maybe.withDefault Edition.defaultGosProductionChoices productionChoices
 
-                production_choices =
-                    case stucture of
-                        Just x ->
-                            x.production_choices
-
-                        Nothing ->
-                            Just Edition.defaultGosProductionChoices
-            in
-            case production_choices of
-                Just x ->
-                    x
-
-                Nothing ->
-                    Edition.defaultGosProductionChoices
+        useDefault : Bool
+        useDefault =
+            gosProductionChoices == Just Nothing
 
         withVideo =
             p.withVideo
@@ -88,12 +98,22 @@ gosProductionChoicesView model =
         webcamPosition =
             p.webcamPosition
 
+        videoFieldsAttributesTmp =
+            [ Element.padding 10
+            , Element.spacing 10
+            ]
+
+        videoFieldsAttributes =
+            if withVideo then
+                videoFieldsAttributesTmp
+
+            else
+                Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") :: videoFieldsAttributesTmp
+
         videoFields =
             [ Input.radio
-                [ Element.padding 10
-                , Element.spacing 10
-                ]
-                { onChange = Edition.GosWebcamSizeChanged model.currentGos
+                videoFieldsAttributes
+                { onChange = Edition.GosWebcamSizeChanged model.currentGos |> msgIfNotDefault
                 , selected = webcamSize
                 , label =
                     Input.labelAbove
@@ -109,10 +129,9 @@ gosProductionChoicesView model =
                     ]
                 }
             , Input.radio
-                [ Element.padding 10
-                , Element.spacing 10
-                ]
-                { onChange = Edition.GosWebcamPositionChanged model.currentGos
+                videoFieldsAttributes
+                { onChange =
+                    Edition.GosWebcamPositionChanged model.currentGos |> msgIfNotDefault
                 , selected = webcamPosition
                 , label =
                     Input.labelAbove
@@ -132,36 +151,37 @@ gosProductionChoicesView model =
 
         commmonFields =
             Input.checkbox []
-                { onChange = Edition.GosWithVideoChanged model.currentGos
+                { onChange = Edition.GosWithVideoChanged model.currentGos |> msgIfNotDefault
                 , icon = Input.defaultCheckbox
                 , checked = withVideo
-                , label =
-                    Input.labelRight [] <|
-                        Element.text <|
-                            if withVideo then
-                                "L'audio et la vidéo seront utilisés"
+                , label = Input.labelRight [] (Element.text "Utiliser la vidéo pour le montage")
+                }
 
-                            else
-                                "Seul l'audio sera utilisé"
+        useGlobalConfig =
+            Input.checkbox []
+                { onChange = Edition.GosUseDefaultChanged model.currentGos >> LoggedIn.EditionMsg >> Core.LoggedInMsg
+                , icon = Input.defaultCheckbox
+                , checked = useDefault
+                , label = Input.labelRight [] (Element.text "Utiliser les paramètres par défaut de la capsule")
                 }
 
         fields =
-            if withVideo then
-                commmonFields :: videoFields
+            let
+                attr =
+                    if useDefault then
+                        [ Font.color Colors.grey ]
 
-            else
-                [ commmonFields ]
+                    else
+                        []
+            in
+            Element.column (Element.spacing 30 :: attr) (commmonFields :: videoFields)
 
         header =
-            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
-
-        form =
-            header :: fields
+            Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
     in
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.EditionMsg <|
-            Element.column [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
-                form
+    Element.column
+        [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
+        [ header, useGlobalConfig, fields ]
 
 
 gosPrevisualisation : Edition.Model -> Element Core.Msg
