@@ -528,6 +528,6 @@ popup title content =
                     [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
                     (Element.text title)
                 )
-            , content
+            , Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ] content
             ]
         )

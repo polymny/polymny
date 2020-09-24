@@ -37,3 +37,4 @@ type Msg
     | GosWebcamPositionChanged Int Webcam.WebcamPosition
     | OptionsSubmitted
     | CopyUrl String
+    | ToggleEditDefault

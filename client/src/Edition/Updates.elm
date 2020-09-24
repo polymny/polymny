@@ -261,6 +261,9 @@ update session msg model =
         Edition.CopyUrl url ->
             ( makeModel model, Ports.copyString url )
 
+        Edition.ToggleEditDefault ->
+            ( makeModel { model | editCapsuleOptions = not model.editCapsuleOptions }, Cmd.none )
+
 
 newDetailsAux : Edition.Model -> Int -> Maybe Api.Gos -> ( Api.CapsuleDetails, Cmd Core.Msg )
 newDetailsAux model i gosUpdatedStructure =

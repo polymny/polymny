@@ -20,7 +20,10 @@ view : Core.Global -> Api.Session -> Edition.Model -> ( Element Core.Msg, Maybe 
 view global _ model =
     let
         element =
-            Ui.popup "Options d'éditions de la capsule" (productionForm Nothing (Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions))
+            model.details.capsule.capsuleEditionOptions
+                |> Maybe.withDefault Edition.defaultGosProductionChoices
+                |> productionForm Nothing
+                |> Ui.popup "Options d'édition de la capsule"
 
         inFront =
             if model.editCapsuleOptions then
@@ -101,12 +104,15 @@ gosProductionChoicesView model =
                 , label = Input.labelRight [] (Element.text "Utiliser les paramètres par défaut de la capsule")
                 }
 
+        editGlobalConfig =
+            Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Changer les paramètres par défaut"
+
         header =
             Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
     in
     Element.column
         [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
-        [ header, useGlobalConfig, productionForm (Just ( model.currentGos, useDefault )) p ]
+        [ header, useGlobalConfig, editGlobalConfig, productionForm (Just ( model.currentGos, useDefault )) p ]
 
 
 productionForm : Maybe ( Int, Bool ) -> Api.CapsuleEditionOptions -> Element Core.Msg
@@ -225,10 +231,17 @@ productionForm currentGos p =
 
         fields =
             Element.column (Element.spacing 30 :: attr) (commmonFields :: videoFields)
+
+        exitButton =
+            if currentGos == Nothing then
+                Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Valider"
+
+            else
+                Element.none
     in
     Element.column
-        [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
-        [ fields ]
+        [ Element.width Element.fill, Element.padding 10, Element.spacing 30 ]
+        [ fields, exitButton ]
 
 
 gosPrevisualisation : Edition.Model -> Element Core.Msg
