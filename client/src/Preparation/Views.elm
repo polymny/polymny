@@ -85,13 +85,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.AcceptBroken))
 
                 element =
-                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
-                            (Element.el
-                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
-                                (Element.text "ATTENTION")
-                            )
-                        , Element.el
+                    Ui.popup "ATTENTION"
+                        (Element.el
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
@@ -101,9 +96,9 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                                 , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]
                                 ]
                             )
-                        ]
+                        )
             in
-            ( resultView, Just (Ui.centerElement element) )
+            ( resultView, Just element )
 
         ( _, True ) ->
             let

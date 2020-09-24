@@ -39,7 +39,7 @@ view global session tab =
                     ( Acquisition.view global session acquisitionModel, Nothing )
 
                 LoggedIn.Edition editionModel ->
-                    ( Edition.view global session editionModel, Nothing )
+                    Edition.view global session editionModel
 
                 LoggedIn.Settings modelSettings ->
                     ( Settings.view global session modelSettings, Nothing )

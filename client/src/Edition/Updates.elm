@@ -62,21 +62,82 @@ update session msg model =
             ( makeModel { model | details = newDetails }, Cmd.none )
 
         Edition.WithVideoChanged newWithVideo ->
-            ( makeModel { model | withVideo = newWithVideo }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | withVideo = newWithVideo }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
 
         Edition.WebcamSizeChanged newWebcamSize ->
-            ( makeModel { model | webcamSize = newWebcamSize }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | webcamSize = Just newWebcamSize }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
 
         Edition.WebcamPositionChanged newWebcamPosition ->
-            ( makeModel { model | webcamPosition = newWebcamPosition }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | webcamPosition = Just newWebcamPosition }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }, Cmd.none )
 
         Edition.OptionsSubmitted ->
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+            in
             ( makeModel { model | status = Status.Sent }
             , Api.editionAuto resultToMsg
                 model.details.capsule.id
-                { withVideo = model.withVideo
-                , webcamSize = model.webcamSize
-                , webcamPosition = model.webcamPosition
+                { withVideo = editionOptions.withVideo
+                , webcamSize = Maybe.withDefault Webcam.Medium editionOptions.webcamSize
+                , webcamPosition = Maybe.withDefault Webcam.BottomLeft editionOptions.webcamPosition
                 }
                 model.details
             )

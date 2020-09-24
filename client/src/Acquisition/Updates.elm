@@ -11,7 +11,6 @@ import Log
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Status
-import Utils
 
 
 update : Core.Global -> Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
@@ -145,20 +144,10 @@ update global session msg model =
                             )
 
                         ( Ok v, Acquisition.All, True ) ->
-                            let
-                                editionModel =
-                                    Edition.selectEditionOptions session v.capsule (Edition.init v)
-                            in
                             ( { session = session
-                              , tab = LoggedIn.Edition { editionModel | status = Status.Sent }
+                              , tab = LoggedIn.Edition (Edition.init v)
                               }
-                            , Api.editionAuto resultToMsg
-                                editionModel.details.capsule.id
-                                { withVideo = editionModel.withVideo
-                                , webcamSize = editionModel.webcamSize
-                                , webcamPosition = editionModel.webcamPosition
-                                }
-                                editionModel.details
+                            , Cmd.none
                             )
 
                         ( Ok v, Acquisition.All, False ) ->
@@ -261,13 +250,3 @@ update global session msg model =
 elementId : String
 elementId =
     "video"
-
-
-resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
-resultToMsg result =
-    Utils.resultToMsg
-        (\x ->
-            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
-        )
-        (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
-        result

@@ -25,6 +25,7 @@ module Ui.Ui exposing
     , onEscape
     , openLockButton
     , penButton
+    , popup
     , primaryButton
     , primaryButtonDisabled
     , primaryButtonWithTooltip
@@ -516,3 +517,17 @@ centerElement element =
             )
         , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
         ]
+
+
+popup : String -> Element msg -> Element msg
+popup title content =
+    centerElement
+        (Element.column [ Element.height Element.fill, Element.width Element.fill ]
+            [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
+                (Element.el
+                    [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
+                    (Element.text title)
+                )
+            , content
+            ]
+        )

@@ -16,12 +16,26 @@ import Ui.Ui as Ui
 import Webcam
 
 
-view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
+view : Core.Global -> Api.Session -> Edition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view global _ model =
-    Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+    let
+        element =
+            Ui.popup "Options d'éditions de la capsule" (productionForm Nothing (Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions))
+
+        inFront =
+            if model.editCapsuleOptions then
+                Just element
+
+            else
+                Nothing
+    in
+    ( Element.row
+        [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
         [ Preparation.leftColumnView model.details (Just model.currentGos)
         , centerView global model
         ]
+    , inFront
+    )
 
 
 centerView : Core.Global -> Edition.Model -> Element Core.Msg
@@ -59,16 +73,6 @@ gosProductionView model gos =
 gosProductionChoicesView : Edition.Model -> Element Core.Msg
 gosProductionChoicesView model =
     let
-        msgIfNotDefault : (a -> Edition.Msg) -> (a -> Core.Msg)
-        msgIfNotDefault onEvent =
-            if useDefault then
-                \_ ->
-                    Core.Noop
-
-            else
-                \x ->
-                    Core.LoggedInMsg (LoggedIn.EditionMsg (onEvent x))
-
         gos : Maybe Api.Gos
         gos =
             List.head (List.drop model.currentGos model.details.structure)
@@ -88,6 +92,45 @@ gosProductionChoicesView model =
         useDefault : Bool
         useDefault =
             gosProductionChoices == Just Nothing
+
+        useGlobalConfig =
+            Input.checkbox []
+                { onChange = Edition.GosUseDefaultChanged model.currentGos >> LoggedIn.EditionMsg >> Core.LoggedInMsg
+                , icon = Input.defaultCheckbox
+                , checked = useDefault
+                , label = Input.labelRight [] (Element.text "Utiliser les paramètres par défaut de la capsule")
+                }
+
+        header =
+            Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
+    in
+    Element.column
+        [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
+        [ header, useGlobalConfig, productionForm (Just ( model.currentGos, useDefault )) p ]
+
+
+productionForm : Maybe ( Int, Bool ) -> Api.CapsuleEditionOptions -> Element Core.Msg
+productionForm currentGos p =
+    let
+        useDefault =
+            Maybe.map Tuple.second currentGos == Just True
+
+        msgIfNotDefault : (a -> Edition.Msg) -> (a -> Core.Msg)
+        msgIfNotDefault onEvent =
+            if useDefault then
+                \_ ->
+                    Core.Noop
+
+            else
+                \x ->
+                    Core.LoggedInMsg (LoggedIn.EditionMsg (onEvent x))
+
+        attr =
+            if useDefault then
+                [ Font.color Colors.grey ]
+
+            else
+                []
 
         withVideo =
             p.withVideo
@@ -113,7 +156,15 @@ gosProductionChoicesView model =
         videoFields =
             [ Input.radio
                 videoFieldsAttributes
-                { onChange = Edition.GosWebcamSizeChanged model.currentGos |> msgIfNotDefault
+                { onChange =
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWebcamSizeChanged c
+
+                        _ ->
+                            Edition.WebcamSizeChanged
+                    )
+                        |> msgIfNotDefault
                 , selected = webcamSize
                 , label =
                     Input.labelAbove
@@ -131,7 +182,14 @@ gosProductionChoicesView model =
             , Input.radio
                 videoFieldsAttributes
                 { onChange =
-                    Edition.GosWebcamPositionChanged model.currentGos |> msgIfNotDefault
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWebcamPositionChanged c
+
+                        _ ->
+                            Edition.WebcamPositionChanged
+                    )
+                        |> msgIfNotDefault
                 , selected = webcamPosition
                 , label =
                     Input.labelAbove
@@ -151,37 +209,26 @@ gosProductionChoicesView model =
 
         commmonFields =
             Input.checkbox []
-                { onChange = Edition.GosWithVideoChanged model.currentGos |> msgIfNotDefault
+                { onChange =
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWithVideoChanged c
+
+                        _ ->
+                            Edition.WithVideoChanged
+                    )
+                        |> msgIfNotDefault
                 , icon = Input.defaultCheckbox
                 , checked = withVideo
                 , label = Input.labelRight [] (Element.text "Incruster la vidéo")
                 }
 
-        useGlobalConfig =
-            Input.checkbox []
-                { onChange = Edition.GosUseDefaultChanged model.currentGos >> LoggedIn.EditionMsg >> Core.LoggedInMsg
-                , icon = Input.defaultCheckbox
-                , checked = useDefault
-                , label = Input.labelRight [] (Element.text "Utiliser les paramètres par défaut de la capsule")
-                }
-
         fields =
-            let
-                attr =
-                    if useDefault then
-                        [ Font.color Colors.grey ]
-
-                    else
-                        []
-            in
             Element.column (Element.spacing 30 :: attr) (commmonFields :: videoFields)
-
-        header =
-            Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
     in
     Element.column
         [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
-        [ header, useGlobalConfig, fields ]
+        [ fields ]
 
 
 gosPrevisualisation : Edition.Model -> Element Core.Msg

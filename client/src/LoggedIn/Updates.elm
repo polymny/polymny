@@ -20,6 +20,7 @@ import Settings.Types as Settings
 import Settings.Updates as Settings
 import Status
 import Utils
+import Webcam
 
 
 flatten : ( a, ( b, c ) ) -> ( a, b, c )
@@ -77,13 +78,9 @@ update msg global { session, tab } =
             flatten ( global, Edition.update session editionMsg model )
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
-            let
-                editionModel =
-                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
-            in
             ( global
             , { session = session
-              , tab = LoggedIn.Edition editionModel
+              , tab = LoggedIn.Edition (Edition.init capsule)
               }
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
@@ -91,7 +88,10 @@ update msg global { session, tab } =
         ( LoggedIn.EditionClicked capsule True, _ ) ->
             let
                 editionModel =
-                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+                    Edition.init capsule
+
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices capsule.capsule.capsuleEditionOptions
             in
             ( global
             , { session = session
@@ -99,9 +99,9 @@ update msg global { session, tab } =
               }
             , Api.editionAuto resultToMsg3
                 capsule.capsule.id
-                { withVideo = editionModel.withVideo
-                , webcamSize = editionModel.webcamSize
-                , webcamPosition = editionModel.webcamPosition
+                { withVideo = editionOptions.withVideo
+                , webcamSize = Maybe.withDefault Webcam.Medium editionOptions.webcamSize
+                , webcamPosition = Maybe.withDefault Webcam.BottomLeft editionOptions.webcamPosition
                 }
                 editionModel.details
             )
