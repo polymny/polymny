@@ -143,7 +143,7 @@ pub fn quick_upload_slides(
                             Some("image/png"),
                         )?;
                         // When generated a slide take position (idx*100) and one per GOS
-                        let slide = Slide::new(&db, slide_asset.id, capsule.id, "Dummy prompt")?;
+                        let slide = Slide::new(&db, slide_asset.id, capsule.id, "")?;
                         let mut output_path = config.data_path.clone();
                         output_path.push(server_path);
                         create_dir(output_path.parent().unwrap()).ok();

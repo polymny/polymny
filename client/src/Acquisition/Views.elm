@@ -138,6 +138,9 @@ promptView model =
             else
                 Element.none
 
+        noPrompt =
+            List.all (\x -> x.prompt == "") (Maybe.withDefault [] model.slides)
+
         promptText =
             case currentSentence of
                 Just h ->
@@ -230,24 +233,33 @@ promptView model =
                 ]
     in
     Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        ]
-        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] help
-        , Element.column
-            [ Element.width (Element.fillPortion 3)
+        (if noPrompt then
+            [ Element.width Element.fill ]
+
+         else
+            [ Element.width Element.fill
             , Element.height Element.fill
             ]
-            [ Element.column
-                [ Element.width Element.fill
+        )
+        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] help
+        , if noPrompt then
+            Element.el [] info
+
+          else
+            Element.column
+                [ Element.width (Element.fillPortion 3)
                 , Element.height Element.fill
-                , Background.color Colors.black
-                , Element.padding 10
-                , Element.spacing 20
                 ]
-                [ promptText, nextPromptText ]
-            , info
-            ]
+                [ Element.column
+                    [ Element.width Element.fill
+                    , Element.height Element.fill
+                    , Background.color Colors.black
+                    , Element.padding 10
+                    , Element.spacing 20
+                    ]
+                    [ promptText, nextPromptText ]
+                , info
+                ]
         , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
         ]
 
