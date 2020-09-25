@@ -31,7 +31,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
         msg =
-            Core.LoggedInMsg <| LoggedIn.EditionClicked details True
+            Core.LoggedInMsg <| LoggedIn.AcquisitionClicked details
 
         increaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
@@ -40,7 +40,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
         autoEdition =
-            Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
+            Ui.primaryButton (Just msg) "Filmer"
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
