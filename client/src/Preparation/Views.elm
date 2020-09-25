@@ -13,6 +13,7 @@ import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
+import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
@@ -24,7 +25,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } =
+mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -75,8 +76,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                     ]
                 ]
     in
-    case ( broken, editPrompt.visible ) of
-        ( Preparation.Broken _, _ ) ->
+    case ( broken, editPrompt.visible, uploadForms.extraResource.askForPage ) of
+        ( Preparation.Broken _, _, _ ) ->
             let
                 reject =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
@@ -100,7 +101,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
             in
             ( resultView, Just element )
 
-        ( _, True ) ->
+        ( _, True, _ ) ->
             let
                 cancel =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptCloseDialog)))
@@ -115,13 +116,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                         |> Element.map Core.LoggedInMsg
 
                 element =
-                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
-                            (Element.el
-                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
-                                (Element.text "Prompteur")
-                            )
-                        , Element.el
+                    Ui.popup "Prompteur"
+                        (Element.el
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ promptModal
@@ -130,9 +126,92 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                                     [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
                                 ]
                             )
-                        ]
+                        )
             in
-            ( resultView, Just (Ui.centerElement element) )
+            ( resultView, Just element )
+
+        ( _, _, True ) ->
+            let
+                cancelMsg =
+                    Preparation.UploadExtraResourceCancel
+                        |> Preparation.UploadExtraResourceMsg
+                        |> LoggedIn.PreparationMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                validateMsg =
+                    Preparation.UploadExtraResourceValidate
+                        |> Preparation.UploadExtraResourceMsg
+                        |> LoggedIn.PreparationMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                element =
+                    Ui.popup "Remplacer un slide"
+                        (Element.column
+                            [ Element.width Element.fill
+                            , Element.height Element.fill
+                            , Element.spacing 10
+                            , Element.padding 10
+                            ]
+                            [ Input.text [ Element.centerY, Element.htmlAttribute (Html.Attributes.type_ "number") ]
+                                { label = Input.labelAbove [] (Element.text "Quel page du pdf voulez-vous utiliser ?")
+                                , onChange =
+                                    \x ->
+                                        case ( String.toInt x, x ) of
+                                            ( Just i, _ ) ->
+                                                Preparation.UploadExtraResourcePageChanged (Just i)
+                                                    |> Preparation.UploadExtraResourceMsg
+                                                    |> LoggedIn.PreparationMsg
+                                                    |> Core.LoggedInMsg
+
+                                            ( _, "" ) ->
+                                                Preparation.UploadExtraResourcePageChanged Nothing
+                                                    |> Preparation.UploadExtraResourceMsg
+                                                    |> LoggedIn.PreparationMsg
+                                                    |> Core.LoggedInMsg
+
+                                            _ ->
+                                                Core.Noop
+                                , placeholder = Nothing
+                                , text =
+                                    case uploadForms.extraResource.page of
+                                        Just i ->
+                                            String.fromInt i
+
+                                        _ ->
+                                            ""
+                                }
+                            , if uploadForms.extraResource.status == Status.Error () then
+                                Element.el [ Element.centerY ]
+                                    (Element.paragraph [ Font.color Colors.danger ]
+                                        [ Element.text "Une erreur est survenue, le numéro de la page est-il correct ?" ]
+                                    )
+
+                              else
+                                Element.none
+                            , Element.row [ Element.alignBottom, Element.alignRight, Element.spacing 10 ]
+                                (case uploadForms.extraResource.status of
+                                    Status.NotSent ->
+                                        [ Ui.simpleButton cancelMsg "Annuler"
+                                        , Ui.primaryButton validateMsg "Valider"
+                                        ]
+
+                                    Status.Sent ->
+                                        [ Ui.spinner ]
+
+                                    Status.Success () ->
+                                        []
+
+                                    Status.Error () ->
+                                        [ Ui.simpleButton cancelMsg "Annuler"
+                                        , Ui.primaryButton validateMsg "Valider"
+                                        ]
+                                )
+                            ]
+                        )
+            in
+            ( resultView, Just element )
 
         _ ->
             ( resultView, Nothing )

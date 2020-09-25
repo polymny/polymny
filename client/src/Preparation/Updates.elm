@@ -3,6 +3,7 @@ module Preparation.Updates exposing (update)
 import Api
 import Core.Types as Core
 import Dict
+import File
 import File.Select as Select
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
@@ -379,7 +380,7 @@ updateReplaceSlide msg replaceSlideForm preparationModel =
 
                 Just file ->
                     ( { replaceSlideForm | status = Status.Sent }
-                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file
+                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file 1
                     , preparationModel
                     )
 
@@ -424,7 +425,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
         Preparation.UploadExtraResourceSelectFileRequested slideId ->
             ( { uploadForm | activeSlideId = Just slideId, deleteStatus = Status.NotSent }
             , Select.file
-                [ "video/*" ]
+                [ "video/*", "application/pdf" ]
                 (\x ->
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
@@ -435,10 +436,17 @@ updateUploadExtraResource msg uploadForm preparationModel =
             )
 
         Preparation.UploadExtraResourceFileReady file slideId ->
-            ( { uploadForm | file = Just file, activeSlideId = Just slideId }
-            , Api.slideUploadExtraResource resultToMsg3 slideId file
-            , preparationModel
-            )
+            if String.endsWith ".pdf" (File.name file) then
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, askForPage = True, page = Just 1 }
+                , Cmd.none
+                , preparationModel
+                )
+
+            else
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                , Api.slideUploadExtraResource resultToMsg3 slideId file
+                , preparationModel
+                )
 
         Preparation.UploadExtraResourceSuccess slide ->
             let
@@ -507,6 +515,31 @@ updateUploadExtraResource msg uploadForm preparationModel =
             , Cmd.none
             , preparationModel
             )
+
+        Preparation.UploadExtraResourcePageChanged i ->
+            ( { uploadForm | page = i }, Cmd.none, preparationModel )
+
+        Preparation.UploadExtraResourceCancel ->
+            ( { uploadForm
+                | file = Nothing
+                , page = Nothing
+                , askForPage = False
+                , activeSlideId = Nothing
+              }
+            , Cmd.none
+            , preparationModel
+            )
+
+        Preparation.UploadExtraResourceValidate ->
+            case ( uploadForm.file, uploadForm.page ) of
+                ( Just file, Just page ) ->
+                    ( { uploadForm | status = Status.Sent }
+                    , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file page
+                    , preparationModel
+                    )
+
+                _ ->
+                    ( uploadForm, Cmd.none, preparationModel )
 
 
 updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd Preparation.DnDMsg, Bool )

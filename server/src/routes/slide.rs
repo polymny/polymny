@@ -258,19 +258,20 @@ pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
 }
 
 /// Replace slide
-#[post("/slide/<id>/replace", data = "<data>")]
+#[post("/slide/<id>/replace/<page>", data = "<data>")]
 pub fn replace_slide(
     config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
     id: i32,
+    page: i32,
     data: Data,
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
 
-    let slide_pos_in_pdf = 0;
+    let slide_pos_in_pdf = page - 1;
     let uuid = Uuid::new_v4();
     let stem = Path::new(&asset.name)
         .file_stem()
