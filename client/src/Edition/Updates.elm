@@ -81,7 +81,14 @@ update session msg model =
                 newDetails =
                     { details | capsule = newCapsule }
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.WebcamSizeChanged newWebcamSize ->
             let
@@ -103,7 +110,14 @@ update session msg model =
                 newDetails =
                     { details | capsule = newCapsule }
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.WebcamPositionChanged newWebcamPosition ->
             let
@@ -125,7 +139,14 @@ update session msg model =
                 newDetails =
                     { details | capsule = newCapsule }
             in
-            ( makeModel { model | details = newDetails }, Cmd.none )
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.OptionsSubmitted ->
             let

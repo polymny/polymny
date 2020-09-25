@@ -80,13 +80,26 @@ gosProductionChoicesView model =
         gos =
             List.head (List.drop model.currentGos model.details.structure)
 
-        gosProductionChoices : Maybe (Maybe Api.CapsuleEditionOptions)
+        gosProductionChoices : Maybe Api.CapsuleEditionOptions
         gosProductionChoices =
-            Maybe.map .production_choices gos
+            case Maybe.map .production_choices gos of
+                Just (Just v) ->
+                    Just v
+
+                _ ->
+                    Nothing
 
         productionChoices : Maybe Api.CapsuleEditionOptions
         productionChoices =
-            Maybe.withDefault model.details.capsule.capsuleEditionOptions gosProductionChoices
+            case ( gosProductionChoices, model.details.capsule.capsuleEditionOptions ) of
+                ( Just a, _ ) ->
+                    Just a
+
+                ( _, Just a ) ->
+                    Just a
+
+                _ ->
+                    Nothing
 
         p : Api.CapsuleEditionOptions
         p =
@@ -94,7 +107,7 @@ gosProductionChoicesView model =
 
         useDefault : Bool
         useDefault =
-            gosProductionChoices == Just Nothing
+            gosProductionChoices == Nothing
 
         useGlobalConfig =
             Input.checkbox []
@@ -253,8 +266,11 @@ gosPrevisualisation model =
 
         productionChoices : Api.CapsuleEditionOptions
         productionChoices =
-            case Maybe.map .production_choices currentGos of
-                Just (Just c) ->
+            case ( Maybe.map .production_choices currentGos, model.details.capsule.capsuleEditionOptions ) of
+                ( Just (Just c), _ ) ->
+                    c
+
+                ( _, Just c ) ->
                     c
 
                 _ ->

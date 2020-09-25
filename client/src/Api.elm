@@ -44,6 +44,7 @@ module Api exposing
     , slideUploadExtraResource
     , testDatabase
     , testMailer
+    , updateCapsuleOptions
     , updateOptions
     , updateSlide
     , updateSlideStructure
@@ -751,6 +752,15 @@ encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
         , ( "webcam_size", Encode.string <| encodeWebcamSize webcamSize )
         , ( "webcam_position", Encode.string <| encodeWebcamPosition webcamPosition )
         ]
+
+
+updateCapsuleOptions : (Result Http.Error () -> msg) -> Int -> EditionAutoContent a -> Cmd msg
+updateCapsuleOptions resultToMsg id content =
+    post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/options"
+        , expect = Http.expectWhatever resultToMsg
+        , body = Http.jsonBody (encodeEditionAutoContent content)
+        }
 
 
 editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> CapsuleDetails -> Cmd msg

@@ -723,6 +723,26 @@ pub fn validate_capsule(
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
+/// Route to update the capsule production choices.
+#[post("/capsule/<id>/options", data = "<data>")]
+pub fn capsule_options(
+    db: Database,
+    user: User,
+    id: i32,
+    data: Json<ApiProductionChoices>,
+) -> Result<()> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let capsule_production_choices = data.into_inner().to_edition_options();
+
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::edition_options.eq(serde_json!(capsule_production_choices)))
+        .execute(&db.0)?;
+
+    Ok(())
+}
+
 /// Posted data for capsule edition
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PostCapsuleEdition {

@@ -266,6 +266,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::capsule::capsule_edition,
                 routes::capsule::capsule_publication,
                 routes::capsule::validate_capsule,
+                routes::capsule::capsule_options,
                 routes::asset::get_asset,
                 routes::asset::delete_asset,
                 routes::slide::get_slide,
