@@ -263,6 +263,7 @@ pub fn upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
+
                     command::export_slides(&output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
@@ -801,7 +802,9 @@ pub fn capsule_edition(
 
     let capsule_production_choices = data.capsule_production_choices.to_edition_options();
     let dir = tempdir()?;
-    let pip_path = dir.path().join(format!("pipList_{}.txt", capsule.id));
+    //let dir_path = dir.path();
+    let dir_path = Path::new("/home/nicolas/tmp");
+    let pip_path = dir_path.join(format!("pipList_{}.txt", capsule.id));
     let mut pip_file = File::create(&pip_path)?;
 
     let capsule_structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
@@ -881,15 +884,25 @@ pub fn capsule_edition(
 
                     let mut slide_path = config.data_path.clone();
                     slide_path.push(slide.asset.asset_path);
-                    let pip_out = dir.path().join(format!(
+                    let pip_out = dir_path.join(format!(
                         "pip{}_g{:03}_s{:03}.mp4",
                         capsule.id, gos_index, slide_index
                     ));
+                    let audio_file = dir_path.join(format!(
+                        "audio{}_g{:03}_s{:03}.wav",
+                        capsule.id, gos_index, slide_index
+                    ));
+                    let record_transcoded = dir_path.join(format!(
+                        "record{}_g{:03}_s{:03}.mp4",
+                        capsule.id, gos_index, slide_index
+                    ));
+
                     let filter_complex = format!(
                         "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
                         production_choices.size_in_pixels(),
                         production_choices.position_in_pixels(),
                     );
+                    let t_duration;
 
                     let mut record = config.data_path.clone();
 
@@ -972,23 +985,49 @@ pub fn capsule_edition(
                         (Some(record_path), _) => {
                             if !fake_records[slide_index] {
                                 let offset = vec!["-ss", &timestamps[slide_index].0];
-                                let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
-                                    Some(x) => Some(vec!["-t", x]),
-                                    None => None,
-                                };
+                                let mut duration: Option<Vec<&str>> =
+                                    match &timestamps[slide_index].1 {
+                                        Some(x) => Some(vec!["-t", x]),
+                                        None => None,
+                                    };
 
                                 record.push(record_path);
+                                //reencode input
+
+                                let transcode_record_command = vec![
+                                    "ffmpeg",
+                                    "-hide_banner",
+                                    "-y",
+                                    "-i",
+                                    &record.to_str().unwrap(),
+                                    "-vcodec",
+                                    "libx264",
+                                    "-async",
+                                    "1",
+                                    "-acodec",
+                                    "aac",
+                                    "-filter:v",
+                                    "fps=fps=25",
+                                    &record_transcoded.to_str().unwrap(),
+                                ];
+                                let child_transcode =
+                                    command::run_command(&transcode_record_command)?;
+                                if !child_transcode.status.success() {
+                                    return Err(Error::TranscodeError);
+                                }
 
                                 if production_choices.with_video {
                                     ffmpeg_command.extend(
                                         vec![
                                             "ffmpeg",
                                             "-hide_banner",
+                                            "-fflags",
+                                            "+genpts",
                                             "-y",
                                             "-i",
                                             &slide_path.to_str().unwrap(),
                                             "-i",
-                                            &record.to_str().unwrap(),
+                                            &record_transcoded.to_str().unwrap(),
                                         ]
                                         .into_iter(),
                                     );
@@ -1002,22 +1041,40 @@ pub fn capsule_edition(
                                         vec!["-filter_complex", &filter_complex].into_iter(),
                                     );
                                 } else {
+                                    //audio only
+                                    let audio_extract_command = vec![
+                                        "ffmpeg",
+                                        "-hide_banner",
+                                        "-y",
+                                        "-i",
+                                        &record_transcoded.to_str().unwrap(),
+                                        "-map",
+                                        "0:a",
+                                        &audio_file.to_str().unwrap(),
+                                    ];
+
+                                    let _metadata = VideoMetadata::metadata(&audio_file)?;
+                                    println!("audio duration {:#?}", _metadata.duration);
+                                    t_duration = format!("{}", _metadata.duration.unwrap());
+                                    duration = Some(vec!["-t", t_duration.as_str()]);
+                                    let child = command::run_command(&audio_extract_command)?;
+                                    if !child.status.success() {
+                                        return Err(Error::TranscodeError);
+                                    }
+
                                     ffmpeg_command.extend(
                                         vec![
                                             "ffmpeg",
                                             "-hide_banner",
                                             "-y",
+                                            "-fflags",
+                                            "+genpts",
                                             "-loop",
                                             "1",
                                             "-i",
                                             &slide_path.to_str().unwrap(),
                                             "-i",
-                                            &record.to_str().unwrap(),
-                                            "-map",
-                                            "0:v:0",
-                                            "-map",
-                                            "1:a:0",
-                                            "-shortest",
+                                            &audio_file.to_str().unwrap(),
                                         ]
                                         .into_iter(),
                                     );
@@ -1033,6 +1090,8 @@ pub fn capsule_edition(
                                         "ffmpeg",
                                         "-y",
                                         "-hide_banner",
+                                        "-fflags",
+                                        "+genpts",
                                         "-f",
                                         "lavfi",
                                         "-i",
@@ -1057,6 +1116,8 @@ pub fn capsule_edition(
                                     "ffmpeg",
                                     "-y",
                                     "-hide_banner",
+                                    "-fflags",
+                                    "+genpts",
                                     "-f",
                                     "lavfi",
                                     "-i",
@@ -1084,8 +1145,8 @@ pub fn capsule_edition(
                             "3.1",
                             "-b:v",
                             "440k",
-                            "-ar",
-                            "44100",
+                            //"-ar",
+                            //"44100",
                             "-ab",
                             "128k",
                             "-vcodec",
