@@ -562,7 +562,7 @@ genericDesignSlideView _ options slideModel offset localIndex s =
 
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ Ui.imageButton (Just extraResourceMsg) "" "Ajouter une ressource externe"
+                        [ Ui.imageButton (Just extraResourceMsg) "" "Remplacer le slide / ajouter une ressource externe"
                         , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
                         , Ui.trashButton (Just deleteExtraMsg) "" "Supprimer le slide"
                         ]
