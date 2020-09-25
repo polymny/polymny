@@ -467,7 +467,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 details =
                     preparationModel.details
             in
-            ( { uploadForm | status = Status.Success (), activeSlideId = Just slide.id }
+            ( { uploadForm | status = Status.NotSent, activeSlideId = Nothing, page = Nothing, askForPage = False, file = Nothing }
             , Cmd.none
             , Preparation.init { details | slides = newSlides, structure = newStructure }
             )
