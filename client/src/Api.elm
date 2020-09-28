@@ -21,6 +21,7 @@ module Api exposing
     , decodeProject
     , decodeProjectWithCapsules
     , decodeSession
+    , deleteCapsule
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
@@ -63,10 +64,10 @@ import Webcam
 -- Helper for request
 
 
-get : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-get { url, body, expect } =
+requestWithMethod : String -> { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+requestWithMethod method { url, body, expect } =
     Http.request
-        { method = "GET"
+        { method = method
         , headers = [ Http.header "Accept" "application/json" ]
         , url = url
         , body = body
@@ -74,32 +75,26 @@ get { url, body, expect } =
         , timeout = Nothing
         , tracker = Nothing
         }
+
+
+get : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+get =
+    requestWithMethod "GET"
 
 
 post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-post { url, body, expect } =
-    Http.request
-        { method = "POST"
-        , headers = [ Http.header "Accept" "application/json" ]
-        , url = url
-        , body = body
-        , expect = expect
-        , timeout = Nothing
-        , tracker = Nothing
-        }
+post =
+    requestWithMethod "POST"
 
 
 put : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-put { url, body, expect } =
-    Http.request
-        { method = "PUT"
-        , headers = [ Http.header "Accept" "application/json" ]
-        , url = url
-        , body = body
-        , expect = expect
-        , timeout = Nothing
-        , tracker = Nothing
-        }
+put =
+    requestWithMethod "PUT"
+
+
+delete : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+delete =
+    requestWithMethod "DELETE"
 
 
 
@@ -944,6 +939,15 @@ updateOptions resultToMsg content =
         , body = Http.jsonBody (encodeOptionsContent content)
         , timeout = Nothing
         , tracker = Nothing
+        }
+
+
+deleteCapsule : (Result Http.Error () -> msg) -> Int -> Cmd msg
+deleteCapsule resultToMsg capsuleId =
+    delete
+        { url = "/api/capsule/" ++ String.fromInt capsuleId
+        , body = Http.emptyBody
+        , expect = Http.expectWhatever resultToMsg
         }
 
 

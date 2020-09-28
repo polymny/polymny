@@ -248,6 +248,37 @@ update msg global { session, tab } =
             , cmd
             )
 
+        ( LoggedIn.DeleteCapsule capsule, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteCapsule = Just capsule }), Cmd.none )
+
+        ( LoggedIn.ValidateDeleteCapsule, LoggedIn.Home uploadForm ) ->
+            case uploadForm.deleteCapsule of
+                Just c ->
+                    let
+                        updateProject : Api.Project -> Api.Project
+                        updateProject project =
+                            { project | capsules = List.filter (\x -> x.id /= c.id) project.capsules }
+
+                        newProjects =
+                            List.map updateProject session.projects
+
+                        newSession =
+                            { session | projects = newProjects }
+                    in
+                    ( global
+                    , LoggedIn.Model newSession (LoggedIn.Home { uploadForm | deleteCapsule = Nothing })
+                    , Api.deleteCapsule (\_ -> Core.Noop) c.id
+                    )
+
+                Nothing ->
+                    ( global, LoggedIn.Model session tab, Cmd.none )
+
+        ( LoggedIn.CancelDeleteCapsule, LoggedIn.Home uploadForm ) ->
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteCapsule = Nothing })
+            , Cmd.none
+            )
+
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
 

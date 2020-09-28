@@ -196,8 +196,13 @@ pub fn update_capsule(
 /// Delete a capsule
 #[delete("/capsule/<id>")]
 pub fn delete_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
-    let capsule = user.get_capsule_by_id(id, &db)?;
-    Ok(json!({"nb capsules deleted": capsule.delete(&db)?}))
+    user.get_capsule_by_id(id, &db)?;
+    use crate::schema::capsules::dsl;
+    let result = diesel::update(capsules::table)
+        .filter(dsl::id.eq(id))
+        .set(dsl::active.eq(false))
+        .execute(&db.0)?;
+    Ok(json!({ "nb capsules deleted": result }))
 }
 
 /// Upload a presentation (slides)

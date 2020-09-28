@@ -30,7 +30,7 @@ view global session tab =
         ( mainTab, popup ) =
             case tab of
                 LoggedIn.Home uploadForm ->
-                    ( homeView global session uploadForm, Nothing )
+                    homeView global session uploadForm
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
@@ -65,22 +65,68 @@ view global session tab =
     )
 
 
-homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 homeView global session uploadForm =
     case uploadForm.status of
         Status.NotSent ->
-            Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                [ Element.el
-                    [ Element.width (Element.fillPortion 1)
-                    , Background.color Colors.grey
-                    , Element.height Element.fill
-                    ]
-                    (leftColumn global session uploadForm)
-                , projectsView global session uploadForm
-                ]
+            let
+                content =
+                    Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                        [ Element.el
+                            [ Element.width (Element.fillPortion 1)
+                            , Background.color Colors.grey
+                            , Element.height Element.fill
+                            ]
+                            (leftColumn global session uploadForm)
+                        , projectsView global session uploadForm
+                        ]
+
+                validateMsg : Maybe Core.Msg
+                validateMsg =
+                    LoggedIn.ValidateDeleteCapsule
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                validateButton : Element Core.Msg
+                validateButton =
+                    Ui.primaryButton validateMsg "Supprimer la capsule"
+
+                cancelMsg : Maybe Core.Msg
+                cancelMsg =
+                    LoggedIn.CancelDeleteCapsule
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                cancelButton : Element Core.Msg
+                cancelButton =
+                    Ui.simpleButton cancelMsg "Annuler"
+
+                popupContent : Api.Capsule -> Element Core.Msg
+                popupContent capsule =
+                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
+                        [ Element.paragraph [ Element.centerY, Font.center ]
+                            [ Element.text "Vous êtes sur le point de supprimer la capsule "
+                            , Element.el [ Font.bold ] (Element.text capsule.name)
+                            , Element.text "."
+                            ]
+                        , Element.row [ Element.spacing 10, Element.padding 10, Element.alignBottom, Element.alignRight ]
+                            [ cancelButton
+                            , validateButton
+                            ]
+                        ]
+
+                popup =
+                    case uploadForm.deleteCapsule of
+                        Just capsule ->
+                            Just (Ui.popup "Supprimer une capsule" (popupContent capsule))
+
+                        Nothing ->
+                            Nothing
+            in
+            ( content, popup )
 
         _ ->
-            prePreparationView global session uploadForm
+            ( prePreparationView global session uploadForm, Nothing )
 
 
 prePreparationView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
@@ -338,6 +384,12 @@ capsuleView global project rename capsule =
                 |> Just
                 |> (\x -> Ui.penButton x "" "Renommer la capsule")
 
+        trash =
+            LoggedIn.DeleteCapsule capsule
+                |> Core.LoggedInMsg
+                |> Just
+                |> (\x -> Ui.trashButton x "" "Supprimer la capsule")
+
         videoUrl : Api.Asset -> String
         videoUrl asset =
             global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
@@ -371,7 +423,7 @@ capsuleView global project rename capsule =
             Element.row [ Element.spacing 10 ] [ link, copy ]
     in
     Element.row [ Element.width Element.fill, Element.spacing 10 ]
-        [ title, pen, video ]
+        [ title, pen, trash, video ]
 
 
 projectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
