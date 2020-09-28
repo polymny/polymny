@@ -380,7 +380,7 @@ updateReplaceSlide msg replaceSlideForm preparationModel =
 
                 Just file ->
                     ( { replaceSlideForm | status = Status.Sent }
-                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file 1
+                    , Api.slideReplace resultToMsg5 (Maybe.withDefault -1 replaceSlideForm.ractiveSlideId) file (Just 1)
                     , preparationModel
                     )
 
@@ -425,7 +425,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
         Preparation.UploadExtraResourceSelectFileRequested slideId ->
             ( { uploadForm | activeSlideId = Just slideId, deleteStatus = Status.NotSent }
             , Select.file
-                [ "video/*", "application/pdf" ]
+                [ "video/*", "image/*", "application/pdf" ]
                 (\x ->
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
@@ -436,9 +436,15 @@ updateUploadExtraResource msg uploadForm preparationModel =
             )
 
         Preparation.UploadExtraResourceFileReady file slideId ->
-            if String.endsWith ".pdf" (File.name file) then
+            if File.mime file == "application/pdf" then
                 ( { uploadForm | file = Just file, activeSlideId = Just slideId, askForPage = True, page = Just 1 }
                 , Cmd.none
+                , preparationModel
+                )
+
+            else if String.startsWith "image/" (File.mime file) then
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file Nothing
                 , preparationModel
                 )
 
@@ -534,7 +540,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
             case ( uploadForm.file, uploadForm.page ) of
                 ( Just file, Just page ) ->
                     ( { uploadForm | status = Status.Sent }
-                    , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file page
+                    , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file (Just page)
                     , preparationModel
                     )
 

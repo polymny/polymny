@@ -1,12 +1,12 @@
 //! This module contains all the routes related to slides.
 
-use std::fs::{self, create_dir, File};
+use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use image::imageops::FilterType;
+use image::imageops::{resize, FilterType};
 use image::{self, ImageFormat};
 
 use rocket::http::ContentType;
@@ -265,13 +265,13 @@ pub fn replace_slide(
     user: User,
     content_type: &ContentType,
     id: i32,
-    page: i32,
+    page: Option<i32>,
     data: Data,
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
 
-    let slide_pos_in_pdf = page - 1;
+    let page = page.map(|x| x - 1);
     let uuid = Uuid::new_v4();
     let stem = Path::new(&asset.name)
         .file_stem()
@@ -279,8 +279,8 @@ pub fn replace_slide(
         .to_str()
         .unwrap();
 
-    match asset.asset_type.as_str() {
-        "application/pdf" => {
+    match (asset.asset_type.as_str(), page) {
+        ("application/pdf", Some(slide_pos_in_pdf)) => {
             let temp_dir = tempdir()?;
 
             let mut output_path = config.data_path.clone();
@@ -315,15 +315,16 @@ pub fn replace_slide(
                 .set(dsl::asset_id.eq(slide_asset.id))
                 .execute(&db.0)?;
         }
+        ("application/pdf", None) => todo!("bad request"),
         _ => {
             let img_path: PathBuf = [config.data_path.clone(), PathBuf::from(asset.asset_path)]
                 .iter()
                 .collect();
             let img = image::open(img_path).unwrap();
 
-            let buffer = img.resize(1920, 1080, FilterType::Nearest);
+            let buffer = resize(&img, 1920, 1080, FilterType::Nearest);
 
-            let slide_name = format!("{}__{}_resized.png", stem, slide_pos_in_pdf);
+            let slide_name = format!("{}__{}_resized.png", stem, 1);
             let path_dest: PathBuf = [
                 &user.username,
                 "extract",
@@ -342,8 +343,9 @@ pub fn replace_slide(
             let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
             create_dir(full_dest_path.parent().unwrap()).ok();
 
-            let mut output = File::create(full_dest_path).unwrap();
-            buffer.write_to(&mut output, ImageFormat::Png).unwrap();
+            buffer
+                .save_with_format(full_dest_path, ImageFormat::Png)
+                .unwrap();
 
             use crate::schema::slides::dsl;
             diesel::update(slides::table)

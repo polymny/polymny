@@ -792,10 +792,10 @@ slideDeleteExtraResource resultToMsg id =
         }
 
 
-slideReplace : (Result Http.Error Slide -> msg) -> Int -> File.File -> Int -> Cmd msg
+slideReplace : (Result Http.Error Slide -> msg) -> Int -> File.File -> Maybe Int -> Cmd msg
 slideReplace resultToMsg id content page =
     post
-        { url = "/api/slide/" ++ String.fromInt id ++ "/replace/" ++ String.fromInt page
+        { url = "/api/slide/" ++ String.fromInt id ++ "/replace/" ++ Maybe.withDefault "0" (Maybe.map String.fromInt page)
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.multipartBody [ Http.filePart "file" content ]
         }
