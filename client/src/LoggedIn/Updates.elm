@@ -255,12 +255,20 @@ update msg global { session, tab } =
             case uploadForm.deleteCapsule of
                 Just c ->
                     let
-                        updateProject : Api.Project -> Api.Project
+                        updateProject : Api.Project -> Maybe Api.Project
                         updateProject project =
-                            { project | capsules = List.filter (\x -> x.id /= c.id) project.capsules }
+                            let
+                                capsules =
+                                    List.filter (\x -> x.id /= c.id) project.capsules
+                            in
+                            if List.length capsules == 0 then
+                                Nothing
+
+                            else
+                                Just { project | capsules = capsules }
 
                         newProjects =
-                            List.map updateProject session.projects
+                            List.filterMap updateProject session.projects
 
                         newSession =
                             { session | projects = newProjects }
