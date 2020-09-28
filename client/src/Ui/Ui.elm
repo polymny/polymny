@@ -39,6 +39,7 @@ module Ui.Ui exposing
     , tabButton
     , tabButtonActive
     , textButton
+    , timesButton
     , topBarButton
     , trashButton
     , videoTuto
@@ -349,6 +350,11 @@ chainButton onPress content =
 arrowCircleRightButton : Maybe msg -> String -> String -> Element msg
 arrowCircleRightButton onPress content =
     iconButton Icons.arrowCircleRight onPress content
+
+
+timesButton : Maybe msg -> String -> String -> Element msg
+timesButton onPress content =
+    iconButton Icons.times onPress content
 
 
 homeButton : Maybe msg -> String -> Element msg

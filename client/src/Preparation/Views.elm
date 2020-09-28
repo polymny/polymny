@@ -531,14 +531,19 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                 gosIndex =
                     (index - 1) // 2
 
-                media =
+                ( media, deleteExtraMsg ) =
                     case slide.extra of
                         Just asset ->
-                            Element.html <|
-                                htmlVideo asset.asset_path
+                            ( Element.html (htmlVideo asset.asset_path)
+                            , Preparation.DeleteExtraResource slide.id
+                                |> Preparation.UploadExtraResourceMsg
+                                |> LoggedIn.PreparationMsg
+                                |> Core.LoggedInMsg
+                                |> Just
+                            )
 
                         Nothing ->
-                            viewSlideImage slide.asset.asset_path
+                            ( viewSlideImage slide.asset.asset_path, Nothing )
 
                 extraResourceMsg : Core.Msg
                 extraResourceMsg =
@@ -554,17 +559,22 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                             Preparation.EditPromptMsg <|
                                 Preparation.EditPromptOpenDialog slide.id slide.prompt
 
-                deleteExtraMsg : Core.Msg
-                deleteExtraMsg =
+                deleteMsg : Core.Msg
+                deleteMsg =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.SlideDelete gosIndex slide.id
 
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ Ui.imageButton (Just extraResourceMsg) "" "Remplacer le slide / ajouter une ressource externe"
+                        [ case deleteExtraMsg of
+                            Nothing ->
+                                Ui.imageButton (Just extraResourceMsg) "" "Remplacer le slide / ajouter une ressource externe"
+
+                            Just msg ->
+                                Ui.timesButton (Just msg) "" "Supprimer la ressource externe"
                         , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
-                        , Ui.trashButton (Just deleteExtraMsg) "" "Supprimer le slide"
+                        , Ui.trashButton (Just deleteMsg) "" "Supprimer le slide"
                         ]
             in
             Element.el

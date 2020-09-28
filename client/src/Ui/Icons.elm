@@ -17,6 +17,7 @@ module Ui.Icons exposing
     , spinner
     , startRecord
     , stopRecord
+    , times
     , trash
     )
 
@@ -109,6 +110,11 @@ chain =
 arrowCircleRight : Element msg
 arrowCircleRight =
     buttonFromIcon FontAwesome.arrowCircleRight
+
+
+times : Element msg
+times =
+    buttonFromIcon FontAwesome.times
 
 
 spinner : Element msg
