@@ -1,14 +1,16 @@
 //! This module helps us to run commands.
-
-use std::io::Result;
+use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
 
 use poppler::PopplerDocument;
+
+use crate::{Error, Result};
+
 extern crate ffmpeg_next as ffmpeg;
 
 /// Runs a specified command.
-pub fn run_command(command: &Vec<&str>) -> Result<Output> {
+pub fn run_command(command: &Vec<&str>) -> io::Result<Output> {
     info!("Running command: {:#?}", command.join(" "));
     let child = Command::new(command[0]).args(&command[1..]).output();
 
@@ -108,8 +110,33 @@ pub struct VideoMetadata {
 }
 
 impl VideoMetadata {
-    ///ffmpeg metaddata
+    ///ffmpeg metadata
     pub fn metadata<P: AsRef<Path>>(input_path: P) -> Result<VideoMetadata> {
+        ffmpeg::init().unwrap();
+        let mut video_metadata = VideoMetadata {
+            with_audio: false,
+            duration: None,
+        };
+
+        match ffmpeg::format::input(&input_path) {
+            Ok(context) => {
+                if let Some(_stream) = context.streams().best(ffmpeg::media::Type::Audio) {
+                    video_metadata.with_audio = true;
+                }
+
+                if context.duration() > 0 {
+                    video_metadata.duration =
+                        Some(context.duration() as f64 / f64::from(ffmpeg::ffi::AV_TIME_BASE));
+                };
+            }
+
+            Err(error) => println!("error: {}", error),
+        }
+        Ok(video_metadata)
+    }
+
+    /// Dump metadata for a video
+    pub fn dump_metadata<P: AsRef<Path>>(input_path: P) -> Result<VideoMetadata> {
         ffmpeg::init().unwrap();
         let mut video_metadata = VideoMetadata {
             with_audio: false,
@@ -206,5 +233,59 @@ impl VideoMetadata {
             Err(error) => println!("error: {}", error),
         }
         Ok(video_metadata)
+    }
+}
+
+/// Trancode blob in MP4 .
+pub fn transcode_blob<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<f64> {
+    let command = vec![
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-i",
+        input.as_ref().to_str().unwrap(),
+        "-vcodec",
+        "libx264",
+        "-async",
+        "1",
+        "-acodec",
+        "aac",
+        "-filter:v",
+        "fps=fps=25",
+        output.as_ref().to_str().unwrap(),
+    ];
+    let child = run_command(&command)?;
+    if !child.status.success() {
+        return Err(Error::TranscodeError);
+    }
+
+    let metadata = VideoMetadata::metadata(&output)?;
+    match metadata.duration {
+        Some(x) => Ok(x),
+        None => return Err(Error::TranscodeError),
+    }
+}
+
+/// Extract audio from MP4 .
+pub fn extract_audio<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Result<f64> {
+    let command = vec![
+        "ffmpeg",
+        "-hide_banner",
+        "-y",
+        "-i",
+        input.as_ref().to_str().unwrap(),
+        "-map",
+        "0:a",
+        output.as_ref().to_str().unwrap(),
+    ];
+    let child = run_command(&command)?;
+    if !child.status.success() {
+        return Err(Error::TranscodeError);
+    }
+
+    let metadata = VideoMetadata::metadata(&output)?;
+    match metadata.duration {
+        Some(x) => Ok(x),
+        None => return Err(Error::TranscodeError),
     }
 }
