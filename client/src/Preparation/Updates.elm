@@ -425,7 +425,13 @@ updateUploadExtraResource msg uploadForm preparationModel =
         Preparation.UploadExtraResourceSelectFileRequested slideId ->
             ( { uploadForm | activeSlideId = slideId, deleteStatus = Status.NotSent }
             , Select.file
-                [ "video/*", "image/*", "application/pdf" ]
+                (case slideId of
+                    Just _ ->
+                        [ "video/*", "image/*", "application/pdf" ]
+
+                    Nothing ->
+                        [ "image/*", "application/pdf" ]
+                )
                 (\x ->
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
