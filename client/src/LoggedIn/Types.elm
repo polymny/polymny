@@ -39,6 +39,7 @@ type alias UploadForm =
     , projectSelected : Maybe Api.Project
     , rename : Maybe Rename
     , deleteCapsule : Maybe Api.Capsule
+    , deleteProject : Maybe Api.Project
     }
 
 
@@ -80,6 +81,9 @@ type Msg
     | DeleteCapsule Api.Capsule
     | ValidateDeleteCapsule
     | CancelDeleteCapsule
+    | DeleteProject Api.Project
+    | ValidateDeleteProject
+    | CancelDeleteProject
 
 
 type UploadSlideShowMsg
@@ -98,7 +102,7 @@ type UploadSlideShowMsg
 
 initUploadForm : UploadForm
 initUploadForm =
-    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing Nothing Nothing
+    UploadForm Status.NotSent Nothing "" "" Nothing Nothing 5 (Dropdown.init "") Nothing Nothing Nothing Nothing
 
 
 init : Tab

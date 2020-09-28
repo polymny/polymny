@@ -279,6 +279,33 @@ update msg global { session, tab } =
             , Cmd.none
             )
 
+        ( LoggedIn.DeleteProject project, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteProject = Just project }), Cmd.none )
+
+        ( LoggedIn.ValidateDeleteProject, LoggedIn.Home uploadForm ) ->
+            case uploadForm.deleteProject of
+                Just p ->
+                    let
+                        newProjects =
+                            List.filter (\x -> x.id /= p.id) session.projects
+
+                        newSession =
+                            { session | projects = newProjects }
+                    in
+                    ( global
+                    , LoggedIn.Model newSession (LoggedIn.Home { uploadForm | deleteProject = Nothing })
+                    , Api.deleteProject (\_ -> Core.Noop) p
+                    )
+
+                Nothing ->
+                    ( global, LoggedIn.Model session tab, Cmd.none )
+
+        ( LoggedIn.CancelDeleteProject, LoggedIn.Home uploadForm ) ->
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteProject = Nothing })
+            , Cmd.none
+            )
+
         _ ->
             ( global, LoggedIn.Model session tab, Cmd.none )
 

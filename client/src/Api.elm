@@ -22,6 +22,7 @@ module Api exposing
     , decodeProjectWithCapsules
     , decodeSession
     , deleteCapsule
+    , deleteProject
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
@@ -949,6 +950,12 @@ deleteCapsule resultToMsg capsuleId =
         , body = Http.emptyBody
         , expect = Http.expectWhatever resultToMsg
         }
+
+
+deleteProject : (Result Http.Error () -> msg) -> Project -> Cmd msg
+deleteProject resultToMsg project =
+    Cmd.batch
+        (List.map (.id >> deleteCapsule resultToMsg) project.capsules)
 
 
 

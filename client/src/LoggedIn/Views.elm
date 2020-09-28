@@ -81,19 +81,43 @@ homeView global session uploadForm =
                         , projectsView global session uploadForm
                         ]
 
+                isCapsuleDeleted =
+                    case uploadForm.deleteCapsule of
+                        Just _ ->
+                            True
+
+                        _ ->
+                            False
+
                 validateMsg : Maybe Core.Msg
                 validateMsg =
-                    LoggedIn.ValidateDeleteCapsule
+                    (if isCapsuleDeleted then
+                        LoggedIn.ValidateDeleteCapsule
+
+                     else
+                        LoggedIn.ValidateDeleteProject
+                    )
                         |> Core.LoggedInMsg
                         |> Just
 
                 validateButton : Element Core.Msg
                 validateButton =
-                    Ui.primaryButton validateMsg "Supprimer la capsule"
+                    Ui.primaryButton validateMsg
+                        (if isCapsuleDeleted then
+                            "Supprimer la capsule"
+
+                         else
+                            "Supprimer le projet"
+                        )
 
                 cancelMsg : Maybe Core.Msg
                 cancelMsg =
-                    LoggedIn.CancelDeleteCapsule
+                    (if isCapsuleDeleted then
+                        LoggedIn.CancelDeleteCapsule
+
+                     else
+                        LoggedIn.CancelDeleteProject
+                    )
                         |> Core.LoggedInMsg
                         |> Just
 
@@ -101,12 +125,18 @@ homeView global session uploadForm =
                 cancelButton =
                     Ui.simpleButton cancelMsg "Annuler"
 
-                popupContent : Api.Capsule -> Element Core.Msg
-                popupContent capsule =
+                popupContent : String -> Element Core.Msg
+                popupContent name =
                     Element.column [ Element.height Element.fill, Element.width Element.fill ]
                         [ Element.paragraph [ Element.centerY, Font.center ]
-                            [ Element.text "Vous êtes sur le point de supprimer la capsule "
-                            , Element.el [ Font.bold ] (Element.text capsule.name)
+                            [ Element.text
+                                (if isCapsuleDeleted then
+                                    "Vous êtes sur le point de supprimer la capsule "
+
+                                 else
+                                    "Vous êtes sur le point de supprimer le projet "
+                                )
+                            , Element.el [ Font.bold ] (Element.text name)
                             , Element.text "."
                             ]
                         , Element.row [ Element.spacing 10, Element.padding 10, Element.alignBottom, Element.alignRight ]
@@ -116,11 +146,14 @@ homeView global session uploadForm =
                         ]
 
                 popup =
-                    case uploadForm.deleteCapsule of
-                        Just capsule ->
-                            Just (Ui.popup "Supprimer une capsule" (popupContent capsule))
+                    case ( uploadForm.deleteCapsule, uploadForm.deleteProject ) of
+                        ( Just capsule, _ ) ->
+                            Just (Ui.popup "Supprimer une capsule" (popupContent capsule.name))
 
-                        Nothing ->
+                        ( _, Just project ) ->
+                            Just (Ui.popup "Supprimer un projet" (popupContent project.name))
+
+                        _ ->
                             Nothing
             in
             ( content, popup )
@@ -479,8 +512,22 @@ projectView global ( project, even, edited ) =
                     _ ->
                         default
 
+            renameMsg =
+                LoggedIn.RenameProject ( project.id, project.name )
+                    |> LoggedIn.RenameMsg
+                    |> Core.LoggedInMsg
+                    |> Just
+
             rename =
-                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, project.name ))))) "" "Renommer le projet"
+                Ui.penButton renameMsg "" "Renommer le projet"
+
+            deleteMsg =
+                LoggedIn.DeleteProject project
+                    |> Core.LoggedInMsg
+                    |> Just
+
+            delete =
+                Ui.trashButton deleteMsg "" "Supprimer le projet"
 
             extraInfo =
                 let
@@ -526,6 +573,7 @@ projectView global ( project, even, edited ) =
                 Element.row [ Element.spacing 10, Element.width Element.fill ]
                     [ title
                     , rename
+                    , delete
                     , extraInfo
                     , Element.el [ Element.width Element.fill ] Element.none
                     , created
