@@ -595,18 +595,52 @@ projectView global ( project, even, edited ) =
 
 projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 projectsView global session uploadForm =
-    Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
-        (List.map (projectView global)
-            (List.indexedMap
-                (\i x ->
-                    ( x
-                    , modBy 2 i == 0
-                    , uploadForm.rename
-                    )
-                )
-                (List.sortBy (\x -> -x.lastVisited) session.projects)
+    if List.length session.projects == 0 then
+        let
+            msg =
+                LoggedIn.UploadSlideShowSelectFileRequested
+                    |> LoggedIn.UploadSlideShowMsg
+                    |> Core.LoggedInMsg
+                    |> Just
+
+            content =
+                Element.column [ Element.width Element.fill, Element.spacing 30 ]
+                    [ Element.el [ Font.bold, Element.centerX ] (Element.text "Bienvenue sur polymny")
+                    , Element.paragraph [ Element.width Element.fill ]
+                        [ Element.text "Vous n'avez encore aucun projet."
+                        ]
+                    , Element.paragraph
+                        [ Element.width Element.fill ]
+                        [ Element.el [ Font.bold ]
+                            (Element.text
+                                "Pour commencer un enregistrement, il faut choisir une présentation au format PDF sur votre machine."
+                            )
+                        , Element.text " Par exemple un export PDF de Microsoft PowerPoint ou LibreOffice Impress en paysage au format HD. Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter."
+                        ]
+                    , Ui.primaryButton msg "Choisir un fichier PDF"
+                    ]
+        in
+        Element.el [ Element.width (Element.fillPortion 6), Element.alignTop ]
+            (Element.row [ Element.width Element.fill ]
+                [ Element.el [ Element.width Element.fill ] Element.none
+                , Element.el [ Element.width Element.fill, Element.padding 10 ] content
+                , Element.el [ Element.width Element.fill ] Element.none
+                ]
             )
-        )
+
+    else
+        Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
+            (List.map (projectView global)
+                (List.indexedMap
+                    (\i x ->
+                        ( x
+                        , modBy 2 i == 0
+                        , uploadForm.rename
+                        )
+                    )
+                    (List.sortBy (\x -> -x.lastVisited) session.projects)
+                )
+            )
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
