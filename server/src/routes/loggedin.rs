@@ -22,10 +22,11 @@ use crate::command;
 use crate::config::Config;
 use crate::db::asset::Asset;
 use crate::db::capsule::Capsule;
+use crate::db::capsule::GosStructure;
 use crate::db::project::Project;
 use crate::db::slide::Slide;
 use crate::db::user::User;
-use crate::routes::capsule::{format_capsule_data, GosStructure};
+use crate::routes::capsule::format_capsule_data;
 use crate::schema::{capsules, users};
 use crate::webcam::ProductionChoices;
 

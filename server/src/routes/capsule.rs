@@ -25,12 +25,11 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::{Capsule, PublishedType};
+use crate::db::capsule::{ApiProductionChoices, Capsule, GosStructure, PublishedType};
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
-use crate::webcam::{ProductionChoices, WebcamPosition, WebcamSize};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -83,52 +82,6 @@ pub struct UpdateCapsuleForm {
 
     /// Reference to generated video for this capsule
     pub video_id: Option<Option<i32>>,
-}
-
-/// Production choices for video Generation
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ApiProductionChoices {
-    /// Video and audio or audio only
-    pub with_video: Option<bool>,
-
-    /// Webcam size
-    pub webcam_size: Option<WebcamSize>,
-
-    /// Webcam  Position
-    pub webcam_position: Option<WebcamPosition>,
-}
-
-impl ApiProductionChoices {
-    /// Convert received production choices
-    pub fn to_edition_options(&self) -> ProductionChoices {
-        ProductionChoices {
-            with_video: self.with_video.unwrap_or(true),
-            webcam_size: self.webcam_size.unwrap_or_default(),
-            webcam_position: self.webcam_position.unwrap_or_default(),
-        }
-    }
-}
-
-/// The structure of a gos.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GosStructure {
-    /// The ids of the slides of the gos.
-    pub slides: Vec<i32>,
-
-    /// The moments when the user went to the next slides, in milliseconds.
-    pub transitions: Vec<i32>,
-
-    /// The path to the record if any.
-    pub record_path: Option<String>,
-
-    /// The path to the background image if any.
-    pub background_path: Option<String>,
-
-    /// Whether the gos is locked or not.
-    pub locked: bool,
-
-    /// Production option
-    pub production_choices: Option<ApiProductionChoices>,
 }
 
 /// internal function for data format

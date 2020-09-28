@@ -40,6 +40,12 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
         decreaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
+        newSlideMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceSelectFileRequested Nothing
+
         autoEdition =
             Ui.primaryButton (Just msg) "Filmer"
 
@@ -49,7 +55,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                 , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
                         [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                            [ Ui.primaryButton (Just increaseMsg) "-"
+                            [ Ui.primaryButton (Just newSlideMsg) "Ajouter un nouveau slide"
+                            , Ui.primaryButton (Just increaseMsg) "-"
                             , Element.text "Zoom"
                             , Ui.primaryButton (Just decreaseMsg) "+"
                             ]
@@ -550,7 +557,7 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceSelectFileRequested slide.id
+                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id)
 
                 promptMsg : Core.Msg
                 promptMsg =

@@ -187,8 +187,8 @@ type UploadLogoMsg
 
 
 type UploadExtraResourceMsg
-    = UploadExtraResourceSelectFileRequested Int
-    | UploadExtraResourceFileReady File Int
+    = UploadExtraResourceSelectFileRequested (Maybe Int)
+    | UploadExtraResourceFileReady File (Maybe Int)
     | UploadExtraResourceSuccess Api.Slide
     | UploadExtraResourceError
     | DeleteExtraResource Int
@@ -197,6 +197,7 @@ type UploadExtraResourceMsg
     | UploadExtraResourcePageChanged (Maybe Int)
     | UploadExtraResourceCancel
     | UploadExtraResourceValidate
+    | UploadExtraResourceDetailsChanged Api.CapsuleDetails
 
 
 type ReplaceSlideMsg

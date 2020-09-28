@@ -29,6 +29,7 @@ module Api exposing
     , encodeSlideStructureFromInts
     , forgotPassword
     , get
+    , insertSlide
     , logOut
     , login
     , newCapsule
@@ -789,6 +790,15 @@ slideDeleteExtraResource resultToMsg id =
         { url = "/api/slide/" ++ String.fromInt id ++ "/delete_resource"
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.emptyBody
+        }
+
+
+insertSlide : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Maybe Int -> Cmd msg
+insertSlide resultToMsg capsuleId file page =
+    put
+        { url = "/api/new-slide/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt (Maybe.withDefault 0 page)
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" file ]
         }
 
 

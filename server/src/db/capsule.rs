@@ -9,7 +9,9 @@ use crate::db::asset::Asset;
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
+use crate::webcam::{
+    str_to_webcam_position, str_to_webcam_size, ProductionChoices, WebcamPosition, WebcamSize,
+};
 use crate::Result;
 
 #[allow(missing_docs)]
@@ -150,6 +152,52 @@ pub struct CapsuleWithVideo {
     pub active: bool,
 }
 
+/// The structure of a gos.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GosStructure {
+    /// The ids of the slides of the gos.
+    pub slides: Vec<i32>,
+
+    /// The moments when the user went to the next slides, in milliseconds.
+    pub transitions: Vec<i32>,
+
+    /// The path to the record if any.
+    pub record_path: Option<String>,
+
+    /// The path to the background image if any.
+    pub background_path: Option<String>,
+
+    /// Whether the gos is locked or not.
+    pub locked: bool,
+
+    /// Production option
+    pub production_choices: Option<ApiProductionChoices>,
+}
+
+/// Production choices for video Generation
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ApiProductionChoices {
+    /// Video and audio or audio only
+    pub with_video: Option<bool>,
+
+    /// Webcam size
+    pub webcam_size: Option<WebcamSize>,
+
+    /// Webcam  Position
+    pub webcam_position: Option<WebcamPosition>,
+}
+
+impl ApiProductionChoices {
+    /// Convert received production choices
+    pub fn to_edition_options(&self) -> ProductionChoices {
+        ProductionChoices {
+            with_video: self.with_video.unwrap_or(true),
+            webcam_size: self.webcam_size.unwrap_or_default(),
+            webcam_position: self.webcam_position.unwrap_or_default(),
+        }
+    }
+}
+
 /// A capsule that isn't stored into the database yet.
 #[derive(Debug, Insertable)]
 #[table_name = "capsules"]
@@ -246,6 +294,11 @@ impl Capsule {
             .save(&database)?;
         }
         Ok(capsule)
+    }
+
+    /// Retrieves the structure of the capsule.
+    pub fn structure(&self) -> Result<Vec<GosStructure>> {
+        Ok(serde_json::from_value(self.structure.clone()).unwrap())
     }
 
     /// Creates a new capsule.
