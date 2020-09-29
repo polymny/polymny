@@ -785,7 +785,7 @@ pub fn capsule_edition(
     for (gos_index, gos) in capsule_structure.into_iter().enumerate() {
         // GoS iteration
         let mut fake_records = vec![false; gos.slides.len()];
-        let timestamps: Vec<(String, Option<String>)>;
+        let timestamps: Vec<(i32, Option<String>)>;
 
         let mut record = config.data_path.clone();
         let transcoded_record = match &gos.record_path {
@@ -822,12 +822,9 @@ pub fn capsule_edition(
 
             for (i, x) in input.iter().enumerate() {
                 if i + 1 == input.len() {
-                    output.push((format!("{}ms", *x), None));
+                    output.push((*x, None));
                 } else {
-                    output.push((
-                        format!("{}ms", *x),
-                        Some(format!("{}ms", input[i + 1] - 1 - *x)),
-                    ));
+                    output.push((*x, Some(format!("{}ms", input[i + 1] - 1 - *x))));
                 }
             }
             output
@@ -876,6 +873,7 @@ pub fn capsule_edition(
                         production_choices.position_in_pixels(),
                     );
                     let str_duration;
+                    let str_offset;
                     match (&transcoded_record, &gos.background_path) {
                         // matting case
                         (Some((record_path, _)), Some(background_path))
@@ -956,8 +954,13 @@ pub fn capsule_edition(
                         // video production with webcam records available
                         (Some((record_path, record_duration)), _) => {
                             if !fake_records[slide_index] {
-                                let offset = vec!["-ss", &timestamps[slide_index].0];
-                                str_duration = format!("{}", record_duration);
+                                str_offset = format!("{}ms", &timestamps[slide_index].0);
+                                let offset = vec!["-ss", str_offset.as_str()];
+                                str_duration = format!(
+                                    "{}ms",
+                                    ((record_duration * 1000.0) as i32)
+                                        - &timestamps[slide_index].0
+                                );
                                 let duration: Vec<&str> = match &timestamps[slide_index].1 {
                                     Some(x) => vec!["-t", x],
                                     None => vec!["-t", str_duration.as_str()],
@@ -1079,7 +1082,7 @@ pub fn capsule_edition(
                             "-vcodec",
                             "libx264",
                             "-preset",
-                            "medium",
+                            "ultrafast",
                             "-tune",
                             "stillimage",
                             "-acodec",
@@ -1107,7 +1110,7 @@ pub fn capsule_edition(
         } //end for loop slides
     }
     // concat all generated pip videos
-    let file_name = format!("capsule.mp4");
+    let file_name = format!("capsule{}.mp4", capsule.id);
 
     let mut server_path = PathBuf::from(&user.username);
     let uuid = Uuid::new_v4();
