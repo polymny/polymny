@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
 import Status
@@ -15,12 +16,29 @@ import Ui.Ui as Ui
 import Webcam
 
 
-view : Core.Global -> Api.Session -> Edition.Model -> Element Core.Msg
+view : Core.Global -> Api.Session -> Edition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view global _ model =
-    Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
+    let
+        element =
+            model.details.capsule.capsuleEditionOptions
+                |> Maybe.withDefault Edition.defaultGosProductionChoices
+                |> productionForm Nothing
+                |> Ui.popup "Options d'édition de la capsule"
+
+        inFront =
+            if model.editCapsuleOptions then
+                Just element
+
+            else
+                Nothing
+    in
+    ( Element.row
+        [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
         [ Preparation.leftColumnView model.details (Just model.currentGos)
         , centerView global model
         ]
+    , inFront
+    )
 
 
 centerView : Core.Global -> Edition.Model -> Element Core.Msg
@@ -58,26 +76,80 @@ gosProductionView model gos =
 gosProductionChoicesView : Edition.Model -> Element Core.Msg
 gosProductionChoicesView model =
     let
+        gos : Maybe Api.Gos
+        gos =
+            List.head (List.drop model.currentGos model.details.structure)
+
+        gosProductionChoices : Maybe Api.CapsuleEditionOptions
+        gosProductionChoices =
+            case Maybe.map .production_choices gos of
+                Just (Just v) ->
+                    Just v
+
+                _ ->
+                    Nothing
+
+        productionChoices : Maybe Api.CapsuleEditionOptions
+        productionChoices =
+            case ( gosProductionChoices, model.details.capsule.capsuleEditionOptions ) of
+                ( Just a, _ ) ->
+                    Just a
+
+                ( _, Just a ) ->
+                    Just a
+
+                _ ->
+                    Nothing
+
         p : Api.CapsuleEditionOptions
         p =
-            let
-                stucture =
-                    List.head (List.drop model.currentGos model.details.structure)
+            Maybe.withDefault Edition.defaultGosProductionChoices productionChoices
 
-                production_choices =
-                    case stucture of
-                        Just x ->
-                            x.production_choices
+        useDefault : Bool
+        useDefault =
+            gosProductionChoices == Nothing
 
-                        Nothing ->
-                            Just Edition.defaultGosProductionChoices
-            in
-            case production_choices of
-                Just x ->
-                    x
+        useGlobalConfig =
+            Input.checkbox []
+                { onChange = Edition.GosUseDefaultChanged model.currentGos >> LoggedIn.EditionMsg >> Core.LoggedInMsg
+                , icon = Input.defaultCheckbox
+                , checked = useDefault
+                , label = Input.labelRight [] (Element.text "Utiliser les paramètres par défaut de la capsule")
+                }
 
-                Nothing ->
-                    Edition.defaultGosProductionChoices
+        editGlobalConfig =
+            Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Changer les paramètres par défaut"
+
+        header =
+            Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
+    in
+    Element.column
+        [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
+        [ header, useGlobalConfig, editGlobalConfig, productionForm (Just ( model.currentGos, useDefault )) p ]
+
+
+productionForm : Maybe ( Int, Bool ) -> Api.CapsuleEditionOptions -> Element Core.Msg
+productionForm currentGos p =
+    let
+        useDefault =
+            Maybe.map Tuple.second currentGos == Just True
+
+        msgIfNotDefault : (a -> Edition.Msg) -> (a -> Core.Msg)
+        msgIfNotDefault onEvent =
+            if useDefault then
+                \_ ->
+                    Core.Noop
+
+            else
+                \x ->
+                    Core.LoggedInMsg (LoggedIn.EditionMsg (onEvent x))
+
+        attr =
+            if useDefault then
+                [ Font.color Colors.grey ]
+
+            else
+                []
 
         withVideo =
             p.withVideo
@@ -88,12 +160,30 @@ gosProductionChoicesView model =
         webcamPosition =
             p.webcamPosition
 
+        videoFieldsAttributesTmp =
+            [ Element.padding 10
+            , Element.spacing 10
+            ]
+
+        videoFieldsAttributes =
+            if withVideo then
+                videoFieldsAttributesTmp
+
+            else
+                Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") :: videoFieldsAttributesTmp
+
         videoFields =
             [ Input.radio
-                [ Element.padding 10
-                , Element.spacing 10
-                ]
-                { onChange = Edition.GosWebcamSizeChanged model.currentGos
+                videoFieldsAttributes
+                { onChange =
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWebcamSizeChanged c
+
+                        _ ->
+                            Edition.WebcamSizeChanged
+                    )
+                        |> msgIfNotDefault
                 , selected = webcamSize
                 , label =
                     Input.labelAbove
@@ -109,10 +199,16 @@ gosProductionChoicesView model =
                     ]
                 }
             , Input.radio
-                [ Element.padding 10
-                , Element.spacing 10
-                ]
-                { onChange = Edition.GosWebcamPositionChanged model.currentGos
+                videoFieldsAttributes
+                { onChange =
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWebcamPositionChanged c
+
+                        _ ->
+                            Edition.WebcamPositionChanged
+                    )
+                        |> msgIfNotDefault
                 , selected = webcamPosition
                 , label =
                     Input.labelAbove
@@ -132,36 +228,33 @@ gosProductionChoicesView model =
 
         commmonFields =
             Input.checkbox []
-                { onChange = Edition.GosWithVideoChanged model.currentGos
+                { onChange =
+                    (case currentGos of
+                        Just ( c, _ ) ->
+                            Edition.GosWithVideoChanged c
+
+                        _ ->
+                            Edition.WithVideoChanged
+                    )
+                        |> msgIfNotDefault
                 , icon = Input.defaultCheckbox
                 , checked = withVideo
-                , label =
-                    Input.labelRight [] <|
-                        Element.text <|
-                            if withVideo then
-                                "L'audio et la vidéo seront utilisés"
-
-                            else
-                                "Seul l'audio sera utilisé"
+                , label = Input.labelRight [] (Element.text "Incruster la vidéo")
                 }
 
         fields =
-            if withVideo then
-                commmonFields :: videoFields
+            Element.column (Element.spacing 30 :: attr) (commmonFields :: videoFields)
+
+        exitButton =
+            if currentGos == Nothing then
+                Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Valider"
 
             else
-                [ commmonFields ]
-
-        header =
-            Element.row [ Element.centerX, Font.bold ] [ Element.text "Options d'édition de la vidéo" ]
-
-        form =
-            header :: fields
+                Element.none
     in
-    Element.map Core.LoggedInMsg <|
-        Element.map LoggedIn.EditionMsg <|
-            Element.column [ Element.alignLeft, Element.padding 10, Element.spacing 30 ]
-                form
+    Element.column
+        [ Element.width Element.fill, Element.padding 10, Element.spacing 30 ]
+        [ fields, exitButton ]
 
 
 gosPrevisualisation : Edition.Model -> Element Core.Msg
@@ -173,8 +266,11 @@ gosPrevisualisation model =
 
         productionChoices : Api.CapsuleEditionOptions
         productionChoices =
-            case Maybe.map .production_choices currentGos of
-                Just (Just c) ->
+            case ( Maybe.map .production_choices currentGos, model.details.capsule.capsuleEditionOptions ) of
+                ( Just (Just c), _ ) ->
+                    c
+
+                ( _, Just c ) ->
                     c
 
                 _ ->
@@ -255,7 +351,7 @@ bottomRow global model =
             Ui.primaryButton msg "Produire la vidéo"
 
         video =
-            case model.details.video of
+            case model.details.capsule.video of
                 Just x ->
                     Element.newTabLink
                         [ Font.color Colors.link
@@ -288,7 +384,7 @@ bottomRow global model =
             global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
 
         publishButton =
-            case ( model.details.capsule.published, model.details.video ) of
+            case ( model.details.capsule.published, model.details.capsule.video ) of
                 ( Api.NotPublished, Just _ ) ->
                     Ui.primaryButton (Just Edition.PublishVideo) "Publier la vidéo"
                         |> Element.map LoggedIn.EditionMsg

@@ -1,12 +1,14 @@
 //! This module contains all the routes related to slides.
 
-use std::fs::{self, create_dir, File};
+use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
+
+use serde_json::json as serde_json;
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
-use image::imageops::FilterType;
+use image::imageops::{resize, FilterType};
 use image::{self, ImageFormat};
 
 use rocket::http::ContentType;
@@ -24,8 +26,10 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
+use crate::db::capsule::GosStructure;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
+use crate::routes::capsule::format_capsule_data;
 use crate::schema::slides;
 use crate::{Database, Error, Result};
 
@@ -51,6 +55,128 @@ pub struct UpdateSlideForm {
 pub fn get_slide(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(slide))
+}
+
+/// The route to upload a new slide.
+#[put("/new-slide/<id>/<page>", data = "<data>")]
+pub fn new_slide(
+    config: State<Config>,
+    id: i32,
+    page: Option<i32>,
+    content_type: &ContentType,
+    db: Database,
+    user: User,
+    data: Data,
+) -> Result<JsonValue> {
+    let asset = upload_file(&config, &db, &user, id, content_type, data)?;
+    let slide = Slide::new(&db.0, asset.id, id, "")?;
+
+    let page = page.map(|x| x - 1);
+    let uuid = Uuid::new_v4();
+    let stem = Path::new(&asset.name)
+        .file_stem()
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    match (asset.asset_type.as_str(), page) {
+        ("application/pdf", Some(slide_pos_in_pdf)) => {
+            let temp_dir = tempdir()?;
+
+            let mut output_path = config.data_path.clone();
+            output_path.push(asset.asset_path);
+
+            let ret_path =
+                command::export_slides(&output_path, temp_dir.path(), Some(slide_pos_in_pdf))?;
+
+            let slide_name = format!("{}__{}.png", stem, slide_pos_in_pdf);
+            let path_dest: PathBuf = [
+                &user.username,
+                "extract",
+                &format!("{}_{}", uuid, slide_name),
+            ]
+            .iter()
+            .collect();
+
+            let slide_asset = Asset::new(
+                &db,
+                uuid,
+                &slide_name,
+                path_dest.to_str().unwrap(),
+                Some("image/png"),
+            )?;
+
+            let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
+            create_dir(full_dest_path.parent().unwrap()).ok();
+            fs::copy(ret_path, &full_dest_path)?;
+            use crate::schema::slides::dsl;
+            diesel::update(slides::table)
+                .filter(dsl::id.eq(slide.id))
+                .set(dsl::asset_id.eq(slide_asset.id))
+                .execute(&db.0)?;
+        }
+        ("application/pdf", None) => todo!("bad request"),
+        _ => {
+            let img_path: PathBuf = [config.data_path.clone(), PathBuf::from(asset.asset_path)]
+                .iter()
+                .collect();
+            let img = image::open(img_path).unwrap();
+
+            let buffer = resize(&img, 1920, 1080, FilterType::Nearest);
+
+            let slide_name = format!("{}__{}_resized.png", stem, 1);
+            let path_dest: PathBuf = [
+                &user.username,
+                "extract",
+                &format!("{}_{}", uuid, slide_name),
+            ]
+            .iter()
+            .collect();
+            let slide_asset = Asset::new(
+                &db,
+                uuid,
+                &slide_name,
+                path_dest.to_str().unwrap(),
+                Some("image/png"),
+            )?;
+
+            let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
+            create_dir(full_dest_path.parent().unwrap()).ok();
+
+            buffer
+                .save_with_format(full_dest_path, ImageFormat::Png)
+                .unwrap();
+
+            use crate::schema::slides::dsl;
+            diesel::update(slides::table)
+                .filter(dsl::id.eq(slide.id))
+                .set(dsl::asset_id.eq(slide_asset.id))
+                .execute(&db.0)?;
+        }
+    }
+
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let mut structure = capsule.structure()?;
+    structure.insert(
+        0,
+        GosStructure {
+            slides: vec![slide.id],
+            transitions: vec![],
+            record_path: None,
+            background_path: None,
+            locked: false,
+            production_choices: None,
+        },
+    );
+
+    use crate::schema::capsules::dsl;
+    diesel::update(crate::schema::capsules::table)
+        .filter(dsl::id.eq(id))
+        .set(dsl::structure.eq(serde_json!(structure)))
+        .execute(&db.0)?;
+
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    format_capsule_data(&db, &capsule)
 }
 
 /// The route to get a asset.
@@ -258,19 +384,20 @@ pub fn delete_resource(db: Database, user: User, id: i32) -> Result<JsonValue> {
 }
 
 /// Replace slide
-#[post("/slide/<id>/replace", data = "<data>")]
+#[post("/slide/<id>/replace/<page>", data = "<data>")]
 pub fn replace_slide(
     config: State<Config>,
     db: Database,
     user: User,
     content_type: &ContentType,
     id: i32,
+    page: Option<i32>,
     data: Data,
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
 
-    let slide_pos_in_pdf = 0;
+    let page = page.map(|x| x - 1);
     let uuid = Uuid::new_v4();
     let stem = Path::new(&asset.name)
         .file_stem()
@@ -278,8 +405,8 @@ pub fn replace_slide(
         .to_str()
         .unwrap();
 
-    match asset.asset_type.as_str() {
-        "application/pdf" => {
+    match (asset.asset_type.as_str(), page) {
+        ("application/pdf", Some(slide_pos_in_pdf)) => {
             let temp_dir = tempdir()?;
 
             let mut output_path = config.data_path.clone();
@@ -314,15 +441,16 @@ pub fn replace_slide(
                 .set(dsl::asset_id.eq(slide_asset.id))
                 .execute(&db.0)?;
         }
+        ("application/pdf", None) => todo!("bad request"),
         _ => {
             let img_path: PathBuf = [config.data_path.clone(), PathBuf::from(asset.asset_path)]
                 .iter()
                 .collect();
             let img = image::open(img_path).unwrap();
 
-            let buffer = img.resize(1920, 1080, FilterType::Nearest);
+            let buffer = resize(&img, 1920, 1080, FilterType::Nearest);
 
-            let slide_name = format!("{}__{}_resized.png", stem, slide_pos_in_pdf);
+            let slide_name = format!("{}__{}_resized.png", stem, 1);
             let path_dest: PathBuf = [
                 &user.username,
                 "extract",
@@ -341,8 +469,9 @@ pub fn replace_slide(
             let full_dest_path: PathBuf = [config.data_path.clone(), path_dest].iter().collect();
             create_dir(full_dest_path.parent().unwrap()).ok();
 
-            let mut output = File::create(full_dest_path).unwrap();
-            buffer.write_to(&mut output, ImageFormat::Png).unwrap();
+            buffer
+                .save_with_format(full_dest_path, ImageFormat::Png)
+                .unwrap();
 
             use crate::schema::slides::dsl;
             diesel::update(slides::table)

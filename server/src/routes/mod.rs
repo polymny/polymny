@@ -41,7 +41,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
             let slides = capsule.get_slides(&db)?;
             let background = capsule.get_background(&db)?;
             let logo = capsule.get_logo(&db)?;
-            let video = capsule.get_video(&db)?;
+            let capsule = capsule.with_video(&db)?;
 
             user_and_projects
                 .map(|(user, projects)| {
@@ -58,7 +58,6 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                         "logo":        logo,
                         "active_project":"",
                         "structure":   capsule.structure,
-                        "video": video,
                         "with_video": edition_options.with_video,
                         "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                         "webcam_position": webcam_position_to_str(edition_options.webcam_position),
@@ -87,7 +86,11 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
 fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
         let project = user.get_project_by_id(id, &db)?;
-        let capsules = project.get_capsules(&db)?;
+        let capsules = project
+            .get_capsules(&db)?
+            .into_iter()
+            .map(|x| x.with_video(&db))
+            .collect::<Result<Vec<_>>>()?;
         let projects = user.projects(&db)?;
         Some((user, project, capsules, projects))
     } else {

@@ -21,12 +21,15 @@ module Api exposing
     , decodeProject
     , decodeProjectWithCapsules
     , decodeSession
+    , deleteCapsule
+    , deleteProject
     , detailsSortSlides
     , editionAuto
     , encodeSlideStructure
     , encodeSlideStructureFromInts
     , forgotPassword
     , get
+    , insertSlide
     , logOut
     , login
     , newCapsule
@@ -44,6 +47,7 @@ module Api exposing
     , slideUploadExtraResource
     , testDatabase
     , testMailer
+    , updateCapsuleOptions
     , updateOptions
     , updateSlide
     , updateSlideStructure
@@ -62,10 +66,10 @@ import Webcam
 -- Helper for request
 
 
-get : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-get { url, body, expect } =
+requestWithMethod : String -> { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+requestWithMethod method { url, body, expect } =
     Http.request
-        { method = "GET"
+        { method = method
         , headers = [ Http.header "Accept" "application/json" ]
         , url = url
         , body = body
@@ -73,32 +77,26 @@ get { url, body, expect } =
         , timeout = Nothing
         , tracker = Nothing
         }
+
+
+get : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+get =
+    requestWithMethod "GET"
 
 
 post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-post { url, body, expect } =
-    Http.request
-        { method = "POST"
-        , headers = [ Http.header "Accept" "application/json" ]
-        , url = url
-        , body = body
-        , expect = expect
-        , timeout = Nothing
-        , tracker = Nothing
-        }
+post =
+    requestWithMethod "POST"
 
 
 put : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
-put { url, body, expect } =
-    Http.request
-        { method = "PUT"
-        , headers = [ Http.header "Accept" "application/json" ]
-        , url = url
-        , body = body
-        , expect = expect
-        , timeout = Nothing
-        , tracker = Nothing
-        }
+put =
+    requestWithMethod "PUT"
+
+
+delete : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
+delete =
+    requestWithMethod "DELETE"
 
 
 
@@ -208,18 +206,20 @@ type alias Capsule =
     , description : String
     , published : PublishedType
     , capsuleEditionOptions : Maybe CapsuleEditionOptions
+    , video : Maybe Asset
     }
 
 
 decodeCapsule : Decoder Capsule
 decodeCapsule =
-    Decode.map6 Capsule
+    Decode.map7 Capsule
         (Decode.field "id" Decode.int)
         (Decode.field "name" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "description" Decode.string)
         (Decode.field "published" decodePublished)
         (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
+        (Decode.field "video" (Decode.maybe decodeAsset))
 
 
 decodeCapsules : Decoder (List Capsule)
@@ -351,7 +351,6 @@ type alias InnerCapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List InnerGos
-    , video : Maybe Asset
     }
 
 
@@ -363,7 +362,6 @@ type alias CapsuleDetails =
     , background : Maybe Asset
     , logo : Maybe Asset
     , structure : List Gos
-    , video : Maybe Asset
     }
 
 
@@ -406,7 +404,6 @@ toCapsuleDetails innerDetails =
     , background = innerDetails.background
     , logo = innerDetails.logo
     , structure = List.map (toGos (slidesAsDict innerDetails.slides)) innerDetails.structure
-    , video = innerDetails.video
     }
 
 
@@ -414,7 +411,7 @@ decodeCapsuleDetails : Decoder CapsuleDetails
 decodeCapsuleDetails =
     let
         innerDecoder =
-            Decode.map8 InnerCapsuleDetails
+            Decode.map7 InnerCapsuleDetails
                 (Decode.field "capsule" decodeCapsule)
                 (Decode.field "slides" (Decode.list decodeSlide))
                 (Decode.field "projects" (Decode.list (decodeProject [])))
@@ -422,7 +419,6 @@ decodeCapsuleDetails =
                 (Decode.field "background" (Decode.maybe decodeAsset))
                 (Decode.field "logo" (Decode.maybe decodeAsset))
                 (Decode.field "structure" (Decode.list decodeInnerGos))
-                (Decode.field "video" (Decode.maybe decodeAsset))
     in
     Decode.map toCapsuleDetails innerDecoder
 
@@ -755,6 +751,15 @@ encodeEditionAutoContent { withVideo, webcamSize, webcamPosition } =
         ]
 
 
+updateCapsuleOptions : (Result Http.Error () -> msg) -> Int -> EditionAutoContent a -> Cmd msg
+updateCapsuleOptions resultToMsg id content =
+    post
+        { url = "/api/capsule/" ++ String.fromInt id ++ "/options"
+        , expect = Http.expectWhatever resultToMsg
+        , body = Http.jsonBody (encodeEditionAutoContent content)
+        }
+
+
 editionAuto : (Result Http.Error CapsuleDetails -> msg) -> Int -> EditionAutoContent a -> CapsuleDetails -> Cmd msg
 editionAuto resultToMsg id content details =
     post
@@ -788,10 +793,19 @@ slideDeleteExtraResource resultToMsg id =
         }
 
 
-slideReplace : (Result Http.Error Slide -> msg) -> Int -> File.File -> Cmd msg
-slideReplace resultToMsg id content =
+insertSlide : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Maybe Int -> Cmd msg
+insertSlide resultToMsg capsuleId file page =
+    put
+        { url = "/api/new-slide/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt (Maybe.withDefault 0 page)
+        , expect = Http.expectJson resultToMsg decodeCapsuleDetails
+        , body = Http.multipartBody [ Http.filePart "file" file ]
+        }
+
+
+slideReplace : (Result Http.Error Slide -> msg) -> Int -> File.File -> Maybe Int -> Cmd msg
+slideReplace resultToMsg id content page =
     post
-        { url = "/api/slide/" ++ String.fromInt id ++ "/replace"
+        { url = "/api/slide/" ++ String.fromInt id ++ "/replace/" ++ Maybe.withDefault "0" (Maybe.map String.fromInt page)
         , expect = Http.expectJson resultToMsg decodeSlide
         , body = Http.multipartBody [ Http.filePart "file" content ]
         }
@@ -937,6 +951,21 @@ updateOptions resultToMsg content =
         , timeout = Nothing
         , tracker = Nothing
         }
+
+
+deleteCapsule : (Result Http.Error () -> msg) -> Int -> Cmd msg
+deleteCapsule resultToMsg capsuleId =
+    delete
+        { url = "/api/capsule/" ++ String.fromInt capsuleId
+        , body = Http.emptyBody
+        , expect = Http.expectWhatever resultToMsg
+        }
+
+
+deleteProject : (Result Http.Error () -> msg) -> Project -> Cmd msg
+deleteProject resultToMsg project =
+    Cmd.batch
+        (List.map (.id >> deleteCapsule resultToMsg) project.capsules)
 
 
 

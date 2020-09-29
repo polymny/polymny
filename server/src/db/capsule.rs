@@ -9,13 +9,15 @@ use crate::db::asset::Asset;
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
+use crate::webcam::{
+    str_to_webcam_position, str_to_webcam_size, ProductionChoices, WebcamPosition, WebcamSize,
+};
 use crate::Result;
 
 #[allow(missing_docs)]
 mod published_type {
     /// The different published states possible.
-    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize)]
+    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize, Copy, Clone)]
     pub enum PublishedType {
         /// Not published at all.
         NotPublished,
@@ -89,6 +91,111 @@ pub struct Capsule {
 
     /// Whether the capsule is active or not.
     pub active: bool,
+}
+
+/// The capsule with the video as an asset.
+#[derive(PartialEq, Debug, Serialize)]
+pub struct CapsuleWithVideo {
+    /// The id of the capsule.
+    pub id: i32,
+
+    /// The (unique) name of the capsule.
+    pub name: String,
+
+    /// The title the capsule.
+    pub title: String,
+
+    /// Reference to slide show in asset table
+    pub slide_show_id: Option<i32>,
+
+    /// The description of the capsule.
+    pub description: String,
+
+    /// Reference to capsule backgound image
+    pub background_id: Option<i32>,
+
+    /// Reference to capsule logo
+    pub logo_id: Option<i32>,
+
+    /// Reference to generated video for this capsule
+    pub video: Option<Asset>,
+
+    /// The structure of the capsule.
+    ///
+    /// This json should be of the form
+    /// ```
+    /// [ {
+    ///     record_path: Option<String>,
+    ///     background_path: Option<String>,
+    ///     slides: Vec<i32>,
+    ///     locked: bool,
+    /// } ]
+    /// ```
+    pub structure: Json,
+
+    /// Whether the capsule video is published.
+    pub published: PublishedType,
+
+    /// The structure of the editions options.
+    ///
+    /// This json should be of the form
+    /// ```
+    ///  {
+    ///     with_video: bool,
+    ///     webcam_size:  WebcamSize,
+    ///     webcam_position: WebcamPosition,
+    ///  ]
+    /// ```
+    pub edition_options: Json,
+
+    /// Whether the capsule is active or not.
+    pub active: bool,
+}
+
+/// The structure of a gos.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GosStructure {
+    /// The ids of the slides of the gos.
+    pub slides: Vec<i32>,
+
+    /// The moments when the user went to the next slides, in milliseconds.
+    pub transitions: Vec<i32>,
+
+    /// The path to the record if any.
+    pub record_path: Option<String>,
+
+    /// The path to the background image if any.
+    pub background_path: Option<String>,
+
+    /// Whether the gos is locked or not.
+    pub locked: bool,
+
+    /// Production option
+    pub production_choices: Option<ApiProductionChoices>,
+}
+
+/// Production choices for video Generation
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ApiProductionChoices {
+    /// Video and audio or audio only
+    pub with_video: Option<bool>,
+
+    /// Webcam size
+    pub webcam_size: Option<WebcamSize>,
+
+    /// Webcam  Position
+    pub webcam_position: Option<WebcamPosition>,
+}
+
+impl ApiProductionChoices {
+    /// Convert received production choices
+    pub fn to_edition_options(&self) -> ProductionChoices {
+        ProductionChoices {
+            with_video: self.with_video.unwrap_or(true),
+            webcam_size: self.webcam_size.unwrap_or_default(),
+            webcam_position: self.webcam_position.unwrap_or_default(),
+        }
+    }
 }
 
 /// A capsule that isn't stored into the database yet.
@@ -188,6 +295,12 @@ impl Capsule {
         }
         Ok(capsule)
     }
+
+    /// Retrieves the structure of the capsule.
+    pub fn structure(&self) -> Result<Vec<GosStructure>> {
+        Ok(serde_json::from_value(self.structure.clone()).unwrap())
+    }
+
     /// Creates a new capsule.
     pub fn create(
         name: &str,
@@ -211,6 +324,25 @@ impl Capsule {
         })
     }
 
+    /// Adds the video to the capsule.
+    pub fn with_video(&self, db: &PgConnection) -> Result<CapsuleWithVideo> {
+        let v = self.get_video(&db)?;
+        Ok(CapsuleWithVideo {
+            id: self.id,
+            name: self.name.clone(),
+            title: self.title.clone(),
+            slide_show_id: self.slide_show_id,
+            description: self.description.clone(),
+            background_id: self.background_id,
+            logo_id: self.logo_id,
+            video: v,
+            structure: self.structure.clone(),
+            published: self.published,
+            edition_options: self.edition_options.clone(),
+            active: self.active,
+        })
+    }
+
     /// Gets a capsule from its id.
     pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Capsule> {
         use crate::schema::capsules::dsl;
@@ -228,7 +360,6 @@ impl Capsule {
     /// get the projects associated to a user
     pub fn get_projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        println!("cap_p =  {:#?}", cap_p);
         Ok(cap_p
             .into_iter()
             .map(|x| Project::get_by_id(x.project_id, &db).map(|x| x.to_project()))
@@ -241,7 +372,6 @@ impl Capsule {
         db: &PgConnection,
     ) -> Result<Vec<ProjectWithCapsules>> {
         let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        println!("cap_p =  {:#?}", cap_p);
         Ok(cap_p
             .into_iter()
             .map(|x| Project::get_by_id(x.project_id, &db).unwrap())

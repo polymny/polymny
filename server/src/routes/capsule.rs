@@ -25,12 +25,11 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::{Capsule, PublishedType};
+use crate::db::capsule::{ApiProductionChoices, Capsule, GosStructure, PublishedType};
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
-use crate::webcam::{ProductionChoices, WebcamPosition, WebcamSize};
 use crate::{Database, Error, Result};
 
 /// A struct that serves the purpose of veryifing the form.
@@ -85,55 +84,9 @@ pub struct UpdateCapsuleForm {
     pub video_id: Option<Option<i32>>,
 }
 
-/// Production choices for video Generation
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ApiProductionChoices {
-    /// Video and audio or audio only
-    pub with_video: Option<bool>,
-
-    /// Webcam size
-    pub webcam_size: Option<WebcamSize>,
-
-    /// Webcam  Position
-    pub webcam_position: Option<WebcamPosition>,
-}
-
-impl ApiProductionChoices {
-    /// Convert received production choices
-    pub fn to_edition_options(&self) -> ProductionChoices {
-        ProductionChoices {
-            with_video: self.with_video.unwrap_or(true),
-            webcam_size: self.webcam_size.unwrap_or_default(),
-            webcam_position: self.webcam_position.unwrap_or_default(),
-        }
-    }
-}
-
-/// The structure of a gos.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GosStructure {
-    /// The ids of the slides of the gos.
-    pub slides: Vec<i32>,
-
-    /// The moments when the user went to the next slides, in milliseconds.
-    pub transitions: Vec<i32>,
-
-    /// The path to the record if any.
-    pub record_path: Option<String>,
-
-    /// The path to the background image if any.
-    pub background_path: Option<String>,
-
-    /// Whether the gos is locked or not.
-    pub locked: bool,
-
-    /// Production option
-    pub production_choices: Option<ApiProductionChoices>,
-}
-
 /// internal function for data format
 pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue> {
-    Ok(json!({ "capsule":     capsule,
+    Ok(json!({ "capsule":     capsule.with_video(&db)?,
                "slide_show":  capsule.get_slide_show(&db)?,
                "slides":      capsule.get_slides(&db)? ,
                "projects":    capsule.get_projects(&db)?,
@@ -149,7 +102,7 @@ pub fn format_capsule_data(db: &Database, capsule: &Capsule) -> Result<JsonValue
 pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> Result<JsonValue> {
     user.get_project_by_id(capsule.project_id, &db)?;
 
-    let capsule = Capsule::new(
+    Ok(json!(Capsule::new(
         &db,
         &capsule.name,
         &capsule.title,
@@ -158,9 +111,8 @@ pub fn new_capsule(db: Database, user: User, capsule: Json<NewCapsuleForm>) -> R
         capsule.background_id,
         capsule.logo_id,
         Some(Project::get_by_id(capsule.project_id, &db).map(|x| x.to_project())?),
-    )?;
-
-    Ok(json!(capsule))
+    )?
+    .with_video(&db)?))
 }
 
 /// The route to get a capsule.
@@ -197,8 +149,13 @@ pub fn update_capsule(
 /// Delete a capsule
 #[delete("/capsule/<id>")]
 pub fn delete_capsule(db: Database, user: User, id: i32) -> Result<JsonValue> {
-    let capsule = user.get_capsule_by_id(id, &db)?;
-    Ok(json!({"nb capsules deleted": capsule.delete(&db)?}))
+    user.get_capsule_by_id(id, &db)?;
+    use crate::schema::capsules::dsl;
+    let result = diesel::update(capsules::table)
+        .filter(dsl::id.eq(id))
+        .set(dsl::active.eq(false))
+        .execute(&db.0)?;
+    Ok(json!({ "nb capsules deleted": result }))
 }
 
 /// Upload a presentation (slides)
@@ -264,6 +221,7 @@ pub fn upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
+
                     command::export_slides(&output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
@@ -724,6 +682,26 @@ pub fn validate_capsule(
     format_capsule_data(&db, &user.get_capsule_by_id(capsule_id, &db)?)
 }
 
+/// Route to update the capsule production choices.
+#[post("/capsule/<id>/options", data = "<data>")]
+pub fn capsule_options(
+    db: Database,
+    user: User,
+    id: i32,
+    data: Json<ApiProductionChoices>,
+) -> Result<()> {
+    let capsule = user.get_capsule_by_id(id, &db)?;
+    let capsule_production_choices = data.into_inner().to_edition_options();
+
+    use crate::schema::capsules::dsl;
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::edition_options.eq(serde_json!(capsule_production_choices)))
+        .execute(&db.0)?;
+
+    Ok(())
+}
+
 /// Posted data for capsule edition
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PostCapsuleEdition {
@@ -781,8 +759,15 @@ pub fn capsule_edition(
     let capsule = user.get_capsule_by_id(id, &db)?;
 
     let capsule_production_choices = data.capsule_production_choices.to_edition_options();
-    let dir = tempdir()?;
-    let pip_path = dir.path().join(format!("pipList_{}.txt", capsule.id));
+
+    let mut workdir = config.data_path.clone();
+    workdir.push(PathBuf::from(&user.username));
+    workdir.push("tmp");
+    create_dir(&workdir).ok();
+    workdir.push(format!("capsule{}", capsule.id));
+    info!("capsule workdir = {:#?}", workdir);
+    create_dir(&workdir).ok();
+    let pip_path = workdir.join(format!("pipList_{}.txt", capsule.id));
     let mut pip_file = File::create(&pip_path)?;
 
     let capsule_structure: Vec<GosStructure> = serde_json::from_value(capsule.structure).unwrap();
@@ -799,11 +784,37 @@ pub fn capsule_edition(
 
     for (gos_index, gos) in capsule_structure.into_iter().enumerate() {
         // GoS iteration
+        let mut fake_records = vec![false; gos.slides.len()];
+        let timestamps: Vec<(String, Option<String>)>;
 
+        let mut record = config.data_path.clone();
+        let transcoded_record = match &gos.record_path {
+            Some(blob) => {
+                let path = workdir.join(format!("record{}_g{:03}.mp4", capsule.id, gos_index));
+                record.push(blob);
+                let blob_duration = command::transcode_blob(&record, &path)?;
+                info!("blob transcoded : {:#?} ( {:#?}s)", path, blob_duration);
+
+                Some((path, blob_duration))
+            }
+            _ => None,
+        };
         //TODO for robustness : check gos.transitions  == gos.slides -1
         //if not raise inconsitenscy error
         // Slide timestamps (duration, offset) of each slides accorfing user transitions
-        let timestamps: Vec<(String, Option<String>)> = {
+        if let Some(_) = gos.record_path {
+            if (gos.transitions.len() + 1) < gos.slides.len() {
+                for index in (gos.transitions.len() + 1)..gos.slides.len() {
+                    fake_records[index] = true;
+                }
+            } else if (gos.transitions.len() + 1) > gos.slides.len() {
+                // Toom many trasnsition cannot edit video
+                error!(" Too many transtion for this GOS. Cannot generate video");
+                return Err(Error::TranscodeError);
+            }
+        }
+
+        timestamps = {
             let mut input = Vec::new();
             input.push(0);
             input.extend(gos.transitions.iter().copied());
@@ -829,8 +840,10 @@ pub fn capsule_edition(
         };
 
         for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
+            // Slide in GoS iteration
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
+            record = config.data_path.clone();
             match slide.extra {
                 Some(asset) => {
                     info!(
@@ -848,21 +861,26 @@ pub fn capsule_edition(
 
                     let mut slide_path = config.data_path.clone();
                     slide_path.push(slide.asset.asset_path);
-                    let pip_out = dir.path().join(format!(
+                    let pip_out = workdir.join(format!(
                         "pip{}_g{:03}_s{:03}.mp4",
                         capsule.id, gos_index, slide_index
                     ));
+                    let audio_file = workdir.join(format!(
+                        "audio{}_g{:03}_s{:03}.wav",
+                        capsule.id, gos_index, slide_index
+                    ));
+
                     let filter_complex = format!(
                         "[0] scale=1920:1080 [slide] ;[1]scale={}:-1 [pip]; [slide][pip] overlay={}",
                         production_choices.size_in_pixels(),
                         production_choices.position_in_pixels(),
                     );
-
-                    let mut record = config.data_path.clone();
-
-                    match (&gos.record_path, &gos.background_path) {
+                    let str_duration;
+                    match (&transcoded_record, &gos.background_path) {
                         // matting case
-                        (Some(record_path), Some(background_path)) if config.matting_enabled => {
+                        (Some((record_path, _)), Some(background_path))
+                            if config.matting_enabled =>
+                        {
                             // TODO timstamps( offset and  duration) to be computed for
                             // matting case
                             let mut record_clone = record.clone();
@@ -936,60 +954,85 @@ pub fn capsule_edition(
                         }
 
                         // video production with webcam records available
-                        (Some(record_path), _) => {
-                            let offset = vec!["-ss", &timestamps[slide_index].0];
-                            let duration: Option<Vec<&str>> = match &timestamps[slide_index].1 {
-                                Some(x) => Some(vec!["-t", x]),
-                                None => None,
-                            };
+                        (Some((record_path, record_duration)), _) => {
+                            if !fake_records[slide_index] {
+                                let offset = vec!["-ss", &timestamps[slide_index].0];
+                                str_duration = format!("{}", record_duration);
+                                let duration: Vec<&str> = match &timestamps[slide_index].1 {
+                                    Some(x) => vec!["-t", x],
+                                    None => vec!["-t", str_duration.as_str()],
+                                };
+                                record.push(record_path);
+                                //reencode input
 
-                            record.push(record_path);
+                                if production_choices.with_video {
+                                    ffmpeg_command.extend(
+                                        vec![
+                                            "ffmpeg",
+                                            "-hide_banner",
+                                            "-fflags",
+                                            "+genpts",
+                                            "-y",
+                                            "-i",
+                                            &slide_path.to_str().unwrap(),
+                                            "-i",
+                                            &record.to_str().unwrap(),
+                                        ]
+                                        .into_iter(),
+                                    );
 
-                            if production_choices.with_video {
-                                ffmpeg_command.extend(
-                                    vec![
-                                        "ffmpeg",
-                                        "-hide_banner",
-                                        "-y",
-                                        "-i",
-                                        &slide_path.to_str().unwrap(),
-                                        "-i",
-                                        &record.to_str().unwrap(),
-                                    ]
-                                    .into_iter(),
-                                );
+                                    ffmpeg_command.extend_from_slice(&offset);
+                                    ffmpeg_command.extend_from_slice(&duration);
 
-                                ffmpeg_command.extend_from_slice(&offset);
-                                if let Some(duration) = duration {
+                                    ffmpeg_command.extend(
+                                        vec!["-filter_complex", &filter_complex].into_iter(),
+                                    );
+                                } else {
+                                    //audio only
+                                    command::extract_audio(&record, &audio_file)?;
+
+                                    ffmpeg_command.extend(
+                                        vec![
+                                            "ffmpeg",
+                                            "-hide_banner",
+                                            "-y",
+                                            "-fflags",
+                                            "+genpts",
+                                            "-loop",
+                                            "1",
+                                            "-i",
+                                            &slide_path.to_str().unwrap(),
+                                            "-i",
+                                            &audio_file.to_str().unwrap(),
+                                        ]
+                                        .into_iter(),
+                                    );
+                                    ffmpeg_command.extend_from_slice(&offset);
                                     ffmpeg_command.extend_from_slice(&duration);
                                 }
-
-                                ffmpeg_command
-                                    .extend(vec!["-filter_complex", &filter_complex].into_iter());
                             } else {
+                                // generate slide only video due to missin records
                                 ffmpeg_command.extend(
                                     vec![
                                         "ffmpeg",
-                                        "-hide_banner",
                                         "-y",
+                                        "-hide_banner",
+                                        "-fflags",
+                                        "+genpts",
+                                        "-f",
+                                        "lavfi",
+                                        "-i",
+                                        "anullsrc=channel_layout=stereo:sample_rate=44100",
                                         "-loop",
                                         "1",
                                         "-i",
                                         &slide_path.to_str().unwrap(),
-                                        "-i",
-                                        &record.to_str().unwrap(),
-                                        "-map",
-                                        "0:v:0",
-                                        "-map",
-                                        "1:a:0",
+                                        "-t",
+                                        "3",
                                         "-shortest",
                                     ]
                                     .into_iter(),
                                 );
-                                ffmpeg_command.extend_from_slice(&offset);
-                                if let Some(duration) = duration {
-                                    ffmpeg_command.extend_from_slice(&duration);
-                                }
                             }
                         }
 
@@ -1000,6 +1043,8 @@ pub fn capsule_edition(
                                     "ffmpeg",
                                     "-y",
                                     "-hide_banner",
+                                    "-fflags",
+                                    "+genpts",
                                     "-f",
                                     "lavfi",
                                     "-i",
@@ -1027,8 +1072,8 @@ pub fn capsule_edition(
                             "3.1",
                             "-b:v",
                             "440k",
-                            "-ar",
-                            "44100",
+                            //"-ar",
+                            //"44100",
                             "-ab",
                             "128k",
                             "-vcodec",
@@ -1085,6 +1130,8 @@ pub fn capsule_edition(
         &pip_path.to_str().unwrap(),
         "-c",
         "copy",
+        "-movflags",
+        "+faststart",
         output,
     ];
 

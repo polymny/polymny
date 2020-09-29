@@ -13,6 +13,7 @@ import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
+import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
@@ -24,14 +25,14 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } =
+mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
     let
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
         msg =
-            Core.LoggedInMsg <| LoggedIn.EditionClicked details True
+            Core.LoggedInMsg <| LoggedIn.AcquisitionClicked details
 
         increaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
@@ -39,24 +40,25 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
         decreaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
-        autoEdition =
-            Ui.primaryButton (Just msg) "Edition automatique de la vidéo"
+        newSlideMsg =
+            Core.LoggedInMsg <|
+                LoggedIn.PreparationMsg <|
+                    Preparation.UploadExtraResourceMsg <|
+                        Preparation.UploadExtraResourceSelectFileRequested Nothing
 
-        projectName =
-            Maybe.withDefault "" <| Maybe.map .name (List.head details.projects)
+        autoEdition =
+            Ui.primaryButton (Just msg) "Filmer"
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
                 [ leftColumnView details Nothing
                 , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
-                        [ Element.row [ Element.width Element.fill ]
-                            [ Element.el [ Element.spacing 5, Element.padding 5, Element.alignLeft ] <| Element.text <| projectName ++ " :: " ++ details.capsule.name
-                            , Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                                [ Ui.primaryButton (Just increaseMsg) "-"
-                                , Element.text "Zoom"
-                                , Ui.primaryButton (Just decreaseMsg) "+"
-                                ]
+                        [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
+                            [ Ui.primaryButton (Just newSlideMsg) "Ajouter un nouveau slide"
+                            , Ui.primaryButton (Just increaseMsg) "-"
+                            , Element.text "Zoom"
+                            , Ui.primaryButton (Just decreaseMsg) "+"
                             ]
                         ]
                     , Element.el
@@ -80,23 +82,9 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                         )
                     ]
                 ]
-
-        centerElement element =
-            Element.column
-                [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
-                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ]
-                    (Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
-                        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                        ]
-                    )
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                ]
     in
-    case ( broken, editPrompt.visible ) of
-        ( Preparation.Broken _, _ ) ->
+    case ( broken, editPrompt.visible, uploadForms.extraResource.askForPage ) of
+        ( Preparation.Broken _, _, _ ) ->
             let
                 reject =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
@@ -105,13 +93,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.AcceptBroken))
 
                 element =
-                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
-                            (Element.el
-                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
-                                (Element.text "ATTENTION")
-                            )
-                        , Element.el
+                    Ui.popup "ATTENTION"
+                        (Element.el
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
@@ -121,11 +104,11 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                                 , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]
                                 ]
                             )
-                        ]
+                        )
             in
-            ( resultView, Just (centerElement element) )
+            ( resultView, Just element )
 
-        ( _, True ) ->
+        ( _, True, _ ) ->
             let
                 cancel =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptCloseDialog)))
@@ -140,13 +123,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                         |> Element.map Core.LoggedInMsg
 
                 element =
-                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
-                        [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
-                            (Element.el
-                                [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
-                                (Element.text "Prompteur")
-                            )
-                        , Element.el
+                    Ui.popup "Prompteur"
+                        (Element.el
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ promptModal
@@ -155,9 +133,97 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken } 
                                     [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
                                 ]
                             )
-                        ]
+                        )
             in
-            ( resultView, Just (centerElement element) )
+            ( resultView, Just element )
+
+        ( _, _, True ) ->
+            let
+                cancelMsg =
+                    Preparation.UploadExtraResourceCancel
+                        |> Preparation.UploadExtraResourceMsg
+                        |> LoggedIn.PreparationMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                validateMsg =
+                    Preparation.UploadExtraResourceValidate
+                        |> Preparation.UploadExtraResourceMsg
+                        |> LoggedIn.PreparationMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                element =
+                    Ui.popup "Remplacer un slide"
+                        (Element.column
+                            [ Element.width Element.fill
+                            , Element.height Element.fill
+                            , Element.spacing 10
+                            , Element.padding 10
+                            ]
+                            [ Input.text [ Element.centerY, Element.htmlAttribute (Html.Attributes.type_ "number") ]
+                                { label = Input.labelAbove [] (Element.text "Quel page du pdf voulez-vous utiliser ?")
+                                , onChange =
+                                    \x ->
+                                        case ( String.toInt x, x ) of
+                                            ( Just i, _ ) ->
+                                                Preparation.UploadExtraResourcePageChanged (Just i)
+                                                    |> Preparation.UploadExtraResourceMsg
+                                                    |> LoggedIn.PreparationMsg
+                                                    |> Core.LoggedInMsg
+
+                                            ( _, "" ) ->
+                                                Preparation.UploadExtraResourcePageChanged Nothing
+                                                    |> Preparation.UploadExtraResourceMsg
+                                                    |> LoggedIn.PreparationMsg
+                                                    |> Core.LoggedInMsg
+
+                                            _ ->
+                                                Core.Noop
+                                , placeholder = Nothing
+                                , text =
+                                    case uploadForms.extraResource.page of
+                                        Just i ->
+                                            String.fromInt i
+
+                                        _ ->
+                                            ""
+                                }
+                            , if uploadForms.extraResource.status == Status.Error () then
+                                Element.el [ Element.centerY ]
+                                    (Element.paragraph [ Font.color Colors.danger ]
+                                        [ Element.text "Une erreur est survenue, le numéro de la page est-il correct ?" ]
+                                    )
+
+                              else
+                                Element.none
+                            , Element.row [ Element.alignBottom, Element.alignRight, Element.spacing 10 ]
+                                (case uploadForms.extraResource.status of
+                                    Status.NotSent ->
+                                        [ Ui.simpleButton cancelMsg "Annuler"
+                                        , case uploadForms.extraResource.page of
+                                            Just _ ->
+                                                Ui.primaryButton validateMsg "Valider"
+
+                                            Nothing ->
+                                                Element.text "Entrez un numéro de slide"
+                                        ]
+
+                                    Status.Sent ->
+                                        [ Ui.spinner ]
+
+                                    Status.Success () ->
+                                        []
+
+                                    Status.Error () ->
+                                        [ Ui.simpleButton cancelMsg "Annuler"
+                                        , Ui.primaryButton validateMsg "Valider"
+                                        ]
+                                )
+                            ]
+                        )
+            in
+            ( resultView, Just element )
 
         _ ->
             ( resultView, Nothing )
@@ -477,21 +543,26 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                 gosIndex =
                     (index - 1) // 2
 
-                media =
+                ( media, deleteExtraMsg ) =
                     case slide.extra of
                         Just asset ->
-                            Element.html <|
-                                htmlVideo asset.asset_path
+                            ( Element.html (htmlVideo asset.asset_path)
+                            , Preparation.DeleteExtraResource slide.id
+                                |> Preparation.UploadExtraResourceMsg
+                                |> LoggedIn.PreparationMsg
+                                |> Core.LoggedInMsg
+                                |> Just
+                            )
 
                         Nothing ->
-                            viewSlideImage slide.asset.asset_path
+                            ( viewSlideImage slide.asset.asset_path, Nothing )
 
                 extraResourceMsg : Core.Msg
                 extraResourceMsg =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceSelectFileRequested slide.id
+                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id)
 
                 promptMsg : Core.Msg
                 promptMsg =
@@ -500,17 +571,22 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                             Preparation.EditPromptMsg <|
                                 Preparation.EditPromptOpenDialog slide.id slide.prompt
 
-                deleteExtraMsg : Core.Msg
-                deleteExtraMsg =
+                deleteMsg : Core.Msg
+                deleteMsg =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.SlideDelete gosIndex slide.id
 
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ Ui.imageButton (Just extraResourceMsg) "" "Ajouter une ressource externe"
+                        [ case deleteExtraMsg of
+                            Nothing ->
+                                Ui.imageButton (Just extraResourceMsg) "" "Remplacer le slide / ajouter une ressource externe"
+
+                            Just msg ->
+                                Ui.timesButton (Just msg) "" "Supprimer la ressource externe"
                         , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
-                        , Ui.trashButton (Just deleteExtraMsg) "" "Supprimer le slide"
+                        , Ui.trashButton (Just deleteMsg) "" "Supprimer le slide"
                         ]
             in
             Element.el

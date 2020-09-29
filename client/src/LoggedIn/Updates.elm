@@ -20,6 +20,7 @@ import Settings.Types as Settings
 import Settings.Updates as Settings
 import Status
 import Utils
+import Webcam
 
 
 flatten : ( a, ( b, c ) ) -> ( a, b, c )
@@ -77,13 +78,9 @@ update msg global { session, tab } =
             flatten ( global, Edition.update session editionMsg model )
 
         ( LoggedIn.EditionClicked capsule False, _ ) ->
-            let
-                editionModel =
-                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
-            in
             ( global
             , { session = session
-              , tab = LoggedIn.Edition editionModel
+              , tab = LoggedIn.Edition (Edition.init capsule)
               }
             , Nav.pushUrl global.key ("/capsule/" ++ String.fromInt capsule.capsule.id ++ "/edition")
             )
@@ -91,7 +88,10 @@ update msg global { session, tab } =
         ( LoggedIn.EditionClicked capsule True, _ ) ->
             let
                 editionModel =
-                    Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
+                    Edition.init capsule
+
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices capsule.capsule.capsuleEditionOptions
             in
             ( global
             , { session = session
@@ -99,9 +99,9 @@ update msg global { session, tab } =
               }
             , Api.editionAuto resultToMsg3
                 capsule.capsule.id
-                { withVideo = editionModel.withVideo
-                , webcamSize = editionModel.webcamSize
-                , webcamPosition = editionModel.webcamPosition
+                { withVideo = editionOptions.withVideo
+                , webcamSize = Maybe.withDefault Webcam.Medium editionOptions.webcamSize
+                , webcamPosition = Maybe.withDefault Webcam.BottomLeft editionOptions.webcamPosition
                 }
                 editionModel.details
             )
@@ -246,6 +246,72 @@ update msg global { session, tab } =
             ( global
             , LoggedIn.Model { session | projects = projects } (LoggedIn.Home { uploadForm | rename = Nothing })
             , cmd
+            )
+
+        ( LoggedIn.DeleteCapsule capsule, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteCapsule = Just capsule }), Cmd.none )
+
+        ( LoggedIn.ValidateDeleteCapsule, LoggedIn.Home uploadForm ) ->
+            case uploadForm.deleteCapsule of
+                Just c ->
+                    let
+                        updateProject : Api.Project -> Maybe Api.Project
+                        updateProject project =
+                            let
+                                capsules =
+                                    List.filter (\x -> x.id /= c.id) project.capsules
+                            in
+                            if List.length capsules == 0 then
+                                Nothing
+
+                            else
+                                Just { project | capsules = capsules }
+
+                        newProjects =
+                            List.filterMap updateProject session.projects
+
+                        newSession =
+                            { session | projects = newProjects }
+                    in
+                    ( global
+                    , LoggedIn.Model newSession (LoggedIn.Home { uploadForm | deleteCapsule = Nothing })
+                    , Api.deleteCapsule (\_ -> Core.Noop) c.id
+                    )
+
+                Nothing ->
+                    ( global, LoggedIn.Model session tab, Cmd.none )
+
+        ( LoggedIn.CancelDeleteCapsule, LoggedIn.Home uploadForm ) ->
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteCapsule = Nothing })
+            , Cmd.none
+            )
+
+        ( LoggedIn.DeleteProject project, LoggedIn.Home uploadForm ) ->
+            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteProject = Just project }), Cmd.none )
+
+        ( LoggedIn.ValidateDeleteProject, LoggedIn.Home uploadForm ) ->
+            case uploadForm.deleteProject of
+                Just p ->
+                    let
+                        newProjects =
+                            List.filter (\x -> x.id /= p.id) session.projects
+
+                        newSession =
+                            { session | projects = newProjects }
+                    in
+                    ( global
+                    , LoggedIn.Model newSession (LoggedIn.Home { uploadForm | deleteProject = Nothing })
+                    , Api.deleteProject (\_ -> Core.Noop) p
+                    )
+
+                Nothing ->
+                    ( global, LoggedIn.Model session tab, Cmd.none )
+
+        ( LoggedIn.CancelDeleteProject, LoggedIn.Home uploadForm ) ->
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { uploadForm | deleteProject = Nothing })
+            , Cmd.none
             )
 
         _ ->

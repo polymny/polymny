@@ -30,7 +30,7 @@ view global session tab =
         ( mainTab, popup ) =
             case tab of
                 LoggedIn.Home uploadForm ->
-                    ( homeView global session uploadForm, Nothing )
+                    homeView global session uploadForm
 
                 LoggedIn.Preparation preparationModel ->
                     Preparation.view global session preparationModel
@@ -39,7 +39,7 @@ view global session tab =
                     ( Acquisition.view global session acquisitionModel, Nothing )
 
                 LoggedIn.Edition editionModel ->
-                    ( Edition.view global session editionModel, Nothing )
+                    Edition.view global session editionModel
 
                 LoggedIn.Settings modelSettings ->
                     ( Settings.view global session modelSettings, Nothing )
@@ -65,22 +65,101 @@ view global session tab =
     )
 
 
-homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
+homeView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 homeView global session uploadForm =
     case uploadForm.status of
         Status.NotSent ->
-            Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                [ Element.el
-                    [ Element.width (Element.fillPortion 1)
-                    , Background.color Colors.grey
-                    , Element.height Element.fill
-                    ]
-                    (leftColumn global session uploadForm)
-                , projectsView global session uploadForm
-                ]
+            let
+                content =
+                    Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                        [ Element.el
+                            [ Element.width (Element.fillPortion 1)
+                            , Background.color Colors.grey
+                            , Element.height Element.fill
+                            ]
+                            (leftColumn global session uploadForm)
+                        , projectsView global session uploadForm
+                        ]
+
+                isCapsuleDeleted =
+                    case uploadForm.deleteCapsule of
+                        Just _ ->
+                            True
+
+                        _ ->
+                            False
+
+                validateMsg : Maybe Core.Msg
+                validateMsg =
+                    (if isCapsuleDeleted then
+                        LoggedIn.ValidateDeleteCapsule
+
+                     else
+                        LoggedIn.ValidateDeleteProject
+                    )
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                validateButton : Element Core.Msg
+                validateButton =
+                    Ui.primaryButton validateMsg
+                        (if isCapsuleDeleted then
+                            "Supprimer la capsule"
+
+                         else
+                            "Supprimer le projet"
+                        )
+
+                cancelMsg : Maybe Core.Msg
+                cancelMsg =
+                    (if isCapsuleDeleted then
+                        LoggedIn.CancelDeleteCapsule
+
+                     else
+                        LoggedIn.CancelDeleteProject
+                    )
+                        |> Core.LoggedInMsg
+                        |> Just
+
+                cancelButton : Element Core.Msg
+                cancelButton =
+                    Ui.simpleButton cancelMsg "Annuler"
+
+                popupContent : String -> Element Core.Msg
+                popupContent name =
+                    Element.column [ Element.height Element.fill, Element.width Element.fill ]
+                        [ Element.paragraph [ Element.centerY, Font.center ]
+                            [ Element.text
+                                (if isCapsuleDeleted then
+                                    "Vous êtes sur le point de supprimer la capsule "
+
+                                 else
+                                    "Vous êtes sur le point de supprimer le projet "
+                                )
+                            , Element.el [ Font.bold ] (Element.text name)
+                            , Element.text "."
+                            ]
+                        , Element.row [ Element.spacing 10, Element.padding 10, Element.alignBottom, Element.alignRight ]
+                            [ cancelButton
+                            , validateButton
+                            ]
+                        ]
+
+                popup =
+                    case ( uploadForm.deleteCapsule, uploadForm.deleteProject ) of
+                        ( Just capsule, _ ) ->
+                            Just (Ui.popup "Supprimer une capsule" (popupContent capsule.name))
+
+                        ( _, Just project ) ->
+                            Just (Ui.popup "Supprimer un projet" (popupContent project.name))
+
+                        _ ->
+                            Nothing
+            in
+            ( content, popup )
 
         _ ->
-            prePreparationView global session uploadForm
+            ( prePreparationView global session uploadForm, Nothing )
 
 
 prePreparationView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
@@ -298,7 +377,7 @@ leftColumn _ _ _ =
 
 
 capsuleView : Core.Global -> Api.Project -> Maybe LoggedIn.Rename -> Api.Capsule -> Element Core.Msg
-capsuleView _ project rename capsule =
+capsuleView global project rename capsule =
     let
         title =
             let
@@ -330,11 +409,54 @@ capsuleView _ project rename capsule =
 
                 _ ->
                     default
+
+        pen =
+            LoggedIn.RenameCapsule ( project.id, capsule.id, capsule.name )
+                |> LoggedIn.RenameMsg
+                |> Core.LoggedInMsg
+                |> Just
+                |> (\x -> Ui.penButton x "" "Renommer la capsule")
+
+        trash =
+            LoggedIn.DeleteCapsule capsule
+                |> Core.LoggedInMsg
+                |> Just
+                |> (\x -> Ui.trashButton x "" "Supprimer la capsule")
+
+        videoUrl : Api.Asset -> String
+        videoUrl asset =
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
+        link =
+            case ( capsule.video, capsule.published ) of
+                ( Just v, Api.Published ) ->
+                    Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                        { url = videoUrl v, label = Element.text "Voir la vidéo publiée" }
+
+                ( Just v, _ ) ->
+                    Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                        { url = v.asset_path, label = Element.text "Voir la vidéo produite" }
+
+                _ ->
+                    Element.none
+
+        copy =
+            case ( capsule.video, capsule.published ) of
+                ( Just v, Api.Published ) ->
+                    Edition.CopyUrl (videoUrl v)
+                        |> LoggedIn.EditionMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+                        |> (\x -> Ui.chainButton x "" "Copier l'url de la video")
+
+                _ ->
+                    Element.none
+
+        video =
+            Element.row [ Element.spacing 10 ] [ link, copy ]
     in
     Element.row [ Element.width Element.fill, Element.spacing 10 ]
-        [ title
-        , Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameCapsule ( project.id, capsule.id, capsule.name ))))) "" "Renommer la capsule"
-        ]
+        [ title, pen, trash, video ]
 
 
 projectView : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
@@ -390,23 +512,59 @@ projectView global ( project, even, edited ) =
                     _ ->
                         default
 
+            renameMsg =
+                LoggedIn.RenameProject ( project.id, project.name )
+                    |> LoggedIn.RenameMsg
+                    |> Core.LoggedInMsg
+                    |> Just
+
             rename =
-                Ui.penButton (Just (Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, project.name ))))) "" "Renommer le projet"
+                Ui.penButton renameMsg "" "Renommer le projet"
 
-            numberOfCapsules =
+            deleteMsg =
+                LoggedIn.DeleteProject project
+                    |> Core.LoggedInMsg
+                    |> Just
+
+            delete =
+                Ui.trashButton deleteMsg "" "Supprimer le projet"
+
+            extraInfo =
                 let
-                    l =
-                        List.length project.capsules
-
-                    plural =
-                        if l < 2 then
+                    plural : Int -> String
+                    plural n =
+                        if n < 2 then
                             ""
 
                         else
                             "s"
+
+                    capsules =
+                        List.length project.capsules
+
+                    capsulesEdited =
+                        project.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
+
+                    capsulesPublished =
+                        project.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
                 in
                 Element.el [ Font.italic ]
-                    (Element.text ("(" ++ String.fromInt l ++ " capsule" ++ plural ++ ")"))
+                    (Element.text
+                        ("("
+                            ++ String.fromInt capsules
+                            ++ " capsule"
+                            ++ plural capsules
+                            ++ ", "
+                            ++ String.fromInt capsulesEdited
+                            ++ " produite"
+                            ++ plural capsulesEdited
+                            ++ ", "
+                            ++ String.fromInt capsulesPublished
+                            ++ " publiée"
+                            ++ plural capsulesPublished
+                            ++ ")"
+                        )
+                    )
 
             created =
                 Element.text ("crée le " ++ TimeUtils.timeToString global.zone project.lastVisited)
@@ -415,7 +573,8 @@ projectView global ( project, even, edited ) =
                 Element.row [ Element.spacing 10, Element.width Element.fill ]
                     [ title
                     , rename
-                    , numberOfCapsules
+                    , delete
+                    , extraInfo
                     , Element.el [ Element.width Element.fill ] Element.none
                     , created
                     ]
@@ -436,18 +595,52 @@ projectView global ( project, even, edited ) =
 
 projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 projectsView global session uploadForm =
-    Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
-        (List.map (projectView global)
-            (List.indexedMap
-                (\i x ->
-                    ( x
-                    , modBy 2 i == 0
-                    , uploadForm.rename
-                    )
-                )
-                (List.sortBy (\x -> -x.lastVisited) session.projects)
+    if List.length session.projects == 0 then
+        let
+            msg =
+                LoggedIn.UploadSlideShowSelectFileRequested
+                    |> LoggedIn.UploadSlideShowMsg
+                    |> Core.LoggedInMsg
+                    |> Just
+
+            content =
+                Element.column [ Element.width Element.fill, Element.spacing 30 ]
+                    [ Element.el [ Font.bold, Element.centerX ] (Element.text "Bienvenue sur polymny")
+                    , Element.paragraph [ Element.width Element.fill ]
+                        [ Element.text "Vous n'avez encore aucun projet."
+                        ]
+                    , Element.paragraph
+                        [ Element.width Element.fill ]
+                        [ Element.el [ Font.bold ]
+                            (Element.text
+                                "Pour commencer un enregistrement, il faut choisir une présentation au format PDF sur votre machine."
+                            )
+                        , Element.text " Par exemple un export PDF de Microsoft PowerPoint ou LibreOffice Impress en paysage au format HD. Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter."
+                        ]
+                    , Ui.primaryButton msg "Choisir un fichier PDF"
+                    ]
+        in
+        Element.el [ Element.width (Element.fillPortion 6), Element.alignTop ]
+            (Element.row [ Element.width Element.fill ]
+                [ Element.el [ Element.width Element.fill ] Element.none
+                , Element.el [ Element.width Element.fill, Element.padding 10 ] content
+                , Element.el [ Element.width Element.fill ] Element.none
+                ]
             )
-        )
+
+    else
+        Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
+            (List.map (projectView global)
+                (List.indexedMap
+                    (\i x ->
+                        ( x
+                        , modBy 2 i == 0
+                        , uploadForm.rename
+                        )
+                    )
+                    (List.sortBy (\x -> -x.lastVisited) session.projects)
+                )
+            )
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))

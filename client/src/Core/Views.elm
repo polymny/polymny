@@ -247,6 +247,24 @@ topBar model =
 
                         _ ->
                             ( Nothing, [] )
+
+                projectAndCapsuleName =
+                    case details of
+                        Just d ->
+                            let
+                                projectName =
+                                    Maybe.withDefault "" <| Maybe.map .name (List.head d.projects)
+                            in
+                            Element.el
+                                [ Element.spacing 5, Element.paddingXY 20 4, Element.alignLeft ]
+                            <|
+                                Element.text <|
+                                    projectName
+                                        ++ " / "
+                                        ++ d.capsule.name
+
+                        Nothing ->
+                            Element.none
             in
             Element.row
                 [ Background.color Colors.primary
@@ -255,7 +273,10 @@ topBar model =
                 ]
                 [ Element.row
                     [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
-                    [ homeButton, Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons ]
+                    [ homeButton
+                    , projectAndCapsuleName
+                    , Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons
+                    ]
                 , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
                         [ settingsButton session.username
@@ -297,7 +318,7 @@ bottomBar global =
                     { url = "https://elm-lang.org/"
                     , label = Element.el [ Font.bold ] <| Element.text "Elm"
                     }
-                , Element.text " by T. Forgione, N. Bertrand and V. Charvillat (IRIT/REVA). (c) 2020. Support: "
+                , Element.text " by T. Forgione, N. Bertrand, A. Carlier and V. Charvillat (IRIT/REVA). (c) 2020. Support: "
                 , Element.link
                     []
                     { url = "mailto:contacter@polymny.studio"

@@ -190,13 +190,9 @@ modelFromFlags global flags =
         Ok "edition/capsule" ->
             case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
                 ( Ok session, Ok capsule ) ->
-                    let
-                        editionModel =
-                            Edition.selectEditionOptions session capsule.capsule (Edition.init capsule)
-                    in
                     ( Core.LoggedIn
                         { session = session
-                        , tab = LoggedIn.Edition editionModel
+                        , tab = LoggedIn.Edition (Edition.init capsule)
                         }
                     , Cmd.none
                     )

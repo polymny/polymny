@@ -4,6 +4,7 @@ module Ui.Ui exposing
     , blink
     , cameraButton
     , cancelButton
+    , centerElement
     , chainButton
     , clearButton
     , closeLockButton
@@ -24,6 +25,7 @@ module Ui.Ui exposing
     , onEscape
     , openLockButton
     , penButton
+    , popup
     , primaryButton
     , primaryButtonDisabled
     , primaryButtonWithTooltip
@@ -37,6 +39,7 @@ module Ui.Ui exposing
     , tabButton
     , tabButtonActive
     , textButton
+    , timesButton
     , topBarButton
     , trashButton
     , videoTuto
@@ -349,6 +352,11 @@ arrowCircleRightButton onPress content =
     iconButton Icons.arrowCircleRight onPress content
 
 
+timesButton : Maybe msg -> String -> String -> Element msg
+timesButton onPress content =
+    iconButton Icons.times onPress content
+
+
 homeButton : Maybe msg -> String -> Element msg
 homeButton onPress content =
     let
@@ -499,3 +507,33 @@ videoTuto =
                     []
                 )
         ]
+
+
+centerElement : Element msg -> Element msg
+centerElement element =
+    Element.column
+        [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
+        [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+        , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+            (Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+                ]
+            )
+        , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
+        ]
+
+
+popup : String -> Element msg -> Element msg
+popup title content =
+    centerElement
+        (Element.column [ Element.height Element.fill, Element.width Element.fill ]
+            [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
+                (Element.el
+                    [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
+                    (Element.text title)
+                )
+            , Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ] content
+            ]
+        )

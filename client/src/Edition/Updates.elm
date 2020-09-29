@@ -62,24 +62,138 @@ update session msg model =
             ( makeModel { model | details = newDetails }, Cmd.none )
 
         Edition.WithVideoChanged newWithVideo ->
-            ( makeModel { model | withVideo = newWithVideo }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | withVideo = newWithVideo }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.WebcamSizeChanged newWebcamSize ->
-            ( makeModel { model | webcamSize = newWebcamSize }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | webcamSize = Just newWebcamSize }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.WebcamPositionChanged newWebcamPosition ->
-            ( makeModel { model | webcamPosition = newWebcamPosition }, Cmd.none )
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+
+                newEditionOptions =
+                    { editionOptions | webcamPosition = Just newWebcamPosition }
+
+                capsule =
+                    model.details.capsule
+
+                newCapsule =
+                    { capsule | capsuleEditionOptions = Just newEditionOptions }
+
+                details =
+                    model.details
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
+            ( makeModel { model | details = newDetails }
+            , Api.updateCapsuleOptions (\_ -> Core.Noop)
+                capsule.id
+                { webcamPosition = Maybe.withDefault Webcam.BottomLeft newEditionOptions.webcamPosition
+                , webcamSize = Maybe.withDefault Webcam.Medium newEditionOptions.webcamSize
+                , withVideo = newEditionOptions.withVideo
+                }
+            )
 
         Edition.OptionsSubmitted ->
+            let
+                editionOptions =
+                    Maybe.withDefault Edition.defaultGosProductionChoices model.details.capsule.capsuleEditionOptions
+            in
             ( makeModel { model | status = Status.Sent }
             , Api.editionAuto resultToMsg
                 model.details.capsule.id
-                { withVideo = model.withVideo
-                , webcamSize = model.webcamSize
-                , webcamPosition = model.webcamPosition
+                { withVideo = editionOptions.withVideo
+                , webcamSize = Maybe.withDefault Webcam.Medium editionOptions.webcamSize
+                , webcamPosition = Maybe.withDefault Webcam.BottomLeft editionOptions.webcamPosition
                 }
                 model.details
             )
+
+        Edition.GosUseDefaultChanged gosIndex newUseDefault ->
+            let
+                gosStructure : Maybe Api.Gos
+                gosStructure =
+                    List.head (List.drop gosIndex model.details.structure)
+
+                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure =
+                    Maybe.map
+                        (\x ->
+                            let
+                                newP =
+                                    if newUseDefault then
+                                        Nothing
+
+                                    else
+                                        case model.details.capsule.capsuleEditionOptions of
+                                            Just o ->
+                                                Just o
+
+                                            Nothing ->
+                                                Just Edition.defaultGosProductionChoices
+                            in
+                            { x | production_choices = newP }
+                        )
+                        gosStructure
+
+                ( newDetails, cmd ) =
+                    newDetailsAux model gosIndex gosUpdatedStructure
+            in
+            ( makeModel { model | details = newDetails }, cmd )
 
         Edition.GosWithVideoChanged gosIndex newWithVideo ->
             let
@@ -167,6 +281,9 @@ update session msg model =
 
         Edition.CopyUrl url ->
             ( makeModel model, Ports.copyString url )
+
+        Edition.ToggleEditDefault ->
+            ( makeModel { model | editCapsuleOptions = not model.editCapsuleOptions }, Cmd.none )
 
 
 newDetailsAux : Edition.Model -> Int -> Maybe Api.Gos -> ( Api.CapsuleDetails, Cmd Core.Msg )

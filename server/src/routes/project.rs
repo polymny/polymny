@@ -43,7 +43,11 @@ pub fn get_project(db: Database, user: User, id: i32) -> Result<JsonValue> {
 #[get("/project/<id>/capsules")]
 pub fn get_capsules(db: Database, user: User, id: i32) -> Result<JsonValue> {
     let project = user.get_project_by_id(id, &db)?;
-    Ok(json!(project.get_capsules(&db)?))
+    Ok(json!(project
+        .get_capsules(&db)?
+        .into_iter()
+        .map(|x| x.with_video(&db))
+        .collect::<Result<Vec<_>>>()?))
 }
 
 /// Get all the projects .
