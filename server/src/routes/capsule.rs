@@ -1130,6 +1130,8 @@ pub fn capsule_edition(
         &pip_path.to_str().unwrap(),
         "-c",
         "copy",
+        "-movflags",
+        "+faststart",
         output,
     ];
 
