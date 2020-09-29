@@ -183,7 +183,6 @@ homeView model =
                     , viewLogo logoSmall "/dist/logoUT2J.png"
                     ]
                 ]
-            , Ui.videoTuto
             ]
         , Element.column
             [ Element.centerX
