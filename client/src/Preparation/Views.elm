@@ -29,7 +29,10 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
     let
         slide : Maybe Api.Slide
         slide =
-            List.head (List.filterMap Preparation.filterSlide (List.concat slides))
+            List.concat slides
+                |> List.filterMap Preparation.filterSlide
+                |> List.filter (\x -> x.id == editPrompt.slideId)
+                |> List.head
 
         calculateOffset : Int -> Int
         calculateOffset index =
@@ -705,6 +708,12 @@ viewSlideImage url =
 bodyPromptModal : Maybe Api.Slide -> Preparation.EditPrompt -> Element Preparation.EditPromptMsg
 bodyPromptModal slide { prompt } =
     let
+        nextSlideMsg =
+            Just Preparation.EditPromptNextSlide
+
+        previousSlideMsg =
+            Just Preparation.EditPromptPreviousSlide
+
         fields =
             [ Input.multiline [ Element.height Element.fill ]
                 { label = Input.labelAbove [] Element.none
@@ -718,12 +727,16 @@ bodyPromptModal slide { prompt } =
     Element.row [ Element.centerY, Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
         [ case slide of
             Just s ->
-                Element.el [ Element.width Element.fill, Element.centerY ]
-                    (Element.image [ Element.width Element.fill, Element.height Element.fill ]
+                Element.column [ Element.width Element.fill, Element.centerY ]
+                    [ Element.image [ Element.width Element.fill, Element.height Element.fill ]
                         { description = ""
                         , src = s.asset.asset_path
                         }
-                    )
+                    , Element.row [ Element.width Element.fill ]
+                        [ Element.el [ Element.alignLeft ] (Ui.primaryButton previousSlideMsg "<")
+                        , Element.el [ Element.alignRight ] (Ui.primaryButton nextSlideMsg ">")
+                        ]
+                    ]
 
             _ ->
                 Element.none

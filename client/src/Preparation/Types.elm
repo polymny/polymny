@@ -166,6 +166,8 @@ type EditPromptMsg
     | EditPromptSubmitted
     | EditPromptSuccess Api.Slide
     | EditPromptError
+    | EditPromptNextSlide
+    | EditPromptPreviousSlide
 
 
 type UploadSlideShowMsg
