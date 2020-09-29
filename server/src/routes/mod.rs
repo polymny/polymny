@@ -12,16 +12,18 @@ use std::io::Cursor;
 use std::path::PathBuf;
 
 use rocket::http::ContentType;
-use rocket::response::{NamedFile, Response};
+use rocket::response::Response;
 use rocket::State;
 
 use rocket_contrib::json::JsonValue;
+
+use rocket_seek_stream::SeekStream;
 
 use crate::config::Config;
 use crate::db::user::User;
 use crate::templates;
 use crate::webcam::{webcam_position_to_str, webcam_size_to_str};
-use crate::{Database, Result};
+use crate::{Database, Error, Result};
 
 fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
     let user_and_projects = if let Some(user) = user.as_ref() {
@@ -293,11 +295,11 @@ pub fn setup<'a>() -> Response<'a> {
 
 /// The route for static files that require authorization.
 #[get("/<path..>")]
-pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Option<NamedFile> {
+pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Result<SeekStream<'a>> {
     if path.starts_with(user.username) {
         let data_path = config.data_path.join(path);
-        NamedFile::open(data_path).ok()
+        Ok(SeekStream::from_path(data_path)?)
     } else {
-        None
+        Err(Error::NotFound)
     }
 }
