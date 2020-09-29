@@ -27,6 +27,10 @@ view global session model =
 mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
     let
+        slide : Maybe Api.Slide
+        slide =
+            List.head (List.filterMap Preparation.filterSlide (List.concat slides))
+
         calculateOffset : Int -> Int
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
@@ -41,10 +45,10 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
         newSlideMsg =
-            Core.LoggedInMsg <|
-                LoggedIn.PreparationMsg <|
-                    Preparation.UploadExtraResourceMsg <|
-                        Preparation.UploadExtraResourceSelectFileRequested Nothing
+            Preparation.UploadExtraResourceSelectFileRequested Nothing
+                |> Preparation.UploadExtraResourceMsg
+                |> LoggedIn.PreparationMsg
+                |> Core.LoggedInMsg
 
         autoEdition =
             Ui.primaryButton (Just msg) "Filmer"
@@ -73,7 +77,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                                 ]
                                 [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                     (List.map
-                                        (\( i, slide ) -> capsuleGosView global global.numberOfSlidesPerRow gosModel slideModel (calculateOffset i) i slide)
+                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow gosModel slideModel (calculateOffset i) i s)
                                         (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                                     )
                                 , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
@@ -117,18 +121,18 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptSubmitted)))
 
                 promptModal =
-                    bodyPromptModal editPrompt
+                    bodyPromptModal slide editPrompt
                         |> Element.map Preparation.EditPromptMsg
                         |> Element.map LoggedIn.PreparationMsg
                         |> Element.map Core.LoggedInMsg
 
                 element =
-                    Ui.popup "Prompteur"
+                    Ui.popupWithSize 5
+                        "Prompteur"
                         (Element.el
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ promptModal
-                                , Element.el [ Element.height Element.fill ] Element.none
                                 , Element.row [ Element.alignRight, Element.spacing 10 ]
                                     [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
                                 ]
@@ -698,11 +702,11 @@ viewSlideImage url =
         { src = url, description = "One desc" }
 
 
-bodyPromptModal : Preparation.EditPrompt -> Element Preparation.EditPromptMsg
-bodyPromptModal { prompt } =
+bodyPromptModal : Maybe Api.Slide -> Preparation.EditPrompt -> Element Preparation.EditPromptMsg
+bodyPromptModal slide { prompt } =
     let
         fields =
-            [ Input.multiline [ Element.height (Element.px 400) ]
+            [ Input.multiline [ Element.height Element.fill ]
                 { label = Input.labelAbove [] Element.none
                 , onChange = Preparation.EditPromptTextChanged
                 , placeholder = Nothing
@@ -711,13 +715,27 @@ bodyPromptModal { prompt } =
                 }
             ]
     in
-    Element.column
-        [ Element.centerX
-        , Element.padding 10
-        , Element.spacing 10
-        , Element.width Element.fill
+    Element.row [ Element.centerY, Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
+        [ case slide of
+            Just s ->
+                Element.el [ Element.width Element.fill, Element.centerY ]
+                    (Element.image [ Element.width Element.fill, Element.height Element.fill ]
+                        { description = ""
+                        , src = s.asset.asset_path
+                        }
+                    )
+
+            _ ->
+                Element.none
+        , Element.column
+            [ Element.centerX
+            , Element.padding 10
+            , Element.spacing 10
+            , Element.width Element.fill
+            , Element.height Element.fill
+            ]
+            fields
         ]
-        fields
 
 
 convertAttributes : List (Html.Attribute Preparation.DnDMsg) -> List (Element.Attribute Core.Msg)
