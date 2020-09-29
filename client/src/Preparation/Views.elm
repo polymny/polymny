@@ -201,7 +201,12 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                                 (case uploadForms.extraResource.status of
                                     Status.NotSent ->
                                         [ Ui.simpleButton cancelMsg "Annuler"
-                                        , Ui.primaryButton validateMsg "Valider"
+                                        , case uploadForms.extraResource.page of
+                                            Just _ ->
+                                                Ui.primaryButton validateMsg "Valider"
+
+                                            Nothing ->
+                                                Element.text "Entrez un numéro de slide"
                                         ]
 
                                     Status.Sent ->
