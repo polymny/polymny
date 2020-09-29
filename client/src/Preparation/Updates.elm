@@ -81,8 +81,11 @@ update msg global capsuleModel =
 
         ( Preparation.EditPromptMsg editPromptMsg, model ) ->
             let
+                slides =
+                    List.filterMap Preparation.filterSlide (List.concat model.slides)
+
                 ( newModel, newCmd ) =
-                    updateEditPromptMsg editPromptMsg model.editPrompt
+                    updateEditPromptMsg slides editPromptMsg model.editPrompt
             in
             ( global, { model | editPrompt = newModel }, newCmd )
 
@@ -226,8 +229,36 @@ update msg global capsuleModel =
                     ( global, capsuleModel, Cmd.none )
 
 
-updateEditPromptMsg : Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
-updateEditPromptMsg msg content =
+nextSlide : Int -> List Api.Slide -> Maybe Api.Slide
+nextSlide id slides =
+    case slides of
+        h1 :: h2 :: t ->
+            if h1.id == id then
+                Just h2
+
+            else
+                nextSlide id (h2 :: t)
+
+        _ ->
+            Nothing
+
+
+previousSlide : Int -> List Api.Slide -> Maybe Api.Slide
+previousSlide id slides =
+    case slides of
+        h1 :: h2 :: t ->
+            if h2.id == id then
+                Just h1
+
+            else
+                previousSlide id (h2 :: t)
+
+        _ ->
+            Nothing
+
+
+updateEditPromptMsg : List Api.Slide -> Preparation.EditPromptMsg -> Preparation.EditPrompt -> ( Preparation.EditPrompt, Cmd Core.Msg )
+updateEditPromptMsg slides msg content =
     case msg of
         Preparation.EditPromptOpenDialog id text ->
             ( { content | visible = True, prompt = text, slideId = id }, Cmd.none )
@@ -252,6 +283,30 @@ updateEditPromptMsg msg content =
             ( { content | visible = False, status = Status.Error () }
             , Cmd.none
             )
+
+        Preparation.EditPromptNextSlide ->
+            let
+                nextSlideId =
+                    case nextSlide content.slideId slides of
+                        Just s ->
+                            s.id
+
+                        Nothing ->
+                            content.slideId
+            in
+            ( { content | slideId = nextSlideId }, Cmd.none )
+
+        Preparation.EditPromptPreviousSlide ->
+            let
+                previousSlideId =
+                    case previousSlide content.slideId slides of
+                        Just s ->
+                            s.id
+
+                        Nothing ->
+                            content.slideId
+            in
+            ( { content | slideId = previousSlideId }, Cmd.none )
 
 
 updateUploadSlideShow : Preparation.UploadSlideShowMsg -> Preparation.UploadForm -> Int -> ( Preparation.UploadForm, Cmd Core.Msg )

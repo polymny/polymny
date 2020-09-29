@@ -26,6 +26,7 @@ module Ui.Ui exposing
     , openLockButton
     , penButton
     , popup
+    , popupWithSize
     , primaryButton
     , primaryButtonDisabled
     , primaryButtonWithTooltip
@@ -509,15 +510,15 @@ videoTuto =
         ]
 
 
-centerElement : Element msg -> Element msg
-centerElement element =
+centerElementWithSize : Int -> Element msg -> Element msg
+centerElementWithSize ratio element =
     Element.column
         [ Element.width Element.fill, Element.height Element.fill, Background.color (Element.rgba255 0 0 0 0.8) ]
         [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-        , Element.el [ Element.width Element.fill, Element.height Element.fill ]
+        , Element.el [ Element.width Element.fill, Element.height (Element.fillPortion ratio) ]
             (Element.row [ Element.width Element.fill, Element.height Element.fill ]
                 [ Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ] element
+                , Element.el [ Element.width (Element.fillPortion ratio), Element.height Element.fill ] element
                 , Element.el [ Element.width Element.fill, Element.height Element.fill ] Element.none
                 ]
             )
@@ -525,9 +526,14 @@ centerElement element =
         ]
 
 
-popup : String -> Element msg -> Element msg
-popup title content =
-    centerElement
+centerElement : Element msg -> Element msg
+centerElement element =
+    centerElementWithSize 1 element
+
+
+popupWithSize : Int -> String -> Element msg -> Element msg
+popupWithSize ratio title content =
+    centerElementWithSize ratio
         (Element.column [ Element.height Element.fill, Element.width Element.fill ]
             [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
                 (Element.el
@@ -537,3 +543,8 @@ popup title content =
             , Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ] content
             ]
         )
+
+
+popup : String -> Element msg -> Element msg
+popup title content =
+    popupWithSize 1 title content

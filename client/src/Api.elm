@@ -828,8 +828,13 @@ type alias EditSlideContent a =
 
 encodeSlideContent : EditSlideContent a -> Encode.Value
 encodeSlideContent { prompt } =
+    let
+        fixedPrompt =
+            List.filter (not << String.isEmpty) (String.lines prompt)
+                |> String.join "\n"
+    in
     Encode.object
-        [ ( "prompt", Encode.string prompt )
+        [ ( "prompt", Encode.string fixedPrompt )
         ]
 
 
