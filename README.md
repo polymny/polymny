@@ -1,9 +1,16 @@
+<p align="center">
+<img src="/samples/polymny.png"
+     alt="Polymny logo" 
+     width="150"
+     style="align:center" />
+</p>
 
-![Polymny Logo](/samples/polymny.png)
-Format: ![Alt Text](url)
-
+<p align="center">
+<em>
 Polymny is a web based tool for easy production of educational videos.
-You just need some slides in PDF and web browser
+You just need some slides in PDF and web browser!
+</em>
+</p>
 
 This project consists in a backend written in
 [rust](https://www.rust-lang.org/) and a front end in
