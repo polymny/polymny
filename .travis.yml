@@ -4,6 +4,7 @@ matrix:
       before_script:
           - cd client
       script:
+          - cp src/Log.elm.debug src/Log.elm
           - elm make src/Main.elm
           - elm make src/Setup.elm
 
@@ -11,6 +12,8 @@ matrix:
       rust: nightly
       before_script:
         - cd server
+        - sudo apt-get update
+        - sudo apt-get -y install libavutil-dev libavformat-dev libavfilter-dev libavdevice-dev clang pkg-config libpoppler-glib-dev
       script:
         - cargo build
 
