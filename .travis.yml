@@ -13,3 +13,8 @@ matrix:
         - cd server
       script:
         - cargo build
+
+branches:
+  only:
+    - master
+    - dev
