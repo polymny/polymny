@@ -1,6 +1,10 @@
+Polymny is a web based tool for easy production of educational videos.
+You just need some slides in PDF and web broser
+
 This project consists in a backend written in
 [rust](https://www.rust-lang.org/) and a front end in
 [elm](https://elm-lang.org/).
+
 
 ## Table of contents
 
@@ -14,6 +18,7 @@ This project consists in a backend written in
   - [Developping](#developping)
 
 ## Building
+
 
 The following sections explain how to build the client and the server.
 
