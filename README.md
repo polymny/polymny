@@ -1,9 +1,9 @@
-
+<p align="center">
 <img src="/samples/polymny.png"
      alt="Polymny logo" 
      width="100"
-     style="float: center; margin-right: 10px;" />
-
+     style="align:center" />
+</p>
 Polymny is a web based tool for easy production of educational videos.
 You just need some slides in PDF and web browser
 
