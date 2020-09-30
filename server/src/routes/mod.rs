@@ -168,13 +168,13 @@ fn helper_json(config: &State<Config>, flags: JsonValue) -> JsonValue {
 }
 
 macro_rules! make_route {
-    ($route: expr, $function: expr, $function_html: ident, $function_json: ident) => {
+    ($route: expr, $db: ident, $user: ident, $function: expr, $function_html: ident, $function_json: ident) => {
         #[allow(missing_docs)]
         #[get($route, format = "text/html", rank = 1)]
         pub fn $function_html<'a>(
             config: State<Config>,
-            db: Database,
-            user: Option<User>,
+            $db: Database,
+            $user: Option<User>,
         ) -> Result<Response<'a>> {
             Ok(helper_html(&config, $function))
         }
@@ -183,20 +183,20 @@ macro_rules! make_route {
         #[get($route, format = "application/json", rank = 2)]
         pub fn $function_json<'a>(
             config: State<Config>,
-            db: Database,
-            user: Option<User>,
+            $db: Database,
+            $user: Option<User>,
         ) -> Result<JsonValue> {
             Ok(helper_json(&config, $function))
         }
     };
 
-    ($route: expr, $param: expr, $ty: ty, $function: expr, $function_html: ident, $function_json: ident) => {
+    ($route: expr, $db: ident, $user: ident, $param: expr, $ty: ty, $function: expr, $function_html: ident, $function_json: ident) => {
         #[allow(missing_docs)]
         #[get($route, format = "text/html", rank = 1)]
         pub fn $function_html<'a>(
             config: State<Config>,
-            db: Database,
-            user: Option<User>,
+            $db: Database,
+            $user: Option<User>,
             $param: $ty,
         ) -> Result<Response<'a>> {
             Ok(helper_html(&config, $function))
@@ -206,8 +206,8 @@ macro_rules! make_route {
         #[get($route, format = "application/json", rank = 2)]
         pub fn $function_json<'a>(
             config: State<Config>,
-            db: Database,
-            user: Option<User>,
+            $db: Database,
+            $user: Option<User>,
             $param: $ty,
         ) -> Result<JsonValue> {
             Ok(helper_json(&config, $function))
@@ -239,10 +239,12 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
         .unwrap_or_else(|| json!(null)))
 }
 
-make_route!("/", index(db, user)?, index_html, index_json);
+make_route!("/", db, user, index(db, user)?, index_html, index_json);
 
 make_route!(
     "/capsule/<id>/preparation",
+    db,
+    user,
     id,
     i32,
     capsule_flags(&db, &user, id, "preparation/capsule")?,
@@ -252,6 +254,8 @@ make_route!(
 
 make_route!(
     "/capsule/<id>/acquisition",
+    db,
+    user,
     id,
     i32,
     capsule_flags(&db, &user, id, "acquisition/capsule")?,
@@ -261,6 +265,8 @@ make_route!(
 
 make_route!(
     "/capsule/<id>/edition",
+    db,
+    user,
     id,
     i32,
     capsule_flags(&db, &user, id, "edition/capsule")?,
@@ -270,6 +276,8 @@ make_route!(
 
 make_route!(
     "/project/<id>",
+    db,
+    user,
     id,
     i32,
     project_flags(&db, &user, id, "project")?,
@@ -279,6 +287,8 @@ make_route!(
 
 make_route!(
     "/settings",
+    db,
+    user,
     settings_flags(&db, &user, "settings")?,
     settings_html,
     settings_json
