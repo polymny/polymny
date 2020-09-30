@@ -1,0 +1,15 @@
+matrix:
+  include:
+    - language: elm
+      before_script:
+          - cd client
+      script:
+          - elm make src/Main.elm
+          - elm make src/Setup.elm
+
+    - language: rust
+      rust: nightly
+      before_script:
+        - cd server
+      script:
+        - cargo build
