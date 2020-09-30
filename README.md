@@ -6,8 +6,10 @@
 </p>
 
 <p align="center">
+<em>
 Polymny is a web based tool for easy production of educational videos.
-You just need some slides in PDF and web browser
+You just need some slides in PDF and web browser!
+</em>
 </p>
 
 This project consists in a backend written in
