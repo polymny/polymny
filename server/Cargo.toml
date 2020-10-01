@@ -6,6 +6,10 @@ default-run = "server"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["git"]
+git = ["compile-time-run"]
+
 [dependencies]
 rocket = "0.4.4"
 mime = "0.3.12"
@@ -24,8 +28,7 @@ tempfile = "3.1.0"
 log = "0.4.8"
 serde_json = "1.0"
 simplelog = { git = "https://github.com/polymny/simplelog.rs" }
-compile-time-run = "0.2.8"
-poppler = "0.3.0"
+compile-time-run = { version = "0.2.8", optional = true }
 image = "0.23.9"
 ffmpeg-next = "4.3.6"
 rocket_seek_stream = "0.2.3"

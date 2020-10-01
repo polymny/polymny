@@ -1,0 +1,40 @@
+name: build
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  build-linux:
+    name: Polymny
+    runs-on: ubuntu-latest
+    container: jrottenberg/ffmpeg:4.3-ubuntu
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        env:
+            TZ: Antartica/Troll
+            DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt update
+          apt install -y --no-install-recommends git clang curl pkg-config libssl-dev libpq-dev
+      - uses: polymny/setup-elm@ee2fb83
+        name : Set up Elm
+        with:
+          elm-version: 0.19.1
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name : Build client
+        run: |
+            cd client && cp src/Log.elm.debug src/Log.elm && elm make src/Main.elm && elm make src/Setup.elm
+      - name: Build server
+        run: |
+          cd server && cargo build --no-default-features

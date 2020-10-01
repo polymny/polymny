@@ -3,8 +3,6 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
 
-use poppler::PopplerDocument;
-
 use crate::{Error, Result};
 
 extern crate ffmpeg_next as ffmpeg;
@@ -28,6 +26,25 @@ pub fn run_command(command: &Vec<&str>) -> io::Result<Output> {
     }
 
     child
+}
+
+/// Counts the pages of a PDF file.
+pub fn count_pages<P: AsRef<Path>>(input: P) -> Result<u32> {
+    let output = run_command(&vec![
+        "qpdf",
+        "--show-pages",
+        input.as_ref().to_str().unwrap(),
+    ])?;
+
+    let mut count = 0;
+
+    for line in std::str::from_utf8(&output.stdout).unwrap().lines() {
+        if line.starts_with("page") {
+            count += 1;
+        }
+    }
+
+    Ok(count)
 }
 
 /// Exports all slides (or one) from pdf to png.
@@ -68,9 +85,7 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
         }
 
         None => {
-            let document = PopplerDocument::new_from_file(&input, "").unwrap();
-            info!("PDF doc = {:#?}", document.get_metadata());
-            let n_pages = document.get_n_pages();
+            let n_pages = count_pages(&input)?;
             for i in 0..n_pages {
                 //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
                 let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
