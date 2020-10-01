@@ -3,6 +3,7 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
 
+use crate::config::Config;
 use crate::{Error, Result};
 
 extern crate ffmpeg_next as ffmpeg;
@@ -49,10 +50,15 @@ pub fn count_pages<P: AsRef<Path>>(input: P) -> Result<u32> {
 
 /// Exports all slides (or one) from pdf to png.
 pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
+    config: &Config,
     input: P,
     output: Q,
     page: Option<i32>,
 ) -> Result<String> {
+    let pdf_target_size = config.pdf_target_size.clone();
+    let pdf_target_density = config.pdf_target_density.clone();
+    //let pdf_target_size = "1920x1080";
+    // let density = "380";
     println!(
         "input = {:#?}, output = {:#?} ",
         input.as_ref().to_str().unwrap(),
@@ -66,18 +72,18 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
             let command = vec![
                 "convert",
                 "-density",
-                "380",
+                &pdf_target_density,
                 &command_input_path,
                 "-colorspace",
                 "sRGB",
                 "-resize",
-                "1920x1080",
+                &pdf_target_size,
                 "-background",
                 "white",
                 "-gravity",
                 "center",
                 "-extent",
-                "1920x1080",
+                &pdf_target_size,
                 &command_output_path,
             ];
             run_command(&command)?;
@@ -93,18 +99,18 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
                 let command = vec![
                     "convert",
                     "-density",
-                    "380",
+                    &pdf_target_density,
                     &command_input_path,
                     "-colorspace",
                     "sRGB",
                     "-resize",
-                    "1920x1080",
+                    &pdf_target_size,
                     "-background",
                     "white",
                     "-gravity",
                     "center",
                     "-extent",
-                    "1920x1080",
+                    &pdf_target_size,
                     &command_output_path,
                 ];
                 run_command(&command)?;

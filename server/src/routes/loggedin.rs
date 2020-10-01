@@ -115,7 +115,7 @@ pub fn quick_upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-                    command::export_slides(&output_path, dir.path(), None)?;
+                    command::export_slides(&config, &output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
