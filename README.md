@@ -8,19 +8,16 @@
 <p align="center">
 <em>
 Polymny is a web based tool for easy production of educational videos.
-</em>
-</p>
-<p align="center">
-<em>
+<br/>
 You just need some slides in PDF and web browser!
 </em>
 </p>
 
+[![CI](https://github.com/polymny/polymny/workflows/build/badge.svg?branch=master&event=push)](https://github.com/polymny/polymny/actions?query=workflow%3Abuild)
 
 This project consists in a backend written in
 [rust](https://www.rust-lang.org/) and a front end in
 [elm](https://elm-lang.org/).
-
 
 ## Table of contents
 
