@@ -4,6 +4,7 @@ import Acquisition.Ports as Ports
 import Api
 import Browser
 import Browser.Navigation as Nav
+import Core.Ports as Ports
 import Core.Types as Core
 import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
@@ -107,6 +108,9 @@ update msg { global, model } =
 
                 ( Core.UrlReceived m c, _ ) ->
                     ( Core.FullModel global m, c )
+
+                ( Core.CopyUrl url, _ ) ->
+                    ( Core.FullModel global model, Ports.copyString url )
 
                 ( m, _ ) ->
                     let

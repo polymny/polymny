@@ -443,9 +443,7 @@ capsuleView global project rename capsule =
         copy =
             case ( capsule.video, capsule.published ) of
                 ( Just v, Api.Published ) ->
-                    Edition.CopyUrl (videoUrl v)
-                        |> LoggedIn.EditionMsg
-                        |> Core.LoggedInMsg
+                    Core.CopyUrl (videoUrl v)
                         |> Just
                         |> (\x -> Ui.chainButton x "" "Copier l'url de la video")
 

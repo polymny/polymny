@@ -63,3 +63,4 @@ type Msg
     | ResetPasswordMsg ResetPassword.Msg
     | UrlRequested Browser.UrlRequest
     | UrlReceived Model (Cmd Msg)
+    | CopyUrl String
