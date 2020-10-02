@@ -593,7 +593,7 @@ projectView global ( project, even, edited ) =
 
 projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 projectsView global session uploadForm =
-    if List.length session.projects == 0 then
+    if List.isEmpty session.projects then
         let
             msg =
                 LoggedIn.UploadSlideShowSelectFileRequested

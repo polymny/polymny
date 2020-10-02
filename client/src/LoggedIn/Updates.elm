@@ -261,7 +261,7 @@ update msg global { session, tab } =
                                 capsules =
                                     List.filter (\x -> x.id /= c.id) project.capsules
                             in
-                            if List.length capsules == 0 then
+                            if List.isEmpty capsules then
                                 Nothing
 
                             else
