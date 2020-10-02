@@ -591,6 +591,98 @@ projectView global ( project, even, edited ) =
         ]
 
 
+projectViewTitle : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
+projectViewTitle global ( project, even, rename ) =
+    let
+        prefix =
+            if project.folded then
+                "▷ "
+
+            else
+                "▽ "
+
+        title =
+            let
+                default =
+                    Input.button []
+                        { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
+                        , label = Element.text (prefix ++ project.name)
+                        }
+            in
+            case rename of
+                Just (LoggedIn.RenameProject ( i, s )) ->
+                    if i == project.id then
+                        Element.row [ Element.width Element.fill ]
+                            [ Element.text prefix
+                            , Input.text
+                                [ Ui.onEnterEscape
+                                    (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
+                                    (Core.LoggedInMsg LoggedIn.CancelRename)
+                                , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                                ]
+                                { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameProject ( project.id, x )))
+                                , placeholder = Nothing
+                                , text = s
+                                , label = Input.labelHidden ""
+                                }
+                            ]
+
+                    else
+                        default
+
+                _ ->
+                    default
+    in
+    Element.el [ Element.padding 10 ]
+        (if project.folded then
+            title
+
+         else
+            Element.column
+                [ Element.width Element.fill ]
+                [ title
+                , Element.column
+                    [ Element.width Element.fill, Element.paddingXY 20 10, Element.spacing 10 ]
+                    (List.map (capsuleView global project rename) project.capsules)
+                ]
+        )
+
+
+projectViewDate : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
+projectViewDate global ( project, _, _ ) =
+    Element.el [ Element.padding 10 ]
+        (Element.text (TimeUtils.timeToString global.zone project.lastVisited))
+
+
+projectViewActions : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
+projectViewActions global ( project, _, _ ) =
+    let
+        renameMsg =
+            LoggedIn.RenameProject ( project.id, project.name )
+                |> LoggedIn.RenameMsg
+                |> Core.LoggedInMsg
+                |> Just
+
+        rename =
+            Ui.penButton renameMsg "" "Renommer le projet"
+
+        deleteMsg =
+            LoggedIn.DeleteProject project
+                |> Core.LoggedInMsg
+                |> Just
+
+        delete =
+            Ui.trashButton deleteMsg "" "Supprimer le projet"
+
+        row =
+            Element.row [ Element.spacing 10, Element.width Element.fill ]
+                [ rename
+                , delete
+                ]
+    in
+    Element.el [ Element.padding 10 ] row
+
+
 projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 projectsView global session uploadForm =
     if List.isEmpty session.projects then
@@ -627,9 +719,9 @@ projectsView global session uploadForm =
             )
 
     else
-        Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
-            (List.map (projectView global)
-                (List.indexedMap
+        let
+            projects =
+                List.indexedMap
                     (\i x ->
                         ( x
                         , modBy 2 i == 0
@@ -637,8 +729,39 @@ projectsView global session uploadForm =
                         )
                     )
                     (List.sortBy (\x -> -x.lastVisited) session.projects)
-                )
-            )
+        in
+        Element.table [ Element.width (Element.fillPortion 7), Element.alignTop ]
+            { data = projects
+            , columns =
+                [ { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Nom du projet")
+                  , width = Element.fill
+                  , view = projectViewTitle global
+                  }
+                , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Date de création")
+                  , width = Element.fill
+                  , view = projectViewDate global
+                  }
+                , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Actions")
+                  , width = Element.shrink
+                  , view = projectViewActions global
+                  }
+                ]
+            }
+
+
+
+--Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
+--    (List.map (projectView global)
+--        (List.indexedMap
+--            (\i x ->
+--                ( x
+--                , modBy 2 i == 0
+--                , uploadForm.rename
+--                )
+--            )
+--            (List.sortBy (\x -> -x.lastVisited) session.projects)
+--        )
+--    )
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
