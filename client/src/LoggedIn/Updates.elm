@@ -441,6 +441,7 @@ updateUploadSlideShow global msg { session, tab } form =
                         | status = Status.NotSent
                         , file = Nothing
                         , capsule = Nothing
+                        , slides = Nothing
                         , projectSelected = Nothing
                     }
                 )
