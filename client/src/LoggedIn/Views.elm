@@ -591,8 +591,8 @@ projectView global ( project, even, edited ) =
         ]
 
 
-projectViewTitle : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
-projectViewTitle global ( project, even, rename ) =
+projectViewTitle : Maybe LoggedIn.Rename -> Api.Project -> Element Core.Msg
+projectViewTitle rename project =
     let
         prefix =
             if project.folded then
@@ -633,29 +633,17 @@ projectViewTitle global ( project, even, rename ) =
                 _ ->
                     default
     in
-    Element.el [ Element.padding 10 ]
-        (if project.folded then
-            title
-
-         else
-            Element.column
-                [ Element.width Element.fill ]
-                [ title
-                , Element.column
-                    [ Element.width Element.fill, Element.paddingXY 20 10, Element.spacing 10 ]
-                    (List.map (capsuleView global project rename) project.capsules)
-                ]
-        )
+    Element.el [ Element.padding 10, Element.centerY ] title
 
 
-projectViewDate : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
-projectViewDate global ( project, _, _ ) =
-    Element.el [ Element.padding 10 ]
+projectViewDate : Core.Global -> Api.Project -> Element Core.Msg
+projectViewDate global project =
+    Element.el [ Element.padding 10, Element.centerY ]
         (Element.text (TimeUtils.timeToString global.zone project.lastVisited))
 
 
-projectViewActions : Core.Global -> ( Api.Project, Bool, Maybe LoggedIn.Rename ) -> Element Core.Msg
-projectViewActions global ( project, _, _ ) =
+projectViewActions : Api.Project -> Element Core.Msg
+projectViewActions project =
     let
         renameMsg =
             LoggedIn.RenameProject ( project.id, project.name )
@@ -681,6 +669,30 @@ projectViewActions global ( project, _, _ ) =
                 ]
     in
     Element.el [ Element.padding 10 ] row
+
+
+type ProjectOrCapsule
+    = Project Api.Project
+    | Capsule Api.Project Api.Capsule
+
+
+projectsAndCapsulesAux : List ProjectOrCapsule -> List Api.Project -> List ProjectOrCapsule
+projectsAndCapsulesAux acc projects =
+    case projects of
+        [] ->
+            acc
+
+        h :: t ->
+            if h.folded then
+                projectsAndCapsulesAux (Project h :: acc) t
+
+            else
+                projectsAndCapsulesAux (Project h :: (List.map (Capsule h) h.capsules ++ acc)) t
+
+
+projectsAndCapsules : List Api.Project -> List ProjectOrCapsule
+projectsAndCapsules =
+    projectsAndCapsulesAux []
 
 
 projectsView : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
@@ -721,47 +733,100 @@ projectsView global session uploadForm =
     else
         let
             projects =
-                List.indexedMap
-                    (\i x ->
-                        ( x
-                        , modBy 2 i == 0
-                        , uploadForm.rename
-                        )
-                    )
-                    (List.sortBy (\x -> -x.lastVisited) session.projects)
+                projectsAndCapsules session.projects
         in
         Element.table [ Element.width (Element.fillPortion 7), Element.alignTop ]
             { data = projects
             , columns =
                 [ { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Nom du projet")
                   , width = Element.fill
-                  , view = projectViewTitle global
+                  , view = titleView uploadForm.rename
                   }
                 , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Date de création")
                   , width = Element.fill
-                  , view = projectViewDate global
+                  , view = dateView global
                   }
                 , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Actions")
                   , width = Element.shrink
-                  , view = projectViewActions global
+                  , view = actionsView
                   }
                 ]
             }
 
 
+titleView : Maybe LoggedIn.Rename -> ProjectOrCapsule -> Element Core.Msg
+titleView rename cop =
+    case cop of
+        Capsule p c ->
+            let
+                default =
+                    Input.button []
+                        { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
+                        , label = Element.text c.name
+                        }
 
---Element.column [ Element.width (Element.fillPortion 6), Element.alignTop ]
---    (List.map (projectView global)
---        (List.indexedMap
---            (\i x ->
---                ( x
---                , modBy 2 i == 0
---                , uploadForm.rename
---                )
---            )
---            (List.sortBy (\x -> -x.lastVisited) session.projects)
---        )
---    )
+                title =
+                    case rename of
+                        Just (LoggedIn.RenameCapsule ( i, j, s )) ->
+                            if i == p.id && j == c.id then
+                                Element.row [ Element.width Element.fill ]
+                                    [ Input.text
+                                        [ Ui.onEnterEscape
+                                            (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
+                                            (Core.LoggedInMsg LoggedIn.CancelRename)
+                                        , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
+                                        ]
+                                        { onChange = \x -> Core.LoggedInMsg (LoggedIn.RenameMsg (LoggedIn.RenameCapsule ( p.id, c.id, x )))
+                                        , placeholder = Nothing
+                                        , text = s
+                                        , label = Input.labelHidden ""
+                                        }
+                                    ]
+
+                            else
+                                default
+
+                        _ ->
+                            default
+            in
+            Element.el [ Element.paddingEach { left = 30, right = 0, top = 0, bottom = 0 }, Element.centerY ] title
+
+        Project p ->
+            projectViewTitle rename p
+
+
+dateView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
+dateView global cop =
+    case cop of
+        Capsule p c ->
+            Element.none
+
+        Project p ->
+            projectViewDate global p
+
+
+actionsView : ProjectOrCapsule -> Element Core.Msg
+actionsView cop =
+    case cop of
+        Capsule p c ->
+            let
+                pen =
+                    LoggedIn.RenameCapsule ( p.id, c.id, c.name )
+                        |> LoggedIn.RenameMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+                        |> (\x -> Ui.penButton x "" "Renommer la capsule")
+
+                trash =
+                    LoggedIn.DeleteCapsule c
+                        |> Core.LoggedInMsg
+                        |> Just
+                        |> (\x -> Ui.trashButton x "" "Supprimer la capsule")
+            in
+            Element.row [ Element.padding 10, Element.spacing 10 ] [ pen, trash ]
+
+        Project p ->
+            projectViewActions p
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
