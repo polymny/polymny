@@ -2,6 +2,7 @@ module Ui.Ui exposing
     ( addButton
     , arrowCircleRightButton
     , blink
+    , borderBottom
     , cameraButton
     , cancelButton
     , centerElement
@@ -58,6 +59,11 @@ import Html.Events
 import Json.Decode as Decode
 import Ui.Colors as Colors
 import Ui.Icons as Icons
+
+
+borderBottom : Int -> Element.Attribute msg
+borderBottom size =
+    Border.widthEach { bottom = size, top = 0, left = 0, right = 0 }
 
 
 onEnter : msg -> Element.Attribute msg

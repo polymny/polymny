@@ -674,20 +674,21 @@ projectViewActions project =
 type ProjectOrCapsule
     = Project Api.Project
     | Capsule Api.Project Api.Capsule
+    | Delimiter
 
 
 projectsAndCapsulesAux : List ProjectOrCapsule -> List Api.Project -> List ProjectOrCapsule
 projectsAndCapsulesAux acc projects =
     case projects of
         [] ->
-            acc
+            Delimiter :: acc
 
         h :: t ->
             if h.folded then
-                projectsAndCapsulesAux (Project h :: acc) t
+                projectsAndCapsulesAux (Project h :: Delimiter :: acc) t
 
             else
-                projectsAndCapsulesAux (Project h :: (List.map (Capsule h) h.capsules ++ acc)) t
+                projectsAndCapsulesAux (Project h :: (List.map (Capsule h) h.capsules ++ (Delimiter :: acc))) t
 
 
 projectsAndCapsules : List Api.Project -> List ProjectOrCapsule
@@ -794,6 +795,9 @@ titleView rename cop =
         Project p ->
             projectViewTitle rename p
 
+        Delimiter ->
+            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
+
 
 dateView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
 dateView global cop =
@@ -803,6 +807,9 @@ dateView global cop =
 
         Project p ->
             projectViewDate global p
+
+        Delimiter ->
+            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
 
 
 actionsView : ProjectOrCapsule -> Element Core.Msg
@@ -827,6 +834,9 @@ actionsView cop =
 
         Project p ->
             projectViewActions p
+
+        Delimiter ->
+            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
 
 
 regroupSlidesAux : Int -> List (List ( Int, ( Int, Api.Slide ) )) -> List ( Int, ( Int, Api.Slide ) ) -> List (List ( Int, ( Int, Api.Slide ) ))
