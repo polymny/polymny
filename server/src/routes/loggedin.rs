@@ -168,7 +168,6 @@ pub fn quick_upload_slides(
                             .set(structure.eq(serde_json!(capsule_structure)))
                             .execute(&db.0)?;
                     }
-
                     // TODO: return capsule details like get_capsule
                     let capsule = user.get_capsule_by_id(capsule.id, &db)?;
                     return format_capsule_data(&db, &capsule);
