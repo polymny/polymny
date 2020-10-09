@@ -93,20 +93,19 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
 
         None => {
             let vec: Vec<u32> = (0..count_pages(&input)?).collect();
-            let vec_in: Vec<(usize, String)> = vec
+            let vec_in = vec
                 .iter()
                 .map(|i| format!("{}[{}]", input.as_ref().to_str().unwrap(), i))
-                .enumerate()
-                .collect();
-            let vec_out: Vec<String> = vec
-                .iter()
-                .map(|i| format!("{}/{:05}.png", output.as_ref().to_str().unwrap(), i))
-                .collect::<Vec<String>>();
+                .zip(
+                    vec.iter()
+                        .map(|i| format!("{}/{:05}.png", output.as_ref().to_str().unwrap(), i)),
+                )
+                .collect::<Vec<_>>();
 
-            vec_in.par_iter().for_each(|(i, filepath)| {
+            vec_in.par_iter().for_each(|(filepath, filepath_out)| {
                 pdf2png(
                     filepath.to_string(),
-                    vec_out[*i].clone(),
+                    filepath_out.clone(),
                     pdf_target_density.to_string(),
                     pdf_target_size.to_string(),
                 );
