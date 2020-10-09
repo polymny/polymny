@@ -392,7 +392,8 @@ capsuleView global project rename capsule =
                     if i == project.id && j == capsule.id then
                         Element.row [ Element.width Element.fill ]
                             [ Input.text
-                                [ Ui.onEnterEscape
+                                [ Element.htmlAttribute (Html.Attributes.id "id")
+                                , Ui.onEnterEscape
                                     (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
                                     (Core.LoggedInMsg LoggedIn.CancelRename)
                                 , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
@@ -492,7 +493,8 @@ projectView global ( project, even, edited ) =
                             Element.row [ Element.width Element.fill ]
                                 [ Element.text prefix
                                 , Input.text
-                                    [ Ui.onEnterEscape
+                                    [ Element.htmlAttribute (Html.Attributes.id "id")
+                                    , Ui.onEnterEscape
                                         (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
                                         (Core.LoggedInMsg LoggedIn.CancelRename)
                                     , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
@@ -615,7 +617,8 @@ projectViewTitle rename project =
                         Element.row [ Element.width Element.fill ]
                             [ Element.text prefix
                             , Input.text
-                                [ Ui.onEnterEscape
+                                [ Element.htmlAttribute (Html.Attributes.id "id")
+                                , Ui.onEnterEscape
                                     (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
                                     (Core.LoggedInMsg LoggedIn.CancelRename)
                                 , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))
@@ -772,7 +775,8 @@ titleView rename cop =
                             if i == p.id && j == c.id then
                                 Element.row [ Element.width Element.fill ]
                                     [ Input.text
-                                        [ Ui.onEnterEscape
+                                        [ Element.htmlAttribute (Html.Attributes.id "id")
+                                        , Ui.onEnterEscape
                                             (Core.LoggedInMsg LoggedIn.ValidateRenameProject)
                                             (Core.LoggedInMsg LoggedIn.CancelRename)
                                         , Element.htmlAttribute (Html.Events.onBlur (Core.LoggedInMsg LoggedIn.CancelRename))

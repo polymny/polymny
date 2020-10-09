@@ -3,6 +3,7 @@ module LoggedIn.Updates exposing (update)
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import Api
+import Browser.Dom as Dom
 import Browser.Navigation as Nav
 import Core.Types as Core
 import Dropdown
@@ -19,6 +20,7 @@ import Preparation.Updates as Preparation
 import Settings.Types as Settings
 import Settings.Updates as Settings
 import Status
+import Task
 import Utils
 import Webcam
 
@@ -194,7 +196,10 @@ update msg global { session, tab } =
             ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Nothing }), Cmd.none )
 
         ( LoggedIn.RenameMsg rename, LoggedIn.Home uploadForm ) ->
-            ( global, LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Just rename }), Cmd.none )
+            ( global
+            , LoggedIn.Model session (LoggedIn.Home { uploadForm | rename = Just rename })
+            , Task.attempt (\x -> Core.Noop) (Dom.focus "id")
+            )
 
         ( LoggedIn.ValidateRenameProject, LoggedIn.Home uploadForm ) ->
             let
