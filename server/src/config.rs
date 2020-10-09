@@ -3,7 +3,6 @@
 use std::path::PathBuf;
 
 use crate::mailer::Mailer;
-use compile_time_run::run_command_str;
 
 /// The config of the server.
 pub struct Config {
@@ -71,6 +70,11 @@ impl Config {
         let beta = config.get_bool("beta").unwrap_or(false);
         let matting_enabled = config.get_bool("matting_enabled").unwrap_or(false);
 
+        #[cfg(feature = "git")]
+        let commit = compile_time_run::run_command_str!("git", "rev-parse", "--short", "HEAD");
+        #[cfg(not(feature = "git"))]
+        let commit = "unknown";
+
         Config {
             data_path: PathBuf::from(data_path),
             log_path: PathBuf::from(log_path),
@@ -80,7 +84,7 @@ impl Config {
             matting_enabled,
             mailer: Mailer::from_config(config),
             version: env!("CARGO_PKG_VERSION"),
-            commit: run_command_str!("git", "rev-parse", "--short", "HEAD"),
+            commit,
             pdf_target_size,
             pdf_target_density,
         }
