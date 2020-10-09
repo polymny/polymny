@@ -32,6 +32,12 @@ pub struct Config {
 
     /// The hash of the git commit.
     pub commit: &'static str,
+
+    /// pdf to png conversion : target size
+    pub pdf_target_size: String,
+
+    /// pdf to png conversion : target density
+    pub pdf_target_density: String,
 }
 
 impl Config {
@@ -53,6 +59,14 @@ impl Config {
             .get_string("video_root")
             .unwrap_or_else(|_| String::from("/"));
 
+        let pdf_target_size = config
+            .get_string("pdf_target_size")
+            .unwrap_or_else(|_| String::from("1920x1080"));
+
+        let pdf_target_density = config
+            .get_string("pdf_target_density")
+            .unwrap_or_else(|_| String::from("380"));
+
         let beta = config.get_bool("beta").unwrap_or(false);
         let matting_enabled = config.get_bool("matting_enabled").unwrap_or(false);
 
@@ -71,6 +85,8 @@ impl Config {
             mailer: Mailer::from_config(config),
             version: env!("CARGO_PKG_VERSION"),
             commit,
+            pdf_target_size,
+            pdf_target_density,
         }
     }
 }

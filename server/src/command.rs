@@ -3,7 +3,9 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, Output};
 
+use crate::config::Config;
 use crate::{Error, Result};
+use rayon::prelude::*;
 
 extern crate ffmpeg_next as ffmpeg;
 
@@ -47,72 +49,70 @@ pub fn count_pages<P: AsRef<Path>>(input: P) -> Result<u32> {
     Ok(count)
 }
 
+/// Convert One pdf to One png
+fn pdf2png(input: String, output: String, pdf_target_density: String, pdf_target_size: String) {
+    let command = vec![
+        "convert",
+        "-density",
+        &pdf_target_density,
+        &input,
+        "-colorspace",
+        "sRGB",
+        "-resize",
+        &pdf_target_size,
+        "-background",
+        "white",
+        "-gravity",
+        "center",
+        "-extent",
+        &pdf_target_size,
+        &output,
+    ];
+    run_command(&command).unwrap();
+}
 /// Exports all slides (or one) from pdf to png.
 pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
+    config: &Config,
     input: P,
     output: Q,
     page: Option<i32>,
 ) -> Result<String> {
-    println!(
-        "input = {:#?}, output = {:#?} ",
-        input.as_ref().to_str().unwrap(),
-        &format!("{}/", output.as_ref().to_str().unwrap())
-    );
-
+    let pdf_target_size = config.pdf_target_size.clone();
+    let pdf_target_density = config.pdf_target_density.clone();
     match page {
         Some(x) => {
             let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), x);
             let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), x);
-            let command = vec![
-                "convert",
-                "-density",
-                "380",
-                &command_input_path,
-                "-colorspace",
-                "sRGB",
-                "-resize",
-                "1920x1080",
-                "-background",
-                "white",
-                "-gravity",
-                "center",
-                "-extent",
-                "1920x1080",
-                &command_output_path,
-            ];
-            run_command(&command)?;
-            Ok(command_output_path)
+            pdf2png(
+                command_input_path,
+                command_output_path,
+                pdf_target_density.to_string(),
+                pdf_target_size.to_string(),
+            );
         }
 
         None => {
-            let n_pages = count_pages(&input)?;
-            for i in 0..n_pages {
-                //  convert ~/Bureau/pdf43.pdf -colorspace RGB -resize 1920x1080 -background white -gravity center -extent 1920x1080 /tmp/pdf43.png
-                let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), i);
-                let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), i);
-                let command = vec![
-                    "convert",
-                    "-density",
-                    "380",
-                    &command_input_path,
-                    "-colorspace",
-                    "sRGB",
-                    "-resize",
-                    "1920x1080",
-                    "-background",
-                    "white",
-                    "-gravity",
-                    "center",
-                    "-extent",
-                    "1920x1080",
-                    &command_output_path,
-                ];
-                run_command(&command)?;
-            }
+            let vec: Vec<u32> = (0..count_pages(&input)?).collect();
+            let vec_in = vec
+                .iter()
+                .map(|i| format!("{}[{}]", input.as_ref().to_str().unwrap(), i))
+                .zip(
+                    vec.iter()
+                        .map(|i| format!("{}/{:05}.png", output.as_ref().to_str().unwrap(), i)),
+                )
+                .collect::<Vec<_>>();
 
-            Ok(output.as_ref().to_str().unwrap().to_string())
+            vec_in.par_iter().for_each(|(filepath, filepath_out)| {
+                pdf2png(
+                    filepath.to_string(),
+                    filepath_out.clone(),
+                    pdf_target_density.to_string(),
+                    pdf_target_size.to_string(),
+                );
+            })
         }
     }
+    Ok(output.as_ref().to_str().unwrap().to_string())
 }
 
 /// Video metadata strcuture
