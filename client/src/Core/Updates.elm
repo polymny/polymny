@@ -56,6 +56,9 @@ update msg { global, model } =
                 ( Core.ForgotPasswordClicked, _ ) ->
                     ( Core.FullModel global (Core.homeForgotPassword ForgotPassword.init), Cmd.none )
 
+                ( Core.AboutClicked, _ ) ->
+                    ( Core.FullModel global (Core.Home Core.HomeAbout), Cmd.none )
+
                 -- OTHER MODULES MESSAGES
                 ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->
                     let
