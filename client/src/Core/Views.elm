@@ -1,5 +1,6 @@
 module Core.Views exposing (subscriptions, view)
 
+import About.Views as About
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
@@ -84,6 +85,9 @@ viewContent { global, model } =
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
 
+                Core.About ->
+                    ( About.view, Nothing )
+
         attributes =
             case model of
                 Core.LoggedIn { tab } ->
@@ -141,6 +145,12 @@ homeView model =
                 Core.HomeForgotPassword forgotPassword ->
                     ( ForgotPassword.view forgotPassword
                     , Ui.linkButton (Just Core.LoginClicked) "Retourner au début"
+                    , Element.none
+                    )
+
+                Core.HomeAbout ->
+                    ( About.view
+                    , Ui.linkButton (Just Core.LoginClicked) "Fermer"
                     , Element.none
                     )
 
@@ -303,28 +313,17 @@ bottomBar global =
         [ Element.el [ Element.height Element.fill ] Element.none
         , Element.row
             [ Element.width Element.fill, Element.alignBottom, Element.padding 15 ]
-            [ Element.row [ Element.alignLeft ]
+            [ Element.row [ Element.alignLeft, Element.spacing 5 ]
                 [ Element.text
-                    "Polymny studio is proudly written in "
-                , Element.link
-                    []
-                    { url = "https://www.rust-lang.org/"
-                    , label = Element.el [ Font.bold ] <| Element.text "Rust"
-                    }
-                , Element.text " and "
-                , Element.link
-                    []
-                    { url = "https://elm-lang.org/"
-                    , label = Element.el [ Font.bold ] <| Element.text "Elm"
-                    }
-                , Element.text " by T. Forgione, N. Bertrand, A. Carlier and V. Charvillat (IRIT/REVA). (c) 2020. Support: "
+                    "Polymny studio:"
                 , Element.link
                     []
                     { url = "mailto:contacter@polymny.studio"
                     , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
                     }
+                , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
                 ]
-            , Element.row [ Element.alignRight ]
+            , Element.row [ Element.alignRight, Element.spacing 5 ]
                 [ Element.link
                     []
                     { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
@@ -340,6 +339,11 @@ bottomBar global =
                                 ""
                            )
                     )
+                , Element.link
+                    []
+                    { url = "https://github.com/polymny/polymny"
+                    , label = Element.el [ Font.bold ] <| Element.text "Fork me!"
+                    }
                 ]
             ]
         ]

@@ -86,8 +86,12 @@ pub fn new_slide(
             let mut output_path = config.data_path.clone();
             output_path.push(asset.asset_path);
 
-            let ret_path =
-                command::export_slides(&output_path, temp_dir.path(), Some(slide_pos_in_pdf))?;
+            let ret_path = command::export_slides(
+                &config,
+                &output_path,
+                temp_dir.path(),
+                Some(slide_pos_in_pdf),
+            )?;
 
             let slide_name = format!("{}__{}.png", stem, slide_pos_in_pdf);
             let path_dest: PathBuf = [
@@ -412,8 +416,12 @@ pub fn replace_slide(
             let mut output_path = config.data_path.clone();
             output_path.push(asset.asset_path);
 
-            let ret_path =
-                command::export_slides(&output_path, temp_dir.path(), Some(slide_pos_in_pdf))?;
+            let ret_path = command::export_slides(
+                &config,
+                &output_path,
+                temp_dir.path(),
+                Some(slide_pos_in_pdf),
+            )?;
 
             let slide_name = format!("{}__{}.png", stem, slide_pos_in_pdf);
             let path_dest: PathBuf = [

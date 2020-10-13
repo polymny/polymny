@@ -4,6 +4,7 @@ import Acquisition.Ports as Ports
 import Api
 import Browser
 import Browser.Navigation as Nav
+import Core.Ports as Ports
 import Core.Types as Core
 import Core.Utils as Core
 import ForgotPassword.Types as ForgotPassword
@@ -56,6 +57,9 @@ update msg { global, model } =
                 ( Core.ForgotPasswordClicked, _ ) ->
                     ( Core.FullModel global (Core.homeForgotPassword ForgotPassword.init), Cmd.none )
 
+                ( Core.AboutClicked, _ ) ->
+                    ( Core.FullModel global (Core.Home Core.HomeAbout), Cmd.none )
+
                 -- OTHER MODULES MESSAGES
                 ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->
                     let
@@ -107,6 +111,9 @@ update msg { global, model } =
 
                 ( Core.UrlReceived m c, _ ) ->
                     ( Core.FullModel global m, c )
+
+                ( Core.CopyUrl url, _ ) ->
+                    ( Core.FullModel global model, Ports.copyString url )
 
                 ( m, _ ) ->
                     let

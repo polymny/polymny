@@ -115,7 +115,7 @@ pub fn quick_upload_slides(
 
                     // Generates images one per presentation page
                     let dir = tempdir()?;
-                    command::export_slides(&output_path, dir.path(), None)?;
+                    command::export_slides(&config, &output_path, dir.path(), None)?;
 
                     let mut entries: Vec<_> =
                         fs::read_dir(&dir)?.map(|res| res.unwrap().path()).collect();
@@ -168,7 +168,6 @@ pub fn quick_upload_slides(
                             .set(structure.eq(serde_json!(capsule_structure)))
                             .execute(&db.0)?;
                     }
-
                     // TODO: return capsule details like get_capsule
                     let capsule = user.get_capsule_by_id(capsule.id, &db)?;
                     return format_capsule_data(&db, &capsule);

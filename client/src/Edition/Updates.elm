@@ -2,7 +2,6 @@ module Edition.Updates exposing (update)
 
 import Api
 import Core.Types as Core
-import Edition.Ports as Ports
 import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
 import Status
@@ -278,9 +277,6 @@ update session msg model =
                     newDetailsAux model gosIndex gosUpdatedStructure
             in
             ( makeModel { model | details = newDetails }, cmd )
-
-        Edition.CopyUrl url ->
-            ( makeModel model, Ports.copyString url )
 
         Edition.ToggleEditDefault ->
             ( makeModel { model | editCapsuleOptions = not model.editCapsuleOptions }, Cmd.none )

@@ -405,7 +405,7 @@ bottomRow global model =
                                     ]
                                     (Element.text "Vidéo publiée")
                             }
-                        , Ui.chainButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg (Edition.CopyUrl (videoUrl v))))) "" "Copier l'url de la vidéo"
+                        , Ui.chainButton (Just (Core.CopyUrl (videoUrl v))) "" "Copier l'url de la vidéo"
                         ]
 
                 ( _, _ ) ->

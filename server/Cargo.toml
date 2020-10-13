@@ -32,6 +32,7 @@ compile-time-run = { version = "0.2.8", optional = true }
 image = "0.23.9"
 ffmpeg-next = "4.3.6"
 rocket_seek_stream = "0.2.3"
+rayon = "1.4.1"
 
 [dependencies.rocket_contrib]
 version = "0.4.4"

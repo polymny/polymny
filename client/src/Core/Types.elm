@@ -39,12 +39,14 @@ type Model
     = Home HomeModel
     | ResetPassword ResetPassword.Model
     | LoggedIn LoggedIn.Model
+    | About
 
 
 type HomeModel
     = HomeLogin Login.Model
     | HomeSignUp SignUp.Model
     | HomeForgotPassword ForgotPassword.Model
+    | HomeAbout
 
 
 type Msg
@@ -55,6 +57,7 @@ type Msg
     | SignUpClicked
     | ForgotPasswordClicked
     | NewProjectClicked
+    | AboutClicked
     | TimeZoneChanged Time.Zone
     | LoginMsg Login.Msg
     | SignUpMsg SignUp.Msg
@@ -63,3 +66,4 @@ type Msg
     | ResetPasswordMsg ResetPassword.Msg
     | UrlRequested Browser.UrlRequest
     | UrlReceived Model (Cmd Msg)
+    | CopyUrl String
