@@ -782,7 +782,7 @@ projectsView global session uploadForm =
             , columns =
                 [ { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Nom du projet")
                   , width = Element.fill
-                  , view = titleView uploadForm.rename
+                  , view = titleView global uploadForm.rename
                   }
                 , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Date de création")
                   , width = Element.fill
@@ -796,16 +796,36 @@ projectsView global session uploadForm =
             }
 
 
-titleView : Maybe LoggedIn.Rename -> ProjectOrCapsule -> Element Core.Msg
-titleView rename cop =
+titleView : Core.Global -> Maybe LoggedIn.Rename -> ProjectOrCapsule -> Element Core.Msg
+titleView global rename cop =
     case cop of
         Capsule p c ->
             let
+                videoUrl : Api.Asset -> String
+                videoUrl asset =
+                    global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
+                extraInfo =
+                    case ( c.video, c.published ) of
+                        ( Just v, Api.Published ) ->
+                            Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                                { url = videoUrl v, label = Element.text "voir la vidéo publiée" }
+
+                        ( Just v, _ ) ->
+                            Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                                { url = v.asset_path, label = Element.text "voir la vidéo produite" }
+
+                        _ ->
+                            Element.none
+
                 default =
-                    Input.button Ui.linkAttributes
-                        { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
-                        , label = Element.text c.name
-                        }
+                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                        [ Input.button Ui.linkAttributes
+                            { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
+                            , label = Element.text c.name
+                            }
+                        , Element.el [ Font.italic ] extraInfo
+                        ]
 
                 title =
                     case rename of
