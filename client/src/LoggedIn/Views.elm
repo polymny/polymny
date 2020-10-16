@@ -603,12 +603,50 @@ projectViewTitle rename project =
             else
                 "▽ "
 
+        extraInfo =
+            let
+                plural : Int -> String
+                plural n =
+                    if n < 2 then
+                        ""
+
+                    else
+                        "s"
+
+                capsules =
+                    List.length project.capsules
+
+                capsulesEdited =
+                    project.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
+
+                capsulesPublished =
+                    project.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
+            in
+            Element.el [ Font.italic ]
+                (Element.text
+                    ("("
+                        ++ String.fromInt capsules
+                        ++ " capsule"
+                        ++ plural capsules
+                        ++ ", "
+                        ++ String.fromInt capsulesEdited
+                        ++ " produite"
+                        ++ plural capsulesEdited
+                        ++ ", "
+                        ++ String.fromInt capsulesPublished
+                        ++ " publiée"
+                        ++ plural capsulesPublished
+                        ++ ")"
+                    )
+                )
+
         title =
             let
                 default =
-                    Input.button []
+                    Input.button
+                        Ui.linkAttributes
                         { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
-                        , label = Element.text (prefix ++ project.name)
+                        , label = Element.row [ Element.spacing 10 ] [ Element.text (prefix ++ project.name), extraInfo ]
                         }
             in
             case rename of
@@ -764,7 +802,7 @@ titleView rename cop =
         Capsule p c ->
             let
                 default =
-                    Input.button []
+                    Input.button Ui.linkAttributes
                         { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
                         , label = Element.text c.name
                         }

@@ -14,6 +14,7 @@ module Ui.Ui exposing
     , fontButton
     , homeButton
     , imageButton
+    , linkAttributes
     , linkButton
     , mainViewAttributes1
     , mainViewAttributes2
@@ -59,6 +60,14 @@ import Html.Events
 import Json.Decode as Decode
 import Ui.Colors as Colors
 import Ui.Icons as Icons
+
+
+linkAttributes : List (Element.Attribute msg)
+linkAttributes =
+    [ Border.widthEach { top = 0, left = 0, bottom = 1, right = 0 }
+    , Border.color (Element.rgba255 255 255 255 255)
+    , Element.mouseOver [ Border.color Colors.link, Font.color Colors.link ]
+    ]
 
 
 borderBottom : Int -> Element.Attribute msg
