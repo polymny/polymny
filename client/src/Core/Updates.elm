@@ -58,7 +58,10 @@ update msg { global, model } =
                     ( Core.FullModel global (Core.homeForgotPassword ForgotPassword.init), Cmd.none )
 
                 ( Core.AboutClicked, _ ) ->
-                    ( Core.FullModel global (Core.Home Core.HomeAbout), Cmd.none )
+                    ( Core.FullModel { global | showAbout = True } model, Cmd.none )
+
+                ( Core.AboutClosed, _ ) ->
+                    ( Core.FullModel { global | showAbout = False } model, Cmd.none )
 
                 -- OTHER MODULES MESSAGES
                 ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->

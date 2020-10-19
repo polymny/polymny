@@ -32,6 +32,7 @@ type alias Global =
     , key : Browser.Navigation.Key
     , numberOfSlidesPerRow : Int
     , expiry : Int
+    , showAbout : Bool
     }
 
 
@@ -39,7 +40,6 @@ type Model
     = Home HomeModel
     | ResetPassword ResetPassword.Model
     | LoggedIn LoggedIn.Model
-    | About
 
 
 type HomeModel
@@ -58,6 +58,7 @@ type Msg
     | ForgotPasswordClicked
     | NewProjectClicked
     | AboutClicked
+    | AboutClosed
     | TimeZoneChanged Time.Zone
     | LoginMsg Login.Msg
     | SignUpMsg SignUp.Msg

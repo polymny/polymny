@@ -1,6 +1,6 @@
 module Core.Views exposing (subscriptions, view)
 
-import About.Views as About
+import About
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
@@ -74,7 +74,7 @@ view fullModel =
 viewContent : Core.FullModel -> Element Core.Msg
 viewContent { global, model } =
     let
-        ( content, popup ) =
+        ( content, givenPopup ) =
             case model of
                 Core.Home homeModel ->
                     ( homeView homeModel, Nothing )
@@ -85,8 +85,13 @@ viewContent { global, model } =
                 Core.LoggedIn { session, tab } ->
                     LoggedIn.view global session tab
 
-                Core.About ->
-                    ( About.view, Nothing )
+        popup =
+            case ( global.showAbout, givenPopup ) of
+                ( True, Nothing ) ->
+                    Just (Ui.popup "À propos" About.view)
+
+                ( _, p ) ->
+                    p
 
         attributes =
             case model of

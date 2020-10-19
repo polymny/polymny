@@ -1,8 +1,9 @@
-module About.Views exposing (view)
+module About exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Font as Font
+import Ui.Ui as Ui
 
 
 viewLogo : Int -> String -> Element Core.Msg
@@ -12,7 +13,7 @@ viewLogo size url =
 
 view : Element Core.Msg
 view =
-    Element.column [ Element.centerX ]
+    Element.column [ Element.centerX, Element.padding 10 ]
         [ viewLogo 200 "/dist/polymny.png"
         , Element.textColumn
             [ Element.spacing 10, Element.padding 10 ]
@@ -39,4 +40,5 @@ view =
                 ]
             , Element.paragraph [ Font.center ] [ Element.text "by T. Forgione, N. Bertrand, A. Carlier and V. Charvillat" ]
             ]
+        , Element.el [ Element.alignRight ] (Ui.primaryButton (Just Core.AboutClosed) "Fermer")
         ]

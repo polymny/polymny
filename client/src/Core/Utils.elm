@@ -125,6 +125,7 @@ globalFromFlags flags key =
     , mattingEnabled = mattingEnabled
     , numberOfSlidesPerRow = 3
     , expiry = 0
+    , showAbout = False
     }
 
 
