@@ -102,15 +102,20 @@ update msg { global, model } =
                 -- Url message
                 ( Core.UrlRequested (Browser.Internal url), _ ) ->
                     ( Core.FullModel global model
+                    , Nav.pushUrl global.key (Url.toString url)
+                    )
+
+                ( Core.UrlRequested (Browser.External url), _ ) ->
+                    ( Core.FullModel global model, Nav.load url )
+
+                ( Core.UrlChanged url, _ ) ->
+                    ( Core.FullModel global model
                     , Api.get
                         { url = Url.toString url
                         , body = Http.emptyBody
                         , expect = Http.expectJson (resultToMsg global) Decode.value
                         }
                     )
-
-                ( Core.UrlRequested (Browser.External url), _ ) ->
-                    ( Core.FullModel global model, Nav.load url )
 
                 ( Core.UrlReceived m c, _ ) ->
                     ( Core.FullModel global m, c )
@@ -164,7 +169,7 @@ resultToMsg global result =
 
 onUrlChange : Url.Url -> Core.Msg
 onUrlChange url =
-    Core.UrlRequested (Browser.Internal url)
+    Core.UrlChanged url
 
 
 onUrlRequest : Browser.UrlRequest -> Core.Msg

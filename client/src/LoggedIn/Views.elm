@@ -17,6 +17,7 @@ import Html.Events
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
+import Routes
 import Settings.Views as Settings
 import Status
 import TimeUtils
@@ -561,8 +562,8 @@ titleView global rename cop =
 
                 default =
                     Element.el [ Element.width Element.fill, Element.spacing 10 ]
-                        (Input.button Ui.linkAttributes
-                            { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
+                        (Element.link []
+                            { url = Routes.preparation c.id
                             , label = Element.text c.name
                             }
                         )

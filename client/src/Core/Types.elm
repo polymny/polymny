@@ -14,6 +14,7 @@ import Login.Types as Login
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Time
+import Url
 
 
 type alias FullModel =
@@ -66,5 +67,6 @@ type Msg
     | ForgotPasswordMsg ForgotPassword.Msg
     | ResetPasswordMsg ResetPassword.Msg
     | UrlRequested Browser.UrlRequest
+    | UrlChanged Url.Url
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
