@@ -808,8 +808,14 @@ titleView global rename cop =
                 extraInfo =
                     case ( c.video, c.published ) of
                         ( Just v, Api.Published ) ->
-                            Element.newTabLink [ Font.color Colors.link, Font.underline ]
-                                { url = videoUrl v, label = Element.text "voir la vidéo publiée" }
+                            Element.row [ Element.spacing 10 ]
+                                [ Element.newTabLink Ui.linkAttributes
+                                    { url = videoUrl v, label = Element.text "voir la vidéo publiée" }
+                                , Input.button Ui.linkAttributes
+                                    { onPress = Just (Core.CopyUrl (videoUrl v))
+                                    , label = Element.text "(copier l'url)"
+                                    }
+                                ]
 
                         ( Just v, _ ) ->
                             Element.newTabLink [ Font.color Colors.link, Font.underline ]
