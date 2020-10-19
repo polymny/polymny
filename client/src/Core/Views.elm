@@ -19,6 +19,7 @@ import Login.Views as Login
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import ResetPassword.Views as ResetPassword
+import Routes
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -215,9 +216,9 @@ topBar model =
     case model of
         Core.LoggedIn { session, tab } ->
             let
-                makeButton : Maybe Core.Msg -> String -> Bool -> Element Core.Msg
+                makeButton : Maybe String -> String -> Bool -> Element Core.Msg
                 makeButton msg label active =
-                    Input.button
+                    Element.link
                         (Element.padding 7
                             :: Element.height Element.fill
                             :: (if active then
@@ -229,8 +230,14 @@ topBar model =
                                     []
                                )
                         )
-                        { onPress = msg
-                        , label = Element.text label
+                        { url =
+                            case msg of
+                                Nothing ->
+                                    "#"
+
+                                Just u ->
+                                    u
+                        , label = Element.el [ Element.centerY ] (Element.text label)
                         }
 
                 ( details, leftButtons ) =
@@ -238,23 +245,23 @@ topBar model =
                         LoggedIn.Preparation p ->
                             ( Just p.details
                             , [ makeButton Nothing "Préparer" True
-                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
-                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              , makeButton (Just (Routes.acquisition p.details.capsule.id)) "Filmer" False
+                              , makeButton (Just (Routes.edition p.details.capsule.id)) "Produire" False
                               ]
                             )
 
                         LoggedIn.Acquisition p ->
                             ( Just p.details
-                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
+                            , [ makeButton (Just (Routes.preparation p.details.capsule.id)) "Préparer" False
                               , makeButton Nothing "Filmer" True
-                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.EditionClicked p.details False))) "Produire" False
+                              , makeButton (Just (Routes.edition p.details.capsule.id)) "Produire" False
                               ]
                             )
 
                         LoggedIn.Edition p ->
                             ( Just p.details
-                            , [ makeButton (Just (Core.LoggedInMsg (LoggedIn.PreparationClicked p.details))) "Préparer" False
-                              , makeButton (Just (Core.LoggedInMsg (LoggedIn.AcquisitionClicked p.details))) "Filmer" False
+                            , [ makeButton (Just (Routes.preparation p.details.capsule.id)) "Préparer" False
+                              , makeButton (Just (Routes.acquisition p.details.capsule.id)) "Filmer" False
                               , makeButton Nothing "Produire" True
                               ]
                             )

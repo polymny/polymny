@@ -13,6 +13,7 @@ import Html exposing (Html)
 import Html.Attributes
 import LoggedIn.Types as LoggedIn
 import Preparation.Types as Preparation
+import Routes
 import Status
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
@@ -38,9 +39,6 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
         calculateOffset index =
             slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
-        msg =
-            Core.LoggedInMsg <| LoggedIn.AcquisitionClicked details
-
         increaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
 
@@ -54,7 +52,10 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                 |> Core.LoggedInMsg
 
         autoEdition =
-            Ui.primaryButton (Just msg) "Filmer"
+            Element.link []
+                { url = Routes.acquisition details.capsule.id
+                , label = Ui.primaryButton Nothing "Filmer"
+                }
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
