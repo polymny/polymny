@@ -386,50 +386,13 @@ projectViewTitle rename project =
             else
                 "▽ "
 
-        extraInfo =
-            let
-                plural : Int -> String
-                plural n =
-                    if n < 2 then
-                        ""
-
-                    else
-                        "s"
-
-                capsules =
-                    List.length project.capsules
-
-                capsulesEdited =
-                    project.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
-
-                capsulesPublished =
-                    project.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
-            in
-            Element.el [ Font.italic ]
-                (Element.text
-                    ("("
-                        ++ String.fromInt capsules
-                        ++ " capsule"
-                        ++ plural capsules
-                        ++ ", "
-                        ++ String.fromInt capsulesEdited
-                        ++ " produite"
-                        ++ plural capsulesEdited
-                        ++ ", "
-                        ++ String.fromInt capsulesPublished
-                        ++ " publiée"
-                        ++ plural capsulesPublished
-                        ++ ")"
-                    )
-                )
-
         title =
             let
                 default =
                     Input.button
                         Ui.linkAttributes
                         { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
-                        , label = Element.row [ Element.spacing 10 ] [ Element.text (prefix ++ project.name), extraInfo ]
+                        , label = Element.text (prefix ++ project.name)
                         }
             in
             case rename of
@@ -567,8 +530,16 @@ projectsView global session uploadForm =
                   , width = Element.fill
                   , view = titleView global uploadForm.rename
                   }
-                , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Date de création")
+                , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Progression")
+                  , width = Element.shrink
+                  , view = progressView
+                  }
+                , { header = Element.el [ Element.padding 10 ] Element.none
                   , width = Element.fill
+                  , view = progressIconsView global
+                  }
+                , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Date de création")
+                  , width = Element.shrink
                   , view = dateView global
                   }
                 , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text "Actions")
@@ -588,33 +559,13 @@ titleView global rename cop =
                 videoUrl asset =
                     global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
 
-                extraInfo =
-                    case ( c.video, c.published ) of
-                        ( Just v, Api.Published ) ->
-                            Element.row [ Element.spacing 10 ]
-                                [ Element.newTabLink Ui.linkAttributes
-                                    { url = videoUrl v, label = Element.text "voir la vidéo publiée" }
-                                , Input.button Ui.linkAttributes
-                                    { onPress = Just (Core.CopyUrl (videoUrl v))
-                                    , label = Element.text "(copier l'url)"
-                                    }
-                                ]
-
-                        ( Just v, _ ) ->
-                            Element.newTabLink Ui.linkAttributes
-                                { url = v.asset_path, label = Element.text "voir la vidéo produite" }
-
-                        _ ->
-                            Element.none
-
                 default =
-                    Element.row [ Element.width Element.fill, Element.spacing 10 ]
-                        [ Input.button Ui.linkAttributes
+                    Element.el [ Element.width Element.fill, Element.spacing 10 ]
+                        (Input.button Ui.linkAttributes
                             { onPress = Just (Core.LoggedInMsg (LoggedIn.CapsuleClicked c))
                             , label = Element.text c.name
                             }
-                        , Element.el [ Font.italic ] extraInfo
-                        ]
+                        )
 
                 title =
                     case rename of
@@ -641,13 +592,171 @@ titleView global rename cop =
                         _ ->
                             default
             in
-            Element.el [ Element.paddingEach { left = 30, right = 0, top = 0, bottom = 0 }, Element.centerY ] title
+            Element.el [ Element.paddingEach { left = 30, right = 10, top = 0, bottom = 0 }, Element.centerY ] title
 
         Project p ->
             projectViewTitle rename p
 
         Delimiter ->
             Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
+
+
+progressView : ProjectOrCapsule -> Element Core.Msg
+progressView cop =
+    case cop of
+        Project p ->
+            let
+                plural : Int -> String
+                plural n =
+                    if n < 2 then
+                        ""
+
+                    else
+                        "s"
+
+                capsules =
+                    List.length p.capsules
+
+                capsulesEdited =
+                    p.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
+
+                capsulesPublished =
+                    p.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
+            in
+            Element.el [ Font.italic, Element.centerY ]
+                (Element.text
+                    ("("
+                        ++ String.fromInt capsules
+                        ++ " capsule"
+                        ++ plural capsules
+                        ++ ", "
+                        ++ String.fromInt capsulesEdited
+                        ++ " produite"
+                        ++ plural capsulesEdited
+                        ++ ", "
+                        ++ String.fromInt capsulesPublished
+                        ++ " publiée"
+                        ++ plural capsulesPublished
+                        ++ ")"
+                    )
+                )
+
+        Capsule p c ->
+            capsuleProgressView c
+
+        Delimiter ->
+            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
+
+
+capsuleProgressView : Api.Capsule -> Element Core.Msg
+capsuleProgressView capsule =
+    let
+        position =
+            case ( capsule.video, capsule.published ) of
+                ( Just _, Api.Published ) ->
+                    2
+
+                ( Just _, _ ) ->
+                    1
+
+                _ ->
+                    0
+
+        color : Int -> Element.Attribute msg
+        color status =
+            Background.color
+                (if position >= status then
+                    Colors.successLight
+
+                 else
+                    Colors.grey
+                )
+
+        acquisition =
+            Element.el
+                [ Element.width Element.fill
+                , color 0
+                , Element.padding 10
+                , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text "acquisition"))
+
+        edition =
+            Element.el
+                [ Element.width Element.fill
+                , color 1
+                , Element.padding 10
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text "production"))
+
+        publication =
+            Element.el
+                [ Element.width Element.fill
+                , color 2
+                , Element.padding 10
+                , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
+                , Border.color Colors.black
+                , Border.width 1
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text "publication"))
+    in
+    Element.row [ Element.height Element.fill, Element.width Element.fill, Element.centerY ]
+        [ acquisition
+        , edition
+        , publication
+        ]
+
+
+progressIconsView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
+progressIconsView global cop =
+    case cop of
+        Project p ->
+            Element.none
+
+        Capsule p c ->
+            capsuleProgressIconsView global c
+
+        Delimiter ->
+            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
+
+
+capsuleProgressIconsView : Core.Global -> Api.Capsule -> Element Core.Msg
+capsuleProgressIconsView global capsule =
+    let
+        videoUrl : Api.Asset -> String
+        videoUrl asset =
+            global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
+
+        icons =
+            case ( capsule.video, capsule.published ) of
+                ( Just v, Api.Published ) ->
+                    [ Element.newTabLink []
+                        { url = videoUrl v, label = Ui.movieButton Nothing "" "Voir la vidéo" }
+                    , Ui.chainButton
+                        (Just (Core.CopyUrl (videoUrl v)))
+                        ""
+                        "Copier l'url"
+                    ]
+
+                ( Just v, _ ) ->
+                    [ Element.newTabLink []
+                        { url = v.asset_path, label = Ui.movieButton Nothing "" "Voir la vidéo" }
+                    ]
+
+                _ ->
+                    []
+    in
+    Element.row [ Element.padding 10, Element.spacing 10 ] icons
+
+
+
+--Element.row [ Element.height Element.fill ]
+--    [ Element.text "yo"
+--    ]
 
 
 dateView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
@@ -660,7 +769,7 @@ dateView global cop =
             projectViewDate global p
 
         Delimiter ->
-            Element.el [ Element.width Element.fill, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
+            Element.el [ Element.alignRight, Border.color Colors.black, Ui.borderBottom 1 ] Element.none
 
 
 actionsView : ProjectOrCapsule -> Element Core.Msg
