@@ -818,7 +818,7 @@ titleView global rename cop =
                                 ]
 
                         ( Just v, _ ) ->
-                            Element.newTabLink [ Font.color Colors.link, Font.underline ]
+                            Element.newTabLink Ui.linkAttributes
                                 { url = v.asset_path, label = Element.text "voir la vidéo produite" }
 
                         _ ->
