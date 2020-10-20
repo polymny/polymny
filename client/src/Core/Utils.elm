@@ -126,7 +126,21 @@ globalFromFlags flags key =
     , numberOfSlidesPerRow = 3
     , expiry = 0
     , showAbout = False
+    , notifications = testNotif
+    , notificationPanelVisible = False
     }
+
+
+testNotif : List Core.Notification
+testNotif =
+    [ Core.notification "Bonjour" "Bonjour Toto"
+    , { title = "Bonjour", content = "Bonjour Tata", read = True }
+    , Core.notification "Bonjour" "Bonjour Toto"
+    , { title = "Bonjour", content = "Bonjour Tata", read = True }
+    , Core.notification "Bonjour" "Bonjour Toto"
+    , Core.notification "Bonjour" "Bonjour Toto"
+    , { title = "Bonjour", content = "Bonjour Tata", read = True }
+    ]
 
 
 modelFromFlags : Core.Global -> Decode.Value -> ( Core.Model, Cmd Core.Msg )

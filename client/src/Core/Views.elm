@@ -23,6 +23,7 @@ import Routes
 import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
+import Ui.Icons as Icons
 import Ui.Ui as Ui
 
 
@@ -122,7 +123,7 @@ viewContent { global, model } =
             :: Element.inFront (Maybe.withDefault Element.none popup)
             :: attributes
         )
-        [ topBar model
+        [ topBar global model
         , content
         , bottomBar global
         ]
@@ -211,8 +212,8 @@ homeView model =
         ]
 
 
-topBar : Core.Model -> Element Core.Msg
-topBar model =
+topBar : Core.Global -> Core.Model -> Element Core.Msg
+topBar global model =
     case model of
         Core.LoggedIn { session, tab } ->
             let
@@ -238,6 +239,43 @@ topBar model =
                                 Just u ->
                                     u
                         , label = Element.el [ Element.centerY ] (Element.text label)
+                        }
+
+                unreadNotifcaitions =
+                    global.notifications |> List.filter (not << .read) |> List.length
+
+                unreadNotificationsInFront =
+                    let
+                        size =
+                            12
+                    in
+                    if unreadNotifcaitions > 0 then
+                        Element.el
+                            [ Element.alignRight
+                            , Element.alignBottom
+                            , Background.color Colors.danger
+                            , Element.width (Element.px size)
+                            , Element.height (Element.px size)
+                            , Border.rounded (size // 2)
+                            , Font.size 8
+                            ]
+                            (Element.el
+                                [ Element.centerX, Element.centerY ]
+                                (Element.text (String.fromInt unreadNotifcaitions))
+                            )
+
+                    else
+                        Element.none
+
+                notificationIcon =
+                    Input.button []
+                        { label =
+                            Element.el
+                                [ Element.padding 5
+                                , Element.inFront unreadNotificationsInFront
+                                ]
+                                Icons.bell
+                        , onPress = Just (Core.NotificationMsg Core.ToggleNotificationPanel)
                         }
 
                 ( details, leftButtons ) =
@@ -291,6 +329,7 @@ topBar model =
                 [ Background.color Colors.primary
                 , Font.color Colors.white
                 , Element.width Element.fill
+                , Element.below (notificationPanel global)
                 ]
                 [ Element.row
                     [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
@@ -300,7 +339,8 @@ topBar model =
                     ]
                 , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ]
                     (if Core.isLoggedIn model then
-                        [ settingsButton session.username
+                        [ notificationIcon
+                        , settingsButton session.username
                         , logoutButton
                         ]
 
@@ -311,6 +351,93 @@ topBar model =
 
         _ ->
             nonFull model
+
+
+notificationPanel : Core.Global -> Element Core.Msg
+notificationPanel global =
+    let
+        notifications =
+            if List.isEmpty global.notifications then
+                [ Element.paragraph [] [ Element.text "Vous n'avez aucune notification." ] ]
+
+            else
+                List.indexedMap notificationView global.notifications
+
+        header =
+            Element.row
+                [ Element.width Element.fill
+                , Element.paddingEach
+                    { top = 0
+                    , bottom = 10
+                    , left = 0
+                    , right = 0
+                    }
+                , Font.size 16
+                , Font.bold
+                ]
+                [ Element.text "Notifications"
+                , Input.button [ Element.alignRight ]
+                    { label = Element.text "x"
+                    , onPress = Just (Core.NotificationMsg Core.ToggleNotificationPanel)
+                    }
+                ]
+    in
+    if global.notificationPanelVisible then
+        Element.row [ Element.width Element.fill, Element.paddingXY 10 0 ]
+            [ Element.el [ Element.width (Element.fillPortion 5) ] Element.none
+            , Element.column
+                [ Background.color Colors.whiteDark
+                , Font.color Colors.black
+                , Border.width 1
+                , Border.color Colors.black
+                , Border.rounded 10
+                , Element.padding 10
+                , Element.alignRight
+                , Element.width Element.fill
+                ]
+                (header :: notifications)
+            ]
+
+    else
+        Element.none
+
+
+notificationView : Int -> Core.Notification -> Element Core.Msg
+notificationView id notification =
+    let
+        ( icon, fontStyle ) =
+            if notification.read then
+                ( Element.el [ Font.color Colors.grey ] (Element.text "●"), Font.regular )
+
+            else
+                ( Element.el [ Font.color Colors.primary ] (Element.text "⬤"), Font.bold )
+
+        label =
+            Element.row
+                [ Element.width Element.fill
+                , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
+                , Border.color Colors.black
+                , Element.paddingXY 0 5
+                ]
+                [ icon
+                , Element.column
+                    [ Element.width Element.fill
+                    , Element.padding 5
+                    ]
+                    [ Element.paragraph [ fontStyle ] [ Element.text notification.title ]
+                    , Element.paragraph [ fontStyle ] [ Element.text notification.content ]
+                    ]
+                ]
+    in
+    if notification.read then
+        label
+
+    else
+        Input.button
+            [ Element.width Element.fill ]
+            { label = label
+            , onPress = Just (Core.NotificationMsg (Core.MarkNotificationRead id))
+            }
 
 
 bottomBar : Core.Global -> Element Core.Msg

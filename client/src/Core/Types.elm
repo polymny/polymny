@@ -4,6 +4,9 @@ module Core.Types exposing
     , HomeModel(..)
     , Model(..)
     , Msg(..)
+    , Notification
+    , NotificationMsg(..)
+    , notification
     )
 
 import Browser
@@ -23,6 +26,18 @@ type alias FullModel =
     }
 
 
+type alias Notification =
+    { title : String
+    , content : String
+    , read : Bool
+    }
+
+
+notification : String -> String -> Notification
+notification title content =
+    Notification title content False
+
+
 type alias Global =
     { zone : Time.Zone
     , beta : Bool
@@ -34,6 +49,8 @@ type alias Global =
     , numberOfSlidesPerRow : Int
     , expiry : Int
     , showAbout : Bool
+    , notifications : List Notification
+    , notificationPanelVisible : Bool
     }
 
 
@@ -70,3 +87,10 @@ type Msg
     | UrlChanged Url.Url
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
+    | NotificationMsg NotificationMsg
+
+
+type NotificationMsg
+    = NewNotification Notification
+    | ToggleNotificationPanel
+    | MarkNotificationRead Int

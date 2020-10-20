@@ -99,6 +99,13 @@ update msg { global, model } =
                     in
                     ( Core.FullModel newGlobal (Core.LoggedIn m), cmd )
 
+                ( Core.NotificationMsg nMsg, _ ) ->
+                    let
+                        ( newGlobal, cmd ) =
+                            updateNotification nMsg global
+                    in
+                    ( Core.FullModel newGlobal model, cmd )
+
                 -- Url message
                 ( Core.UrlRequested (Browser.Internal url), _ ) ->
                     ( Core.FullModel global model
@@ -140,6 +147,31 @@ update msg { global, model } =
                     Cmd.none
     in
     ( returnModel, Cmd.batch [ returnCmd, closeCamera ] )
+
+
+updateNotification : Core.NotificationMsg -> Core.Global -> ( Core.Global, Cmd Core.Msg )
+updateNotification msg global =
+    case msg of
+        Core.NewNotification notif ->
+            ( { global | notifications = notif :: global.notifications }, Cmd.none )
+
+        Core.ToggleNotificationPanel ->
+            ( { global | notificationPanelVisible = not global.notificationPanelVisible }, Cmd.none )
+
+        Core.MarkNotificationRead id ->
+            let
+                newNotifications =
+                    global.notifications
+                        |> List.indexedMap
+                            (\i x ->
+                                if i == id then
+                                    { x | read = True }
+
+                                else
+                                    x
+                            )
+            in
+            ( { global | notifications = newNotifications }, Cmd.none )
 
 
 isAcquisition : Core.Model -> Bool
