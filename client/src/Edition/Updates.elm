@@ -4,6 +4,7 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
+import Notification.Types as Notification
 import Status
 import Utils
 import Webcam
@@ -307,7 +308,10 @@ resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
+            Edition.AutoSuccess x
+                |> LoggedIn.EditionMsg
+                |> Core.LoggedInMsg
+                |> Core.WithNotification (Notification.info "Edition terminée" "L'édition de la capsule est terminée")
         )
         (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result

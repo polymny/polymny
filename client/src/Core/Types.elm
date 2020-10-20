@@ -4,9 +4,7 @@ module Core.Types exposing
     , HomeModel(..)
     , Model(..)
     , Msg(..)
-    , Notification
     , NotificationMsg(..)
-    , notification
     )
 
 import Browser
@@ -14,6 +12,7 @@ import Browser.Navigation
 import ForgotPassword.Types as ForgotPassword
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
+import Notification.Types as Notification exposing (Notification)
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Time
@@ -24,18 +23,6 @@ type alias FullModel =
     { global : Global
     , model : Model
     }
-
-
-type alias Notification =
-    { title : String
-    , content : String
-    , read : Bool
-    }
-
-
-notification : String -> String -> Notification
-notification title content =
-    Notification title content False
 
 
 type alias Global =
@@ -88,6 +75,7 @@ type Msg
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
     | NotificationMsg NotificationMsg
+    | WithNotification Notification Msg
 
 
 type NotificationMsg

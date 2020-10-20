@@ -16,6 +16,8 @@ import ForgotPassword.Views as ForgotPassword
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
+import Notification.Types exposing (Notification)
+import Notification.Views as Notification
 import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import ResetPassword.Views as ResetPassword
@@ -361,7 +363,7 @@ notificationPanel global =
                 [ Element.paragraph [] [ Element.text "Vous n'avez aucune notification." ] ]
 
             else
-                List.indexedMap notificationView global.notifications
+                List.indexedMap Notification.view global.notifications
 
         header =
             Element.row
@@ -384,7 +386,7 @@ notificationPanel global =
     in
     if global.notificationPanelVisible then
         Element.row [ Element.width Element.fill, Element.paddingXY 10 0 ]
-            [ Element.el [ Element.width (Element.fillPortion 5) ] Element.none
+            [ Element.el [ Element.width (Element.fillPortion 3) ] Element.none
             , Element.column
                 [ Background.color Colors.whiteDark
                 , Font.color Colors.black
@@ -400,44 +402,6 @@ notificationPanel global =
 
     else
         Element.none
-
-
-notificationView : Int -> Core.Notification -> Element Core.Msg
-notificationView id notification =
-    let
-        ( icon, fontStyle ) =
-            if notification.read then
-                ( Element.el [ Font.color Colors.grey ] (Element.text "●"), Font.regular )
-
-            else
-                ( Element.el [ Font.color Colors.primary ] (Element.text "⬤"), Font.bold )
-
-        label =
-            Element.row
-                [ Element.width Element.fill
-                , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
-                , Border.color Colors.black
-                , Element.paddingXY 0 5
-                ]
-                [ icon
-                , Element.column
-                    [ Element.width Element.fill
-                    , Element.padding 5
-                    ]
-                    [ Element.paragraph [ fontStyle ] [ Element.text notification.title ]
-                    , Element.paragraph [ fontStyle ] [ Element.text notification.content ]
-                    ]
-                ]
-    in
-    if notification.read then
-        label
-
-    else
-        Input.button
-            [ Element.width Element.fill ]
-            { label = label
-            , onPress = Just (Core.NotificationMsg (Core.MarkNotificationRead id))
-            }
 
 
 bottomBar : Core.Global -> Element Core.Msg
