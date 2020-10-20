@@ -38,10 +38,22 @@ update session msg model =
                 newDetails =
                     { details | capsule = newCapsule }
 
+                projectName =
+                    List.head details.projects |> Maybe.map .name
+
+                line =
+                    case projectName of
+                        Just p ->
+                            "La publication de la vidéo de la capsule " ++ capsule.name ++ " (" ++ p ++ ") est terminée !"
+
+                        Nothing ->
+                            "La publication de la vidéo de la capsule " ++ capsule.name ++ " est terminée !"
+
                 cmd =
                     Api.publishVideo (\_ -> Edition.VideoPublished) model.details.capsule.id
                         |> Cmd.map LoggedIn.EditionMsg
                         |> Cmd.map Core.LoggedInMsg
+                        |> Cmd.map (Core.WithNotification (Notification.info "Publication terminée" line))
             in
             ( makeModel { model | details = newDetails }, cmd )
 
