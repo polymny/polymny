@@ -2,6 +2,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     assets (id) {
         id -> Int4,
@@ -17,6 +18,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     assets_objects (id) {
         id -> Int4,
@@ -30,6 +32,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     capsules (id) {
         id -> Int4,
@@ -51,6 +54,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     capsules_projects (id) {
         id -> Int4,
@@ -63,6 +67,23 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
+
+    notifications (id) {
+        id -> Int4,
+        user_id -> Int4,
+        title -> Varchar,
+        content -> Varchar,
+        style -> Notification_style,
+        read -> Bool,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use crate::db::asset::*;
+    use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     projects (id) {
         id -> Int4,
@@ -76,6 +97,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     sessions (id) {
         id -> Int4,
@@ -88,6 +110,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     slides (id) {
         id -> Int4,
@@ -102,6 +125,7 @@ table! {
     use diesel::sql_types::*;
     use crate::db::asset::*;
     use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     users (id) {
         id -> Int4,
@@ -119,6 +143,7 @@ table! {
 joinable!(assets_objects -> assets (asset_id));
 joinable!(capsules_projects -> capsules (capsule_id));
 joinable!(capsules_projects -> projects (project_id));
+joinable!(notifications -> users (user_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
 joinable!(slides -> capsules (capsule_id));
@@ -128,6 +153,7 @@ allow_tables_to_appear_in_same_query!(
     assets_objects,
     capsules,
     capsules_projects,
+    notifications,
     projects,
     sessions,
     slides,

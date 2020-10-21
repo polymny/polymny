@@ -18,6 +18,7 @@ use bcrypt::{hash, DEFAULT_COST};
 use serde::Deserialize;
 
 use crate::db::capsule::Capsule;
+use crate::db::notification::Notification;
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
@@ -166,6 +167,7 @@ impl User {
         let user = dsl::users.filter(dsl::email.eq(email)).first::<User>(db);
         Ok(user?)
     }
+
     /// Gets a user by idl.
     pub fn get_by_id(id: i32, db: &PgConnection) -> Result<User> {
         use crate::schema::users::dsl;

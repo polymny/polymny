@@ -2,6 +2,7 @@
 
 pub mod asset;
 pub mod capsule;
+pub mod notification;
 pub mod project;
 pub mod session;
 pub mod slide;
