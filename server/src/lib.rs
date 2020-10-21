@@ -31,9 +31,11 @@ pub mod schema;
 
 use std::fs::OpenOptions;
 use std::io::Cursor;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
 use std::{error, fmt, io, result, thread};
 
+use tungstenite::protocol::WebSocket;
 use tungstenite::server::accept;
 use tungstenite::Message;
 
@@ -44,6 +46,7 @@ use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
+use rocket::State;
 
 use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
@@ -185,6 +188,7 @@ impl<'r> Responder<'r> for Error {
             .finalize())
     }
 }
+
 /// Our database type.
 #[database("database")]
 pub struct Database(rocket_diesel::PgConnection);
@@ -192,6 +196,7 @@ pub struct Database(rocket_diesel::PgConnection);
 /// Starts the main server.
 pub fn start_server(rocket_config: RConfig) {
     let server_config = Config::from(&rocket_config);
+    let server_config_clone = server_config.clone();
 
     let rocket = if rocket_config.environment == Environment::Production {
         use simplelog::*;
@@ -216,10 +221,20 @@ pub fn start_server(rocket_config: RConfig) {
         rocket::custom(rocket_config)
     };
 
+    let socks: Arc<Mutex<Vec<WebSocket<TcpStream>>>> = Arc::new(Mutex::new(vec![]));
+    let socks_clone = socks.clone();
+
+    thread::spawn(move || {
+        start_websocket_server(server_config_clone, socks_clone);
+    });
+
     rocket
         .attach(Database::fairing())
         .attach(AdHoc::on_attach("Config fairing", |rocket| {
             Ok(rocket.manage(server_config))
+        }))
+        .attach(AdHoc::on_attach("Websockets fairing", |rocket| {
+            Ok(rocket.manage(socks))
         }))
         .mount(
             "/",
@@ -286,6 +301,15 @@ pub fn start_server(rocket_config: RConfig) {
         .launch();
 }
 
+/// A test route for websockets.
+#[get("/test")]
+pub fn test_route(socks: State<Arc<Mutex<Vec<WebSocket<TcpStream>>>>>) -> Result<()> {
+    for sock in &mut socks.lock().unwrap().iter_mut() {
+        sock.write_message(Message::text("Sup")).unwrap();
+    }
+    Ok(())
+}
+
 /// Starts the setup server.
 pub fn start_setup_server() {
     rocket::ignite()
@@ -308,10 +332,6 @@ pub fn start() {
         Ok(config) => {
             RocketConfig::active_default().unwrap();
             let rocket_config = config.active().clone();
-            let rocket_config_clone = rocket_config.clone();
-            thread::spawn(move || {
-                start_websocket_server(rocket_config_clone);
-            });
             start_server(rocket_config);
         }
 
@@ -325,25 +345,9 @@ pub fn start() {
 }
 
 /// Starts the websocket server.
-pub fn start_websocket_server(config: rocket::Config) {
-    let config = Config::from(&config);
+pub fn start_websocket_server(config: Config, socks: Arc<Mutex<Vec<WebSocket<TcpStream>>>>) {
     let server = TcpListener::bind(&config.socket_root).unwrap();
     for stream in server.incoming() {
-        let clone = config.clone();
-        thread::spawn(move || {
-            println!("{:?}", clone.socket_root);
-            let mut websocket = accept(stream.unwrap()).unwrap();
-            websocket
-                .write_message(Message::Text("sup".to_owned()))
-                .expect("Failed to write message to websocket");
-            loop {
-                let msg = websocket.read_message().unwrap();
-
-                // We do not want to send back ping/pong messages.
-                if msg.is_binary() || msg.is_text() {
-                    websocket.write_message(msg).unwrap();
-                }
-            }
-        });
+        socks.lock().unwrap().push(accept(stream.unwrap()).unwrap());
     }
 }
