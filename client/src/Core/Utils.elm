@@ -12,6 +12,7 @@ module Core.Utils exposing
 import Acquisition.Types as Acquisition
 import Api
 import Browser.Navigation
+import Core.Ports as Ports
 import Core.Types as Core
 import Edition.Types as Edition
 import ForgotPassword.Types as ForgotPassword
@@ -70,7 +71,7 @@ init flags _ key =
         ( initModel, initCmd ) =
             modelFromFlags global flags
     in
-    ( Core.FullModel global initModel, Cmd.batch [ initialCommand, initCmd ] )
+    ( Core.FullModel global initModel, Cmd.batch [ initialCommand, initCmd, Ports.initWebSocket global.socketRoot ] )
 
 
 globalFromFlags : Decode.Value -> Browser.Navigation.Key -> Core.Global
@@ -78,6 +79,14 @@ globalFromFlags flags key =
     let
         root =
             case Decode.decodeValue (Decode.field "global" (Decode.field "video_root" Decode.string)) flags of
+                Ok r ->
+                    r
+
+                Err _ ->
+                    "/"
+
+        socketRoot =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "socket_root" Decode.string)) flags of
                 Ok r ->
                     r
 
@@ -119,6 +128,7 @@ globalFromFlags flags key =
     { zone = Time.utc
     , beta = beta
     , videoRoot = root
+    , socketRoot = socketRoot
     , version = version
     , key = key
     , commit = commit

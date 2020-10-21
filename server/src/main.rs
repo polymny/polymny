@@ -1,3 +1,3 @@
 fn main() {
-    server::main();
+    server::start();
 }

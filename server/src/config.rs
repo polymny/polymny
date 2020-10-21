@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use crate::mailer::Mailer;
 
 /// The config of the server.
+#[derive(Clone)]
 pub struct Config {
     /// The path where the data should be saved.
     pub data_path: PathBuf,
@@ -14,6 +15,9 @@ pub struct Config {
 
     /// The path where the videos will be published.
     pub videos_path: PathBuf,
+
+    /// The root of the socket server.
+    pub socket_root: String,
 
     /// The root of the video streaming server.
     pub video_root: String,
@@ -55,6 +59,10 @@ impl Config {
             .get_string("videos_path")
             .unwrap_or_else(|_| String::from("videos"));
 
+        let socket_root = config
+            .get_string("socket_root")
+            .unwrap_or_else(|_| String::from("/"));
+
         let video_root = config
             .get_string("video_root")
             .unwrap_or_else(|_| String::from("/"));
@@ -79,6 +87,7 @@ impl Config {
             data_path: PathBuf::from(data_path),
             log_path: PathBuf::from(log_path),
             videos_path: PathBuf::from(videos_path),
+            socket_root,
             video_root,
             beta,
             matting_enabled,

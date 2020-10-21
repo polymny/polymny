@@ -31,7 +31,11 @@ pub mod schema;
 
 use std::fs::OpenOptions;
 use std::io::Cursor;
-use std::{error, fmt, io, result};
+use std::net::TcpListener;
+use std::{error, fmt, io, result, thread};
+
+use tungstenite::server::accept;
+use tungstenite::Message;
 
 use bcrypt::BcryptError;
 
@@ -299,11 +303,15 @@ pub fn start_setup_server() {
 }
 
 /// Starts the server.
-pub fn main() {
+pub fn start() {
     match RocketConfig::read() {
         Ok(config) => {
             RocketConfig::active_default().unwrap();
             let rocket_config = config.active().clone();
+            let rocket_config_clone = rocket_config.clone();
+            thread::spawn(move || {
+                start_websocket_server(rocket_config_clone);
+            });
             start_server(rocket_config);
         }
 
@@ -314,4 +322,28 @@ pub fn main() {
             start_setup_server();
         }
     };
+}
+
+/// Starts the websocket server.
+pub fn start_websocket_server(config: rocket::Config) {
+    let config = Config::from(&config);
+    let server = TcpListener::bind(&config.socket_root).unwrap();
+    for stream in server.incoming() {
+        let clone = config.clone();
+        thread::spawn(move || {
+            println!("{:?}", clone.socket_root);
+            let mut websocket = accept(stream.unwrap()).unwrap();
+            websocket
+                .write_message(Message::Text("sup".to_owned()))
+                .expect("Failed to write message to websocket");
+            loop {
+                let msg = websocket.read_message().unwrap();
+
+                // We do not want to send back ping/pong messages.
+                if msg.is_binary() || msg.is_text() {
+                    websocket.write_message(msg).unwrap();
+                }
+            }
+        });
+    }
 }

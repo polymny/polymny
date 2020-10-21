@@ -5,6 +5,7 @@ import Acquisition.Ports
 import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import Browser
+import Core.Ports
 import Core.Types as Core
 import Core.Utils as Core
 import Element exposing (Element)
@@ -13,6 +14,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import ForgotPassword.Views as ForgotPassword
+import Json.Decode as Decode
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Login.Views as Login
@@ -27,41 +29,58 @@ import Ui.Ui as Ui
 
 subscriptions : Core.FullModel -> Sub Core.Msg
 subscriptions { model } =
-    case model of
-        Core.LoggedIn { tab } ->
-            case tab of
-                LoggedIn.Preparation { slideModel, gosModel } ->
-                    Sub.map
-                        (\x ->
-                            Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.DnD x))
-                        )
-                        (Sub.batch
-                            [ Preparation.slideSystem.subscriptions slideModel
-                            , Preparation.gosSystem.subscriptions gosModel
-                            ]
-                        )
+    let
+        sub =
+            case model of
+                Core.LoggedIn { tab } ->
+                    case tab of
+                        LoggedIn.Preparation { slideModel, gosModel } ->
+                            Sub.map
+                                (\x ->
+                                    Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.DnD x))
+                                )
+                                (Sub.batch
+                                    [ Preparation.slideSystem.subscriptions slideModel
+                                    , Preparation.gosSystem.subscriptions gosModel
+                                    ]
+                                )
 
-                LoggedIn.Acquisition m ->
-                    Sub.batch
-                        [ Acquisition.subscriptions m
-                        , Sub.batch
-                            [ Acquisition.Ports.newRecord Acquisition.NewRecord
-                            , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
-                            , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
-                            , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
-                            , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
-                            , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
-                            , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
-                            ]
-                            |> Sub.map LoggedIn.AcquisitionMsg
-                            |> Sub.map Core.LoggedInMsg
-                        ]
+                        LoggedIn.Acquisition m ->
+                            Sub.batch
+                                [ Acquisition.subscriptions m
+                                , Sub.batch
+                                    [ Acquisition.Ports.newRecord Acquisition.NewRecord
+                                    , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
+                                    , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
+                                    , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
+                                    , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
+                                    , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
+                                    , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
+                                    ]
+                                    |> Sub.map LoggedIn.AcquisitionMsg
+                                    |> Sub.map Core.LoggedInMsg
+                                ]
+
+                        _ ->
+                            Sub.none
 
                 _ ->
                     Sub.none
+    in
+    Sub.batch
+        [ sub
+        , Core.Ports.onWebSocketMessage websocketMsg
+        ]
 
-        _ ->
-            Sub.none
+
+websocketMsg : Decode.Value -> Core.Msg
+websocketMsg value =
+    case Decode.decodeValue Core.decodeWebSocketMsg value of
+        Ok msg ->
+            Core.WebSocket msg
+
+        Err _ ->
+            Core.Noop
 
 
 view : Core.FullModel -> Browser.Document Core.Msg

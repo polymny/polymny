@@ -144,6 +144,7 @@ fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<Json
 /// Returns the json for the global info.
 fn global(config: &State<Config>) -> JsonValue {
     json!({
+        "socket_root": config.socket_root,
         "video_root": config.video_root,
         "beta": config.beta,
         "version": config.version,

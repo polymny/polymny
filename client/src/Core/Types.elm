@@ -4,11 +4,13 @@ module Core.Types exposing
     , HomeModel(..)
     , Model(..)
     , Msg(..)
+    , decodeWebSocketMsg
     )
 
 import Browser
 import Browser.Navigation
 import ForgotPassword.Types as ForgotPassword
+import Json.Decode as Decode
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
 import ResetPassword.Types as ResetPassword
@@ -26,6 +28,7 @@ type alias Global =
     { zone : Time.Zone
     , beta : Bool
     , mattingEnabled : Bool
+    , socketRoot : String
     , videoRoot : String
     , version : String
     , commit : String
@@ -68,3 +71,14 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
+    | WebSocket WebSocketMsg
+
+
+type alias WebSocketMsg =
+    { content : String
+    }
+
+
+decodeWebSocketMsg : Decode.Decoder WebSocketMsg
+decodeWebSocketMsg =
+    Decode.map WebSocketMsg Decode.string

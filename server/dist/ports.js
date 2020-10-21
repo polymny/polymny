@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -16,6 +16,21 @@ function setupPorts(app) {
         initializing = false;
         blobs = [];
         nextSlideCallbacks = [];
+    }
+
+    function sendWebSocketMessage(content) {
+        if (socket == undefined) {
+            throw new Error("Can't send message to undefined socket");
+        }
+
+        socket.send(content);
+    }
+
+    function initWebSocket(url) {
+        socket = new WebSocket("ws://" + url);
+        socket.onmessage = function(event) {
+            app.ports.onWebSocketMessage.send(event.data);
+        };
     }
 
     function init(elementId, maybeVideo, maybeBackground) {
@@ -247,6 +262,10 @@ function setupPorts(app) {
     subscribe(app.ports.init, function(args) {
         init(args[0], args[1], args[2]);
     });
+
+    subscribe(app.ports.initWebSocket, function(args) {
+        initWebSocket(args);
+    })
 
     subscribe(app.ports.bindWebcam, function(id) {
         setupUserMedia(() => {

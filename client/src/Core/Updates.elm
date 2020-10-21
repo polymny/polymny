@@ -118,6 +118,14 @@ update msg { global, model } =
                 ( Core.CopyUrl url, _ ) ->
                     ( Core.FullModel global model, Ports.copyString url )
 
+                -- Websocket messages
+                ( Core.WebSocket wMsg, _ ) ->
+                    let
+                        _ =
+                            Log.debug "websocket msg" wMsg
+                    in
+                    ( Core.FullModel global model, Cmd.none )
+
                 ( m, _ ) ->
                     let
                         _ =
