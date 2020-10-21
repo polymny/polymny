@@ -50,7 +50,7 @@ pub fn count_pages<P: AsRef<Path>>(input: P) -> Result<u32> {
 }
 
 /// Convert One pdf to One png
-fn pdf2png(input: String, output: String, pdf_target_density: String, pdf_target_size: String) {
+fn pdf2png(input: &str, output: &str, pdf_target_density: &str, pdf_target_size: &str) {
     let command = vec![
         "convert",
         "-density",
@@ -84,11 +84,13 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
             let command_input_path = format!("{}[{}]", input.as_ref().to_str().unwrap(), x);
             let command_output_path = format!("{}/{:05}.png", output.as_ref().display(), x);
             pdf2png(
-                command_input_path,
-                command_output_path,
-                pdf_target_density.to_string(),
-                pdf_target_size.to_string(),
+                &command_input_path,
+                &command_output_path,
+                &pdf_target_density.to_string(),
+                &pdf_target_size.to_string(),
             );
+
+            Ok(command_output_path)
         }
 
         None => {
@@ -104,15 +106,16 @@ pub fn export_slides<P: AsRef<Path>, Q: AsRef<Path>>(
 
             vec_in.par_iter().for_each(|(filepath, filepath_out)| {
                 pdf2png(
-                    filepath.to_string(),
-                    filepath_out.clone(),
-                    pdf_target_density.to_string(),
-                    pdf_target_size.to_string(),
+                    filepath,
+                    filepath_out,
+                    &pdf_target_density,
+                    &pdf_target_size,
                 );
-            })
+            });
+
+            Ok(output.as_ref().to_str().unwrap().to_string())
         }
     }
-    Ok(output.as_ref().to_str().unwrap().to_string())
 }
 
 /// Video metadata strcuture
