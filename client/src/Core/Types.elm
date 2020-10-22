@@ -4,6 +4,9 @@ module Core.Types exposing
     , HomeModel(..)
     , Model(..)
     , Msg(..)
+    , Notification
+    , NotificationMsg(..)
+    , notification
     )
 
 import Browser
@@ -14,12 +17,25 @@ import Login.Types as Login
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Time
+import Url
 
 
 type alias FullModel =
     { global : Global
     , model : Model
     }
+
+
+type alias Notification =
+    { title : String
+    , content : String
+    , read : Bool
+    }
+
+
+notification : String -> String -> Notification
+notification title content =
+    Notification title content False
 
 
 type alias Global =
@@ -33,6 +49,8 @@ type alias Global =
     , numberOfSlidesPerRow : Int
     , expiry : Int
     , showAbout : Bool
+    , notifications : List Notification
+    , notificationPanelVisible : Bool
     }
 
 
@@ -66,5 +84,13 @@ type Msg
     | ForgotPasswordMsg ForgotPassword.Msg
     | ResetPasswordMsg ResetPassword.Msg
     | UrlRequested Browser.UrlRequest
+    | UrlChanged Url.Url
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
+    | NotificationMsg NotificationMsg
+
+
+type NotificationMsg
+    = NewNotification Notification
+    | ToggleNotificationPanel
+    | MarkNotificationRead Int
