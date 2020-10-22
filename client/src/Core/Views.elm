@@ -4,6 +4,7 @@ import About
 import Acquisition.Ports
 import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
+import Api
 import Browser
 import Core.Ports
 import Core.Types as Core
@@ -263,7 +264,7 @@ topBar global model =
                         }
 
                 unreadNotifcaitions =
-                    global.notifications |> List.filter (not << .read) |> List.length
+                    session.notifications |> List.filter (not << .read) |> List.length
 
                 unreadNotificationsInFront =
                     let
@@ -350,7 +351,7 @@ topBar global model =
                 [ Background.color Colors.primary
                 , Font.color Colors.white
                 , Element.width Element.fill
-                , Element.below (notificationPanel global)
+                , Element.below (notificationPanel global session)
                 ]
                 [ Element.row
                     [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
@@ -374,15 +375,15 @@ topBar global model =
             nonFull model
 
 
-notificationPanel : Core.Global -> Element Core.Msg
-notificationPanel global =
+notificationPanel : Core.Global -> Api.Session -> Element Core.Msg
+notificationPanel global session =
     let
         notifications =
-            if List.isEmpty global.notifications then
+            if List.isEmpty session.notifications then
                 [ Element.paragraph [] [ Element.text "Vous n'avez aucune notification." ] ]
 
             else
-                List.indexedMap Notification.view global.notifications
+                List.indexedMap Notification.view session.notifications
 
         header =
             Element.row

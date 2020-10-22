@@ -16,6 +16,7 @@ import LoggedIn.Types as LoggedIn
 import LoggedIn.Updates as LoggedIn
 import Login.Types as Login
 import Login.Updates as Login
+import Notification.Types as Notification
 import ResetPassword.Types as ResetPassword
 import ResetPassword.Updates as ResetPassword
 import SignUp.Types as SignUp
@@ -99,12 +100,12 @@ update msg { global, model } =
                     in
                     ( Core.FullModel newGlobal (Core.LoggedIn m), cmd )
 
-                ( Core.NotificationMsg nMsg, _ ) ->
+                ( Core.NotificationMsg nMsg, Core.LoggedIn { session, tab } ) ->
                     let
-                        ( newGlobal, cmd ) =
-                            updateNotification nMsg global
+                        ( newGlobal, newSession, cmd ) =
+                            updateNotification nMsg global session
                     in
-                    ( Core.FullModel newGlobal model, cmd )
+                    ( Core.FullModel newGlobal (Core.LoggedIn (LoggedIn.Model newSession tab)), cmd )
 
                 -- Url message
                 ( Core.UrlRequested (Browser.Internal url), _ ) ->
@@ -131,19 +132,27 @@ update msg { global, model } =
                     ( Core.FullModel global model, Ports.copyString url )
 
                 -- Websocket messages
-                ( Core.WebSocket wMsg, _ ) ->
+                ( Core.WebSocket wMsg, Core.LoggedIn { session, tab } ) ->
                     let
                         _ =
                             Log.debug "websocket msg" wMsg
-                    in
-                    ( Core.FullModel global model, Cmd.none )
 
-                ( Core.WithNotification n m, _ ) ->
-                    let
-                        newGlobal =
-                            { global | notifications = n :: global.notifications }
+                        newSession =
+                            case Decode.decodeString Notification.decode wMsg.content of
+                                Ok notif ->
+                                    { session | notifications = notif :: session.notifications }
+
+                                _ ->
+                                    session
                     in
-                    update m (Core.FullModel newGlobal model)
+                    ( Core.FullModel global (Core.LoggedIn (LoggedIn.Model newSession tab)), Cmd.none )
+
+                ( Core.WithNotification n m, Core.LoggedIn { session, tab } ) ->
+                    let
+                        newSession =
+                            { session | notifications = n :: session.notifications }
+                    in
+                    update m (Core.FullModel global (Core.LoggedIn (LoggedIn.Model newSession tab)))
 
                 ( m, _ ) ->
                     let
@@ -164,19 +173,19 @@ update msg { global, model } =
     ( returnModel, Cmd.batch [ returnCmd, closeCamera ] )
 
 
-updateNotification : Core.NotificationMsg -> Core.Global -> ( Core.Global, Cmd Core.Msg )
-updateNotification msg global =
+updateNotification : Core.NotificationMsg -> Core.Global -> Api.Session -> ( Core.Global, Api.Session, Cmd Core.Msg )
+updateNotification msg global session =
     case msg of
         Core.NewNotification notif ->
-            ( { global | notifications = notif :: global.notifications }, Cmd.none )
+            ( global, { session | notifications = notif :: session.notifications }, Cmd.none )
 
         Core.ToggleNotificationPanel ->
-            ( { global | notificationPanelVisible = not global.notificationPanelVisible }, Cmd.none )
+            ( { global | notificationPanelVisible = not global.notificationPanelVisible }, session, Cmd.none )
 
         Core.MarkNotificationRead id ->
             let
                 newNotifications =
-                    global.notifications
+                    session.notifications
                         |> List.indexedMap
                             (\i x ->
                                 if i == id then
@@ -186,7 +195,7 @@ updateNotification msg global =
                                     x
                             )
             in
-            ( { global | notifications = newNotifications }, Cmd.none )
+            ( global, { session | notifications = newNotifications }, Cmd.none )
 
 
 isAcquisition : Core.Model -> Bool

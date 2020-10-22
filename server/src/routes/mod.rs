@@ -49,6 +49,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                 .map(|(user, projects)| {
                     let edition_options = user.get_edition_options().unwrap();
                     let session = user.session(&db).unwrap();
+                    let notifications = user.notifications(&db).unwrap();
 
                     json!({
                         "page":       page,
@@ -65,6 +66,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                         "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                         "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                         "cookie": session.secret,
+                        "notifications": notifications,
                     })
                 })
                 .unwrap_or_else(|| json!(null))
@@ -74,6 +76,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
             .map(|(user, projects)| {
                 let edition_options = user.get_edition_options().unwrap();
                 let session = user.session(&db).unwrap();
+                let notifications = user.notifications(&db).unwrap();
 
                 json!({
                     "username": user.username,
@@ -84,6 +87,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                     "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                     "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                     "cookie": session.secret,
+                    "notifications": notifications,
                 })
             })
             .unwrap_or_else(|| json!(null)),
@@ -108,6 +112,7 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
         .map(|(user, project, capsules, projects)| {
             let edition_options = user.get_edition_options().unwrap();
             let session = user.session(&db).unwrap();
+            let notifications = user.notifications(&db).unwrap();
             json!({
                 "page": page,
                 "username": user.username,
@@ -119,6 +124,7 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                 "cookie": session.secret,
+                "notifications": notifications,
             })
         })
         .unwrap_or_else(|| json!(null)))
@@ -136,6 +142,7 @@ fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<Json
     Ok(user_projects_options
         .map(|(user, projects, edition_options)| {
             let session = user.session(&db).unwrap();
+            let notifications = user.notifications(&db).unwrap();
             json!({
                 "page": page,
                 "username": user.username,
@@ -145,6 +152,7 @@ fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<Json
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                 "cookie": session.secret,
+                "notifications": notifications,
             })
         })
         .unwrap_or_else(|| json!(null)))
@@ -237,6 +245,7 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
         .map(|(user, projects)| {
             let edition_options = user.get_edition_options().unwrap();
             let session = user.session(&db).unwrap();
+            let notifications = user.notifications(&db).unwrap();
             json!({
                 "page": "index",
                 "username": user.username,
@@ -246,6 +255,7 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
                 "cookie": session.secret,
+                "notifications": notifications,
             })
         })
         .unwrap_or_else(|| json!(null)))

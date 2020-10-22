@@ -39,7 +39,6 @@ type alias Global =
     , numberOfSlidesPerRow : Int
     , expiry : Int
     , showAbout : Bool
-    , notifications : List Notification
     , notificationPanelVisible : Bool
     }
 

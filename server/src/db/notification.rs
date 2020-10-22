@@ -37,7 +37,7 @@ pub use notification_style::NotificationStyleMapping as Notification_style;
 pub use notification_style::{NotificationStyle, NotificationStyleMapping};
 
 /// A notification that belongs to a user.
-#[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
+#[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
 #[table_name = "notifications"]
 #[belongs_to(User)]
 pub struct Notification {
@@ -53,11 +53,11 @@ pub struct Notification {
     /// The message of the notification.
     pub content: String,
 
-    /// Whether the notification is read or not.
-    pub read: bool,
-
     /// The style of the notification.
     pub style: NotificationStyle,
+
+    /// Whether the notification is read or not.
+    pub read: bool,
 }
 
 impl Notification {
@@ -68,7 +68,7 @@ impl Notification {
         title: &str,
         content: &str,
         db: &Database,
-    ) -> Result<()> {
+    ) -> Result<Notification> {
         Ok(NewNotification {
             user_id,
             title: title.to_owned(),
@@ -98,10 +98,9 @@ pub struct NewNotification {
 
 impl NewNotification {
     /// Saves a notification.
-    pub fn save(&self, db: &Database) -> Result<()> {
-        diesel::insert_into(notifications::table)
+    pub fn save(&self, db: &Database) -> Result<Notification> {
+        Ok(diesel::insert_into(notifications::table)
             .values(self)
-            .execute(&db.0)?;
-        Ok(())
+            .get_result(&db.0)?)
     }
 }

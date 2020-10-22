@@ -26,11 +26,12 @@ use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::{ApiProductionChoices, Capsule, GosStructure, PublishedType};
+use crate::db::notification::NotificationStyle;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::schema::capsules;
-use crate::{Database, Error, Result};
+use crate::{Database, Error, Result, WebSockets};
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(Deserialize, Debug)]
@@ -719,6 +720,7 @@ pub fn capsule_edition(
     db: Database,
     user: User,
     id: i32,
+    socks: State<WebSockets>,
     post_data: Json<PostCapsuleEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
@@ -1169,14 +1171,31 @@ pub fn capsule_edition(
     }
 
     //dir.close()?;
+    let socks = socks.inner();
+    if let Some(mut socks) = socks.lock() {
+        user.notify(
+            socks.get_mut(&user.id),
+            NotificationStyle::Info,
+            "Production terminée !",
+            &format!("La production de la capsule {} est terminée.", capsule.name),
+            &db,
+        )?;
+    }
 
     let capsule = user.get_capsule_by_id(id, &db)?;
+
     format_capsule_data(&db, &capsule)
 }
 
 /// The route to publish a video.
 #[post("/capsule/<id>/publication")]
-pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: i32) -> Result<()> {
+pub fn capsule_publication(
+    config: State<Config>,
+    db: Database,
+    user: User,
+    id: i32,
+    socks: State<WebSockets>,
+) -> Result<()> {
     let capsule = user.get_capsule_by_id(id, &db)?;
 
     match capsule.published {
@@ -1218,6 +1237,17 @@ pub fn capsule_publication(config: State<Config>, db: Database, user: User, id: 
             String::from_utf8(child.stdout).unwrap(),
             String::from_utf8(child.stderr).unwrap()
         );
+    }
+
+    let socks = socks.inner();
+    if let Some(mut socks) = socks.lock() {
+        user.notify(
+            socks.get_mut(&user.id),
+            NotificationStyle::Info,
+            "Publication terminée !",
+            &format!("La capsule {} est publiée.", capsule.name),
+            &db,
+        )?;
     }
 
     Ok(())

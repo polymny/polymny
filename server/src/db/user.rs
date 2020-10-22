@@ -480,20 +480,20 @@ impl User {
         content: &str,
         db: &Database,
     ) -> Result<()> {
-        Notification::new(style, self.id, title, content, db)?;
+        let notification = Notification::new(style, self.id, title, content, db)?;
         if let Some(sock) = sock {
-            // Ugly, would be better to retreieve the notification from the new and serialize it to
-            // json.
-            let text = format!(
-                r#"{{"style": "{}", "title": "{}", "content": "{}", "read": {}"#,
-                style.to_str(),
-                title,
-                content,
-                false,
-            );
+            let text = serde_json::to_string(&notification).unwrap();
             sock.write_message(Message::Text(text)).unwrap();
         }
         Ok(())
+    }
+
+    /// Retrieves all the notifications of a user.
+    pub fn notifications(&self, db: &Database) -> Result<Vec<Notification>> {
+        use crate::schema::notifications::dsl::*;
+        Ok(notifications
+            .filter(user_id.eq(self.id))
+            .load::<Notification>(&db.0)?)
     }
 }
 

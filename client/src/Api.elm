@@ -59,6 +59,7 @@ import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Notification.Types as Notification exposing (Notification)
 import Webcam
 
 
@@ -257,13 +258,14 @@ type alias Session =
     , webcamSize : Maybe Webcam.WebcamSize
     , webcamPosition : Maybe Webcam.WebcamPosition
     , cookie : String
+    , notifications : List Notification
     }
 
 
 decodeSession : Decoder Session
 decodeSession =
     Decode.map (\x -> x)
-        (Decode.map7 Session
+        (Decode.map8 Session
             (Decode.field "username" Decode.string)
             (Decode.field "projects" (Decode.map (\x -> List.filter (\y -> List.length y.capsules > 0) x) (Decode.list decodeProjectWithCapsules)))
             (Decode.field "active_project" (Decode.maybe decodeProjectWithCapsules))
@@ -271,6 +273,7 @@ decodeSession =
             (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
             (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
             (Decode.field "cookie" Decode.string)
+            (Decode.field "notifications" (Decode.list Notification.decode))
         )
 
 

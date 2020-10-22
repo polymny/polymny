@@ -33,7 +33,7 @@ use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::net::{TcpListener, TcpStream};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::{error, fmt, io, result, thread};
 
 use tungstenite::protocol::WebSocket;
@@ -197,6 +197,22 @@ impl<'r> Responder<'r> for Error {
 #[database("database")]
 pub struct Database(rocket_diesel::PgConnection);
 
+/// The struct that holds the websockets.
+#[derive(Clone)]
+pub struct WebSockets(Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>);
+
+impl WebSockets {
+    /// Creates a new empty map of websockets.
+    pub fn new() -> WebSockets {
+        WebSockets(Arc::new(Mutex::new(HashMap::new())))
+    }
+
+    /// Locks the websockets.
+    pub fn lock(&self) -> Option<MutexGuard<HashMap<i32, WebSocket<TcpStream>>>> {
+        self.0.lock().ok()
+    }
+}
+
 /// Starts the main server.
 pub fn start_server(rocket_config: RConfig) {
     let server_config = Config::from(&rocket_config);
@@ -225,8 +241,7 @@ pub fn start_server(rocket_config: RConfig) {
         rocket::custom(rocket_config)
     };
 
-    let socks: Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>> =
-        Arc::new(Mutex::new(HashMap::new()));
+    let socks = WebSockets::new();
     let socks_clone = socks.clone();
 
     thread::spawn(move || {
@@ -341,10 +356,7 @@ pub fn start() {
 }
 
 /// Starts the websocket server.
-pub fn start_websocket_server(
-    config: rocket::Config,
-    socks: Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>,
-) {
+pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
     let server_config = Config::from(&config);
     let server = TcpListener::bind(&server_config.socket_root).unwrap();
     for stream in server.incoming() {
