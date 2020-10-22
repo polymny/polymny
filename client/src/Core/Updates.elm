@@ -130,6 +130,13 @@ update msg { global, model } =
                 ( Core.CopyUrl url, _ ) ->
                     ( Core.FullModel global model, Ports.copyString url )
 
+                ( Core.WithNotification n m, _ ) ->
+                    let
+                        newGlobal =
+                            { global | notifications = n :: global.notifications }
+                    in
+                    update m (Core.FullModel newGlobal model)
+
                 ( m, _ ) ->
                     let
                         _ =
