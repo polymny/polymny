@@ -94,4 +94,4 @@ decodeWebSocketMsg =
 type NotificationMsg
     = NewNotification Notification
     | ToggleNotificationPanel
-    | MarkNotificationRead Int
+    | MarkNotificationRead Notification Int

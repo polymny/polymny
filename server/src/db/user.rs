@@ -495,6 +495,16 @@ impl User {
             .filter(user_id.eq(self.id))
             .load::<Notification>(&db.0)?)
     }
+
+    /// Mark a notification as read.
+    pub fn mark_notification_as_read(&self, id: i32, db: &Database) -> Result<()> {
+        let notification = Notification::get_by_id(id, db)?;
+        if notification.user_id != self.id {
+            return Err(Error::NotFound);
+        }
+        notification.mark_as_read(db)?;
+        Ok(())
+    }
 }
 
 impl<'a, 'r> FromRequest<'a, 'r> for User {

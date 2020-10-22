@@ -44,5 +44,5 @@ view id notification =
         Input.button
             [ Element.width Element.fill ]
             { label = label
-            , onPress = Just (Core.NotificationMsg (Core.MarkNotificationRead id))
+            , onPress = Just (Core.NotificationMsg (Core.MarkNotificationRead notification id))
             }

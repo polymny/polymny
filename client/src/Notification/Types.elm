@@ -5,7 +5,8 @@ import Json.Decode as Decode
 
 
 type alias Notification =
-    { title : String
+    { id : Maybe Int
+    , title : String
     , content : String
     , read : Bool
     , style : Style
@@ -20,7 +21,7 @@ type Style
 
 info : String -> String -> Notification
 info title content =
-    Notification title content False Info
+    Notification Nothing title content False Info
 
 
 decodeStyle : Decode.Decoder Style
@@ -42,7 +43,8 @@ decodeStyle =
 
 decode : Decode.Decoder Notification
 decode =
-    Decode.map4 Notification
+    Decode.map5 Notification
+        (Decode.map Just (Decode.field "id" Decode.int))
         (Decode.field "title" Decode.string)
         (Decode.field "content" Decode.string)
         (Decode.field "read" Decode.bool)

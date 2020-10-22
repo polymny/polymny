@@ -77,6 +77,24 @@ impl Notification {
         }
         .save(&db)?)
     }
+
+    /// Gets a notification by id.
+    pub fn get_by_id(id: i32, db: &Database) -> Result<Notification> {
+        use crate::schema::notifications::dsl;
+        Ok(dsl::notifications
+            .filter(dsl::id.eq(id))
+            .get_result::<Notification>(&db.0)?)
+    }
+
+    /// Marks a notification as read.
+    pub fn mark_as_read(&self, db: &Database) -> Result<()> {
+        use crate::schema::notifications::dsl;
+        diesel::update(dsl::notifications)
+            .filter(dsl::id.eq(self.id))
+            .set(dsl::read.eq(true))
+            .execute(&db.0)?;
+        Ok(())
+    }
 }
 
 /// A new notification not stored in the database yet.

@@ -182,7 +182,7 @@ updateNotification msg global session =
         Core.ToggleNotificationPanel ->
             ( { global | notificationPanelVisible = not global.notificationPanelVisible }, session, Cmd.none )
 
-        Core.MarkNotificationRead id ->
+        Core.MarkNotificationRead notif id ->
             let
                 newNotifications =
                     session.notifications
@@ -194,8 +194,16 @@ updateNotification msg global session =
                                 else
                                     x
                             )
+
+                cmd =
+                    case notif.id of
+                        Just i ->
+                            Api.markNotificationAsRead (\_ -> Core.Noop) i
+
+                        _ ->
+                            Cmd.none
             in
-            ( global, { session | notifications = newNotifications }, Cmd.none )
+            ( global, { session | notifications = newNotifications }, cmd )
 
 
 isAcquisition : Core.Model -> Bool

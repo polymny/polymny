@@ -32,6 +32,7 @@ module Api exposing
     , insertSlide
     , logOut
     , login
+    , markNotificationAsRead
     , newCapsule
     , newProject
     , post
@@ -976,6 +977,19 @@ deleteProject : (Result Http.Error () -> msg) -> Project -> Cmd msg
 deleteProject resultToMsg project =
     Cmd.batch
         (List.map (.id >> deleteCapsule resultToMsg) project.capsules)
+
+
+
+-- Notifications
+
+
+markNotificationAsRead : (Result Http.Error () -> msg) -> Int -> Cmd msg
+markNotificationAsRead resultToMsg id =
+    post
+        { url = "/api/mark-as-read/" ++ String.fromInt id
+        , expect = Http.expectWhatever resultToMsg
+        , body = Http.emptyBody
+        }
 
 
 
