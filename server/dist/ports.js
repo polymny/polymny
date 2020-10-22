@@ -26,11 +26,14 @@ function setupPorts(app) {
         socket.send(content);
     }
 
-    function initWebSocket(url) {
+    function initWebSocket(url, cookie) {
         socket = new WebSocket("ws://" + url);
         socket.onmessage = function(event) {
             app.ports.onWebSocketMessage.send(event.data);
         };
+        socket.onopen = function() {
+            socket.send(cookie);
+        }
     }
 
     function init(elementId, maybeVideo, maybeBackground) {
@@ -264,7 +267,7 @@ function setupPorts(app) {
     });
 
     subscribe(app.ports.initWebSocket, function(args) {
-        initWebSocket(args);
+        initWebSocket(args[0], args[1]);
     })
 
     subscribe(app.ports.bindWebcam, function(id) {

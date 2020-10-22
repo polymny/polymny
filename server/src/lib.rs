@@ -29,6 +29,7 @@ pub mod webcam;
 #[allow(missing_docs, unused_imports)]
 pub mod schema;
 
+use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::net::{TcpListener, TcpStream};
@@ -41,6 +42,9 @@ use tungstenite::Message;
 
 use bcrypt::BcryptError;
 
+use diesel::pg::PgConnection;
+use diesel::prelude::*;
+
 use rocket::config::{Config as RConfig, Environment, RocketConfig};
 use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
@@ -52,6 +56,7 @@ use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
 
 use crate::config::Config;
+use crate::db::user::User;
 use crate::log_fairing::Log;
 
 macro_rules! impl_from_error {
@@ -196,7 +201,7 @@ pub struct Database(rocket_diesel::PgConnection);
 /// Starts the main server.
 pub fn start_server(rocket_config: RConfig) {
     let server_config = Config::from(&rocket_config);
-    let server_config_clone = server_config.clone();
+    let server_config_clone = rocket_config.clone();
 
     let rocket = if rocket_config.environment == Environment::Production {
         use simplelog::*;
@@ -221,7 +226,8 @@ pub fn start_server(rocket_config: RConfig) {
         rocket::custom(rocket_config)
     };
 
-    let socks: Arc<Mutex<Vec<WebSocket<TcpStream>>>> = Arc::new(Mutex::new(vec![]));
+    let socks: Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
     let socks_clone = socks.clone();
 
     thread::spawn(move || {
@@ -254,6 +260,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,
+                test_route,
             ],
         )
         .mount("/dist", StaticFiles::from("dist"))
@@ -303,9 +310,12 @@ pub fn start_server(rocket_config: RConfig) {
 
 /// A test route for websockets.
 #[get("/test")]
-pub fn test_route(socks: State<Arc<Mutex<Vec<WebSocket<TcpStream>>>>>) -> Result<()> {
-    for sock in &mut socks.lock().unwrap().iter_mut() {
-        sock.write_message(Message::text("Sup")).unwrap();
+pub fn test_route(
+    user: User,
+    socks: State<Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>>,
+) -> Result<()> {
+    if let Some(sock) = socks.lock().unwrap().get_mut(&user.id) {
+        sock.write_message(Message::text("sup")).unwrap();
     }
     Ok(())
 }
@@ -345,9 +355,37 @@ pub fn start() {
 }
 
 /// Starts the websocket server.
-pub fn start_websocket_server(config: Config, socks: Arc<Mutex<Vec<WebSocket<TcpStream>>>>) {
-    let server = TcpListener::bind(&config.socket_root).unwrap();
+pub fn start_websocket_server(
+    config: rocket::Config,
+    socks: Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>,
+) {
+    let server_config = Config::from(&config);
+    let server = TcpListener::bind(&server_config.socket_root).unwrap();
     for stream in server.incoming() {
-        socks.lock().unwrap().push(accept(stream.unwrap()).unwrap());
+        let config = config.clone();
+        let socks = socks.clone();
+        thread::spawn(move || {
+            let mut websocket = accept(stream.unwrap()).unwrap();
+            let msg = websocket.read_message().unwrap();
+            let database_url = config
+                .get_table("databases")
+                .unwrap()
+                .get_key_value("database")
+                .unwrap()
+                .1
+                .as_table()
+                .unwrap()
+                .get_key_value("url")
+                .unwrap()
+                .1
+                .as_str()
+                .unwrap();
+            let db = PgConnection::establish(&database_url)
+                .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+            if let Message::Text(secret) = msg {
+                let user = User::from_session(&secret, &db).unwrap();
+                socks.lock().unwrap().insert(user.id, websocket);
+            }
+        });
     }
 }

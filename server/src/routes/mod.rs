@@ -48,6 +48,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
             user_and_projects
                 .map(|(user, projects)| {
                     let edition_options = user.get_edition_options().unwrap();
+                    let session = user.session(&db).unwrap();
 
                     json!({
                         "page":       page,
@@ -63,6 +64,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                         "with_video": edition_options.with_video,
                         "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                         "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+                        "cookie": session.secret,
                     })
                 })
                 .unwrap_or_else(|| json!(null))
@@ -71,6 +73,8 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
         _ => user_and_projects
             .map(|(user, projects)| {
                 let edition_options = user.get_edition_options().unwrap();
+                let session = user.session(&db).unwrap();
+
                 json!({
                     "username": user.username,
                     "projects": projects,
@@ -79,6 +83,7 @@ fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                     "with_video": edition_options.with_video,
                     "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                     "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+                    "cookie": session.secret,
                 })
             })
             .unwrap_or_else(|| json!(null)),
@@ -102,6 +107,7 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
     Ok(user_and_projects
         .map(|(user, project, capsules, projects)| {
             let edition_options = user.get_edition_options().unwrap();
+            let session = user.session(&db).unwrap();
             json!({
                 "page": page,
                 "username": user.username,
@@ -112,6 +118,7 @@ fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Res
                 "with_video": edition_options.with_video,
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+                "cookie": session.secret,
             })
         })
         .unwrap_or_else(|| json!(null)))
@@ -128,6 +135,7 @@ fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<Json
 
     Ok(user_projects_options
         .map(|(user, projects, edition_options)| {
+            let session = user.session(&db).unwrap();
             json!({
                 "page": page,
                 "username": user.username,
@@ -136,6 +144,7 @@ fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<Json
                 "active_project": "",
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+                "cookie": session.secret,
             })
         })
         .unwrap_or_else(|| json!(null)))
@@ -227,6 +236,7 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
     Ok(user_and_projects
         .map(|(user, projects)| {
             let edition_options = user.get_edition_options().unwrap();
+            let session = user.session(&db).unwrap();
             json!({
                 "page": "index",
                 "username": user.username,
@@ -235,6 +245,7 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
                 "with_video": edition_options.with_video,
                 "webcam_size": webcam_size_to_str(edition_options.webcam_size),
                 "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+                "cookie": session.secret,
             })
         })
         .unwrap_or_else(|| json!(null)))

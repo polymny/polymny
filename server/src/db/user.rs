@@ -354,6 +354,16 @@ impl User {
         }
     }
 
+    /// Gets a user's session.
+    pub fn session(&self, db: &PgConnection) -> Result<Session> {
+        use crate::schema::sessions::dsl as sessions;
+        let session = sessions::sessions
+            .filter(sessions::user_id.eq(self.id))
+            .first::<Session>(db)?;
+
+        Ok(session)
+    }
+
     /// Creates or updates a session for a user that has been authenticated.
     pub fn save_session(&self, db: &PgConnection) -> Result<Session> {
         // Generate the secret

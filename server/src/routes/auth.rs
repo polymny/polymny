@@ -63,7 +63,7 @@ pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Resu
     let session = user.save_session(&db)?;
 
     let edition_options = user.get_edition_options()?;
-    cookies.add_private(Cookie::new("EXAUTH", session.secret));
+    cookies.add_private(Cookie::new("EXAUTH", session.secret.clone()));
 
     Ok(json!({"username": user.username,
         "projects": user.projects(&db)?,
@@ -71,6 +71,7 @@ pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Resu
         "with_video": edition_options.with_video,
         "webcam_size": webcam_size_to_str(edition_options.webcam_size),
         "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+        "cookie": session.secret,
     }))
 }
 

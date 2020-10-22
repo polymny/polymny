@@ -71,7 +71,7 @@ init flags _ key =
         ( initModel, initCmd ) =
             modelFromFlags global flags
     in
-    ( Core.FullModel global initModel, Cmd.batch [ initialCommand, initCmd, Ports.initWebSocket global.socketRoot ] )
+    ( Core.FullModel global initModel, Cmd.batch [ initialCommand, initCmd ] )
 
 
 globalFromFlags : Decode.Value -> Browser.Navigation.Key -> Core.Global
@@ -141,108 +141,117 @@ globalFromFlags flags key =
 
 modelFromFlags : Core.Global -> Decode.Value -> ( Core.Model, Cmd Core.Msg )
 modelFromFlags global flags =
-    case Decode.decodeValue (Decode.field "flags" (Decode.field "page" Decode.string)) flags of
-        Ok "index" ->
-            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
-                Ok session ->
-                    ( Core.LoggedIn
-                        { session = session
-                        , tab = LoggedIn.init
-                        }
-                    , Cmd.none
-                    )
+    let
+        ( finalModel, finalCmd ) =
+            case Decode.decodeValue (Decode.field "flags" (Decode.field "page" Decode.string)) flags of
+                Ok "index" ->
+                    case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
+                        Ok session ->
+                            ( Core.LoggedIn
+                                { session = session
+                                , tab = LoggedIn.init
+                                }
+                            , Cmd.none
+                            )
 
-                Err _ ->
-                    ( home, Cmd.none )
+                        Err _ ->
+                            ( home, Cmd.none )
 
-        Ok "reset-password" ->
-            case Decode.decodeValue (Decode.field "flags" (Decode.field "key" Decode.string)) flags of
-                Ok key ->
-                    ( Core.ResetPassword (ResetPassword.init key), Cmd.none )
+                Ok "reset-password" ->
+                    case Decode.decodeValue (Decode.field "flags" (Decode.field "key" Decode.string)) flags of
+                        Ok key ->
+                            ( Core.ResetPassword (ResetPassword.init key), Cmd.none )
 
-                Err _ ->
-                    ( home, Cmd.none )
+                        Err _ ->
+                            ( home, Cmd.none )
 
-        Ok "preparation/capsule" ->
-            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
-                ( Ok session, Ok capsule ) ->
-                    ( Core.LoggedIn
-                        { session = session
-                        , tab =
-                            LoggedIn.Preparation <| Preparation.init capsule
-                        }
-                    , Cmd.none
-                    )
+                Ok "preparation/capsule" ->
+                    case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
+                        ( Ok session, Ok capsule ) ->
+                            ( Core.LoggedIn
+                                { session = session
+                                , tab =
+                                    LoggedIn.Preparation <| Preparation.init capsule
+                                }
+                            , Cmd.none
+                            )
 
-                ( _, _ ) ->
-                    ( home, Cmd.none )
+                        ( _, _ ) ->
+                            ( home, Cmd.none )
 
-        Ok "acquisition/capsule" ->
-            case
-                ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
-                , Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags
-                )
-            of
-                ( Ok session, Ok capsule ) ->
+                Ok "acquisition/capsule" ->
+                    case
+                        ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
+                        , Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags
+                        )
+                    of
+                        ( Ok session, Ok capsule ) ->
+                            let
+                                ( model, cmd ) =
+                                    Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
+                            in
+                            ( Core.LoggedIn
+                                { session = session
+                                , tab = LoggedIn.Acquisition model
+                                }
+                            , cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg
+                            )
+
+                        ( _, _ ) ->
+                            ( home, Cmd.none )
+
+                Ok "edition/capsule" ->
+                    case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
+                        ( Ok session, Ok capsule ) ->
+                            ( Core.LoggedIn
+                                { session = session
+                                , tab = LoggedIn.Edition (Edition.init capsule)
+                                }
+                            , Cmd.none
+                            )
+
+                        ( _, _ ) ->
+                            ( home, Cmd.none )
+
+                Ok "settings" ->
+                    case
+                        Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
+                    of
+                        Ok session ->
+                            ( Core.LoggedIn { session = session, tab = LoggedIn.Settings { status = Status.NotSent } }, Cmd.none )
+
+                        _ ->
+                            ( home, Cmd.none )
+
+                Ok ok ->
                     let
-                        ( model, cmd ) =
-                            Acquisition.initAtFirstNonRecorded global.mattingEnabled capsule Acquisition.All
+                        _ =
+                            Log.debug "Unknown page" ok
                     in
-                    ( Core.LoggedIn
-                        { session = session
-                        , tab = LoggedIn.Acquisition model
-                        }
-                    , cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg
-                    )
+                    -- Still try to log the user
+                    case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
+                        Ok session ->
+                            ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
 
-                ( _, _ ) ->
-                    ( home, Cmd.none )
+                        _ ->
+                            ( home, Cmd.none )
 
-        Ok "edition/capsule" ->
-            case ( Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags, Decode.decodeValue (Decode.field "flags" Api.decodeCapsuleDetails) flags ) of
-                ( Ok session, Ok capsule ) ->
-                    ( Core.LoggedIn
-                        { session = session
-                        , tab = LoggedIn.Edition (Edition.init capsule)
-                        }
-                    , Cmd.none
-                    )
+                Err err ->
+                    let
+                        _ =
+                            Log.debug "Error" err
+                    in
+                    -- Still try to log the user
+                    case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
+                        Ok session ->
+                            ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
 
-                ( _, _ ) ->
-                    ( home, Cmd.none )
+                        _ ->
+                            ( home, Cmd.none )
+    in
+    case finalModel of
+        Core.LoggedIn { session } ->
+            ( finalModel, Cmd.batch [ finalCmd, Ports.initWebSocket ( global.socketRoot, session.cookie ) ] )
 
-        Ok "settings" ->
-            case
-                Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags
-            of
-                Ok session ->
-                    ( Core.LoggedIn { session = session, tab = LoggedIn.Settings { status = Status.NotSent } }, Cmd.none )
-
-                _ ->
-                    ( home, Cmd.none )
-
-        Ok ok ->
-            let
-                _ =
-                    Log.debug "Unknown page" ok
-            in
-            -- Still try to log the user
-            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
-                Ok session ->
-                    ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
-
-                _ ->
-                    ( home, Cmd.none )
-
-        Err err ->
-            let
-                _ =
-                    Log.debug "Error" err
-            in
-            -- Still try to log the user
-            case Decode.decodeValue (Decode.field "flags" Api.decodeSession) flags of
-                Ok session ->
-                    ( Core.LoggedIn { session = session, tab = LoggedIn.init }, Cmd.none )
-
-                _ ->
-                    ( home, Cmd.none )
+        _ ->
+            ( finalModel, finalCmd )
