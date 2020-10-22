@@ -136,6 +136,8 @@ globalFromFlags flags key =
     , numberOfSlidesPerRow = 3
     , expiry = 0
     , showAbout = False
+    , notifications = []
+    , notificationPanelVisible = False
     }
 
 

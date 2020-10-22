@@ -1,6 +1,7 @@
 module Ui.Icons exposing
     ( add
     , arrowCircleRight
+    , bell
     , buttonFromIcon
     , camera
     , cancel
@@ -115,6 +116,11 @@ arrowCircleRight =
 times : Element msg
 times =
     buttonFromIcon FontAwesome.times
+
+
+bell : Element msg
+bell =
+    buttonFromIcon FontAwesome.bell
 
 
 spinner : Element msg

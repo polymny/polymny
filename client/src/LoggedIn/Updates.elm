@@ -15,6 +15,7 @@ import Log
 import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
+import Notification.Types as Notification
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Settings.Types as Settings
@@ -571,7 +572,22 @@ resultToMsg3 : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg3 result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
+            let
+                projectName =
+                    List.head x.projects |> Maybe.map .name
+
+                line =
+                    case projectName of
+                        Just p ->
+                            "L'édition de la capsule " ++ x.capsule.name ++ " (" ++ p ++ ") est terminée !"
+
+                        Nothing ->
+                            "L'édition de la capsule " ++ x.capsule.name ++ " est terminée !"
+            in
+            Edition.AutoSuccess x
+                |> LoggedIn.EditionMsg
+                |> Core.LoggedInMsg
+                |> Core.WithNotification (Notification.info "Edition terminée" line)
         )
         (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result

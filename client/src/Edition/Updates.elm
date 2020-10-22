@@ -4,6 +4,7 @@ import Api
 import Core.Types as Core
 import Edition.Types as Edition
 import LoggedIn.Types as LoggedIn
+import Notification.Types as Notification
 import Status
 import Utils
 import Webcam
@@ -37,10 +38,22 @@ update session msg model =
                 newDetails =
                     { details | capsule = newCapsule }
 
+                projectName =
+                    List.head details.projects |> Maybe.map .name
+
+                line =
+                    case projectName of
+                        Just p ->
+                            "La publication de la vidéo de la capsule " ++ capsule.name ++ " (" ++ p ++ ") est terminée !"
+
+                        Nothing ->
+                            "La publication de la vidéo de la capsule " ++ capsule.name ++ " est terminée !"
+
                 cmd =
                     Api.publishVideo (\_ -> Edition.VideoPublished) model.details.capsule.id
                         |> Cmd.map LoggedIn.EditionMsg
                         |> Cmd.map Core.LoggedInMsg
+                        |> Cmd.map (Core.WithNotification (Notification.info "Publication terminée" line))
             in
             ( makeModel { model | details = newDetails }, cmd )
 
@@ -307,7 +320,10 @@ resultToMsg : Result e Api.CapsuleDetails -> Core.Msg
 resultToMsg result =
     Utils.resultToMsg
         (\x ->
-            Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoSuccess x
+            Edition.AutoSuccess x
+                |> LoggedIn.EditionMsg
+                |> Core.LoggedInMsg
+                |> Core.WithNotification (Notification.info "Edition terminée" "L'édition de la capsule est terminée")
         )
         (\_ -> Core.LoggedInMsg <| LoggedIn.EditionMsg <| Edition.AutoFailed)
         result

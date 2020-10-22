@@ -4,6 +4,7 @@ module Core.Types exposing
     , HomeModel(..)
     , Model(..)
     , Msg(..)
+    , NotificationMsg(..)
     , decodeWebSocketMsg
     )
 
@@ -13,9 +14,11 @@ import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
 import LoggedIn.Types as LoggedIn
 import Login.Types as Login
+import Notification.Types as Notification exposing (Notification)
 import ResetPassword.Types as ResetPassword
 import SignUp.Types as SignUp
 import Time
+import Url
 
 
 type alias FullModel =
@@ -36,6 +39,8 @@ type alias Global =
     , numberOfSlidesPerRow : Int
     , expiry : Int
     , showAbout : Bool
+    , notifications : List Notification
+    , notificationPanelVisible : Bool
     }
 
 
@@ -69,9 +74,12 @@ type Msg
     | ForgotPasswordMsg ForgotPassword.Msg
     | ResetPasswordMsg ResetPassword.Msg
     | UrlRequested Browser.UrlRequest
+    | UrlChanged Url.Url
     | UrlReceived Model (Cmd Msg)
     | CopyUrl String
     | WebSocket WebSocketMsg
+    | NotificationMsg NotificationMsg
+    | WithNotification Notification Msg
 
 
 type alias WebSocketMsg =
@@ -82,3 +90,9 @@ type alias WebSocketMsg =
 decodeWebSocketMsg : Decode.Decoder WebSocketMsg
 decodeWebSocketMsg =
     Decode.map WebSocketMsg Decode.string
+
+
+type NotificationMsg
+    = NewNotification Notification
+    | ToggleNotificationPanel
+    | MarkNotificationRead Int
