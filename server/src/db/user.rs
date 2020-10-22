@@ -1,5 +1,7 @@
 //! This module contains the structures to manipulate users.
 
+use std::net::TcpStream;
+
 use serde_json::Value as Json;
 
 use diesel::pg::PgConnection;
@@ -17,8 +19,11 @@ use bcrypt::{hash, DEFAULT_COST};
 
 use serde::Deserialize;
 
+use tungstenite::protocol::WebSocket;
+use tungstenite::Message;
+
 use crate::db::capsule::Capsule;
-use crate::db::notification::Notification;
+use crate::db::notification::{Notification, NotificationStyle};
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
@@ -464,6 +469,31 @@ impl User {
             ),
         };
         Ok(options)
+    }
+
+    /// Sends a notification to a user.
+    pub fn notify(
+        &self,
+        sock: Option<&mut WebSocket<TcpStream>>,
+        style: NotificationStyle,
+        title: &str,
+        content: &str,
+        db: &Database,
+    ) -> Result<()> {
+        Notification::new(style, self.id, title, content, db)?;
+        if let Some(sock) = sock {
+            // Ugly, would be better to retreieve the notification from the new and serialize it to
+            // json.
+            let text = format!(
+                r#"{{"style": "{}", "title": "{}", "content": "{}", "read": {}"#,
+                style.to_str(),
+                title,
+                content,
+                false,
+            );
+            sock.write_message(Message::Text(text)).unwrap();
+        }
+        Ok(())
     }
 }
 

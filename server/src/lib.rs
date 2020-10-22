@@ -50,7 +50,6 @@ use rocket::fairing::AdHoc;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
-use rocket::State;
 
 use rocket_contrib::databases::diesel as rocket_diesel;
 use rocket_contrib::serve::StaticFiles;
@@ -260,7 +259,6 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,
-                test_route,
             ],
         )
         .mount("/dist", StaticFiles::from("dist"))
@@ -306,18 +304,6 @@ pub fn start_server(rocket_config: RConfig) {
             ],
         )
         .launch();
-}
-
-/// A test route for websockets.
-#[get("/test")]
-pub fn test_route(
-    user: User,
-    socks: State<Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>>,
-) -> Result<()> {
-    if let Some(sock) = socks.lock().unwrap().get_mut(&user.id) {
-        sock.write_message(Message::text("sup")).unwrap();
-    }
-    Ok(())
 }
 
 /// Starts the setup server.

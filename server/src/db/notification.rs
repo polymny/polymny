@@ -1,7 +1,10 @@
 //! This module contains the structures needed to manipulate notifications.
 
+use diesel::prelude::*;
+
 use crate::db::user::User;
 use crate::schema::notifications;
+use crate::{Database, Result};
 
 #[allow(missing_docs)]
 mod notification_style {
@@ -16,6 +19,17 @@ mod notification_style {
 
         /// Something went wrong.
         Error,
+    }
+
+    impl NotificationStyle {
+        /// Converts the style to a string.
+        pub fn to_str(self) -> &'static str {
+            match self {
+                NotificationStyle::Info => "info",
+                NotificationStyle::Warning => "warning",
+                NotificationStyle::Error => "danger",
+            }
+        }
     }
 }
 
@@ -46,6 +60,25 @@ pub struct Notification {
     pub style: NotificationStyle,
 }
 
+impl Notification {
+    /// Creates a new notofication and stores it in the database.
+    pub fn new(
+        style: NotificationStyle,
+        user_id: i32,
+        title: &str,
+        content: &str,
+        db: &Database,
+    ) -> Result<()> {
+        Ok(NewNotification {
+            user_id,
+            title: title.to_owned(),
+            content: content.to_owned(),
+            style,
+        }
+        .save(&db)?)
+    }
+}
+
 /// A new notification not stored in the database yet.
 #[derive(Debug, Insertable)]
 #[table_name = "notifications"]
@@ -61,4 +94,14 @@ pub struct NewNotification {
 
     /// The style of the notification.
     pub style: NotificationStyle,
+}
+
+impl NewNotification {
+    /// Saves a notification.
+    pub fn save(&self, db: &Database) -> Result<()> {
+        diesel::insert_into(notifications::table)
+            .values(self)
+            .execute(&db.0)?;
+        Ok(())
+    }
 }
