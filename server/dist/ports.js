@@ -32,7 +32,7 @@ function setupPorts(app) {
             return;
         }
 
-        socket = new WebSocket("ws://" + url);
+        socket = new WebSocket(url);
         socket.onmessage = function(event) {
             app.ports.onWebSocketMessage.send(event.data);
         };

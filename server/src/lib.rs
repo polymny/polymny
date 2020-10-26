@@ -384,7 +384,13 @@ pub fn start() {
 /// Starts the websocket server.
 pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
     let server_config = Config::from(&config);
-    let server = TcpListener::bind(&server_config.socket_root).unwrap();
+    let root = server_config
+        .socket_root
+        .split("/")
+        .skip(2)
+        .collect::<Vec<_>>()
+        .join("/");
+    let server = TcpListener::bind(&root).unwrap();
     for stream in server.incoming() {
         let config = config.clone();
         let socks = socks.clone();

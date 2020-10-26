@@ -415,7 +415,8 @@ notificationPanel global session =
                 , Border.rounded 10
                 , Element.padding 10
                 , Element.alignRight
-                , Element.width Element.fill
+                , Element.height (Element.maximum 400 Element.fill)
+                , Element.scrollbarY
                 ]
                 (header :: notifications)
             ]
