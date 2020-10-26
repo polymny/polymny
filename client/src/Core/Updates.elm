@@ -134,9 +134,6 @@ update msg { global, model } =
                 -- Websocket messages
                 ( Core.WebSocket wMsg, Core.LoggedIn { session, tab } ) ->
                     let
-                        _ =
-                            Log.debug "websocket msg" wMsg
-
                         newSession =
                             case Decode.decodeString Notification.decode wMsg.content of
                                 Ok notif ->

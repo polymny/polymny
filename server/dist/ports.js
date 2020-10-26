@@ -34,7 +34,6 @@ function setupPorts(app) {
 
         socket = new WebSocket("ws://" + url);
         socket.onmessage = function(event) {
-            console.log(performance.now(), event);
             app.ports.onWebSocketMessage.send(event.data);
         };
         socket.onopen = function() {
