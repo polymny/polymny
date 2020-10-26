@@ -38,7 +38,7 @@ use std::{error, fmt, io, result, thread};
 
 use tungstenite::protocol::WebSocket;
 use tungstenite::server::accept;
-use tungstenite::Message;
+use tungstenite::{Error as TError, Message};
 
 use bcrypt::BcryptError;
 
@@ -212,12 +212,28 @@ impl WebSockets {
         self.0.lock().ok()
     }
 
-    /// Send a message to sockets from an id.
+    /// Send a message to sockets from an id, removing ids that were disconnected.
     pub fn write_message(&self, id: i32, message: Message) {
         let mut map = self.lock().unwrap();
         let entry = map.entry(id).or_insert(vec![]);
-        for s in entry {
+        let mut to_remove = vec![];
+
+        for (i, s) in entry.into_iter().enumerate() {
+            loop {
+                match s.read_message() {
+                    Err(TError::ConnectionClosed) | Err(TError::AlreadyClosed) => {
+                        to_remove.push(i);
+                        break;
+                    }
+                    Err(TError::Io(e)) if e.kind() == io::ErrorKind::WouldBlock => break,
+                    _ => continue,
+                }
+            }
             s.write_message(message.clone()).ok();
+        }
+
+        for i in to_remove.into_iter().rev() {
+            entry.remove(i);
         }
     }
 }
@@ -394,6 +410,7 @@ pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
                 let user = User::from_session(&secret, &db).unwrap();
                 let mut map = socks.lock().unwrap();
                 let entry = map.entry(user.id).or_insert(vec![]);
+                websocket.get_mut().set_nonblocking(true).ok();
                 entry.push(websocket);
             }
         });
