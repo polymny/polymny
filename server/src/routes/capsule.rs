@@ -1171,16 +1171,13 @@ pub fn capsule_edition(
     }
 
     //dir.close()?;
-    let socks = socks.inner();
-    if let Some(mut socks) = socks.lock() {
-        user.notify(
-            socks.get_mut(&user.id),
-            NotificationStyle::Info,
-            "Production terminée !",
-            &format!("La production de la capsule {} est terminée.", capsule.name),
-            &db,
-        )?;
-    }
+    user.notify(
+        socks.inner(),
+        NotificationStyle::Info,
+        "Production terminée !",
+        &format!("La production de la capsule {} est terminée.", capsule.name),
+        &db,
+    )?;
 
     let capsule = user.get_capsule_by_id(id, &db)?;
 
@@ -1239,16 +1236,13 @@ pub fn capsule_publication(
         );
     }
 
-    let socks = socks.inner();
-    if let Some(mut socks) = socks.lock() {
-        user.notify(
-            socks.get_mut(&user.id),
-            NotificationStyle::Info,
-            "Publication terminée !",
-            &format!("La capsule {} est publiée.", capsule.name),
-            &db,
-        )?;
-    }
+    user.notify(
+        socks.inner(),
+        NotificationStyle::Info,
+        "Publication terminée !",
+        &format!("La capsule {} est publiée.", capsule.name),
+        &db,
+    )?;
 
     Ok(())
 }

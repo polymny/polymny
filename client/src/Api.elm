@@ -274,7 +274,7 @@ decodeSession =
             (Decode.field "webcam_size" (Decode.maybe decodeWebcamSize))
             (Decode.field "webcam_position" (Decode.maybe decodeWebcamPosition))
             (Decode.field "cookie" Decode.string)
-            (Decode.field "notifications" (Decode.list Notification.decode))
+            (Decode.field "notifications" (Decode.map List.reverse (Decode.list Notification.decode)))
         )
 
 

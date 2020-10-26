@@ -199,7 +199,7 @@ pub struct Database(rocket_diesel::PgConnection);
 
 /// The struct that holds the websockets.
 #[derive(Clone)]
-pub struct WebSockets(Arc<Mutex<HashMap<i32, WebSocket<TcpStream>>>>);
+pub struct WebSockets(Arc<Mutex<HashMap<i32, Vec<WebSocket<TcpStream>>>>>);
 
 impl WebSockets {
     /// Creates a new empty map of websockets.
@@ -208,8 +208,17 @@ impl WebSockets {
     }
 
     /// Locks the websockets.
-    pub fn lock(&self) -> Option<MutexGuard<HashMap<i32, WebSocket<TcpStream>>>> {
+    pub fn lock(&self) -> Option<MutexGuard<HashMap<i32, Vec<WebSocket<TcpStream>>>>> {
         self.0.lock().ok()
+    }
+
+    /// Send a message to sockets from an id.
+    pub fn write_message(&self, id: i32, message: Message) {
+        let mut map = self.lock().unwrap();
+        let entry = map.entry(id).or_insert(vec![]);
+        for s in entry {
+            s.write_message(message.clone()).ok();
+        }
     }
 }
 
@@ -383,7 +392,9 @@ pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
                 .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
             if let Message::Text(secret) = msg {
                 let user = User::from_session(&secret, &db).unwrap();
-                socks.lock().unwrap().insert(user.id, websocket);
+                let mut map = socks.lock().unwrap();
+                let entry = map.entry(user.id).or_insert(vec![]);
+                entry.push(websocket);
             }
         });
     }

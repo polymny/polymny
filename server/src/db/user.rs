@@ -1,7 +1,5 @@
 //! This module contains the structures to manipulate users.
 
-use std::net::TcpStream;
-
 use serde_json::Value as Json;
 
 use diesel::pg::PgConnection;
@@ -19,7 +17,6 @@ use bcrypt::{hash, DEFAULT_COST};
 
 use serde::Deserialize;
 
-use tungstenite::protocol::WebSocket;
 use tungstenite::Message;
 
 use crate::db::capsule::Capsule;
@@ -35,6 +32,7 @@ use crate::templates::{
 };
 use crate::webcam::{str_to_webcam_position, str_to_webcam_size, ProductionChoices};
 use crate::Database;
+use crate::WebSockets;
 use crate::{Error, Result};
 
 /// A user of polymny.
@@ -474,17 +472,15 @@ impl User {
     /// Sends a notification to a user.
     pub fn notify(
         &self,
-        sock: Option<&mut WebSocket<TcpStream>>,
+        sock: &WebSockets,
         style: NotificationStyle,
         title: &str,
         content: &str,
         db: &Database,
     ) -> Result<()> {
         let notification = Notification::new(style, self.id, title, content, db)?;
-        if let Some(sock) = sock {
-            let text = serde_json::to_string(&notification).unwrap();
-            sock.write_message(Message::Text(text)).unwrap();
-        }
+        let text = serde_json::to_string(&notification).unwrap();
+        sock.write_message(self.id, Message::Text(text.clone()));
         Ok(())
     }
 
