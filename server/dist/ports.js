@@ -27,8 +27,14 @@ function setupPorts(app) {
     }
 
     function initWebSocket(url, cookie) {
+        // If the socket exists, and not closing or closed.
+        if (socket != undefined && socket.readyState <= 2) {
+            return;
+        }
+
         socket = new WebSocket("ws://" + url);
         socket.onmessage = function(event) {
+            console.log(performance.now(), event);
             app.ports.onWebSocketMessage.send(event.data);
         };
         socket.onopen = function() {
