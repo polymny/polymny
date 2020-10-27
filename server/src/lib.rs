@@ -286,7 +286,7 @@ pub fn start_server(rocket_config: RConfig) {
 pub fn start_setup_server() {
     rocket::ignite()
         .mount("/", routes![routes::setup])
-        .mount("/", StaticFiles::from("dist"))
+        .mount("/dist", StaticFiles::from("dist"))
         .mount(
             "/api/",
             routes![
