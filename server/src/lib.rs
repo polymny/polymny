@@ -384,34 +384,40 @@ pub fn start() {
 /// Starts the websocket server.
 pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
     let server_config = Config::from(&config);
+
+    let database_url = config
+        .get_table("databases")
+        .unwrap()
+        .get_key_value("database")
+        .unwrap()
+        .1
+        .as_table()
+        .unwrap()
+        .get_key_value("url")
+        .unwrap()
+        .1
+        .as_str()
+        .unwrap()
+        .to_owned();
+
     let root = server_config
         .socket_root
         .split("/")
         .skip(2)
         .collect::<Vec<_>>()
         .join("/");
+
     let server = TcpListener::bind(&root).unwrap();
     for stream in server.incoming() {
-        let config = config.clone();
         let socks = socks.clone();
+        let database_url = database_url.clone();
         thread::spawn(move || {
             let mut websocket = accept(stream.unwrap()).unwrap();
             let msg = websocket.read_message().unwrap();
-            let database_url = config
-                .get_table("databases")
-                .unwrap()
-                .get_key_value("database")
-                .unwrap()
-                .1
-                .as_table()
-                .unwrap()
-                .get_key_value("url")
-                .unwrap()
-                .1
-                .as_str()
-                .unwrap();
+
             let db = PgConnection::establish(&database_url)
                 .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+
             if let Message::Text(secret) = msg {
                 let user = User::from_session(&secret, &db).unwrap();
                 let mut map = socks.lock().unwrap();
