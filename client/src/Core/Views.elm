@@ -1,4 +1,4 @@
-module Core.Views exposing (subscriptions, view)
+module Core.Views exposing (subscriptions, topBar, view)
 
 import About
 import Acquisition.Ports
@@ -236,71 +236,76 @@ homeView model =
 
 topBar : Core.Global -> Core.Model -> Element Core.Msg
 topBar global model =
-    case model of
-        Core.LoggedIn { session, tab } ->
-            let
-                makeButton : Maybe String -> String -> Bool -> Element Core.Msg
-                makeButton msg label active =
-                    Element.link
-                        (Element.padding 7
-                            :: Element.height Element.fill
-                            :: (if active then
-                                    [ Background.color Colors.white
-                                    , Font.color Colors.primary
-                                    ]
+    let
+        makeButton : Maybe String -> String -> Bool -> Element Core.Msg
+        makeButton msg label active =
+            Element.link
+                (Element.padding 7
+                    :: Element.height Element.fill
+                    :: (if active then
+                            [ Background.color Colors.white
+                            , Font.color Colors.primary
+                            ]
 
-                                else
-                                    []
-                               )
-                        )
-                        { url =
-                            case msg of
-                                Nothing ->
-                                    "#"
+                        else
+                            []
+                       )
+                )
+                { url =
+                    case msg of
+                        Nothing ->
+                            "#"
 
-                                Just u ->
-                                    u
-                        , label = Element.el [ Element.centerY ] (Element.text label)
-                        }
+                        Just u ->
+                            u
+                , label = Element.el [ Element.centerY ] (Element.text label)
+                }
 
-                unreadNotifcaitions =
+        unreadNotifcaitions =
+            case model of
+                Core.LoggedIn { session } ->
                     session.notifications |> List.filter (not << .read) |> List.length
 
-                unreadNotificationsInFront =
-                    let
-                        size =
-                            12
-                    in
-                    if unreadNotifcaitions > 0 then
-                        Element.el
-                            [ Element.alignRight
-                            , Element.alignBottom
-                            , Background.color Colors.danger
-                            , Element.width (Element.px size)
-                            , Element.height (Element.px size)
-                            , Border.rounded (size // 2)
-                            , Font.size 8
-                            ]
-                            (Element.el
-                                [ Element.centerX, Element.centerY ]
-                                (Element.text (String.fromInt unreadNotifcaitions))
-                            )
+                _ ->
+                    0
 
-                    else
-                        Element.none
+        unreadNotificationsInFront =
+            let
+                size =
+                    12
+            in
+            if unreadNotifcaitions > 0 then
+                Element.el
+                    [ Element.alignRight
+                    , Element.alignBottom
+                    , Background.color Colors.danger
+                    , Element.width (Element.px size)
+                    , Element.height (Element.px size)
+                    , Border.rounded (size // 2)
+                    , Font.size 8
+                    ]
+                    (Element.el
+                        [ Element.centerX, Element.centerY ]
+                        (Element.text (String.fromInt unreadNotifcaitions))
+                    )
 
-                notificationIcon =
-                    Input.button []
-                        { label =
-                            Element.el
-                                [ Element.padding 5
-                                , Element.inFront unreadNotificationsInFront
-                                ]
-                                Icons.bell
-                        , onPress = Just (Core.NotificationMsg Core.ToggleNotificationPanel)
-                        }
+            else
+                Element.none
 
-                ( details, leftButtons ) =
+        notificationIcon =
+            Input.button []
+                { label =
+                    Element.el
+                        [ Element.padding 5
+                        , Element.inFront unreadNotificationsInFront
+                        ]
+                        Icons.bell
+                , onPress = Just (Core.NotificationMsg Core.ToggleNotificationPanel)
+                }
+
+        ( details, leftButtons ) =
+            case model of
+                Core.LoggedIn { tab } ->
                     case tab of
                         LoggedIn.Preparation p ->
                             ( Just p.details
@@ -329,50 +334,58 @@ topBar global model =
                         _ ->
                             ( Nothing, [] )
 
-                projectAndCapsuleName =
-                    case details of
-                        Just d ->
-                            let
-                                projectName =
-                                    Maybe.withDefault "" <| Maybe.map .name (List.head d.projects)
-                            in
-                            Element.el
-                                [ Element.spacing 5, Element.paddingXY 20 4, Element.alignLeft ]
-                            <|
-                                Element.text <|
-                                    projectName
-                                        ++ " / "
-                                        ++ d.capsule.name
+                _ ->
+                    ( Nothing, [] )
 
-                        Nothing ->
-                            Element.none
-            in
-            Element.row
-                [ Background.color Colors.primary
-                , Font.color Colors.white
-                , Element.width Element.fill
-                , Element.below (notificationPanel global session)
-                ]
-                [ Element.row
-                    [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
-                    [ homeButton
-                    , projectAndCapsuleName
-                    , Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons
+        projectAndCapsuleName =
+            case details of
+                Just d ->
+                    let
+                        projectName =
+                            Maybe.withDefault "" <| Maybe.map .name (List.head d.projects)
+                    in
+                    Element.el
+                        [ Element.spacing 5, Element.paddingXY 20 4, Element.alignLeft ]
+                    <|
+                        Element.text <|
+                            projectName
+                                ++ " / "
+                                ++ d.capsule.name
+
+                Nothing ->
+                    Element.none
+
+        row =
+            case model of
+                Core.LoggedIn { session } ->
+                    [ notificationIcon
+                    , settingsButton session.username
+                    , logoutButton
                     ]
-                , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ]
-                    (if Core.isLoggedIn model then
-                        [ notificationIcon
-                        , settingsButton session.username
-                        , logoutButton
-                        ]
 
-                     else
+                _ ->
+                    [ notificationIcon, settingsButton "sup", logoutButton ]
+    in
+    Element.row
+        (Background.color Colors.primary
+            :: Font.color Colors.white
+            :: Element.width Element.fill
+            :: (case model of
+                    Core.LoggedIn { session } ->
+                        [ Element.below (notificationPanel global session) ]
+
+                    _ ->
                         []
-                    )
-                ]
-
-        _ ->
-            nonFull model
+               )
+        )
+        [ Element.row
+            [ Element.alignLeft, Element.spacing 40, Element.height Element.fill ]
+            [ homeButton
+            , projectAndCapsuleName
+            , Element.row [ Element.spacing 10, Element.height Element.fill ] leftButtons
+            ]
+        , Element.row [ Element.alignRight, Element.padding 5, Element.spacing 10 ] row
+        ]
 
 
 notificationPanel : Core.Global -> Api.Session -> Element Core.Msg

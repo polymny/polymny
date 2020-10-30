@@ -2,6 +2,10 @@ module Setup exposing (main)
 
 import Api
 import Browser
+import Browser.Navigation
+import Core.Types as Core
+import Core.Utils as Core
+import Core.Views as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -9,18 +13,23 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Http
+import Json.Decode as Decode
 import Status exposing (Status)
+import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Ui as Ui
+import Url
 
 
-main : Program () FullModel Msg
+main : Program Decode.Value FullModel Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
         , update = update
         , view = view
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = always Sub.none
+        , onUrlChange = always Noop
+        , onUrlRequest = always Noop
         }
 
 
@@ -29,8 +38,8 @@ main =
 
 
 type FullModel
-    = Configuring Model
-    | Finished
+    = Configuring Core.Global Model
+    | Finished Core.Global
 
 
 type alias Model =
@@ -70,9 +79,13 @@ emptyMailerForm =
     MailerForm Status.NotSent True True "" "" "" ""
 
 
-init : () -> ( FullModel, Cmd Msg )
-init _ =
-    ( Configuring (Model Status.NotSent emptyDatabaseForm emptyMailerForm), Cmd.none )
+init : Decode.Value -> Url.Url -> Browser.Navigation.Key -> ( FullModel, Cmd Msg )
+init flags url key =
+    let
+        global =
+            Core.globalFromFlags flags key
+    in
+    ( Configuring global (Model Status.NotSent emptyDatabaseForm emptyMailerForm), Cmd.none )
 
 
 
@@ -117,34 +130,34 @@ type MailerMsg
 update : Msg -> FullModel -> ( FullModel, Cmd Msg )
 update msg fullModel =
     case ( fullModel, msg ) of
-        ( Configuring model, Noop ) ->
-            ( Configuring model, Cmd.none )
+        ( Configuring global model, Noop ) ->
+            ( Configuring global model, Cmd.none )
 
-        ( Configuring model, DatabaseMsg dMsg ) ->
+        ( Configuring global model, DatabaseMsg dMsg ) ->
             let
                 ( newDb, cmd ) =
                     updateDatabase dMsg model.database
             in
-            ( Configuring { model | database = newDb }, Cmd.map DatabaseMsg cmd )
+            ( Configuring global { model | database = newDb }, Cmd.map DatabaseMsg cmd )
 
-        ( Configuring model, MailerMsg mMsg ) ->
+        ( Configuring global model, MailerMsg mMsg ) ->
             let
                 ( newMailer, cmd ) =
                     updateMailer mMsg model.mailer
             in
-            ( Configuring { model | mailer = newMailer }, Cmd.map MailerMsg cmd )
+            ( Configuring global { model | mailer = newMailer }, Cmd.map MailerMsg cmd )
 
-        ( Configuring model, SubmitConfiguration ) ->
-            ( Configuring { model | status = Status.Sent }, Api.setupConfig submitResultToMsg model.database model.mailer )
+        ( Configuring global model, SubmitConfiguration ) ->
+            ( Configuring global { model | status = Status.Sent }, Api.setupConfig submitResultToMsg model.database model.mailer )
 
-        ( Configuring model, SubmissionFailed ) ->
-            ( Configuring { model | status = Status.Error () }, Cmd.none )
+        ( Configuring global model, SubmissionFailed ) ->
+            ( Configuring global { model | status = Status.Error () }, Cmd.none )
 
-        ( Configuring _, SubmissionSuccessful ) ->
-            ( Finished, Cmd.none )
+        ( Configuring global _, SubmissionSuccessful ) ->
+            ( Finished global, Cmd.none )
 
-        ( Finished, _ ) ->
-            ( Finished, Cmd.none )
+        ( Finished global, _ ) ->
+            ( Finished global, Cmd.none )
 
 
 updateDatabase : DatabaseMsg -> DatabaseForm -> ( DatabaseForm, Cmd DatabaseMsg )
@@ -237,23 +250,47 @@ submitResultToMsg result =
 -- VIEW
 
 
-view : FullModel -> Html.Html Msg
+view : FullModel -> Browser.Document Msg
 view fullModel =
-    Element.layout [ Font.size 15 ] (viewContent fullModel)
+    { title = "Polymny"
+    , body = [ Element.layout Attributes.fullModelAttributes (viewContent fullModel) ]
+    }
 
 
 viewContent : FullModel -> Element Msg
 viewContent model =
-    Element.column [ Element.width Element.fill ] [ topBar, content model ]
+    let
+        global =
+            case model of
+                Configuring g _ ->
+                    g
+
+                Finished g ->
+                    g
+
+        m =
+            Core.Home Core.HomeAbout
+
+        top =
+            Core.topBar global m |> Element.map (always Noop)
+    in
+    Element.column
+        (Element.height Element.fill
+            :: Element.scrollbarY
+            :: Element.width Element.fill
+            :: Background.color Colors.whiteDark
+            :: []
+        )
+        [ top, content model ]
 
 
 content : FullModel -> Element Msg
 content fullModel =
     case fullModel of
-        Configuring model ->
+        Configuring global model ->
             configuringContent model
 
-        Finished ->
+        Finished global ->
             Element.column [ Element.centerX ]
                 [ Element.el [ Font.bold ] (Element.text "Congratulations")
                 , Element.text "Your server is now configured, you can restart it to launch the application"
