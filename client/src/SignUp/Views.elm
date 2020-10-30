@@ -59,8 +59,8 @@ view { username, password, passwordConfirmation, email, status } =
                 ( Status.Success (), _, _ ) ->
                     Just (Ui.successModal "Un email vous a été envoyé !")
 
-                ( Status.Error (), _, _ ) ->
-                    Just (Ui.errorModal "L'inscription a échoué")
+                ( Status.Error m, _, _ ) ->
+                    Just (Ui.errorModal m)
 
                 ( _, False, _ ) ->
                     Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres, chiffres, points, tirets et traits et doit faire plus de 3 caractères")

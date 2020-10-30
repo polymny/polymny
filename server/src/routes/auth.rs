@@ -31,7 +31,13 @@ pub struct NewUserForm {
 /// The route to register new users.
 #[post("/new-user", data = "<user>")]
 pub fn new_user(db: Database, config: State<Config>, user: Json<NewUserForm>) -> Result<Response> {
-    let user = User::create(&user.username, &user.email, &user.password, &config.mailer)?;
+    let user = User::create(
+        &user.username,
+        &user.email,
+        &user.password,
+        &config.mailer,
+        &db,
+    )?;
     user.save(&db)?;
 
     Ok(Response::build().sized_body(Cursor::new("")).finalize())

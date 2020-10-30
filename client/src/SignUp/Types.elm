@@ -4,7 +4,7 @@ import Status exposing (Status)
 
 
 type alias Model =
-    { status : Status () ()
+    { status : Status () String
     , username : String
     , password : String
     , passwordConfirmation : String
@@ -24,3 +24,4 @@ type Msg
     | EmailChanged String
     | Submitted
     | Success
+    | Failed String

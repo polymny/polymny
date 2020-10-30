@@ -111,6 +111,7 @@ impl User {
         email: &str,
         password: &str,
         mailer: &Option<Mailer>,
+        db: &Database,
     ) -> Result<NewUser> {
         // Verify username constraints: the username must follow this regex [a-zA-Z0-9._-]* and len
         // > 3
@@ -122,6 +123,10 @@ impl User {
             if !(c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.') {
                 return Err(Error::NotFound);
             }
+        }
+
+        if User::get_by_username(&username, db).is_ok() || User::get_by_email(&email, db).is_ok() {
+            return Err(Error::NotFound);
         }
 
         // Hash the password
@@ -162,6 +167,15 @@ impl User {
                 edition_options: None,
             }),
         }
+    }
+
+    /// Gets a user by username.
+    pub fn get_by_username(username: &str, db: &PgConnection) -> Result<User> {
+        use crate::schema::users::dsl;
+        let user = dsl::users
+            .filter(dsl::username.eq(username))
+            .first::<User>(db);
+        Ok(user?)
     }
 
     /// Gets a user by email.
