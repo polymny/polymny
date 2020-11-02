@@ -396,8 +396,8 @@ pub fn gos_order(
     id: i32,
     goss: Json<Vec<GosStructure>>,
 ) -> Result<JsonValue> {
-    let capsule = user.get_capsule_by_id(id, &db)?;
-    let mut goss = goss.into_inner();
+    user.get_capsule_by_id(id, &db)?;
+    let goss = goss.into_inner();
 
     // Verifiy that the goss doesn't violate authorizations.
     // All slides must belong to the user.
@@ -409,15 +409,21 @@ pub fn gos_order(
 
     // The user is not allowed to modify the record_path.
     for gos in 0..goss.len() {
-        if goss[gos].record_path != None {
-            goss[gos].record_path = Some(
-                capsule.structure.as_array().unwrap()[gos]
-                    .get("record_path")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            );
+        if let Some(path) = goss[gos].record_path.as_ref() {
+            // This code does not work
+            // goss[gos].record_path = Some(
+            //     capsule.structure.as_array().unwrap()[gos]
+            //         .get("record_path")
+            //         .unwrap()
+            //         .as_str()
+            //         .unwrap()
+            //         .to_string(),
+            // );
+
+            // For the moment, only ensure that the path belongs to the right user
+            if !path.starts_with(&user.username) {
+                todo!("not authorized");
+            }
         }
     }
 
