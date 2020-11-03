@@ -400,14 +400,9 @@ pub fn start_websocket_server(config: rocket::Config, socks: WebSockets) {
         .unwrap()
         .to_owned();
 
-    let root = server_config
-        .socket_root
-        .split("/")
-        .skip(2)
-        .collect::<Vec<_>>()
-        .join("/");
-
+    let root = server_config.socket_listen;
     let server = TcpListener::bind(&root).unwrap();
+
     for stream in server.incoming() {
         let socks = socks.clone();
         let database_url = database_url.clone();

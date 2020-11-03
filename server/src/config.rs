@@ -16,6 +16,9 @@ pub struct Config {
     /// The path where the videos will be published.
     pub videos_path: PathBuf,
 
+    /// The url to which the websocket server must listen.
+    pub socket_listen: String,
+
     /// The root of the socket server.
     pub socket_root: String,
 
@@ -59,6 +62,10 @@ impl Config {
             .get_string("videos_path")
             .unwrap_or_else(|_| String::from("videos"));
 
+        let socket_listen = config
+            .get_string("socket_listen")
+            .unwrap_or_else(|_| String::from("localhost:8001"));
+
         let socket_root = config
             .get_string("socket_root")
             .unwrap_or_else(|_| String::from("/"));
@@ -87,6 +94,7 @@ impl Config {
             data_path: PathBuf::from(data_path),
             log_path: PathBuf::from(log_path),
             videos_path: PathBuf::from(videos_path),
+            socket_listen,
             socket_root,
             video_root,
             beta,
