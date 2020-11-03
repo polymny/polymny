@@ -151,6 +151,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             &sample_user.email,
             &sample_user.password,
             &None,
+            &db,
         )?
         .save(&db)?;
 

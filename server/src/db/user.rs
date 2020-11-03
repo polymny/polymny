@@ -111,7 +111,7 @@ impl User {
         email: &str,
         password: &str,
         mailer: &Option<Mailer>,
-        db: &Database,
+        db: &PgConnection,
     ) -> Result<NewUser> {
         // Verify username constraints: the username must follow this regex [a-zA-Z0-9._-]* and len
         // > 3
