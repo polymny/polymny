@@ -894,7 +894,8 @@ encodeSlideStructure capsule =
         encodeGos : Gos -> Encode.Value
         encodeGos gos =
             Encode.object
-                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                -- This remove front data is ugly but it removes /data/ from the path which is added by the server
+                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map (Encode.string << removeFrontData) gos.record) )
                 , ( "background", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.background) )
                 , ( "transitions", Encode.list Encode.int gos.transitions )
                 , ( "slides", Encode.list Encode.int (List.map .id gos.slides) )
@@ -905,13 +906,21 @@ encodeSlideStructure capsule =
     Encode.list encodeGos capsule.structure
 
 
+removeFrontData : String -> String
+removeFrontData input =
+    String.split "/" input
+        |> List.drop 2
+        |> String.join "/"
+
+
 encodeSlideStructureFromInts : List InnerGos -> Encode.Value
 encodeSlideStructureFromInts capsule =
     let
         encodeGos : InnerGos -> Encode.Value
         encodeGos gos =
             Encode.object
-                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.record) )
+                -- This remove front data is ugly but it removes /data/ from the path which is added by the server
+                [ ( "record_path", Maybe.withDefault Encode.null (Maybe.map (Encode.string << removeFrontData) gos.record) )
                 , ( "background", Maybe.withDefault Encode.null (Maybe.map Encode.string gos.background) )
                 , ( "transitions", Encode.list Encode.int gos.transitions )
                 , ( "slides", Encode.list Encode.int gos.slides )
