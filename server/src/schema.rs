@@ -47,6 +47,7 @@ table! {
         published -> Task_status,
         edition_options -> Json,
         active -> Bool,
+        edited -> Task_status,
     }
 }
 

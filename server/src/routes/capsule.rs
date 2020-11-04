@@ -730,6 +730,18 @@ pub fn capsule_edition(
     post_data: Json<PostCapsuleEdition>,
 ) -> Result<JsonValue> {
     let capsule = user.get_capsule_by_id(id, &db)?;
+
+    match capsule.edited {
+        TaskStatus::Running => return Err(Error::NotFound),
+        TaskStatus::Done => (),
+        _ => (),
+    }
+
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::edited.eq(TaskStatus::Running))
+        .execute(&db.0)?;
+
     // save Vec og Gos structrure
     let data = post_data.into_inner();
     let mut goss = data.goss;
@@ -1175,6 +1187,11 @@ pub fn capsule_edition(
         io::stderr().write_all(&child.stderr).unwrap();
         return Err(Error::TranscodeError);
     }
+
+    diesel::update(capsules::table)
+        .filter(dsl::id.eq(capsule.id))
+        .set(dsl::edited.eq(TaskStatus::Done))
+        .execute(&db.0)?;
 
     //dir.close()?;
     user.notify(

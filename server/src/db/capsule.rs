@@ -91,6 +91,9 @@ pub struct Capsule {
 
     /// Whether the capsule is active or not.
     pub active: bool,
+
+    /// Whether the capsule video is edited.
+    pub edited: TaskStatus,
 }
 
 /// The capsule with the video as an asset.
@@ -132,6 +135,9 @@ pub struct CapsuleWithVideo {
     /// } ]
     /// ```
     pub structure: Json,
+
+    /// Whether the capsule video is edited.
+    pub edited: TaskStatus,
 
     /// Whether the capsule video is published.
     pub published: TaskStatus,
@@ -224,6 +230,9 @@ pub struct NewCapsule {
     /// The structure of the capsule.
     pub structure: Json,
 
+    /// Whether the capsule video is edited.
+    pub edited: TaskStatus,
+
     /// Whether the capsule video is published.
     pub published: TaskStatus,
 
@@ -280,6 +289,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
+            edited: TaskStatus::Idle,
             published: TaskStatus::Idle,
             edition_options: Some(json!([])),
             active: false,
@@ -318,6 +328,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
+            edited: TaskStatus::Idle,
             published: TaskStatus::Idle,
             edition_options: None,
             active: false,
@@ -337,6 +348,7 @@ impl Capsule {
             logo_id: self.logo_id,
             video: v,
             structure: self.structure.clone(),
+            edited: self.edited,
             published: self.published,
             edition_options: self.edition_options.clone(),
             active: self.active,

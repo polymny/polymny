@@ -206,6 +206,7 @@ type alias Capsule =
     , name : String
     , title : String
     , description : String
+    , edited : TaskStatus
     , published : TaskStatus
     , capsuleEditionOptions : Maybe CapsuleEditionOptions
     , video : Maybe Asset
@@ -214,11 +215,12 @@ type alias Capsule =
 
 decodeCapsule : Decoder Capsule
 decodeCapsule =
-    Decode.map7 Capsule
+    Decode.map8 Capsule
         (Decode.field "id" Decode.int)
         (Decode.field "name" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "description" Decode.string)
+        (Decode.field "edited" decodeDone)
         (Decode.field "published" decodeDone)
         (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
         (Decode.field "video" (Decode.maybe decodeAsset))
