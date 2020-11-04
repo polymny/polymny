@@ -6,9 +6,9 @@ module Api exposing
     , Gos
     , InnerGos
     , Project
-    , PublishedType(..)
     , Session
     , Slide
+    , TaskStatus(..)
     , capsuleFromId
     , capsuleUploadBackground
     , capsuleUploadLogo
@@ -119,28 +119,28 @@ createProject id name lastVisited =
     Project id name lastVisited True []
 
 
-type PublishedType
-    = NotPublished
-    | Publishing
-    | Published
+type TaskStatus
+    = Idle
+    | Running
+    | Done
 
 
-decodePublishedAux : String -> PublishedType
-decodePublishedAux s =
+decodeDoneAux : String -> TaskStatus
+decodeDoneAux s =
     case s of
-        "Publishing" ->
-            Publishing
+        "Running" ->
+            Running
 
-        "Published" ->
-            Published
+        "Done" ->
+            Done
 
         _ ->
-            NotPublished
+            Idle
 
 
-decodePublished : Decoder PublishedType
-decodePublished =
-    Decode.map decodePublishedAux Decode.string
+decodeDone : Decoder TaskStatus
+decodeDone =
+    Decode.map decodeDoneAux Decode.string
 
 
 type alias CapsuleEditionOptions =
@@ -206,7 +206,7 @@ type alias Capsule =
     , name : String
     , title : String
     , description : String
-    , published : PublishedType
+    , published : TaskStatus
     , capsuleEditionOptions : Maybe CapsuleEditionOptions
     , video : Maybe Asset
     }
@@ -219,7 +219,7 @@ decodeCapsule =
         (Decode.field "name" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "description" Decode.string)
-        (Decode.field "published" decodePublished)
+        (Decode.field "published" decodeDone)
         (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
         (Decode.field "video" (Decode.maybe decodeAsset))
 

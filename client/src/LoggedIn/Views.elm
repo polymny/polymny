@@ -622,7 +622,7 @@ progressView cop =
                     p.capsules |> List.filter (\x -> x.video /= Nothing) |> List.length
 
                 capsulesPublished =
-                    p.capsules |> List.filter (\x -> x.published == Api.Published) |> List.length
+                    p.capsules |> List.filter (\x -> x.published == Api.Done) |> List.length
             in
             Element.el [ Font.italic, Element.centerY ]
                 (Element.text
@@ -654,7 +654,7 @@ capsuleProgressView capsule =
     let
         position =
             case ( capsule.video, capsule.published ) of
-                ( Just _, Api.Published ) ->
+                ( Just _, Api.Done ) ->
                     2
 
                 ( Just _, _ ) ->
@@ -734,7 +734,7 @@ capsuleProgressIconsView global capsule =
 
         icons =
             case ( capsule.video, capsule.published ) of
-                ( Just v, Api.Published ) ->
+                ( Just v, Api.Done ) ->
                     [ Element.newTabLink []
                         { url = videoUrl v, label = Ui.movieButton Nothing "" "Voir la vidéo" }
                     , Ui.chainButton

@@ -44,7 +44,7 @@ table! {
         logo_id -> Nullable<Int4>,
         video_id -> Nullable<Int4>,
         structure -> Json,
-        published -> Published_type,
+        published -> Task_status,
         edition_options -> Json,
         active -> Bool,
     }

@@ -385,15 +385,15 @@ bottomRow global model =
 
         publishButton =
             case ( model.details.capsule.published, model.details.capsule.video ) of
-                ( Api.NotPublished, Just _ ) ->
+                ( Api.Idle, Just _ ) ->
                     Ui.primaryButton (Just Edition.PublishVideo) "Publier la vidéo"
                         |> Element.map LoggedIn.EditionMsg
                         |> Element.map Core.LoggedInMsg
 
-                ( Api.Publishing, _ ) ->
+                ( Api.Running, _ ) ->
                     Ui.messageWithSpinner "Publication de vidéo en cours..."
 
-                ( Api.Published, Just v ) ->
+                ( Api.Done, Just v ) ->
                     Element.row [ Element.spacing 10 ]
                         [ Element.newTabLink []
                             { url = videoUrl v

@@ -15,23 +15,23 @@ use crate::webcam::{
 use crate::Result;
 
 #[allow(missing_docs)]
-mod published_type {
+mod task_status {
     /// The different published states possible.
     #[derive(Debug, PartialEq, Eq, DbEnum, Serialize, Copy, Clone)]
-    pub enum PublishedType {
-        /// Not published at all.
-        NotPublished,
+    pub enum TaskStatus {
+        /// Not started.
+        Idle,
 
-        /// In publication.
-        Publishing,
+        /// Running.
+        Running,
 
-        /// Published.
-        Published,
+        /// Done.
+        Done,
     }
 }
 
-pub use published_type::PublishedTypeMapping as Published_type;
-pub use published_type::{PublishedType, PublishedTypeMapping};
+pub use task_status::TaskStatusMapping as Task_status;
+pub use task_status::{TaskStatus, TaskStatusMapping};
 
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
@@ -75,7 +75,7 @@ pub struct Capsule {
     pub structure: Json,
 
     /// Whether the capsule video is published.
-    pub published: PublishedType,
+    pub published: TaskStatus,
 
     /// The structure of the editions options.
     ///
@@ -134,7 +134,7 @@ pub struct CapsuleWithVideo {
     pub structure: Json,
 
     /// Whether the capsule video is published.
-    pub published: PublishedType,
+    pub published: TaskStatus,
 
     /// The structure of the editions options.
     ///
@@ -225,7 +225,7 @@ pub struct NewCapsule {
     pub structure: Json,
 
     /// Whether the capsule video is published.
-    pub published: PublishedType,
+    pub published: TaskStatus,
 
     /// The structure of the editions options.
     pub edition_options: Option<Json>,
@@ -280,7 +280,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
-            published: PublishedType::NotPublished,
+            published: TaskStatus::Idle,
             edition_options: Some(json!([])),
             active: false,
         }
@@ -318,7 +318,7 @@ impl Capsule {
             background_id: Some(background_id),
             logo_id: Some(logo_id),
             structure: json!([]),
-            published: PublishedType::NotPublished,
+            published: TaskStatus::Idle,
             edition_options: None,
             active: false,
         })

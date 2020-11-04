@@ -25,7 +25,7 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::{ApiProductionChoices, Capsule, GosStructure, PublishedType};
+use crate::db::capsule::{ApiProductionChoices, Capsule, GosStructure, TaskStatus};
 use crate::db::notification::NotificationStyle;
 use crate::db::project::Project;
 use crate::db::slide::{Slide, SlideWithAsset};
@@ -1164,7 +1164,7 @@ pub fn capsule_edition(
             .filter(dsl::id.eq(capsule.id))
             .set((
                 dsl::video_id.eq(asset.id),
-                dsl::published.eq(PublishedType::NotPublished),
+                dsl::published.eq(TaskStatus::Idle),
             ))
             .execute(&db.0)?;
     } else {
@@ -1202,15 +1202,15 @@ pub fn capsule_publication(
     let capsule = user.get_capsule_by_id(id, &db)?;
 
     match capsule.published {
-        PublishedType::Publishing => return Err(Error::NotFound),
-        PublishedType::Published => (),
+        TaskStatus::Running => return Err(Error::NotFound),
+        TaskStatus::Done => (),
         _ => (),
     }
 
     use crate::schema::capsules::dsl;
     diesel::update(capsules::table)
         .filter(dsl::id.eq(capsule.id))
-        .set(dsl::published.eq(PublishedType::Publishing))
+        .set(dsl::published.eq(TaskStatus::Running))
         .execute(&db.0)?;
 
     let asset = Asset::get_by_id(capsule.video_id.ok_or(Error::NotFound)?, &db)?;
@@ -1226,13 +1226,13 @@ pub fn capsule_publication(
         use crate::schema::capsules::dsl;
         diesel::update(capsules::table)
             .filter(dsl::id.eq(capsule.id))
-            .set(dsl::published.eq(PublishedType::Published))
+            .set(dsl::published.eq(TaskStatus::Done))
             .execute(&db.0)?;
     } else {
         use crate::schema::capsules::dsl;
         diesel::update(capsules::table)
             .filter(dsl::id.eq(capsule.id))
-            .set(dsl::published.eq(PublishedType::NotPublished))
+            .set(dsl::published.eq(TaskStatus::Idle))
             .execute(&db.0)?;
         error!(
             "command {:?} failed:\nSTDOUT\n{}\n\nSTDERR\n{}",

@@ -32,7 +32,7 @@ update session msg model =
                     model.details
 
                 newCapsule =
-                    { capsule | published = Api.Publishing }
+                    { capsule | published = Api.Running }
 
                 newDetails =
                     { details | capsule = newCapsule }
@@ -53,7 +53,7 @@ update session msg model =
                     model.details
 
                 newCapsule =
-                    { capsule | published = Api.Published }
+                    { capsule | published = Api.Done }
 
                 newDetails =
                     { details | capsule = newCapsule }
