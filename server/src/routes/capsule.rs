@@ -1,6 +1,7 @@
 //! This module contains all the routes related to capsules.
 use std::fs::{self, create_dir, File};
 use std::io::{self, Write};
+use std::ops::Drop;
 use std::path::{Path, PathBuf};
 
 use serde_json::json as serde_json;
@@ -737,10 +738,7 @@ pub fn capsule_edition(
         _ => (),
     }
 
-    diesel::update(capsules::table)
-        .filter(dsl::id.eq(capsule.id))
-        .set(dsl::edited.eq(TaskStatus::Running))
-        .execute(&db.0)?;
+    let mut reset = TaskStatusReset::edition(&db, capsule.id)?;
 
     // save Vec og Gos structrure
     let data = post_data.into_inner();
@@ -1188,12 +1186,8 @@ pub fn capsule_edition(
         return Err(Error::TranscodeError);
     }
 
-    diesel::update(capsules::table)
-        .filter(dsl::id.eq(capsule.id))
-        .set(dsl::edited.eq(TaskStatus::Done))
-        .execute(&db.0)?;
+    reset.ok();
 
-    //dir.close()?;
     user.notify(
         socks.inner(),
         NotificationStyle::Info,
@@ -1205,6 +1199,78 @@ pub fn capsule_edition(
     let capsule = user.get_capsule_by_id(id, &db)?;
 
     format_capsule_data(&db, &capsule)
+}
+
+/// A struct that sets correctly the flag of a task status.
+pub struct TaskStatusReset<'a> {
+    /// The id of the capsule to reset
+    pub capsule_id: i32,
+
+    /// The value to which it should be reset
+    pub value: TaskStatus,
+
+    /// The database connection.
+    pub db: &'a Database,
+
+    /// Whether the task is the edition task or the publication task.
+    edition: bool,
+}
+
+impl<'a> TaskStatusReset<'a> {
+    /// Creates a new task status and sets the flag to running.
+    fn new(db: &'a Database, capsule_id: i32, edition: bool) -> Result<TaskStatusReset> {
+        // Set the flag to running
+        let reset = TaskStatusReset {
+            capsule_id,
+            // If the task status is dropped, the task failed and we want to set the flag back to
+            // idle.
+            value: TaskStatus::Idle,
+            db,
+            edition,
+        };
+
+        reset.set(TaskStatus::Running)?;
+
+        Ok(reset)
+    }
+
+    /// Creates a new edition task status reset, and sets the flag to running.
+    pub fn edition(db: &'a Database, capsule_id: i32) -> Result<TaskStatusReset> {
+        TaskStatusReset::new(db, capsule_id, true)
+    }
+
+    /// Creates a new publication task status reset, and sets the flag to running.
+    pub fn publication(db: &'a Database, capsule_id: i32) -> Result<TaskStatusReset> {
+        TaskStatusReset::new(db, capsule_id, false)
+    }
+
+    /// Sets the flag.
+    fn set(&self, value: TaskStatus) -> Result<()> {
+        use crate::schema::capsules::dsl;
+        if self.edition {
+            diesel::update(capsules::table)
+                .filter(dsl::id.eq(self.capsule_id))
+                .set(dsl::edited.eq(value))
+                .execute(&self.db.0)?;
+        } else {
+            diesel::update(capsules::table)
+                .filter(dsl::id.eq(self.capsule_id))
+                .set(dsl::published.eq(value))
+                .execute(&self.db.0)?;
+        }
+        Ok(())
+    }
+
+    /// Sets the flag to done.
+    pub fn ok(&mut self) {
+        self.value = TaskStatus::Done;
+    }
+}
+
+impl<'a> Drop for TaskStatusReset<'a> {
+    fn drop(&mut self) {
+        self.set(self.value).ok();
+    }
 }
 
 /// The route to publish a video.
@@ -1224,11 +1290,7 @@ pub fn capsule_publication(
         _ => (),
     }
 
-    use crate::schema::capsules::dsl;
-    diesel::update(capsules::table)
-        .filter(dsl::id.eq(capsule.id))
-        .set(dsl::published.eq(TaskStatus::Running))
-        .execute(&db.0)?;
+    let mut reset = TaskStatusReset::publication(&db, capsule.id)?;
 
     let asset = Asset::get_by_id(capsule.video_id.ok_or(Error::NotFound)?, &db)?;
     let input_path = config.data_path.join(&asset.0.asset_path);
@@ -1240,17 +1302,15 @@ pub fn capsule_publication(
     let child = command::run_command(&command)?;
 
     if child.status.success() {
-        use crate::schema::capsules::dsl;
-        diesel::update(capsules::table)
-            .filter(dsl::id.eq(capsule.id))
-            .set(dsl::published.eq(TaskStatus::Done))
-            .execute(&db.0)?;
+        reset.ok();
+        user.notify(
+            socks.inner(),
+            NotificationStyle::Info,
+            "Publication terminée !",
+            &format!("La capsule {} est publiée.", capsule.name),
+            &db,
+        )?;
     } else {
-        use crate::schema::capsules::dsl;
-        diesel::update(capsules::table)
-            .filter(dsl::id.eq(capsule.id))
-            .set(dsl::published.eq(TaskStatus::Idle))
-            .execute(&db.0)?;
         error!(
             "command {:?} failed:\nSTDOUT\n{}\n\nSTDERR\n{}",
             command,
@@ -1258,14 +1318,6 @@ pub fn capsule_publication(
             String::from_utf8(child.stderr).unwrap()
         );
     }
-
-    user.notify(
-        socks.inner(),
-        NotificationStyle::Info,
-        "Publication terminée !",
-        &format!("La capsule {} est publiée.", capsule.name),
-        &db,
-    )?;
 
     Ok(())
 }

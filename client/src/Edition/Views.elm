@@ -366,17 +366,23 @@ bottomRow global model =
                     Element.text "Pas de vidéo éditée pour l'instant"
 
         ( element, editButton ) =
-            case model.status of
-                Status.Sent ->
+            case ( model.details.capsule.edited, model.status ) of
+                ( _, Status.Sent ) ->
                     ( Ui.messageWithSpinner "Edition automatique en cours", Element.none )
 
-                Status.Success () ->
+                ( Api.Done, _ ) ->
                     ( video, button )
 
-                Status.Error () ->
+                ( _, Status.Success () ) ->
+                    ( video, button )
+
+                ( Api.Running, _ ) ->
+                    ( Ui.messageWithSpinner "Edition automatique en cours", Element.none )
+
+                ( _, Status.Error () ) ->
                     ( Element.text "Problème rencontré lors de la compostion de la vidéo. Merci de nous contacter", Element.none )
 
-                Status.NotSent ->
+                ( Api.Idle, Status.NotSent ) ->
                     ( video, button )
 
         videoUrl : Api.Asset -> String
