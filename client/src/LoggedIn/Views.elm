@@ -652,31 +652,23 @@ progressView cop =
 capsuleProgressView : Api.Capsule -> Element Core.Msg
 capsuleProgressView capsule =
     let
-        position =
-            case ( capsule.video, capsule.published ) of
-                ( Just _, Api.Done ) ->
-                    2
+        computeColor : Api.TaskStatus -> Element.Attribute msg
+        computeColor status =
+            Background.color <|
+                case status of
+                    Api.Idle ->
+                        Colors.grey
 
-                ( Just _, _ ) ->
-                    1
+                    Api.Running ->
+                        Colors.successLight
 
-                _ ->
-                    0
-
-        color : Int -> Element.Attribute msg
-        color status =
-            Background.color
-                (if position >= status then
-                    Colors.successLight
-
-                 else
-                    Colors.grey
-                )
+                    Api.Done ->
+                        Colors.successLight
 
         acquisition =
             Element.el
                 [ Element.width Element.fill
-                , color 0
+                , computeColor Api.Done
                 , Element.padding 10
                 , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
                 , Border.color Colors.black
@@ -687,7 +679,7 @@ capsuleProgressView capsule =
         edition =
             Element.el
                 [ Element.width Element.fill
-                , color 1
+                , computeColor capsule.edited
                 , Element.padding 10
                 , Border.color Colors.black
                 , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
@@ -697,7 +689,7 @@ capsuleProgressView capsule =
         publication =
             Element.el
                 [ Element.width Element.fill
-                , color 2
+                , computeColor capsule.published
                 , Element.padding 10
                 , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
                 , Border.color Colors.black
