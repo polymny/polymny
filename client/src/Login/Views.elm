@@ -43,13 +43,13 @@ view { username, password, status } =
 
         fields =
             [ Input.username submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Nom d'utilisateur")
+                { label = Input.labelLeft [] (Element.text "Nom d'utilisateur")
                 , onChange = Login.UsernameChanged
                 , placeholder = Nothing
                 , text = username
                 }
             , Input.currentPassword submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Mot de passe")
+                { label = Input.labelLeft [] (Element.text "Mot de passe")
                 , onChange = Login.PasswordChanged
                 , placeholder = Nothing
                 , text = password

@@ -29,6 +29,7 @@ import SignUp.Views as SignUp
 import Ui.Attributes as Attributes
 import Ui.Colors as Colors
 import Ui.Icons as Icons
+import Ui.StaticAssets as Assets
 import Ui.Ui as Ui
 
 
@@ -182,55 +183,30 @@ homeView model =
                     , Ui.linkButton (Just Core.LoginClicked) "Fermer"
                     , Element.none
                     )
-
-        logoSmall =
-            80
     in
-    Element.row
+    Element.column
         [ Element.centerX
-        , Element.spacing 100
-        , Element.padding 20
-        , Element.width Element.fill
-        , Element.height Element.fill
+        , Element.spacing 50
+        , Element.padding 30
+        , Element.width (Element.fillPortion 4)
+        , Element.alignTop
+        , Font.size 20
+        , Font.center
         ]
-        [ Element.el [ Element.width (Element.fillPortion 1) ] Element.none
-        , Element.column
-            [ Element.centerX
-            , Element.spacing 10
-            , Element.width (Element.fillPortion 4)
-            , Element.alignTop
-            ]
-            [ Element.column
-                [ Element.spacing 10
-                , Element.padding 20
-                , Font.size 16
-                ]
-                [ Element.el Attributes.attributesHomeTitle <|
-                    Element.text "Polymny Studio "
+        [ Element.column [ Element.centerX, Element.width Element.fill ]
+            [ Element.textColumn [ Element.centerX, Element.width Element.fill ]
+                [ Element.el Attributes.attributesHomeTitle <| Element.text "Polymny Studio "
                 , Element.paragraph [] [ Element.text "Le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}!" ]
                 , Element.paragraph [] [ Element.text "Le tout à distance, sans obstacles ni prérequis, à partir de simples présentations pdf.\n" ]
-                , Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie." ]
-                , Element.el [ Element.paddingXY 30 5, Element.alignLeft ] <| viewLogo 100 "/dist/logoRegionOccitanie.png"
-                , Element.paragraph [] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]
-                , Element.row [ Element.spacing 10 ]
-                    [ viewLogo logoSmall "/dist/logoTTT.png"
-                    , viewLogo logoSmall "/dist/logoIRIT.png"
-                    , viewLogo logoSmall "/dist/logoCEPFOR.png"
-                    , viewLogo logoSmall "/dist/logoCERESA.png"
-                    , viewLogo logoSmall "/dist/logoDYP.png"
-                    , viewLogo logoSmall "/dist/logoINP.png"
-                    , viewLogo logoSmall "/dist/logoUT2J.png"
-                    ]
                 ]
+            , Element.column
+                [ Element.centerX
+                , Element.alignTop
+                ]
+                [ form, forgotPasswordLink, button ]
             ]
-        , Element.column
-            [ Element.centerX
-            , Element.spacing 10
-            , Element.width (Element.fillPortion 2)
-            , Element.alignTop
-            ]
-            [ form, forgotPasswordLink, button ]
-        , Element.el [ Element.width (Element.fillPortion 1) ] Element.none
+        , featuresView
+        , partnersView
         ]
 
 
@@ -486,6 +462,248 @@ bottomBar global =
         ]
 
 
+featuresView : Element Core.Msg
+featuresView =
+    Element.column [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
+        [ Assets.videoBonjour
+        , Element.row []
+            [ Element.textColumn [ Element.spacing 5, Element.padding 10, Font.size 20, Font.alignLeft ]
+                [ Element.el [ Element.centerX ] Element.none
+                , Element.paragraph [ Font.bold, Font.size 48, Font.center ] [ Element.text "Que fait polymny?" ]
+                , Element.textColumn [ Element.paddingXY 20 2, Font.alignLeft ]
+                    [ Element.paragraph [ Element.centerX, Font.alignLeft ]
+                        [ Element.text "A partir d'un présentation au format PDF vous simplifie la création et la distribution d'une capsule vidéo. L'outil permet par des étapes simples:"
+                        ]
+                    , Element.el [ Element.alignLeft, Element.padding 2 ] Element.none
+                    , Element.paragraph [ Element.alignLeft, Element.spacingXY 10 0 ]
+                        [ Element.el
+                            [ Element.alignLeft
+                            , Element.paddingXY 20 30
+                            , Font.bold
+                            ]
+                            (Element.text "-")
+                        , Element.text "Préparer la présentation PDF en vue de la création de la capsule vidéo. Ajouter des resources vidéos, grouper des planches, supprimer des planches, ..."
+                        ]
+                    , Element.paragraph [ Element.alignLeft, Element.spacingXY 10 0 ]
+                        [ Element.el
+                            [ Element.alignLeft
+                            , Element.paddingXY 20 40
+                            , Font.bold
+                            ]
+                            (Element.text "-")
+                        , Element.text "Se filmer avec une webcam planche par planche. L'outil permet de facilement recommencer un enregistrement sans avoir à tourt reprendre. On peut aussi s'aider d'un prompteur pour de la lecture de texte."
+                        ]
+                    , Element.paragraph [ Element.alignLeft, Element.spacingXY 10 0 ]
+                        [ Element.el
+                            [ Element.alignLeft
+                            , Element.paddingXY 20 20
+                            , Font.bold
+                            ]
+                            (Element.text "-")
+                        , Element.text "Produire une capsule. Choisir ou positionner la webcam sur une planhe ou bien de n'activer que la voix sur une planche."
+                        ]
+                    , Element.paragraph [ Element.alignLeft, Element.spacingXY 10 0 ]
+                        [ Element.el
+                            [ Element.alignLeft
+                            , Element.paddingXY 20 20
+                            , Font.bold
+                            ]
+                            (Element.text "-")
+                        , Element.text "Publier la capsule. L'outil ajoute la capsule dans un serveur vidéo. On peut alors diffuser la vidéo par un simple lien."
+                        ]
+                    ]
+                ]
+            , Element.el [ Element.paddingXY 30 5, Element.alignLeft ] <| viewLogo 700 "/dist/bigPicture.png" <| Just "Vue globale de Polymny"
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/projectManagement.png"
+                        , description = "Gestion de projet"
+                        }
+                ]
+            , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Gestion de projet"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Polymny vous permet d'organsier vos capsules videos, et de les regrouper par projet. " ]
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Enregistrement facile"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Enregistrez vous depuis votre webcam. Interface intuitive et épurée pour s'enregistrer autant de fois que nécessaire et garder le meilleur shoot. " ]
+                ]
+            , Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/recording.png"
+                        , description = "S'enregsitrer"
+                        }
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/productionWithVideo.png"
+                        , description = "Générer la capsule"
+                        }
+                ]
+            , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Rendu de la capsule"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text " On peut choisir d'incruster le retour caméra dans chaque coin de la planche ou bien de n'utiliser que l'audio.\n                    Aucune manipulation de fichier vidéo pour générer la vidéo" ]
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Groupe de planches"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Suivant les usages on peut réalsier les enregistrements planche par planche. Mais aussi par groupe de planche: ceci permet d'expliciter une idée plus en détail, ou cadencer l'affichage des items d'une liste à puce." ]
+                ]
+            , Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/editionGos.png"
+                        , description = "Groupe de planche"
+                        }
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/prompteur.png"
+                        , description = "Utilisation d'un prompteur"
+                        }
+                ]
+            , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Utiliser un prompteur"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Lors d'un enregistrement, un prompteur peut s'afficher pour aider à la diction du propos associé à une planche." ]
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Vidéos additionelles"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Insérer des vidéos supplémentaires dans la présentation. Jingle vidéos, screencasts, ...\n                " ]
+                ]
+            , Element.column
+                [ Element.width Element.fill
+                , Element.centerY
+                , Element.spacing 10
+                , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                ]
+                [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                    Element.image [ Element.width <| Element.px 700 ]
+                        { src = "/dist/addResource.png"
+                        , description = "ajout de vidéos additionelles"
+                        }
+                ]
+            ]
+        , Element.column [ Element.width Element.fill, Element.height Element.fill ]
+            [ Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+                [ Element.column
+                    [ Element.width Element.fill
+                    , Element.centerY
+                    , Element.spacing 10
+                    , Border.widthEach { right = 1, left = 0, top = 0, bottom = 0 }
+                    , Border.color <| Element.rgb255 0xE0 0xE0 0xE0
+                    ]
+                    [ Element.el [ Element.centerX, Border.rounded 100 ] <|
+                        Element.image [ Element.width <| Element.px 700 ]
+                            { src = "/dist/publier.png"
+                            , description = "Publier une capsule"
+                            }
+                    ]
+                , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                    [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Publier une capsule "
+                    , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                        [ Element.text "On peut directement publier une capsule vidéo en ligne. Partager le lien générer suffit pour diffuser la vidéo."
+                        ]
+                    ]
+                ]
+            , Element.textColumn
+                [ Element.centerX, Font.center ]
+                [ Element.text "Exemple de lien :"
+                , Element.link
+                    []
+                    { url = "https://video.polymny.studio/?v=971181dd-ecb3-4406-b193-07d6bd9be587/"
+                    , label = Element.el [ Font.bold, Font.size 20 ] <| Element.text "https://video.polymny.studio/?v=971181dd-ecb3-4406-b193-07d6bd9be587/"
+                    }
+                ]
+            ]
+        , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
+            [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "OS free"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Polymny est un service 100% web.  Il ne dépend pas d'un système d'exploitation. Et pas d'installation de logiciel à faire. Il est sur un nuage! Et il est libre, polymny! " ]
+                ]
+            , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Studio révé ?"
+                , Element.paragraph [ Element.width <| Element.maximum 450 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                    [ Element.text "Utilisez le studio de l'équipe Reva ! Vous avez besoin de prises de vues de meilleure qualité? Un son plus limpide ? D'effet de type fond vert et détourage ? Un studio est à votre disposition à l'ENSEEIHT à Toulouse. Envoyez nous un mail à contatcter@polymny.studio, pour plus de détails sur cette prestation et son coût." ]
+                ]
+            ]
+        ]
+
+
+partnersView : Element Core.Msg
+partnersView =
+    let
+        logoSmall =
+            80
+    in
+    Element.column [ Element.centerX, Element.width Element.fill, Element.spacing 20, Font.size 20 ]
+        [ Element.paragraph [ Font.center ] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie." ]
+        , Element.el [ Element.centerX, Element.paddingXY 30 5 ] <| viewLogo 100 "/dist/logoRegionOccitanie.png" <| Just "Logo région Occitanie"
+        , Element.paragraph [ Font.center ] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]
+        , Element.row [ Element.centerX, Element.spacing 10 ]
+            [ viewLogo logoSmall "/dist/logoTTT.png" <| Just "Logo TTT"
+            , viewLogo logoSmall "/dist/logoIRIT.png" <| Just "Logo IRIT"
+            , viewLogo logoSmall "/dist/logoCEPFOR.png" <| Just "Logo CEPFOR"
+            , viewLogo logoSmall "/dist/logoCERESA.png" <| Just "Logo CERESA"
+            , viewLogo logoSmall "/dist/logoDYP.png" <| Just "Logo DYP - Dyanmique pédagogique"
+            , viewLogo logoSmall "/dist/logoINP.png" <| Just "Logo INP Toulouse"
+            , viewLogo logoSmall "/dist/logoUT2J.png" <| Just "Logo Université Jean Jaurès"
+            ]
+        ]
+
+
 nonFull : Core.Model -> Element Core.Msg
 nonFull model =
     Element.row
@@ -521,6 +739,15 @@ settingsButton content =
     Ui.topBarButton (Just <| Core.LoggedInMsg <| LoggedIn.SettingsClicked) content
 
 
-viewLogo : Int -> String -> Element Core.Msg
-viewLogo size url =
-    Element.image [ Element.centerX, Element.width (Element.px size) ] { src = url, description = "One desc" }
+viewLogo : Int -> String -> Maybe String -> Element Core.Msg
+viewLogo size url desc =
+    let
+        description =
+            case desc of
+                Just x ->
+                    x
+
+                Nothing ->
+                    "Missing desc"
+    in
+    Element.image [ Element.centerX, Element.width (Element.px size) ] { src = url, description = description }
