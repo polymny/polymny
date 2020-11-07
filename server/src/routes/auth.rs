@@ -72,12 +72,14 @@ pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Resu
     cookies.add_private(Cookie::new("EXAUTH", session.secret.clone()));
 
     Ok(json!({"username": user.username,
+        "page": "home",
         "projects": user.projects(&db)?,
         "active_project": "",
         "with_video": edition_options.with_video,
         "webcam_size": webcam_size_to_str(edition_options.webcam_size),
         "webcam_position": webcam_position_to_str(edition_options.webcam_position),
         "cookie": session.secret,
+        "notifications": user.notifications(&db)?,
     }))
 }
 
@@ -91,6 +93,7 @@ pub fn session(db: Database, user: User) -> Result<JsonValue> {
             "with_video": edition_options.with_video,
             "webcam_size": webcam_size_to_str(edition_options.webcam_size),
             "webcam_position": webcam_position_to_str(edition_options.webcam_position),
+            "notifications": user.notifications(&db)?,
     }))
 }
 
