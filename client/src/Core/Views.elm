@@ -340,7 +340,7 @@ topBar global model =
                     ]
 
                 _ ->
-                    [ notificationIcon, settingsButton "sup", logoutButton ]
+                    []
     in
     Element.row
         (Background.color Colors.primary
