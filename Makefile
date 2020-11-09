@@ -10,7 +10,7 @@ ifeq ("$(UGLIFYJS)", "")
 	UGLIFYJS=uglifyjs
 endif
 
-BUILD_DIR=server/dist
+BUILD_DIR=server/dist/js/
 
 all: client-dev setup-dev server-dev
 

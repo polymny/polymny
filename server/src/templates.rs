@@ -69,7 +69,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/main.js"></script>
+        <script src="/dist/js/main.js"></script>
         <script src="/dist/ports.js"></script>
         <script>
             var app = Elm.Main.init({
@@ -87,7 +87,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/main.min.js"></script>
+        <script src="/dist/js/main.min.js"></script>
         <script src="/dist/ports.js"></script>
         <script>
             var app = Elm.Main.init({
@@ -112,7 +112,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/setup.js"></script>
+        <script src="/dist/js/setup.js"></script>
         <script>
             var app = Elm.Setup.init({
                 node: document.getElementById('root')
@@ -132,7 +132,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/setup.min.js"></script>
+        <script src="/dist/js/setup.min.js"></script>
         <script>
             var app = Elm.Setup.init({
                 node: document.getElementById('root')
