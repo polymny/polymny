@@ -1,6 +1,6 @@
 module Ui.StaticAssets exposing
     ( videoBonjour
-    , videoTuto
+    , videoPlayerView
     )
 
 import Core.Types as Core
@@ -10,11 +10,20 @@ import Html
 import Html.Attributes
 
 
-videoTuto : Element Core.Msg
-videoTuto =
-    Element.column [ Element.centerX, Element.spacing 10 ]
-        [ Element.el [ Element.centerX, Font.center, Font.bold, Font.size 18 ] <| Element.text "Tutoriel vidéo: utilisation de Polymny (Réalisé avec polymny!)"
-        , Element.el [] <|
+videoLabelAttributes : List (Element.Attribute msg)
+videoLabelAttributes =
+    [ Element.centerX
+    , Font.center
+    , Font.medium
+    , Font.size 32
+    ]
+
+
+videoPlayerView : String -> String -> Element Core.Msg
+videoPlayerView label url =
+    Element.column [ Element.centerX ]
+        [ Element.el videoLabelAttributes <| Element.paragraph [ Element.centerX ] [ Element.text label ]
+        , Element.el [ Element.centerX ] <|
             Element.html
                 (Html.iframe
                     [ Html.Attributes.style "posistion" "absolute"
@@ -22,17 +31,27 @@ videoTuto =
                     , Html.Attributes.style "height" "450px"
                     , Html.Attributes.attribute "allowfullscreen" "true"
                     , Html.Attributes.attribute "border" "0px"
-                    , Html.Attributes.src "https://video.polymny.studio/?v=3d608a84-a457-4016-a7d1-de1d4da800ad/"
+                    , Html.Attributes.src url
                     ]
                     []
                 )
         ]
 
 
+videoTuto : Element Core.Msg
+videoTuto =
+    videoPlayerView "Débuter avec polymny" "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
+
+
+videoTuto2 : Element Core.Msg
+videoTuto2 =
+    videoPlayerView "Débutey" "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
+
+
 videoBonjour : Element Core.Msg
 videoBonjour =
     Element.column [ Element.centerX, Element.spacing 15 ]
-        [ Element.paragraph [ Element.centerX, Font.center, Font.medium, Font.size 48 ] [ Element.text "Vidéos produites avec polymny: courts extraits" ]
+        [ Element.paragraph [ Element.centerX, Font.center, Font.bold, Font.size 48 ] [ Element.text "Vidéos produites avec polymny: courts extraits" ]
         , Element.el [ Element.centerX, Element.padding 15 ] <|
             Element.html
                 (Html.iframe

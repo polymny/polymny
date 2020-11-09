@@ -2,9 +2,12 @@ module Login.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Login.Types as Login
 import Status
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -39,11 +42,11 @@ view { username, password, status } =
                     Nothing
 
         header =
-            Element.row [ Element.centerX ] [ Element.text "Login" ]
+            Element.row [ Element.centerX ] [ Element.text "Identifiants:" ]
 
         fields =
             [ Input.username submitOnEnter
-                { label = Input.labelLeft [] (Element.text "Nom d'utilisateur")
+                { label = Input.labelLeft [ Font.alignLeft ] (Element.text "Nom d'utilisateur")
                 , onChange = Login.UsernameChanged
                 , placeholder = Nothing
                 , text = username
@@ -67,5 +70,13 @@ view { username, password, status } =
                     header :: fields
     in
     Element.map Core.LoginMsg <|
-        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+        Element.column
+            [ Element.centerX
+            , Element.padding 30
+            , Element.spacing 10
+            , Border.width 1
+            , Border.color Colors.black
+            , Border.rounded 10
+            , Font.alignLeft
+            ]
             form
