@@ -36,7 +36,7 @@ attributesHomeTitle : List (Element.Attribute msg)
 attributesHomeTitle =
     [ Element.centerX
     , Element.padding 20
-    , Font.size 72
+    , Font.size 60
     , Font.bold
     ]
 

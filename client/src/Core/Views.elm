@@ -190,21 +190,32 @@ homeView model =
         , Element.padding 30
         , Element.alignTop
         , Font.size 20
-        , Font.center
         , Font.justify
         , Element.centerX
         ]
         [ Element.column [ Element.centerX ]
             [ Element.textColumn [ Element.centerX ]
                 [ Element.el Attributes.attributesHomeTitle <| Element.text "Polymny Studio"
-                , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill, Font.center ] [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos futurs clients ou vos nouveaux collègues. " ]
+                , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ] [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos futurs clients ou vos nouveaux collègues. " ]
                 ]
             , Element.column
                 [ Element.padding 30
                 ]
                 [ form, forgotPasswordLink, button ]
             , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ]
-                [ Element.text "Polymny est un logiciel libre, utilisable gratuitement, 100% web, indépendant du système d’exploitation de votre ordinateur (windows, macOS, linux). Il suffit de créer un compte pour enregistrer une première capsule vidéo.  Besoin d'Aide, de  support : contacter@polymny.studio.  " ]
+                [ Element.text "Polymny est un logiciel libre, utilisable gratuitement, 100% web, indépendant du système d’exploitation de votre ordinateur (windows, macOS, linux). Il suffit de créer un compte pour enregistrer une première capsule vidéo.  Besoin d'aide, de  support \u{00A0}:  "
+                , Element.link
+                    []
+                    { url = "mailto:contacter@polymnu.studio"
+                    , label =
+                        Element.el
+                            [ Font.underline
+                            , Font.bold
+                            ]
+                        <|
+                            Element.text "contacter@polymny.studio"
+                    }
+                ]
             ]
         , Element.link
             [ Element.centerX, Element.padding 30 ]
@@ -221,10 +232,23 @@ homeView model =
         , partnersView
         , featuresView
         , tutosView
-        , Element.textColumn [ Element.centerX, Element.width <| Element.maximum 700 Element.fill, Font.size 20, Element.padding 30, Element.spacing 20 ]
-            [ Element.paragraph [ Font.center, Font.justify ] [ Element.text "Contacts (contacter@polymny.studio)" ]
-            , Element.paragraph [ Font.center, Font.justify ] [ Element.text "Nicolas Bertrand, Thomas Forgione, Axel Carlier, Vincent Charvillat" ]
-            , Element.paragraph [ Font.center, Font.justify ] [ Element.text "Post-scriptum pour la planète. L’équipe de Polymny.studio s’engage enfin à estimer et limiter l’impact environnemental des vidéos stockées sur ses serveurs (ou sur vos serveurs dédiés et sécurisés, serveurs professionnels, associatifs, universitaires ou HDS par exemple). Une contribution éco-citoyenne est demandée aux utilisateurs de Polymny qui consomment, sur la durée, beaucoup de stockage. " ]
+        , Element.textColumn [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 20, Element.padding 30, Element.spacing 20 ]
+            [ Element.paragraph []
+                [ Element.text "Contacts\u{00A0}:"
+                , Element.link
+                    []
+                    { url = "mailto:contacter@polymnu.studio"
+                    , label =
+                        Element.el
+                            [ Font.underline
+                            , Font.bold
+                            ]
+                        <|
+                            Element.text "contacter@polymny.studio"
+                    }
+                ]
+            , Element.paragraph [] [ Element.text "Nicolas Bertrand, Thomas Forgione, Axel Carlier, Vincent Charvillat" ]
+            , Element.paragraph [] [ Element.text "Post-scriptum pour la planète. L’équipe de Polymny.studio s’engage enfin à estimer et limiter l’impact environnemental des vidéos stockées sur ses serveurs (ou sur vos serveurs dédiés et sécurisés, serveurs professionnels, associatifs, universitaires ou HDS par exemple). Une contribution éco-citoyenne est demandée aux utilisateurs de Polymny qui consomment, sur la durée, beaucoup de stockage. " ]
             ]
         ]
 
@@ -483,7 +507,7 @@ bottomBar global =
 
 featuresView : Element Core.Msg
 featuresView =
-    Element.column [ Element.centerX, Element.width Element.fill, Element.spacing 20 ]
+    Element.column [ Element.centerX, Element.width Element.fill, Element.spacing 20, Font.justify, Font.size 20 ]
         [ Assets.videoBonjour
         , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
             [ Element.column
@@ -498,15 +522,15 @@ featuresView =
                         }
                 ]
             , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Partage des capsules"
-                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
-                    [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). " ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Partage des capsules"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX ]
+                    [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). La figure de gauche montres des vidéos polymny partagées sur MOODLE." ]
                 ]
             ]
         , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
             [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Enregistrement facile"
-                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Enregistrement facile"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX ]
                     [ Element.text "A la différence des logiciels d’enregistrement d’écrans, Polymny guide et facilite l’enregistrement des commentaires vidéos (avec la webcam) ou audios (avec le micro de votre ordinateur).  L’enregistrement se fait simplement depuis un navigateur web." ]
                 ]
             , Element.column
@@ -534,18 +558,18 @@ featuresView =
                         }
                 ]
             , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "4 étapes"
-                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "4 étapes"
+                , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX ]
                     [ Element.text "Le protocole de Polymny repose sur 4 étapes : préparer (en utilisant ou pas le prompteur), filmer (en se limitant éventuellement au son), produire (en plaçant les médias selon différents motifs) et publier (en obtenant le lien à partager sans aucun effort technique)." ]
                 ]
             ]
         , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
             [ Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Gérer les caspules"
-                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Gérer les caspules"
+                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX ]
                     [ Element.text "Aucune minute passée pour s’enregistrer n’est perdue, chaque effort est modifiable et réutilisable plus tard : comme au cinéma, vous pouvez multiplier les «\u{00A0}prises\u{00A0}» pour satisfaire le réalisateur (vous\u{00A0}!).  Vous n’enregistrez plus votre écran mais vous gérez vos projets de capsules vidéos, d’une année sur l’autre, d’une classe à l’autre, d’une version initiale à l’amélioration suivante\u{00A0}! L’interface de Polymny ci-contre montre 3 projets d’un utilisateur\u{00A0}: 3 séquences pédagogiques comportant chacune plusieurs capsules vidéos, dont certaines en cours de préparation ne sont pas encore finalisées."
                     ]
-                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX ]
                     [ Element.text "Gérer chaque capsule comme un projet permet l’intervention d’ingénieurs pédagogiques ou de communicants dans la phase de préparation des ressources pédagogiques\u{00A0}: alignement pédagogique, ajustement de la durée du message ou de la clarté de la vidéo. "
                     ]
                 ]
@@ -574,8 +598,8 @@ featuresView =
                         }
                 ]
             , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 48 ] <| Element.text "Vidéos additionelles"
-                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX, Font.size 20, Font.alignLeft ]
+                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Vidéos additionelles"
+                , Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX ]
                     [ Element.text "Parmi les fonctionnalités plébiscitées, Polymny permet d’insérer, en lieu et place d’une diapositive, toute vidéo externe (captures de vos écrits sur tablettes pour les enseignants, vidéos ou screencasts issus d’un smartphone, clips libres de droit importés depuis internet). L’illustration suivante montre un jingle vidéo (une animation) insérée en guise de générique d’une vidéo de formation. Polymny est utilisé avec succès par des formateurs des sphères publiques (universités, lycées, MOOC FUN) et privées (organismes de formation professionnelle).\n" ]
                 ]
             ]
@@ -584,16 +608,15 @@ featuresView =
                 [ Element.width Element.fill
                 , Element.centerY
                 , Element.spacing 10
-                , Font.justify
                 ]
                 [ Element.el [ Element.centerX ] Element.none
-                , Element.paragraph [ Font.bold, Font.size 48, Font.center ] [ Element.text "Fonctions avancées" ]
+                , Element.paragraph [ Font.bold, Font.size 40, Font.center ] [ Element.text "Fonctions avancées" ]
                 , Element.textColumn [ Element.centerX, Element.paddingXY 20 2, Element.spacingXY 2 10 ]
-                    [ Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX, Font.justify ]
+                    [ Element.paragraph [ Element.width <| Element.maximum 500 Element.fill, Element.centerX ]
                         [ Element.text "Des fonctionnalités avancées sont disponibles sous forme de services additionnels et optionnels."
                         ]
                     , Element.paragraph
-                        [ Element.width <| Element.maximum 500 Element.fill, Element.centerX, Font.alignLeft ]
+                        [ Element.width <| Element.maximum 500 Element.fill, Element.centerX ]
                         [ Element.text "Si votre capsule, déjà préparée et prototypée sur le web, mérite une version professionnelle, l’équipe de Polymny met à votre disposition\u{00A0}:"
                         ]
                     , Element.el [ Element.alignLeft, Element.padding 0 ] Element.none
@@ -629,7 +652,21 @@ featuresView =
                         }
                 ]
             ]
-        , Element.paragraph [ Element.centerX, Element.width <| Element.maximum 700 Element.fill, Font.size 20 ] [ Element.text "La préparation et la gestion de projet opérées en amont, sur le web et sur le socle open-source, limitent le temps de réservation des studios, accélèrent et fluidifient la production professionnelle pour un coût de la minute de vidéo produite rendu ultra compétitif. Ce protocole innovant a fait l’objet de recherches1 à l’IRIT (Toulouse INP – ENSEEIHT) depuis 2016. La région Occitanie finance actuellement le développement de Polymny au travers d’un projet de pré-maturation et de l’accompagnement de Toulouse Tech Transfer." ]
+        , Element.paragraph [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 20 ]
+            [ Element.text "La préparation et la gestion de projet opérées en amont, sur le web et sur le socle open-source, limitent le temps de réservation des studios, accélèrent et fluidifient la production professionnelle pour un coût de la minute de vidéo produite rendu ultra compétitif. Ce protocole innovant a fait l’objet de recherches"
+            , Element.link
+                []
+                { url = "https://oatao.univ-toulouse.fr/24824/1/bakkay_24824.pdf"
+                , label =
+                    Element.el
+                        [ Font.italic
+                        ]
+                    <|
+                        Element.text " \u{00A0}[Bakkay2019]\u{00A0}"
+                }
+            , Element.text
+                "à l’IRIT (Toulouse INP – ENSEEIHT) depuis 2016. La région Occitanie finance actuellement le développement de Polymny au travers d’un projet de pré-maturation et de l’accompagnement de Toulouse Tech Transfer."
+            ]
         ]
 
 
@@ -639,7 +676,7 @@ tutosView =
         [ Element.el
             [ Element.centerX
             , Font.bold
-            , Font.size 48
+            , Font.size 40
             , Element.htmlAttribute (Html.Attributes.id "tutoriels")
             ]
           <|
@@ -648,7 +685,7 @@ tutosView =
             "Étape 1: Débuter avec polymny"
             "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
         , Assets.videoPlayerView
-            "Étape 2 :Vue préparer, et options de productions"
+            "Étape 2 : Choisir les options de productions"
             "https://video.polymny.studio/?v=a60ee619-48f0-49ca-9a01-2c6611842980/"
         , Assets.videoPlayerView
             "Étape 3: Insérer une vidéo additionelle"
@@ -657,7 +694,7 @@ tutosView =
             "Étape 4: Utiliser le prompteur"
             "https://video.polymny.studio/?v=ce1b9dfa-44cb-4b4a-9d1d-a4dafe0116fc/"
         , Assets.videoPlayerView
-            "Étape 5: Gestion de capsules,  groupe de planches,  et contenus additionels.  "
+            "Étape 5: Organiser les planches.  "
             "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
         ]
 

@@ -38,20 +38,10 @@ videoPlayerView label url =
         ]
 
 
-videoTuto : Element Core.Msg
-videoTuto =
-    videoPlayerView "Débuter avec polymny" "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
-
-
-videoTuto2 : Element Core.Msg
-videoTuto2 =
-    videoPlayerView "Débutey" "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
-
-
 videoBonjour : Element Core.Msg
 videoBonjour =
     Element.column [ Element.centerX, Element.spacing 15 ]
-        [ Element.paragraph [ Element.centerX, Font.center, Font.bold, Font.size 48 ] [ Element.text "Vidéos produites avec polymny: courts extraits" ]
+        [ Element.paragraph [ Element.centerX, Font.center, Font.bold, Font.size 40 ] [ Element.text "Vidéos peédagogiques (extraits)" ]
         , Element.el [ Element.centerX, Element.padding 15 ] <|
             Element.html
                 (Html.iframe
@@ -60,7 +50,7 @@ videoBonjour =
                     , Html.Attributes.style "height" "450px"
                     , Html.Attributes.attribute "allowfullscreen" "true"
                     , Html.Attributes.attribute "border" "0px"
-                    , Html.Attributes.src "https://video.polymny.studio/?v=fc259220-b0c0-40aa-a1a3-2a7759745b4c/"
+                    , Html.Attributes.src "https://video.polymny.studio/?v=757685ed-56d0-44b5-9fff-777f8a9e0909/"
                     ]
                     []
                 )
