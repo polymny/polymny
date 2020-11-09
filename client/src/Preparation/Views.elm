@@ -63,7 +63,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                 , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
                         [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                            [ Ui.primaryButton (Just newSlideMsg) "Ajouter un nouveau slide"
+                            [ Ui.primaryButton (Just newSlideMsg) "Ajouter une nouvelle planche"
                             , Ui.primaryButton (Just increaseMsg) "-"
                             , Element.text "Zoom"
                             , Ui.primaryButton (Just decreaseMsg) "+"
@@ -170,7 +170,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                             , Element.padding 10
                             ]
                             [ Input.text [ Element.centerY, Element.htmlAttribute (Html.Attributes.type_ "number") ]
-                                { label = Input.labelAbove [] (Element.text "Quel page du pdf voulez-vous utiliser ?")
+                                { label = Input.labelAbove [] (Element.text "Quelle page du pdf voulez-vous utiliser ?")
                                 , onChange =
                                     \x ->
                                         case ( String.toInt x, x ) of
