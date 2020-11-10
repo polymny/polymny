@@ -7,6 +7,7 @@ import Browser.Navigation as Nav
 import Core.Ports as Ports
 import Core.Types as Core
 import Core.Utils as Core
+import Element
 import ForgotPassword.Types as ForgotPassword
 import ForgotPassword.Updates as ForgotPassword
 import Http
@@ -35,6 +36,11 @@ update msg { global, model } =
 
                 ( Core.TimeZoneChanged newTimeZone, _ ) ->
                     ( Core.FullModel { global | zone = newTimeZone } model, Cmd.none )
+
+                ( Core.SizeReceived width height, _ ) ->
+                    ( Core.FullModel { global | device = Element.classifyDevice { width = width, height = height } } model
+                    , Cmd.none
+                    )
 
                 ( Core.HomeClicked, Core.LoggedIn { session } ) ->
                     ( Core.FullModel global

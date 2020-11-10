@@ -15,6 +15,7 @@ import Browser.Navigation
 import Core.Ports as Ports
 import Core.Types as Core
 import Edition.Types as Edition
+import Element
 import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
 import Log
@@ -124,6 +125,22 @@ globalFromFlags flags key =
 
                 Err _ ->
                     ""
+
+        width =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "width" Decode.int)) flags of
+                Ok v ->
+                    v
+
+                Err _ ->
+                    1920
+
+        height =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "height" Decode.int)) flags of
+                Ok v ->
+                    v
+
+                Err _ ->
+                    1080
     in
     { zone = Time.utc
     , beta = beta
@@ -137,6 +154,7 @@ globalFromFlags flags key =
     , expiry = 0
     , showAbout = False
     , notificationPanelVisible = False
+    , device = Element.classifyDevice { width = width, height = height }
     }
 
 

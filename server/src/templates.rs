@@ -72,7 +72,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <script src="/dist/js/main.js"></script>
         <script src="/dist/ports.js"></script>
         <script>
-            var app = Elm.Main.init({
+            var flags =
 "#;
 
 #[cfg(not(debug_assertions))]
@@ -90,10 +90,14 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <script src="/dist/js/main.min.js"></script>
         <script src="/dist/ports.js"></script>
         <script>
-            var app = Elm.Main.init({
+            var flags =
 "#;
 
-const INDEX_HTML_AFTER_FLAGS: &str = r#"
+const INDEX_HTML_AFTER_FLAGS: &str = r#";
+            flags.global.width = window.innerWidth;
+            flags.global.height = window.innerHeight;
+            var app = Elm.Main.init({
+                flags: flags,
                 node: document.getElementById('root')
             });
             setupPorts(app);
@@ -144,11 +148,9 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
 
 /// This functions formats the index.html page of the server from flags.
 pub fn index_html(flags: JsonValue) -> String {
-    let line = format!("flags: {},", flags.0);
-
     format!(
         "{}{}{}",
-        INDEX_HTML_BEFORE_FLAGS, line, INDEX_HTML_AFTER_FLAGS
+        INDEX_HTML_BEFORE_FLAGS, flags.0, INDEX_HTML_AFTER_FLAGS
     )
 }
 

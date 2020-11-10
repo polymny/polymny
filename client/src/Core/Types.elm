@@ -10,6 +10,7 @@ module Core.Types exposing
 
 import Browser
 import Browser.Navigation
+import Element
 import ForgotPassword.Types as ForgotPassword
 import Json.Decode as Decode
 import LoggedIn.Types as LoggedIn
@@ -40,6 +41,7 @@ type alias Global =
     , expiry : Int
     , showAbout : Bool
     , notificationPanelVisible : Bool
+    , device : Element.Device
     }
 
 
@@ -79,6 +81,7 @@ type Msg
     | WebSocket WebSocketMsg
     | NotificationMsg NotificationMsg
     | WithNotification Notification Msg
+    | SizeReceived Int Int
 
 
 type alias WebSocketMsg =

@@ -6,6 +6,7 @@ import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import Api
 import Browser
+import Browser.Events as Events
 import Core.Ports
 import Core.Types as Core
 import Core.Utils as Core
@@ -77,6 +78,7 @@ subscriptions { model } =
     Sub.batch
         [ sub
         , Core.Ports.onWebSocketMessage websocketMsg
+        , Events.onResize (\w h -> Core.SizeReceived w h)
         ]
 
 
