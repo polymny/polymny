@@ -5,6 +5,7 @@ import Acquisition.Updates as Acquisition
 import Api
 import Browser.Dom as Dom
 import Browser.Navigation as Nav
+import Core.Ports as Ports
 import Core.Types as Core
 import Dropdown
 import Edition.Types as Edition
@@ -12,7 +13,6 @@ import Edition.Updates as Edition
 import File
 import File.Select as Select
 import Log
-import LoggedIn.Ports as Ports
 import LoggedIn.Types as LoggedIn
 import LoggedIn.Views as LoggedIn
 import Preparation.Types as Preparation

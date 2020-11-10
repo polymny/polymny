@@ -110,7 +110,15 @@ update msg { global, model } =
                 -- Url message
                 ( Core.UrlRequested (Browser.Internal url), _ ) ->
                     ( Core.FullModel global model
-                    , Nav.pushUrl global.key (Url.toString url)
+                    , Cmd.batch
+                        [ Nav.pushUrl global.key (Url.toString url)
+                        , case url.fragment of
+                            Just s ->
+                                Ports.scrollIntoView s
+
+                            Nothing ->
+                                Cmd.none
+                        ]
                     )
 
                 ( Core.UrlRequested (Browser.External url), _ ) ->
