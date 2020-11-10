@@ -219,7 +219,7 @@ homeView model =
             ]
         , Element.link
             [ Element.centerX, Element.padding 30 ]
-            { url = "#tutoriels"
+            { url = "/#tutoriels"
             , label =
                 Element.el
                     [ Font.color Colors.primary
@@ -698,7 +698,7 @@ tutosView =
             "https://video.polymny.studio/?v=ce1b9dfa-44cb-4b4a-9d1d-a4dafe0116fc/"
         , Assets.videoPlayerView
             "Étape 5: Organiser les planches.  "
-            "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
+            "https://video.polymny.studio/?v=b8edf9bc-5ebc-4c9e-8b3b-af4c50fbb6f1/"
         ]
 
 
