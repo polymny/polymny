@@ -41,7 +41,7 @@ videoPlayerView label url =
 videoBonjour : Element Core.Msg
 videoBonjour =
     Element.column [ Element.centerX, Element.spacing 15 ]
-        [ Element.paragraph [ Element.centerX, Font.center, Font.bold, Font.size 40 ] [ Element.text "Vidéos peédagogiques (extraits)" ]
+        [ Element.paragraph [ Element.centerX, Font.center, Font.bold, Font.size 40 ] [ Element.text "Vidéos pédagogiques (extraits)" ]
         , Element.el [ Element.centerX, Element.padding 15 ] <|
             Element.html
                 (Html.iframe

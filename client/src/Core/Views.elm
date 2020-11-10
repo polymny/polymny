@@ -196,7 +196,7 @@ homeView model =
         [ Element.column [ Element.centerX ]
             [ Element.textColumn [ Element.centerX ]
                 [ Element.el Attributes.attributesHomeTitle <| Element.text "Polymny Studio"
-                , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ] [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos futurs clients ou vos nouveaux collègues. " ]
+                , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ] [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos clients ou vos collègues. " ]
                 ]
             , Element.column
                 [ Element.padding 30
@@ -524,7 +524,7 @@ featuresView =
             , Element.column [ Element.width Element.fill, Element.centerY, Element.spacing 10 ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Partage des capsules"
                 , Element.paragraph [ Element.width <| Element.maximum 400 Element.fill, Element.centerX ]
-                    [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). La figure de gauche montres des vidéos polymny partagées sur MOODLE." ]
+                    [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). La figure de gauche montre des vidéos polymny partagées sur MOODLE." ]
                 ]
             ]
         , Element.row [ Element.width Element.fill, Element.height Element.fill, Element.padding 50, Element.spacing 20 ]
@@ -653,19 +653,22 @@ featuresView =
                 ]
             ]
         , Element.paragraph [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 20 ]
-            [ Element.text "La préparation et la gestion de projet opérées en amont, sur le web et sur le socle open-source, limitent le temps de réservation des studios, accélèrent et fluidifient la production professionnelle pour un coût de la minute de vidéo produite rendu ultra compétitif. Ce protocole innovant a fait l’objet de recherches"
+            [ Element.text "La préparation et la gestion de projet opérées en amont, sur le web et sur le socle open-source, limitent le temps de réservation des studios, accélèrent et fluidifient la production professionnelle pour un coût de la minute de vidéo produite rendu ultra compétitif. Ce protocole innovant a fait l’objet de recherches \u{00A0}[Bakkay et al. 2019]\u{00A0} à l’IRIT (Toulouse INP – ENSEEIHT) depuis 2016. La région Occitanie finance actuellement le développement de Polymny au travers d’un projet de pré-maturation et de l’accompagnement de Toulouse Tech Transfer."
+            ]
+        , Element.paragraph
+            [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 18, Font.italic ]
+            [ Element.text "Bakkay et al  (2019). Protocols and software for simplified educational video capture and editing. Journal of Computers in Education, 6(2), 257-276."
             , Element.link
                 []
                 { url = "https://oatao.univ-toulouse.fr/24824/1/bakkay_24824.pdf"
                 , label =
                     Element.el
                         [ Font.italic
+                        , Font.underline
                         ]
                     <|
-                        Element.text " \u{00A0}[Bakkay2019]\u{00A0}"
+                        Element.text "\u{00A0}link"
                 }
-            , Element.text
-                "à l’IRIT (Toulouse INP – ENSEEIHT) depuis 2016. La région Occitanie finance actuellement le développement de Polymny au travers d’un projet de pré-maturation et de l’accompagnement de Toulouse Tech Transfer."
             ]
         ]
 
@@ -685,7 +688,7 @@ tutosView =
             "Étape 1: Débuter avec polymny"
             "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
         , Assets.videoPlayerView
-            "Étape 2 : Choisir les options de productions"
+            "Étape 2 : Choisir les options de production"
             "https://video.polymny.studio/?v=a60ee619-48f0-49ca-9a01-2c6611842980/"
         , Assets.videoPlayerView
             "Étape 3: Insérer une vidéo additionelle"
