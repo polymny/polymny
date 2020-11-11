@@ -191,7 +191,6 @@ homeView model =
         , Element.alignTop
         , Font.size 20
         , Font.justify
-        , Element.centerX
         ]
         [ Element.column [ Element.centerX ]
             [ Element.textColumn [ Element.centerX ]
@@ -200,6 +199,7 @@ homeView model =
                 ]
             , Element.column
                 [ Element.padding 30
+                , Element.centerX
                 ]
                 [ form, forgotPasswordLink, button ]
             , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ]
