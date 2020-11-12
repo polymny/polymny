@@ -46,15 +46,15 @@ view { username, password, status } =
 
         fields =
             [ Input.username submitOnEnter
-                { label = Input.labelLeft [ Font.alignLeft ] (Element.text "Nom d'utilisateur")
+                { label = Input.labelLeft [] Element.none
                 , onChange = Login.UsernameChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] (Element.text "Nom d'utilisateur"))
                 , text = username
                 }
             , Input.currentPassword submitOnEnter
-                { label = Input.labelLeft [] (Element.text "Mot de passe")
+                { label = Input.labelLeft [] Element.none
                 , onChange = Login.PasswordChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] (Element.text "Mot de passe"))
                 , text = password
                 , show = False
                 }
@@ -74,6 +74,7 @@ view { username, password, status } =
             [ Element.centerX
             , Element.padding 30
             , Element.spacing 10
+            , Element.width (Element.px 500)
             , Border.width 1
             , Border.color Colors.black
             , Border.rounded 10

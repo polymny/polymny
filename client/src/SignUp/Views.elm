@@ -2,9 +2,12 @@ module SignUp.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import SignUp.Types as SignUp
 import Status
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -76,28 +79,28 @@ view { username, password, passwordConfirmation, email, status } =
 
         fields =
             [ Input.username submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Nom d'utilisateur")
+                { label = Input.labelAbove [] Element.none
                 , onChange = SignUp.UsernameChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] <| Element.text "Nom d'utilisateur")
                 , text = username
                 }
             , Input.email submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Email")
+                { label = Input.labelAbove [] Element.none
                 , onChange = SignUp.EmailChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] <| Element.text "Email")
                 , text = email
                 }
             , Input.newPassword submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Mot de passe")
+                { label = Input.labelAbove [] Element.none
                 , onChange = SignUp.PasswordChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] <| Element.text "Mot de passe")
                 , text = password
                 , show = False
                 }
             , Input.currentPassword submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Confirmez votre mot de passe")
+                { label = Input.labelAbove [] Element.none
                 , onChange = SignUp.PasswordConfirmationChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] <| Element.text "Confirmez votre mot de passe")
                 , text = passwordConfirmation
                 , show = False
                 }
@@ -114,5 +117,13 @@ view { username, password, passwordConfirmation, email, status } =
     in
     Element.map Core.SignUpMsg <|
         Element.column
-            [ Element.centerX, Element.padding 10, Element.spacing 10, Element.width Element.fill ]
+            [ Element.centerX
+            , Element.padding 30
+            , Element.spacing 10
+            , Element.width (Element.px 500)
+            , Border.width 1
+            , Border.color Colors.black
+            , Border.rounded 10
+            , Font.alignLeft
+            ]
             form

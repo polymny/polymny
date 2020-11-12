@@ -2,9 +2,12 @@ module ForgotPassword.Views exposing (view)
 
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import ForgotPassword.Types as ForgotPassword
 import Status
+import Ui.Colors as Colors
 import Ui.Ui as Ui
 
 
@@ -42,13 +45,13 @@ view { email, status } =
                     Nothing
 
         header =
-            Element.row [ Element.centerX ] [ Element.text "Login" ]
+            Element.row [ Element.centerX ] [ Element.text "Mot de passe oubilé ?" ]
 
         fields =
             [ Input.email submitOnEnter
-                { label = Input.labelAbove [] (Element.text "Email")
+                { label = Input.labelLeft [] Element.none
                 , onChange = ForgotPassword.EmailChanged
-                , placeholder = Nothing
+                , placeholder = Just (Input.placeholder [] (Element.text "Email"))
                 , text = email
                 }
             , submitButton
@@ -63,5 +66,14 @@ view { email, status } =
                     header :: fields
     in
     Element.map Core.ForgotPasswordMsg <|
-        Element.column [ Element.centerX, Element.padding 10, Element.spacing 10 ]
+        Element.column
+            [ Element.centerX
+            , Element.padding 30
+            , Element.spacing 10
+            , Element.width (Element.px 500)
+            , Border.width 1
+            , Border.color Colors.black
+            , Border.rounded 10
+            , Font.alignLeft
+            ]
             form
