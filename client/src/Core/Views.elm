@@ -141,18 +141,37 @@ viewContent { global, model } =
                 _ ->
                     []
     in
-    Element.column
-        (Element.height Element.fill
-            :: Element.scrollbarY
-            :: Element.width Element.fill
-            :: Background.color Colors.whiteDark
-            :: Element.inFront (Maybe.withDefault Element.none popup)
-            :: attributes
-        )
+    Element.column []
         [ topBar global model
         , content
         , bottomBar global
         ]
+
+
+mobileH1Font =
+    40
+
+
+defaultH1Font =
+    60
+
+
+attributesHomeTitle : Element.Device -> List (Element.Attribute msg)
+attributesHomeTitle device =
+    let
+        fontSize =
+            case device.class of
+                Element.Phone ->
+                    mobileH1Font
+
+                _ ->
+                    defaultH1Font
+    in
+    [ Element.centerX
+    , Font.size fontSize
+    , Font.bold
+    , Font.justify
+    ]
 
 
 homeView : Core.HomeModel -> Element.Device -> Element Core.Msg
@@ -186,71 +205,31 @@ homeView model device =
                     , Ui.linkButton (Just Core.LoginClicked) "Fermer"
                     , Element.none
                     )
+
+        ( paragraphFontSize, paragraphAttributes ) =
+            case device.class of
+                Element.Phone ->
+                    ( 13
+                    , [ Element.width <| Element.maximum 300 Element.fill
+                      , Font.justify
+                      , Element.centerX
+                      , Element.paddingXY 4 20
+                      ]
+                    )
+
+                _ ->
+                    ( 20, [ Element.width <| Element.maximum 600 Element.fill ] )
     in
     Element.column
         [ Element.centerX
-        , Element.padding 30
         , Element.alignTop
-        , Font.size 20
-        , Font.justify
+        , Font.size paragraphFontSize
         ]
         [ Element.column [ Element.centerX ]
             [ Element.textColumn [ Element.centerX ]
-                [ Element.el Attributes.attributesHomeTitle <| Element.text "Polymny Studio"
-                , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ] [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos clients ou vos collègues. " ]
+                [ Element.paragraph (attributesHomeTitle device) [ Element.text "Polymny Studio" ]
+                , Element.paragraph paragraphAttributes [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos clients ou vos collègues. " ]
                 ]
-            , Element.column
-                [ Element.padding 30
-                , Element.centerX
-                ]
-                [ form, forgotPasswordLink, button ]
-            , Element.paragraph [ Element.width <| Element.maximum 600 Element.fill ]
-                [ Element.text "Polymny est un logiciel libre, utilisable gratuitement, 100% web, indépendant du système d’exploitation de votre ordinateur (windows, macOS, linux). Il suffit de créer un compte pour enregistrer une première capsule vidéo.  Besoin d'aide, de  support \u{00A0}:  "
-                , Element.link
-                    []
-                    { url = "mailto:contacter@polymnu.studio"
-                    , label =
-                        Element.el
-                            [ Font.underline
-                            , Font.bold
-                            ]
-                        <|
-                            Element.text "contacter@polymny.studio"
-                    }
-                ]
-            ]
-        , Element.link
-            [ Element.centerX, Element.padding 30 ]
-            { url = "/#tutoriels"
-            , label =
-                Element.el
-                    [ Font.color Colors.primary
-                    , Font.underline
-                    , Font.bold
-                    ]
-                <|
-                    Element.text "Tutoriels d'utilisation de polymny "
-            }
-        , partnersView
-        , featuresView device
-        , tutosView
-        , Element.textColumn [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 20, Element.padding 30, Element.spacing 20 ]
-            [ Element.paragraph []
-                [ Element.text "Contacts\u{00A0}:"
-                , Element.link
-                    []
-                    { url = "mailto:contacter@polymnu.studio"
-                    , label =
-                        Element.el
-                            [ Font.underline
-                            , Font.bold
-                            ]
-                        <|
-                            Element.text "contacter@polymny.studio"
-                    }
-                ]
-            , Element.paragraph [] [ Element.text "Nicolas Bertrand, Thomas Forgione, Axel Carlier, Vincent Charvillat" ]
-            , Element.paragraph [] [ Element.text "Post-scriptum pour la planète. L’équipe de Polymny.studio s’engage enfin à estimer et limiter l’impact environnemental des vidéos stockées sur ses serveurs (ou sur vos serveurs dédiés et sécurisés, serveurs professionnels, associatifs, universitaires ou HDS par exemple). Une contribution éco-citoyenne est demandée aux utilisateurs de Polymny qui consomment, sur la durée, beaucoup de stockage. " ]
             ]
         ]
 
@@ -469,9 +448,9 @@ bottomBar global =
         , Font.size 12
         ]
         [ Element.el [ Element.height Element.fill ] Element.none
-        , Element.row
+        , Element.column
             [ Element.width Element.fill, Element.alignBottom, Element.padding 15 ]
-            [ Element.row [ Element.alignLeft, Element.spacing 5 ]
+            [ Element.column [ Element.alignLeft, Element.spacing 5 ]
                 [ Element.text
                     "Polymny studio:"
                 , Element.link
@@ -481,7 +460,7 @@ bottomBar global =
                     }
                 , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
                 ]
-            , Element.row [ Element.alignRight, Element.spacing 5 ]
+            , Element.column [ Element.alignLeft, Element.spacing 5 ]
                 [ Element.link
                     []
                     { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
