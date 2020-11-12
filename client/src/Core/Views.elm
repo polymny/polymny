@@ -149,14 +149,14 @@ viewContent { global, model } =
                 _ ->
                     bottomBarDefault global
     in
-    Element.column []
-        --        (Element.height Element.fill
-        --            :: Element.scrollbarY
-        --            :: Element.width Element.fill
-        --            :: Background.color Colors.whiteDark
-        --            :: Element.inFront (Maybe.withDefault Element.none popup)
-        --           :: attributes
-        --       )
+    Element.column
+        (Element.height Element.fill
+            :: Element.scrollbarY
+            :: Element.width Element.fill
+            :: Background.color Colors.whiteDark
+            :: Element.inFront (Maybe.withDefault Element.none popup)
+            :: attributes
+        )
         [ topBar global model
         , content
         , bottomBar
@@ -183,6 +183,7 @@ attributesHomeTitle device =
                     defaultH1Font
     in
     [ Element.centerX
+    , Element.padding 8
     , Font.size fontSize
     , Font.bold
     , Font.justify
@@ -224,7 +225,7 @@ homeView model device =
         ( paragraphFontSize, paragraphAttributes ) =
             case device.class of
                 Element.Phone ->
-                    ( 13
+                    ( 14
                     , [ Element.width <| Element.maximum 300 Element.fill
                       , Font.justify
                       , Element.centerX
@@ -233,7 +234,13 @@ homeView model device =
                     )
 
                 _ ->
-                    ( 20, [ Element.width <| Element.maximum 600 Element.fill ] )
+                    ( 20
+                    , [ Element.width <| Element.maximum 700 Element.fill
+                      , Font.justify
+                      , Element.centerX
+                      , Element.paddingXY 4 20
+                      ]
+                    )
     in
     Element.column
         [ Element.centerX
@@ -241,10 +248,61 @@ homeView model device =
         , Font.size paragraphFontSize
         ]
         [ Element.column [ Element.centerX ]
-            [ Element.textColumn [ Element.centerX ]
-                [ Element.paragraph (attributesHomeTitle device) [ Element.text "Polymny Studio" ]
-                , Element.paragraph paragraphAttributes [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos clients ou vos collègues. " ]
+            [ Element.paragraph (attributesHomeTitle device) [ Element.text "Polymny Studio" ]
+            , Element.paragraph paragraphAttributes
+                [ Element.text "Polymny est le studio web des formateurs qui créent, modifient et gèrent des vidéos pédagogiques\u{00A0}! A partir d’une présentation existante (libre office, powerpoint, beamer, etc.), vous fournissez vos diapositives en PDF et enregistrez une vidéo pédagogique pour vos élèves, vos étudiants, vos clients ou vos collègues. " ]
+            ]
+        , Element.column
+            [ Element.padding 30
+            , Element.centerX
+            ]
+            [ form, forgotPasswordLink, button ]
+        , Element.paragraph paragraphAttributes
+            [ Element.text "Polymny est un logiciel libre, utilisable gratuitement, 100% web, indépendant du système d’exploitation de votre ordinateur (windows, macOS, linux). Il suffit de créer un compte pour enregistrer une première capsule vidéo.  Besoin d'aide, de  support \u{00A0}:  "
+            , Element.link
+                []
+                { url = "mailto:contacter@polymny.studio"
+                , label =
+                    Element.el
+                        [ Font.underline
+                        , Font.bold
+                        ]
+                    <|
+                        Element.text "contacter@polymny.studio"
+                }
+            ]
+        , Element.link
+            [ Element.centerX, Element.padding 30 ]
+            { url = "/#tutoriels"
+            , label =
+                Element.el
+                    [ Font.color Colors.primary
+                    , Font.underline
+                    , Font.bold
+                    ]
+                <|
+                    Element.text "Tutoriels d'utilisation de polymny "
+            }
+        , partnersView device
+        , featuresView device
+        , tutosView device
+        , Element.column [ Element.centerX ]
+            [ Element.paragraph paragraphAttributes
+                [ Element.text "Contacts\u{00A0}:"
+                , Element.link
+                    []
+                    { url = "mailto:contacter@polymny.studio"
+                    , label =
+                        Element.el
+                            [ Font.underline
+                            , Font.bold
+                            ]
+                        <|
+                            Element.text "contacter@polymny.studio"
+                    }
                 ]
+            , Element.paragraph paragraphAttributes [ Element.text "Nicolas Bertrand, Thomas Forgione, Axel Carlier, Vincent Charvillat" ]
+            , Element.paragraph paragraphAttributes [ Element.text "Post-scriptum pour la planète. L’équipe de Polymny.studio s’engage enfin à estimer et limiter l’impact environnemental des vidéos stockées sur ses serveurs (ou sur vos serveurs dédiés et sécurisés, serveurs professionnels, associatifs, universitaires ou HDS par exemple). Une contribution éco-citoyenne est demandée aux utilisateurs de Polymny qui consomment, sur la durée, beaucoup de stockage. " ]
             ]
         ]
 
@@ -555,45 +613,47 @@ bottomBarPhone global =
 featuresView : Element.Device -> Element Core.Msg
 featuresView device =
     let
-        imageSize =
-            500
-
-        twoColMaximum =
-            500
-
-        ( builder, contentSpacing ) =
+        ( ( builder, fontTitle ), ( oneColMaximum, twoColMaximum ) ) =
             case device.class of
                 Element.Phone ->
-                    ( Element.column [ Element.width Element.fill, Element.height Element.fill, Element.paddingXY 2 50 ]
-                    , Element.spacingXY 2 40
+                    ( ( Element.column [ Element.width Element.fill, Element.height Element.fill, Font.size 14, Element.paddingXY 2 50 ]
+                      , 28
+                      )
+                    , ( 300
+                      , 300
+                      )
                     )
 
                 _ ->
-                    ( Element.row [ Element.width Element.fill, Element.paddingXY 2 50, Element.spacingXY 40 10 ]
-                    , Element.spacingXY 2 50
+                    ( ( Element.row [ Element.width Element.fill, Element.paddingXY 2 50, Font.size 20, Element.spacingXY 40 10 ]
+                      , 40
+                      )
+                    , ( 1000
+                      , 500
+                      )
                     )
     in
-    Element.column [ Element.centerX, Element.width Element.fill, Font.justify, Font.size 20, Element.spacingXY 5 50 ]
-        [ Assets.videoBonjour
+    Element.column [ Element.centerX, Element.width Element.fill, Font.justify, Element.spacingXY 5 50 ]
+        [ Assets.videoBonjour device
         , builder
             [ Element.column
                 [ Element.centerX
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/moodle.png"
                         , description = "Partager des capsules sur moodle"
                         }
                 ]
             , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Partage des capsules"
+                [ Element.el [ Element.centerX, Font.bold, Font.size fontTitle ] <| Element.text "Partage des capsules"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). La figure de gauche montre des vidéos polymny partagées sur MOODLE." ]
                 ]
             ]
         , builder
             [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Enregistrement facile"
+                [ Element.el [ Element.centerX, Font.bold, Font.size fontTitle ] <| Element.text "Enregistrement facile"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "A la différence des logiciels d’enregistrement d’écrans, Polymny guide et facilite l’enregistrement des commentaires vidéos (avec la webcam) ou audios (avec le micro de votre ordinateur).  L’enregistrement se fait simplement depuis un navigateur web." ]
                 ]
@@ -603,7 +663,7 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/recording.png"
                         , description = "S'enregsitrer"
                         }
@@ -616,20 +676,20 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/bigPicture.png"
                         , description = "Polymny en 4 étapes"
                         }
                 ]
             , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "4 étapes"
+                [ Element.el [ Element.centerX, Font.bold, Font.size fontTitle ] <| Element.text "4 étapes"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Le protocole de Polymny repose sur 4 étapes : préparer (en utilisant ou pas le prompteur), filmer (en se limitant éventuellement au son), produire (en plaçant les médias selon différents motifs) et publier (en obtenant le lien à partager sans aucun effort technique)." ]
                 ]
             ]
         , builder
             [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Gérer les caspules"
+                [ Element.el [ Element.centerX, Font.bold, Font.size fontTitle ] <| Element.text "Gérer les caspules"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Aucune minute passée pour s’enregistrer n’est perdue, chaque effort est modifiable et réutilisable plus tard : comme au cinéma, vous pouvez multiplier les «\u{00A0}prises\u{00A0}» pour satisfaire le réalisateur (vous\u{00A0}!).  Vous n’enregistrez plus votre écran mais vous gérez vos projets de capsules vidéos, d’une année sur l’autre, d’une classe à l’autre, d’une version initiale à l’amélioration suivante\u{00A0}! L’interface de Polymny ci-contre montre 3 projets d’un utilisateur\u{00A0}: 3 séquences pédagogiques comportant chacune plusieurs capsules vidéos, dont certaines en cours de préparation ne sont pas encore finalisées."
                     ]
@@ -643,7 +703,7 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/projectManagement.png"
                         , description = "Gestion de capsules"
                         }
@@ -656,13 +716,13 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/addResource.png"
                         , description = "ajout de vidéos additionelles"
                         }
                 ]
             , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
-                [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Vidéos additionelles"
+                [ Element.el [ Element.centerX, Font.bold, Font.size fontTitle ] <| Element.text "Vidéos additionelles"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Parmi les fonctionnalités plébiscitées, Polymny permet d’insérer, en lieu et place d’une diapositive, toute vidéo externe (captures de vos écrits sur tablettes pour les enseignants, vidéos ou screencasts issus d’un smartphone, clips libres de droit importés depuis internet). L’illustration suivante montre un jingle vidéo (une animation) insérée en guise de générique d’une vidéo de formation. Polymny est utilisé avec succès par des formateurs des sphères publiques (universités, lycées, MOOC FUN) et privées (organismes de formation professionnelle).\n" ]
                 ]
@@ -674,7 +734,7 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX ] Element.none
-                , Element.paragraph [ Font.bold, Font.size 40, Font.center ] [ Element.text "Fonctions avancées" ]
+                , Element.paragraph [ Font.bold, Font.size fontTitle, Font.center ] [ Element.text "Fonctions avancées" ]
                 , Element.textColumn [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.paddingXY 20 2, Element.spacingXY 2 10 ]
                     [ Element.paragraph [ Element.centerX ]
                         [ Element.text "Des fonctionnalités avancées sont disponibles sous forme de services additionnels et optionnels."
@@ -713,17 +773,17 @@ featuresView device =
                 , Element.spacing 10
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
-                    Element.image [ Element.width <| Element.px imageSize ]
+                    Element.image [ Element.width <| Element.px twoColMaximum ]
                         { src = "/dist/studioFondVert.png"
                         , description = "Studio fond vert"
                         }
                 ]
             ]
-        , Element.paragraph [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 20 ]
+        , Element.paragraph [ Element.centerX, Element.width <| Element.maximum oneColMaximum Element.fill, Font.size (fontTitle // 2) ]
             [ Element.text "La préparation et la gestion de projet opérées en amont, sur le web et sur le socle open-source, limitent le temps de réservation des studios, accélèrent et fluidifient la production professionnelle pour un coût de la minute de vidéo produite rendu ultra compétitif. Ce protocole innovant a fait l’objet de recherches \u{00A0}[Bakkay et al. 2019]\u{00A0} à l’IRIT (Toulouse INP – ENSEEIHT) depuis 2016. La région Occitanie finance actuellement le développement de Polymny au travers d’un projet de pré-maturation et de l’accompagnement de Toulouse Tech Transfer."
             ]
         , Element.paragraph
-            [ Element.centerX, Element.width <| Element.maximum 1000 Element.fill, Font.size 18, Font.italic ]
+            [ Element.centerX, Element.width <| Element.maximum oneColMaximum Element.fill, Font.size 18, Font.size (fontTitle // 2) ]
             [ Element.text "Bakkay et al  (2019). Protocols and software for simplified educational video capture and editing. Journal of Computers in Education, 6(2), 257-276."
             , Element.link
                 []
@@ -740,42 +800,70 @@ featuresView device =
         ]
 
 
-tutosView : Element Core.Msg
-tutosView =
+tutosView : Element.Device -> Element Core.Msg
+tutosView device =
+    let
+        fontSize =
+            case device.class of
+                Element.Phone ->
+                    20
+
+                _ ->
+                    40
+    in
     Element.column [ Element.centerX, Element.padding 30, Element.spacingXY 0 30 ]
         [ Element.el
             [ Element.centerX
             , Font.bold
-            , Font.size 40
+            , Font.size fontSize
             , Element.htmlAttribute (Html.Attributes.id "tutoriels")
             ]
           <|
             Element.text "Tutoriels polymny en vidéo."
-        , Assets.videoPlayerView
+        , Assets.videoPlayerView device
             "Étape 1: Débuter avec polymny"
             "https://video.polymny.studio/?v=b4a86be5-eb21-4681-8716-b96458e60cfe/"
-        , Assets.videoPlayerView
+        , Assets.videoPlayerView device
             "Étape 2 : Choisir les options de production"
             "https://video.polymny.studio/?v=a60ee619-48f0-49ca-9a01-2c6611842980/"
-        , Assets.videoPlayerView
+        , Assets.videoPlayerView device
             "Étape 3: Insérer une vidéo additionelle"
             "https://video.polymny.studio/?v=c7c42c13-52cd-47ea-8e6e-35b1209ca1b4/"
-        , Assets.videoPlayerView
+        , Assets.videoPlayerView device
             "Étape 4: Utiliser le prompteur"
             "https://video.polymny.studio/?v=ce1b9dfa-44cb-4b4a-9d1d-a4dafe0116fc/"
-        , Assets.videoPlayerView
+        , Assets.videoPlayerView device
             "Étape 5: Organiser les planches.  "
             "https://video.polymny.studio/?v=b8edf9bc-5ebc-4c9e-8b3b-af4c50fbb6f1/"
         ]
 
 
-partnersView : Element Core.Msg
-partnersView =
+partnersView : Element.Device -> Element Core.Msg
+partnersView device =
     let
-        logoSmall =
-            80
+        ( logoSmall, columnAttributes ) =
+            case device.class of
+                Element.Phone ->
+                    ( 40
+                    , [ Element.centerX
+                      , Element.width <| Element.maximum 300 Element.fill
+                      , Font.justify
+                      , Element.paddingXY 4 20
+                      , Font.size 14
+                      ]
+                    )
+
+                _ ->
+                    ( 80
+                    , [ Element.centerX
+                      , Element.width <| Element.maximum 700 Element.fill
+                      , Font.justify
+                      , Element.paddingXY 4 20
+                      , Font.size 20
+                      ]
+                    )
     in
-    Element.column [ Element.centerX, Element.width <| Element.maximum 700 Element.fill, Element.padding 30, Element.spacing 20, Font.size 20 ]
+    Element.column columnAttributes
         [ Element.paragraph [] [ Element.text "Polymny.studio est issu d'un programme 2020-2021 de pré-maturation de la Région Occitanie." ]
         , Element.el [ Element.centerX, Element.paddingXY 30 5 ] <| viewLogo 100 "/dist/logoRegionOccitanie.png" <| Just "Logo région Occitanie"
         , Element.paragraph [ Font.center ] [ Element.text "Les acteurs, les utilisateurs et les soutiens :" ]

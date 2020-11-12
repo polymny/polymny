@@ -70,7 +70,7 @@ view { email, status } =
             [ Element.centerX
             , Element.padding 30
             , Element.spacing 10
-            , Element.width (Element.px 500)
+            , Element.width (Element.px 300)
             , Border.width 1
             , Border.color Colors.black
             , Border.rounded 10
