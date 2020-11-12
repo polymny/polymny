@@ -140,11 +140,26 @@ viewContent { global, model } =
 
                 _ ->
                     []
+
+        bottomBar =
+            case global.device.class of
+                Element.Phone ->
+                    bottomBarPhone global
+
+                _ ->
+                    bottomBarDefault global
     in
     Element.column []
+        --        (Element.height Element.fill
+        --            :: Element.scrollbarY
+        --            :: Element.width Element.fill
+        --            :: Background.color Colors.whiteDark
+        --            :: Element.inFront (Maybe.withDefault Element.none popup)
+        --           :: attributes
+        --       )
         [ topBar global model
         , content
-        , bottomBar global
+        , bottomBar
         ]
 
 
@@ -438,8 +453,8 @@ notificationPanel global session =
         Element.none
 
 
-bottomBar : Core.Global -> Element Core.Msg
-bottomBar global =
+bottomBarDefault : Core.Global -> Element Core.Msg
+bottomBarDefault global =
     Element.column
         [ Element.width Element.fill
         , Background.color Colors.greyLight
@@ -448,9 +463,9 @@ bottomBar global =
         , Font.size 12
         ]
         [ Element.el [ Element.height Element.fill ] Element.none
-        , Element.column
+        , Element.row
             [ Element.width Element.fill, Element.alignBottom, Element.padding 15 ]
-            [ Element.column [ Element.alignLeft, Element.spacing 5 ]
+            [ Element.row [ Element.alignLeft, Element.spacing 5 ]
                 [ Element.text
                     "Polymny studio:"
                 , Element.link
@@ -460,7 +475,7 @@ bottomBar global =
                     }
                 , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
                 ]
-            , Element.column [ Element.alignLeft, Element.spacing 5 ]
+            , Element.row [ Element.alignRight, Element.spacing 5 ]
                 [ Element.link
                     []
                     { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
@@ -476,6 +491,57 @@ bottomBar global =
                                 ""
                            )
                     )
+                , Element.link
+                    []
+                    { url = "https://github.com/polymny/polymny"
+                    , label = Element.el [ Font.bold ] <| Element.text "Fork me!"
+                    }
+                ]
+            ]
+        ]
+
+
+bottomBarPhone : Core.Global -> Element Core.Msg
+bottomBarPhone global =
+    Element.column
+        [ Element.width Element.fill
+        , Background.color Colors.greyLight
+        , Border.color Colors.grey
+        , Border.width 1
+        , Font.size 10
+        ]
+        [ Element.el [ Element.height Element.fill ] Element.none
+        , Element.column
+            [ Element.width Element.fill, Element.alignBottom, Element.spacing 4, Element.padding 8 ]
+            [ Element.paragraph
+                []
+                [ Element.text
+                    "Polymny studio:"
+                , Element.link
+                    []
+                    { url = "mailto:contacter@polymny.studio"
+                    , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
+                    }
+                ]
+            , Element.paragraph []
+                [ Element.text
+                    ("Polymny"
+                        ++ global.version
+                        ++ (if global.beta then
+                                " beta " ++ global.commit
+
+                            else
+                                ""
+                           )
+                    )
+                , Ui.linkButton (Just Core.AboutClicked) "\u{00A0}A propos"
+                ]
+            , Element.paragraph [ Element.alignLeft, Element.spacing 5 ]
+                [ Element.link
+                    []
+                    { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
+                    , label = Element.el [ Font.bold ] <| Element.text "Gnu Affero V3. "
+                    }
                 , Element.link
                     []
                     { url = "https://github.com/polymny/polymny"
