@@ -516,25 +516,23 @@ featuresView device =
         twoColMaximum =
             500
 
-        ( builder, contentPadding ) =
+        ( builder, contentSpacing ) =
             case device.class of
                 Element.Phone ->
-                    ( Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
-                    , Element.paddingXY 10 0
+                    ( Element.column [ Element.width Element.fill, Element.height Element.fill, Element.paddingXY 2 50 ]
+                    , Element.spacingXY 2 40
                     )
 
                 _ ->
-                    ( Element.row [ Element.width Element.fill, Element.padding 80, Element.spacing 10 ]
-                    , Element.padding 0
+                    ( Element.row [ Element.width Element.fill, Element.paddingXY 2 50, Element.spacingXY 40 10 ]
+                    , Element.spacingXY 2 50
                     )
     in
-    Element.column [ Element.centerX, Element.width Element.fill, contentPadding, Font.justify, Font.size 20 ]
+    Element.column [ Element.centerX, Element.width Element.fill, Font.justify, Font.size 20, Element.spacingXY 5 50 ]
         [ Assets.videoBonjour
         , builder
             [ Element.column
-                [ Element.width Element.fill
-                , Element.centerY
-                , Element.spacing 10
+                [ Element.centerX
                 ]
                 [ Element.el [ Element.centerX, Border.rounded 100 ] <|
                     Element.image [ Element.width <| Element.px imageSize ]
@@ -542,14 +540,14 @@ featuresView device =
                         , description = "Partager des capsules sur moodle"
                         }
                 ]
-            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerY, Element.spacing 10 ]
+            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Partage des capsules"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Aucune expertise technique n’est requise, pas de montage, pas de compression, pas de manipulations numériques des vidéos. Les capsules sont automatiquement stockées et publiées en ligne sur un serveur vidéo. Elles sont accessibles par un lien web (url) partageable par mail ou texto, sur les réseaux sociaux ou sur toute plateforme de formation (moodle, 360, etc.). La figure de gauche montre des vidéos polymny partagées sur MOODLE." ]
                 ]
             ]
         , builder
-            [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerY, Element.spacing 10 ]
+            [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Enregistrement facile"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "A la différence des logiciels d’enregistrement d’écrans, Polymny guide et facilite l’enregistrement des commentaires vidéos (avec la webcam) ou audios (avec le micro de votre ordinateur).  L’enregistrement se fait simplement depuis un navigateur web." ]
@@ -578,14 +576,14 @@ featuresView device =
                         , description = "Polymny en 4 étapes"
                         }
                 ]
-            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerY, Element.spacing 10 ]
+            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "4 étapes"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Le protocole de Polymny repose sur 4 étapes : préparer (en utilisant ou pas le prompteur), filmer (en se limitant éventuellement au son), produire (en plaçant les médias selon différents motifs) et publier (en obtenant le lien à partager sans aucun effort technique)." ]
                 ]
             ]
         , builder
-            [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerY, Element.spacing 10 ]
+            [ Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Gérer les caspules"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Aucune minute passée pour s’enregistrer n’est perdue, chaque effort est modifiable et réutilisable plus tard : comme au cinéma, vous pouvez multiplier les «\u{00A0}prises\u{00A0}» pour satisfaire le réalisateur (vous\u{00A0}!).  Vous n’enregistrez plus votre écran mais vous gérez vos projets de capsules vidéos, d’une année sur l’autre, d’une classe à l’autre, d’une version initiale à l’amélioration suivante\u{00A0}! L’interface de Polymny ci-contre montre 3 projets d’un utilisateur\u{00A0}: 3 séquences pédagogiques comportant chacune plusieurs capsules vidéos, dont certaines en cours de préparation ne sont pas encore finalisées."
@@ -618,7 +616,7 @@ featuresView device =
                         , description = "ajout de vidéos additionelles"
                         }
                 ]
-            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerY, Element.spacing 10 ]
+            , Element.column [ Element.width <| Element.maximum twoColMaximum Element.fill, Element.centerX, Element.spacing 10 ]
                 [ Element.el [ Element.centerX, Font.bold, Font.size 40 ] <| Element.text "Vidéos additionelles"
                 , Element.paragraph [ Element.centerX ]
                     [ Element.text "Parmi les fonctionnalités plébiscitées, Polymny permet d’insérer, en lieu et place d’une diapositive, toute vidéo externe (captures de vos écrits sur tablettes pour les enseignants, vidéos ou screencasts issus d’un smartphone, clips libres de droit importés depuis internet). L’illustration suivante montre un jingle vidéo (une animation) insérée en guise de générique d’une vidéo de formation. Polymny est utilisé avec succès par des formateurs des sphères publiques (universités, lycées, MOOC FUN) et privées (organismes de formation professionnelle).\n" ]
