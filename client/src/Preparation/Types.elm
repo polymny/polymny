@@ -50,7 +50,7 @@ type alias Model =
 
 type Broken
     = NotBroken
-    | Broken Model
+    | Broken Model String
 
 
 type MaybeSlide

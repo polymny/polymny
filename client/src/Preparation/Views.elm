@@ -92,7 +92,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                 ]
     in
     case ( broken, editPrompt.visible, uploadForms.extraResource.askForPage ) of
-        ( Preparation.Broken _, _, _ ) ->
+        ( Preparation.Broken _ msg, _, _ ) ->
             let
                 reject =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
@@ -106,7 +106,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
-                                , Element.paragraph [] [ Element.text "Ce déplacement va détruire certains de vos enregistrements." ]
+                                , Element.paragraph [] [ Element.text msg ]
                                 , Element.paragraph [] [ Element.text "Voulez-vous vraiment continuer ?" ]
                                 , Element.el [ Element.height Element.fill ] Element.none
                                 , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]

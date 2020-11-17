@@ -162,15 +162,24 @@ update msg global capsuleModel =
                 gosStructure =
                     List.head (List.drop gos_i capsuleModel.details.structure)
 
-                gosUpdatedStructure : Maybe Api.Gos
+                gosUpdatedStructure : Maybe ( Api.Gos, Bool )
                 gosUpdatedStructure =
                     case gosStructure of
                         Just gos ->
                             let
                                 newSlides =
                                     List.filter (\x -> x.id /= slide_i) gos.slides
+
+                                ( newGos, lost ) =
+                                    if newSlides /= gos.slides then
+                                        ( { gos | slides = newSlides, transitions = [], record = Nothing }
+                                        , gos.record /= Nothing
+                                        )
+
+                                    else
+                                        ( gos, False )
                             in
-                            Just { gos | slides = newSlides }
+                            Just ( newGos, lost )
 
                         _ ->
                             Nothing
@@ -178,7 +187,7 @@ update msg global capsuleModel =
                 newStructure : List Api.Gos
                 newStructure =
                     case gosUpdatedStructure of
-                        Just new ->
+                        Just ( new, _ ) ->
                             if List.isEmpty new.slides then
                                 List.take gos_i capsuleModel.details.structure
                                     ++ List.drop (gos_i + 1) capsuleModel.details.structure
@@ -190,6 +199,17 @@ update msg global capsuleModel =
                         _ ->
                             capsuleModel.details.structure
 
+                message : String
+                message =
+                    "Cette opération va supprimer une planche."
+                        ++ (case gosUpdatedStructure of
+                                Just ( _, True ) ->
+                                    " Des enregistrements seront perdus."
+
+                                _ ->
+                                    ""
+                           )
+
                 details : Api.CapsuleDetails
                 details =
                     capsuleModel.details
@@ -197,8 +217,14 @@ update msg global capsuleModel =
                 newDetails : Api.CapsuleDetails
                 newDetails =
                     { details | structure = newStructure }
+
+                newModel =
+                    { capsuleModel | details = newDetails }
             in
-            ( global, { capsuleModel | details = newDetails }, Api.updateSlideStructure resultToMsg newDetails )
+            ( global
+            , { capsuleModel | broken = Preparation.Broken newModel message }
+            , Cmd.none
+            )
 
         ( Preparation.UserSelectedTab t, _ ) ->
             ( global, { capsuleModel | t = t }, Cmd.none )
@@ -222,7 +248,7 @@ update msg global capsuleModel =
 
         ( Preparation.AcceptBroken, _ ) ->
             case capsuleModel.broken of
-                Preparation.Broken m ->
+                Preparation.Broken m _ ->
                     ( global, m, Api.updateSlideStructure resultToMsg m.details )
 
                 _ ->
@@ -701,7 +727,12 @@ updateDnD slideMsg data =
                             , broken = Preparation.NotBroken
                         }
                 in
-                ( { data | broken = Preparation.Broken newData }
+                ( { data
+                    | broken =
+                        Preparation.Broken
+                            newData
+                            "Ce déplacement va détruire certains de vos enregistrements."
+                  }
                 , Preparation.slideSystem.commands slideModel
                 , False
                 )
