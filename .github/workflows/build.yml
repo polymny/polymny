@@ -29,6 +29,7 @@ jobs:
           elm-version: 0.19.1
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
+        env: ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
         with:
           toolchain: nightly
           override: true
