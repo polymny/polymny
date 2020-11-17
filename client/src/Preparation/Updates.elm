@@ -503,54 +503,57 @@ updateUploadExtraResource :
     -> ( Preparation.UploadExtraResourceForm, Cmd Core.Msg, Preparation.Model )
 updateUploadExtraResource msg uploadForm preparationModel =
     case msg of
-        Preparation.UploadExtraResourceSelectFileRequested slideId ->
+        Preparation.UploadExtraResourceSelectFileRequested slideId gosId ->
             ( { uploadForm | activeSlideId = slideId, deleteStatus = Status.NotSent }
             , Select.file
-                (case slideId of
-                    Just _ ->
+                (case ( slideId, gosId ) of
+                    ( Just _, _ ) ->
                         [ "video/*", "image/*", "application/pdf" ]
 
-                    Nothing ->
+                    ( _, Just _ ) ->
+                        [ "image/*", "application/pdf" ]
+
+                    _ ->
                         [ "image/*", "application/pdf" ]
                 )
                 (\x ->
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceFileReady x slideId
+                                Preparation.UploadExtraResourceFileReady x slideId gosId
                 )
             , preparationModel
             )
 
-        Preparation.UploadExtraResourceFileReady file (Just slideId) ->
+        Preparation.UploadExtraResourceFileReady file (Just slideId) gos ->
             if File.mime file == "application/pdf" then
-                ( { uploadForm | file = Just file, activeSlideId = Just slideId, askForPage = True, page = Just 1 }
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, targetGos = gos, askForPage = True, page = Just 1 }
                 , Cmd.none
                 , preparationModel
                 )
 
             else if String.startsWith "image/" (File.mime file) then
-                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, targetGos = gos }
                 , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file Nothing
                 , preparationModel
                 )
 
             else
-                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, targetGos = gos }
                 , Api.slideUploadExtraResource resultToMsg3 slideId file
                 , preparationModel
                 )
 
-        Preparation.UploadExtraResourceFileReady file Nothing ->
+        Preparation.UploadExtraResourceFileReady file Nothing gos ->
             if File.mime file == "application/pdf" then
-                ( { uploadForm | file = Just file, activeSlideId = Nothing, askForPage = True, page = Just 1 }
+                ( { uploadForm | file = Just file, activeSlideId = Nothing, targetGos = gos, askForPage = True, page = Just 1 }
                 , Cmd.none
                 , preparationModel
                 )
 
             else if String.startsWith "image/" (File.mime file) then
                 ( { uploadForm | file = Just file, activeSlideId = Nothing }
-                , Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file Nothing
+                , Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file Nothing gos
                 , preparationModel
                 )
 
@@ -579,7 +582,14 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 details =
                     preparationModel.details
             in
-            ( { uploadForm | status = Status.NotSent, activeSlideId = Nothing, page = Nothing, askForPage = False, file = Nothing }
+            ( { uploadForm
+                | status = Status.NotSent
+                , activeSlideId = Nothing
+                , targetGos = Nothing
+                , page = Nothing
+                , askForPage = False
+                , file = Nothing
+              }
             , Cmd.none
             , Preparation.init { details | slides = newSlides, structure = newStructure }
             )
@@ -646,12 +656,15 @@ updateUploadExtraResource msg uploadForm preparationModel =
             case ( uploadForm.file, uploadForm.page ) of
                 ( Just file, page ) ->
                     ( { uploadForm | status = Status.Sent }
-                    , case uploadForm.activeSlideId of
-                        Just id ->
+                    , case ( uploadForm.activeSlideId, uploadForm.targetGos ) of
+                        ( Just id, _ ) ->
                             Api.slideReplace resultToMsg3 id file page
 
-                        Nothing ->
-                            Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file page
+                        ( _, Just gos ) ->
+                            Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file (Just gos) page
+
+                        _ ->
+                            Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file Nothing page
                     , preparationModel
                     )
 
@@ -659,7 +672,14 @@ updateUploadExtraResource msg uploadForm preparationModel =
                     ( uploadForm, Cmd.none, preparationModel )
 
         Preparation.UploadExtraResourceDetailsChanged newDetails ->
-            ( { uploadForm | file = Nothing, activeSlideId = Nothing, page = Nothing, askForPage = False }
+            ( { uploadForm
+                | status = Status.NotSent
+                , targetGos = Nothing
+                , file = Nothing
+                , activeSlideId = Nothing
+                , page = Nothing
+                , askForPage = False
+              }
             , Cmd.none
             , { preparationModel | details = newDetails, slides = Preparation.setupSlides newDetails }
             )

@@ -74,6 +74,7 @@ type alias UploadExtraResourceForm =
     , deleteStatus : Status () ()
     , file : Maybe File
     , activeSlideId : Maybe Int
+    , targetGos : Maybe Int
     , page : Maybe Int
     , askForPage : Bool
     }
@@ -81,7 +82,7 @@ type alias UploadExtraResourceForm =
 
 initUploadExtraResourceForm : UploadExtraResourceForm
 initUploadExtraResourceForm =
-    UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing Nothing False
+    UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing Nothing Nothing False
 
 
 type alias ReplaceSlideForm =
@@ -189,8 +190,8 @@ type UploadLogoMsg
 
 
 type UploadExtraResourceMsg
-    = UploadExtraResourceSelectFileRequested (Maybe Int)
-    | UploadExtraResourceFileReady File (Maybe Int)
+    = UploadExtraResourceSelectFileRequested (Maybe Int) (Maybe Int)
+    | UploadExtraResourceFileReady File (Maybe Int) (Maybe Int)
     | UploadExtraResourceSuccess Api.Slide
     | UploadExtraResourceError
     | DeleteExtraResource Int

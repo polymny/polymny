@@ -46,7 +46,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
         newSlideMsg =
-            Preparation.UploadExtraResourceSelectFileRequested Nothing
+            Preparation.UploadExtraResourceSelectFileRequested Nothing Nothing
                 |> Preparation.UploadExtraResourceMsg
                 |> LoggedIn.PreparationMsg
                 |> Core.LoggedInMsg
@@ -346,10 +346,10 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
             else
                 "gos-" ++ String.fromInt index
 
-        -- gosIndex : Int
-        -- gosIndex =
-        --     (index - 1) // 2
-        --
+        gosIndex : Int
+        gosIndex =
+            (index - 1) // 2
+
         -- dragAttributes : List (Element.Attribute Core.Msg)
         -- dragAttributes =
         --     if options == Drag && not (Preparation.isJustGosId gos) then
@@ -451,6 +451,24 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
                         ++ eventLessAttributes
                     )
                     slides
+                , Input.button
+                    [ Background.color Colors.grey
+                    , Element.height Element.fill
+                    , Element.padding 10
+                    , Element.htmlAttribute (Html.Attributes.title "Ajouter une nouvelle planche")
+                    ]
+                    { label =
+                        Element.el
+                            [ Element.centerY
+                            ]
+                            (Element.text "+")
+                    , onPress =
+                        Preparation.UploadExtraResourceSelectFileRequested Nothing (Just gosIndex)
+                            |> Preparation.UploadExtraResourceMsg
+                            |> LoggedIn.PreparationMsg
+                            |> Core.LoggedInMsg
+                            |> Just
+                    }
                 ]
 
 
@@ -570,7 +588,7 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id)
+                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id) Nothing
 
                 promptMsg : Core.Msg
                 promptMsg =
