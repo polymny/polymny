@@ -510,7 +510,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 )
 
             else
-                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, status = Status.Sent }
                 , Api.slideUploadExtraResource resultToMsg3 slideId file
                 , preparationModel
                 )

@@ -27,11 +27,12 @@ use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::GosStructure;
+use crate::db::notification::NotificationStyle;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
 use crate::routes::capsule::format_capsule_data;
 use crate::schema::slides;
-use crate::{Database, Error, Result};
+use crate::{Database, Error, Result, WebSockets};
 
 /// A struct to  update Slides
 #[derive(Deserialize, AsChangeset, Debug)]
@@ -229,6 +230,7 @@ pub fn upload_resource(
     user: User,
     content_type: &ContentType,
     id: i32,
+    socks: State<WebSockets>,
     data: Data,
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
@@ -351,10 +353,27 @@ pub fn upload_resource(
             .filter(dsl::id.eq(slide.id))
             .set(dsl::extra_id.eq(transcoded_asset.id))
             .execute(&db.0)?;
+        user.notify(
+            socks.inner(),
+            NotificationStyle::Info,
+            "Import terminée !",
+            &format!("L'import de la vidéo {} est terminée.", asset.name),
+            &db,
+        )?;
     } else {
         AssetsObject::get_by_asset(&db, transcoded_asset.id)?.delete(&db)?;
         Asset::get(transcoded_asset.id, &db)?.delete(&db)?;
         error!("transcode error : {:#?}", &asset);
+        user.notify(
+            socks.inner(),
+            NotificationStyle::Error,
+            "Erreur d'importation",
+            &format!(
+                "L'importation de la vidéo ne c'est pas bien passée. Merci de nous contacter."
+            ),
+            &db,
+        )?;
+
         return Err(Error::TranscodeError);
     };
 

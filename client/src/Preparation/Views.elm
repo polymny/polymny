@@ -81,7 +81,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                                 ]
                                 [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                     (List.map
-                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow gosModel slideModel (calculateOffset i) i s)
+                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow gosModel slideModel uploadForms.extraResource (calculateOffset i) i s)
                                         (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
                                     )
                                 , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
@@ -274,25 +274,25 @@ type DragOptions
 -- GOS VIEWS
 
 
-capsuleGosView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView global numberOfSlidesPerRow gosModel slideModel offset gosIndex gos =
+capsuleGosView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView global numberOfSlidesPerRow gosModel slideModel extraResource offset gosIndex gos =
     case Preparation.gosSystem.info gosModel of
         Just { dragIndex } ->
             if dragIndex /= gosIndex then
-                genericGosView global numberOfSlidesPerRow Drop gosModel slideModel offset gosIndex gos
+                genericGosView global numberOfSlidesPerRow Drop gosModel slideModel extraResource offset gosIndex gos
 
             else
-                genericGosView global numberOfSlidesPerRow EventLess gosModel slideModel offset gosIndex gos
+                genericGosView global numberOfSlidesPerRow EventLess gosModel slideModel extraResource offset gosIndex gos
 
         _ ->
-            genericGosView global numberOfSlidesPerRow Drag gosModel slideModel offset gosIndex gos
+            genericGosView global numberOfSlidesPerRow Drag gosModel slideModel extraResource offset gosIndex gos
 
 
-gosGhostView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-gosGhostView global numberOfSlidesPerRow gosModel slideModel slides =
+gosGhostView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
+gosGhostView global numberOfSlidesPerRow gosModel slideModel slides extraResource =
     case maybeDragGos gosModel slides of
         Just s ->
-            genericGosView global numberOfSlidesPerRow Ghost gosModel slideModel 0 0 s
+            genericGosView global numberOfSlidesPerRow Ghost gosModel slideModel extraResource 0 0 s
 
         _ ->
             Element.none
@@ -335,8 +335,8 @@ regroupSlides number list =
             (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h)) ( -1, Nothing )) :: t
 
 
-genericGosView : Core.Global -> Int -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView global numberOfSlidesPerRow options gosModel slideModel offset index gos =
+genericGosView : Core.Global -> Int -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView global numberOfSlidesPerRow options gosModel slideModel extraResource offset index gos =
     let
         gosId : String
         gosId =
@@ -404,7 +404,7 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
         mapper ( i, s ) =
             case s of
                 Just slide ->
-                    designSlideView global slideModel offset i slide
+                    designSlideView global slideModel extraResource offset i slide
 
                 Nothing ->
                     Element.el [ Element.width Element.fill ] Element.none
@@ -458,18 +458,18 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
 -- SLIDES VIEWS
 
 
-slideGhostView : Core.Global -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Element Core.Msg
-slideGhostView global slideModel slides =
+slideGhostView : Core.Global -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
+slideGhostView global slideModel slides extraResource =
     case maybeDragSlide slideModel slides of
         Preparation.JustSlide s _ ->
-            genericDesignSlideView global Ghost slideModel 0 0 (Preparation.JustSlide s -1)
+            genericDesignSlideView global Ghost slideModel extraResource 0 0 (Preparation.JustSlide s -1)
 
         _ ->
             Element.none
 
 
-designSlideView : Core.Global -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-designSlideView global slideModel offset localIndex slide =
+designSlideView : Core.Global -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+designSlideView global slideModel extraResource offset localIndex slide =
     let
         t =
             case ( Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
@@ -483,7 +483,7 @@ designSlideView global slideModel offset localIndex slide =
                 _ ->
                     Drag
     in
-    genericDesignSlideView global t slideModel offset localIndex slide
+    genericDesignSlideView global t slideModel extraResource offset localIndex slide
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.MaybeSlide
@@ -501,8 +501,8 @@ maybeDragSlide slideModel slides =
             Preparation.GosId -1
 
 
-genericDesignSlideView : Core.Global -> DragOptions -> DnDList.Groups.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-genericDesignSlideView _ options slideModel offset localIndex s =
+genericDesignSlideView : Core.Global -> DragOptions -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+genericDesignSlideView _ options slideModel extraResource offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -585,6 +585,26 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                         LoggedIn.PreparationMsg <|
                             Preparation.SlideDelete gosIndex slide.id
 
+                upload =
+                    case extraResource.activeSlideId of
+                        Just id ->
+                            if id == slide.id then
+                                case extraResource.status of
+                                    Status.Sent ->
+                                        Element.column []
+                                            [ Ui.spinner
+                                            , Element.text "Importation en cours"
+                                            ]
+
+                                    _ ->
+                                        Element.none
+
+                            else
+                                Element.none
+
+                        _ ->
+                            Element.none
+
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
                         [ case deleteExtraMsg of
@@ -595,6 +615,7 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                                 Ui.timesButton (Just msg) "" "Supprimer la ressource externe"
                         , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
                         , Ui.trashButton (Just deleteMsg) "" "Supprimer le slide"
+                        , upload
                         ]
             in
             Element.el
