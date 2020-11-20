@@ -96,6 +96,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
 "#;
 
 const INDEX_HTML_AFTER_FLAGS: &str = r#";
+            flags.global = flags.global || {};
             flags.global.width = window.innerWidth;
             flags.global.height = window.innerHeight;
             var app = Elm.Main.init({
