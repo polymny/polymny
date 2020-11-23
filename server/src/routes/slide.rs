@@ -26,11 +26,11 @@ use crate::command;
 use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
-use crate::db::capsule::GosStructure;
+use crate::db::capsule::{GosStructure, TaskStatus};
 use crate::db::notification::NotificationStyle;
 use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::user::User;
-use crate::routes::capsule::format_capsule_data;
+use crate::routes::capsule::{format_capsule_data, TaskStatusReset};
 use crate::schema::slides;
 use crate::{Database, Error, Result, WebSockets};
 
@@ -235,6 +235,15 @@ pub fn upload_resource(
 ) -> Result<JsonValue> {
     let slide = user.get_slide_by_id(id, &db)?;
     let asset = upload_file(&config, &db, &user, id, content_type, data)?;
+    let capsule = user.get_capsule_by_id(slide.capsule_id, &db)?;
+
+    match capsule.uploaded {
+        TaskStatus::Running => return Err(Error::NotFound),
+        TaskStatus::Done => (),
+        _ => (),
+    }
+
+    let mut reset = TaskStatusReset::upload(&db, capsule.id)?;
 
     let mut asset_path = config.data_path.clone();
     asset_path.push(&asset.asset_path);
@@ -377,6 +386,7 @@ pub fn upload_resource(
         return Err(Error::TranscodeError);
     };
 
+    reset.ok();
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))
 }

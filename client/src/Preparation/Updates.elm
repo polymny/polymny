@@ -516,6 +516,19 @@ updateUploadExtraResource msg uploadForm preparationModel =
                 )
 
         Preparation.UploadExtraResourceFileReady file Nothing ->
+            let
+                capsule =
+                    preparationModel.details.capsule
+
+                details =
+                    preparationModel.details
+
+                newCapsule =
+                    { capsule | uploaded = Api.Running }
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
             if File.mime file == "application/pdf" then
                 ( { uploadForm | file = Just file, activeSlideId = Nothing, askForPage = True, page = Just 1 }
                 , Cmd.none
@@ -531,7 +544,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
             else
                 ( uploadForm
                 , Cmd.none
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
         Preparation.UploadExtraResourceSuccess slide ->

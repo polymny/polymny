@@ -25,19 +25,23 @@ view global session model =
     mainView global session model
 
 
+
+-- mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
+
+
 mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
+mainView global _ model =
     let
         slide : Maybe Api.Slide
         slide =
-            List.concat slides
+            List.concat model.slides
                 |> List.filterMap Preparation.filterSlide
-                |> List.filter (\x -> x.id == editPrompt.slideId)
+                |> List.filter (\x -> x.id == model.editPrompt.slideId)
                 |> List.head
 
         calculateOffset : Int -> Int
         calculateOffset index =
-            slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
+            model.slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
         increaseMsg =
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
@@ -53,13 +57,13 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
 
         autoEdition =
             Element.link []
-                { url = Routes.acquisition details.capsule.id
+                { url = Routes.acquisition model.details.capsule.id
                 , label = Ui.primaryButton Nothing "Filmer"
                 }
 
         resultView =
             Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-                [ leftColumnView details Nothing
+                [ leftColumnView model.details Nothing
                 , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
                     [ Element.column [ Element.width Element.fill ]
                         [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
@@ -81,8 +85,8 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                                 ]
                                 [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
                                     (List.map
-                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow gosModel slideModel uploadForms.extraResource (calculateOffset i) i s)
-                                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair slides))
+                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow model (calculateOffset i) i s)
+                                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair model.slides))
                                     )
                                 , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
                                 ]
@@ -91,7 +95,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                     ]
                 ]
     in
-    case ( broken, editPrompt.visible, uploadForms.extraResource.askForPage ) of
+    case ( model.broken, model.editPrompt.visible, model.uploadForms.extraResource.askForPage ) of
         ( Preparation.Broken _, _, _ ) ->
             let
                 reject =
@@ -125,7 +129,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptSubmitted)))
 
                 promptModal =
-                    bodyPromptModal slide editPrompt
+                    bodyPromptModal slide model.editPrompt
                         |> Element.map Preparation.EditPromptMsg
                         |> Element.map LoggedIn.PreparationMsg
                         |> Element.map Core.LoggedInMsg
@@ -190,14 +194,14 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                                                 Core.Noop
                                 , placeholder = Nothing
                                 , text =
-                                    case uploadForms.extraResource.page of
+                                    case model.uploadForms.extraResource.page of
                                         Just i ->
                                             String.fromInt i
 
                                         _ ->
                                             ""
                                 }
-                            , if uploadForms.extraResource.status == Status.Error () then
+                            , if model.uploadForms.extraResource.status == Status.Error () then
                                 Element.el [ Element.centerY ]
                                     (Element.paragraph [ Font.color Colors.danger ]
                                         [ Element.text "Une erreur est survenue, le numéro de la page est-il correct ?" ]
@@ -206,10 +210,10 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                               else
                                 Element.none
                             , Element.row [ Element.alignBottom, Element.alignRight, Element.spacing 10 ]
-                                (case uploadForms.extraResource.status of
+                                (case model.uploadForms.extraResource.status of
                                     Status.NotSent ->
                                         [ Ui.simpleButton cancelMsg "Annuler"
-                                        , case uploadForms.extraResource.page of
+                                        , case model.uploadForms.extraResource.page of
                                             Just _ ->
                                                 Ui.primaryButton validateMsg "Valider"
 
@@ -272,27 +276,29 @@ type DragOptions
 
 
 -- GOS VIEWS
+-- capsuleGosView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+-- capsuleGosView global numberOfSlidesPerRow gosModel slideModel extraResource offset gosIndex gos =
 
 
-capsuleGosView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView global numberOfSlidesPerRow gosModel slideModel extraResource offset gosIndex gos =
-    case Preparation.gosSystem.info gosModel of
+capsuleGosView : Core.Global -> Int -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+capsuleGosView global numberOfSlidesPerRow model offset gosIndex gos =
+    case Preparation.gosSystem.info model.gosModel of
         Just { dragIndex } ->
             if dragIndex /= gosIndex then
-                genericGosView global numberOfSlidesPerRow Drop gosModel slideModel extraResource offset gosIndex gos
+                genericGosView global numberOfSlidesPerRow Drop model offset gosIndex gos
 
             else
-                genericGosView global numberOfSlidesPerRow EventLess gosModel slideModel extraResource offset gosIndex gos
+                genericGosView global numberOfSlidesPerRow EventLess model offset gosIndex gos
 
         _ ->
-            genericGosView global numberOfSlidesPerRow Drag gosModel slideModel extraResource offset gosIndex gos
+            genericGosView global numberOfSlidesPerRow Drag model offset gosIndex gos
 
 
-gosGhostView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
-gosGhostView global numberOfSlidesPerRow gosModel slideModel slides extraResource =
-    case maybeDragGos gosModel slides of
+gosGhostView : Core.Global -> Int -> List Preparation.MaybeSlide -> Preparation.Model -> Element Core.Msg
+gosGhostView global numberOfSlidesPerRow slides model =
+    case maybeDragGos model.gosModel slides of
         Just s ->
-            genericGosView global numberOfSlidesPerRow Ghost gosModel slideModel extraResource 0 0 s
+            genericGosView global numberOfSlidesPerRow Ghost model 0 0 s
 
         _ ->
             Element.none
@@ -335,8 +341,8 @@ regroupSlides number list =
             (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h)) ( -1, Nothing )) :: t
 
 
-genericGosView : Core.Global -> Int -> DragOptions -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView global numberOfSlidesPerRow options gosModel slideModel extraResource offset index gos =
+genericGosView : Core.Global -> Int -> DragOptions -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+genericGosView global numberOfSlidesPerRow options model offset index gos =
     let
         gosId : String
         gosId =
@@ -367,7 +373,7 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel extraReso
         ghostAttributes : List (Element.Attribute Core.Msg)
         ghostAttributes =
             if options == Ghost then
-                convertAttributes (Preparation.gosSystem.ghostStyles gosModel)
+                convertAttributes (Preparation.gosSystem.ghostStyles model.gosModel)
 
             else
                 []
@@ -404,7 +410,7 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel extraReso
         mapper ( i, s ) =
             case s of
                 Just slide ->
-                    designSlideView global slideModel extraResource offset i slide
+                    designSlideView global model offset i slide
 
                 Nothing ->
                     Element.el [ Element.width Element.fill ] Element.none
@@ -458,21 +464,21 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel extraReso
 -- SLIDES VIEWS
 
 
-slideGhostView : Core.Global -> DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.UploadExtraResourceForm -> Element Core.Msg
-slideGhostView global slideModel slides extraResource =
-    case maybeDragSlide slideModel slides of
+slideGhostView : Core.Global -> List Preparation.MaybeSlide -> Preparation.Model -> Element Core.Msg
+slideGhostView global slides model =
+    case maybeDragSlide model.slideModel slides of
         Preparation.JustSlide s _ ->
-            genericDesignSlideView global Ghost slideModel extraResource 0 0 (Preparation.JustSlide s -1)
+            genericDesignSlideView global Ghost model 0 0 (Preparation.JustSlide s -1)
 
         _ ->
             Element.none
 
 
-designSlideView : Core.Global -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-designSlideView global slideModel extraResource offset localIndex slide =
+designSlideView : Core.Global -> Preparation.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+designSlideView global model offset localIndex slide =
     let
         t =
-            case ( Preparation.slideSystem.info slideModel, maybeDragSlide slideModel ) of
+            case ( Preparation.slideSystem.info model.slideModel, maybeDragSlide model.slideModel ) of
                 ( Just { dragIndex }, _ ) ->
                     if offset + localIndex == dragIndex then
                         EventLess
@@ -483,7 +489,7 @@ designSlideView global slideModel extraResource offset localIndex slide =
                 _ ->
                     Drag
     in
-    genericDesignSlideView global t slideModel extraResource offset localIndex slide
+    genericDesignSlideView global t model offset localIndex slide
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.MaybeSlide
@@ -501,8 +507,8 @@ maybeDragSlide slideModel slides =
             Preparation.GosId -1
 
 
-genericDesignSlideView : Core.Global -> DragOptions -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-genericDesignSlideView _ options slideModel extraResource offset localIndex s =
+genericDesignSlideView : Core.Global -> DragOptions -> Preparation.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+genericDesignSlideView _ options model offset localIndex s =
     let
         globalIndex : Int
         globalIndex =
@@ -535,7 +541,7 @@ genericDesignSlideView _ options slideModel extraResource offset localIndex s =
         ghostAttributes : List (Element.Attribute Core.Msg)
         ghostAttributes =
             if options == Ghost then
-                convertAttributes (Preparation.slideSystem.ghostStyles slideModel)
+                convertAttributes (Preparation.slideSystem.ghostStyles model.slideModel)
 
             else
                 []
@@ -586,11 +592,11 @@ genericDesignSlideView _ options slideModel extraResource offset localIndex s =
                             Preparation.SlideDelete gosIndex slide.id
 
                 upload =
-                    case extraResource.activeSlideId of
+                    case model.uploadForms.extraResource.activeSlideId of
                         Just id ->
                             if id == slide.id then
-                                case extraResource.status of
-                                    Status.Sent ->
+                                case model.details.capsule.uploaded of
+                                    Api.Running ->
                                         Element.column []
                                             [ Ui.spinner
                                             , Element.text "Importation en cours"

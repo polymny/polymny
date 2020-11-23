@@ -59,6 +59,7 @@ import Dict exposing (Dict)
 import File
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Extra as Decode exposing (andMap)
 import Json.Encode as Encode
 import Notification.Types as Notification exposing (Notification)
 import Webcam
@@ -208,6 +209,7 @@ type alias Capsule =
     , description : String
     , edited : TaskStatus
     , published : TaskStatus
+    , uploaded : TaskStatus
     , capsuleEditionOptions : Maybe CapsuleEditionOptions
     , video : Maybe Asset
     }
@@ -215,15 +217,16 @@ type alias Capsule =
 
 decodeCapsule : Decoder Capsule
 decodeCapsule =
-    Decode.map8 Capsule
-        (Decode.field "id" Decode.int)
-        (Decode.field "name" Decode.string)
-        (Decode.field "title" Decode.string)
-        (Decode.field "description" Decode.string)
-        (Decode.field "edited" decodeDone)
-        (Decode.field "published" decodeDone)
-        (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
-        (Decode.field "video" (Decode.maybe decodeAsset))
+    Decode.succeed Capsule
+        |> Decode.andMap (Decode.field "id" Decode.int)
+        |> Decode.andMap (Decode.field "name" Decode.string)
+        |> Decode.andMap (Decode.field "title" Decode.string)
+        |> Decode.andMap (Decode.field "description" Decode.string)
+        |> Decode.andMap (Decode.field "edited" decodeDone)
+        |> Decode.andMap (Decode.field "published" decodeDone)
+        |> Decode.andMap (Decode.field "uploaded" decodeDone)
+        |> Decode.andMap (Decode.field "edition_options" (Decode.maybe decodeCapsuleEditionOptions))
+        |> Decode.andMap (Decode.field "video" (Decode.maybe decodeAsset))
 
 
 decodeCapsules : Decoder (List Capsule)
