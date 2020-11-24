@@ -497,41 +497,67 @@ updateUploadExtraResource msg uploadForm preparationModel =
             )
 
         Preparation.UploadExtraResourceFileReady file (Just slideId) ->
+            let
+                capsule =
+                    preparationModel.details.capsule
+
+                details =
+                    preparationModel.details
+
+                newCapsule =
+                    { capsule | uploaded = Api.Running }
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
             if File.mime file == "application/pdf" then
                 ( { uploadForm | file = Just file, activeSlideId = Just slideId, askForPage = True, page = Just 1 }
                 , Cmd.none
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
             else if String.startsWith "image/" (File.mime file) then
                 ( { uploadForm | file = Just file, activeSlideId = Just slideId }
                 , Api.slideReplace resultToMsg3 (Maybe.withDefault -1 uploadForm.activeSlideId) file Nothing
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
             else
-                ( { uploadForm | file = Just file, activeSlideId = Just slideId }
+                ( { uploadForm | file = Just file, activeSlideId = Just slideId, status = Status.Sent }
                 , Api.slideUploadExtraResource resultToMsg3 slideId file
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
         Preparation.UploadExtraResourceFileReady file Nothing ->
+            let
+                capsule =
+                    preparationModel.details.capsule
+
+                details =
+                    preparationModel.details
+
+                newCapsule =
+                    { capsule | uploaded = Api.Running }
+
+                newDetails =
+                    { details | capsule = newCapsule }
+            in
             if File.mime file == "application/pdf" then
                 ( { uploadForm | file = Just file, activeSlideId = Nothing, askForPage = True, page = Just 1 }
                 , Cmd.none
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
             else if String.startsWith "image/" (File.mime file) then
                 ( { uploadForm | file = Just file, activeSlideId = Nothing }
                 , Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file Nothing
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
             else
                 ( uploadForm
                 , Cmd.none
-                , preparationModel
+                , { preparationModel | details = newDetails }
                 )
 
         Preparation.UploadExtraResourceSuccess slide ->
@@ -552,10 +578,16 @@ updateUploadExtraResource msg uploadForm preparationModel =
 
                 details =
                     preparationModel.details
+
+                capsule =
+                    preparationModel.details.capsule
+
+                newCapsule =
+                    { capsule | uploaded = Api.Done }
             in
             ( { uploadForm | status = Status.NotSent, activeSlideId = Nothing, page = Nothing, askForPage = False, file = Nothing }
             , Cmd.none
-            , Preparation.init { details | slides = newSlides, structure = newStructure }
+            , Preparation.init { details | slides = newSlides, structure = newStructure, capsule = newCapsule }
             )
 
         Preparation.UploadExtraResourceError ->

@@ -48,6 +48,7 @@ table! {
         edition_options -> Json,
         active -> Bool,
         edited -> Task_status,
+        uploaded -> Task_status,
     }
 }
 
