@@ -95,7 +95,7 @@ mainView global _ model =
                     ]
                 ]
     in
-    case ( model.broken, model.editPrompt.visible, model.uploadForms.extraResource.askForPage ) of
+    case ( model.broken, ( model.editPrompt.visible, model.details.capsule.uploaded ), model.uploadForms.extraResource.askForPage ) of
         ( Preparation.Broken _, _, _ ) ->
             let
                 reject =
@@ -120,7 +120,7 @@ mainView global _ model =
             in
             ( resultView, Just element )
 
-        ( _, True, _ ) ->
+        ( _, ( True, _ ), _ ) ->
             let
                 cancel =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptCloseDialog)))
@@ -143,6 +143,24 @@ mainView global _ model =
                                 [ promptModal
                                 , Element.row [ Element.alignRight, Element.spacing 10 ]
                                     [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
+                                ]
+                            )
+                        )
+            in
+            ( resultView, Just element )
+
+        ( _, ( _, Api.Running ), _ ) ->
+            let
+                element =
+                    Ui.popup "ATTENTION"
+                        (Element.el
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
+                                [ Element.el [ Element.height Element.fill ] Element.none
+                                , Element.paragraph [] [ Element.text "Téléchargement et transcodage de la vidéo en cours" ]
+                                , Ui.spinner
+                                , Element.paragraph [] [ Element.text "Merci de patienter un peu " ]
+                                , Element.el [ Element.height Element.fill ] Element.none
                                 ]
                             )
                         )
@@ -591,26 +609,6 @@ genericDesignSlideView _ options model offset localIndex s =
                         LoggedIn.PreparationMsg <|
                             Preparation.SlideDelete gosIndex slide.id
 
-                upload =
-                    case model.uploadForms.extraResource.activeSlideId of
-                        Just id ->
-                            if id == slide.id then
-                                case model.details.capsule.uploaded of
-                                    Api.Running ->
-                                        Element.column []
-                                            [ Ui.spinner
-                                            , Element.text "Importation en cours"
-                                            ]
-
-                                    _ ->
-                                        Element.none
-
-                            else
-                                Element.none
-
-                        _ ->
-                            Element.none
-
                 inFront =
                     Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
                         [ case deleteExtraMsg of
@@ -621,7 +619,6 @@ genericDesignSlideView _ options model offset localIndex s =
                                 Ui.timesButton (Just msg) "" "Supprimer la ressource externe"
                         , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
                         , Ui.trashButton (Just deleteMsg) "" "Supprimer le slide"
-                        , upload
                         ]
             in
             Element.el
