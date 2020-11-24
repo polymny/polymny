@@ -149,24 +149,6 @@ mainView global _ model =
             in
             ( resultView, Just element )
 
-        ( _, ( _, Api.Running ), _ ) ->
-            let
-                element =
-                    Ui.popup "ATTENTION"
-                        (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
-                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
-                                [ Element.el [ Element.height Element.fill ] Element.none
-                                , Element.paragraph [] [ Element.text "Téléchargement et transcodage de la vidéo en cours" ]
-                                , Ui.spinner
-                                , Element.paragraph [] [ Element.text "Merci de patienter un peu " ]
-                                , Element.el [ Element.height Element.fill ] Element.none
-                                ]
-                            )
-                        )
-            in
-            ( resultView, Just element )
-
         ( _, _, True ) ->
             let
                 cancelMsg =
@@ -251,6 +233,24 @@ mainView global _ model =
                                         ]
                                 )
                             ]
+                        )
+            in
+            ( resultView, Just element )
+
+        ( _, ( _, Api.Running ), _ ) ->
+            let
+                element =
+                    Ui.popup "ATTENTION"
+                        (Element.el
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
+                                [ Element.el [ Element.height Element.fill ] Element.none
+                                , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
+                                , Ui.spinner
+                                , Element.paragraph [] [ Element.text "Merci de patienter un peu." ]
+                                , Element.el [ Element.height Element.fill ] Element.none
+                                ]
+                            )
                         )
             in
             ( resultView, Just element )
