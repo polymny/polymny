@@ -94,6 +94,9 @@ pub struct Capsule {
 
     /// Whether the capsule video is edited.
     pub edited: TaskStatus,
+
+    /// Whether a resource is uploaded.
+    pub uploaded: TaskStatus,
 }
 
 /// The capsule with the video as an asset.
@@ -156,6 +159,9 @@ pub struct CapsuleWithVideo {
 
     /// Whether the capsule is active or not.
     pub active: bool,
+
+    /// Whether a resource is uploaded.
+    pub uploaded: TaskStatus,
 }
 
 /// The structure of a gos.
@@ -236,6 +242,9 @@ pub struct NewCapsule {
     /// Whether the capsule video is published.
     pub published: TaskStatus,
 
+    /// Whether a resource is uploaded.
+    pub uploaded: TaskStatus,
+
     /// The structure of the editions options.
     pub edition_options: Option<Json>,
 
@@ -291,6 +300,7 @@ impl Capsule {
             structure: json!([]),
             edited: TaskStatus::Idle,
             published: TaskStatus::Idle,
+            uploaded: TaskStatus::Idle,
             edition_options: Some(json!([])),
             active: false,
         }
@@ -330,6 +340,7 @@ impl Capsule {
             structure: json!([]),
             edited: TaskStatus::Idle,
             published: TaskStatus::Idle,
+            uploaded: TaskStatus::Idle,
             edition_options: None,
             active: false,
         })
@@ -350,6 +361,7 @@ impl Capsule {
             structure: self.structure.clone(),
             edited: self.edited,
             published: self.published,
+            uploaded: self.uploaded,
             edition_options: self.edition_options.clone(),
             active: self.active,
         })

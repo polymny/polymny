@@ -1201,6 +1201,17 @@ pub fn capsule_edition(
     format_capsule_data(&db, &capsule)
 }
 
+#[allow(missing_docs)]
+pub enum TaskType {
+    /// Edition task.
+    Edition,
+
+    /// Publicartion task.
+    Publication,
+
+    /// Upload task
+    Upload,
+}
 /// A struct that sets correctly the flag of a task status.
 pub struct TaskStatusReset<'a> {
     /// The id of the capsule to reset
@@ -1212,13 +1223,13 @@ pub struct TaskStatusReset<'a> {
     /// The database connection.
     pub db: &'a Database,
 
-    /// Whether the task is the edition task or the publication task.
-    edition: bool,
+    /// Task type
+    task_type: TaskType,
 }
 
 impl<'a> TaskStatusReset<'a> {
     /// Creates a new task status and sets the flag to running.
-    fn new(db: &'a Database, capsule_id: i32, edition: bool) -> Result<TaskStatusReset> {
+    fn new(db: &'a Database, capsule_id: i32, task_type: TaskType) -> Result<TaskStatusReset> {
         // Set the flag to running
         let reset = TaskStatusReset {
             capsule_id,
@@ -1226,7 +1237,7 @@ impl<'a> TaskStatusReset<'a> {
             // idle.
             value: TaskStatus::Idle,
             db,
-            edition,
+            task_type,
         };
 
         reset.set(TaskStatus::Running)?;
@@ -1236,28 +1247,36 @@ impl<'a> TaskStatusReset<'a> {
 
     /// Creates a new edition task status reset, and sets the flag to running.
     pub fn edition(db: &'a Database, capsule_id: i32) -> Result<TaskStatusReset> {
-        TaskStatusReset::new(db, capsule_id, true)
+        TaskStatusReset::new(db, capsule_id, TaskType::Edition)
     }
 
     /// Creates a new publication task status reset, and sets the flag to running.
     pub fn publication(db: &'a Database, capsule_id: i32) -> Result<TaskStatusReset> {
-        TaskStatusReset::new(db, capsule_id, false)
+        TaskStatusReset::new(db, capsule_id, TaskType::Publication)
+    }
+
+    /// Creates a new upload task status reset, and sets the flag to running.
+    pub fn upload(db: &'a Database, capsule_id: i32) -> Result<TaskStatusReset> {
+        TaskStatusReset::new(db, capsule_id, TaskType::Upload)
     }
 
     /// Sets the flag.
     fn set(&self, value: TaskStatus) -> Result<()> {
         use crate::schema::capsules::dsl;
-        if self.edition {
-            diesel::update(capsules::table)
+        match self.task_type {
+            TaskType::Edition => diesel::update(capsules::table)
                 .filter(dsl::id.eq(self.capsule_id))
                 .set(dsl::edited.eq(value))
-                .execute(&self.db.0)?;
-        } else {
-            diesel::update(capsules::table)
+                .execute(&self.db.0)?,
+            TaskType::Publication => diesel::update(capsules::table)
                 .filter(dsl::id.eq(self.capsule_id))
                 .set(dsl::published.eq(value))
-                .execute(&self.db.0)?;
-        }
+                .execute(&self.db.0)?,
+            TaskType::Upload => diesel::update(capsules::table)
+                .filter(dsl::id.eq(self.capsule_id))
+                .set(dsl::uploaded.eq(value))
+                .execute(&self.db.0)?,
+        };
         Ok(())
     }
 
