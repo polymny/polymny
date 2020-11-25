@@ -579,7 +579,7 @@ updateUploadExtraResource msg uploadForm preparationModel =
 
             else if String.startsWith "image/" (File.mime file) then
                 ( { uploadForm | file = Just file, activeSlideId = Nothing }
-                , Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file Nothing gos
+                , Api.insertSlide resultToMsg6 preparationModel.details.capsule.id file gos Nothing
                 , { preparationModel | details = newDetails }
                 )
 
