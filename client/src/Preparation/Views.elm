@@ -46,7 +46,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
             Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
 
         newSlideMsg =
-            Preparation.UploadExtraResourceSelectFileRequested Nothing
+            Preparation.UploadExtraResourceSelectFileRequested Nothing Nothing
                 |> Preparation.UploadExtraResourceMsg
                 |> LoggedIn.PreparationMsg
                 |> Core.LoggedInMsg
@@ -92,7 +92,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                 ]
     in
     case ( broken, editPrompt.visible, uploadForms.extraResource.askForPage ) of
-        ( Preparation.Broken _, _, _ ) ->
+        ( Preparation.Broken _ msg, _, _ ) ->
             let
                 reject =
                     Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
@@ -106,7 +106,7 @@ mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, u
                             [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
-                                , Element.paragraph [] [ Element.text "Ce déplacement va détruire certains de vos enregistrements." ]
+                                , Element.paragraph [] [ Element.text msg ]
                                 , Element.paragraph [] [ Element.text "Voulez-vous vraiment continuer ?" ]
                                 , Element.el [ Element.height Element.fill ] Element.none
                                 , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]
@@ -346,10 +346,10 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
             else
                 "gos-" ++ String.fromInt index
 
-        -- gosIndex : Int
-        -- gosIndex =
-        --     (index - 1) // 2
-        --
+        gosIndex : Int
+        gosIndex =
+            (index - 1) // 2
+
         -- dragAttributes : List (Element.Attribute Core.Msg)
         -- dragAttributes =
         --     if options == Drag && not (Preparation.isJustGosId gos) then
@@ -451,6 +451,24 @@ genericGosView global numberOfSlidesPerRow options gosModel slideModel offset in
                         ++ eventLessAttributes
                     )
                     slides
+                , Input.button
+                    [ Background.color Colors.grey
+                    , Element.height Element.fill
+                    , Element.padding 10
+                    , Element.htmlAttribute (Html.Attributes.title "Ajouter une nouvelle planche")
+                    ]
+                    { label =
+                        Element.el
+                            [ Element.centerY
+                            ]
+                            (Element.text "+")
+                    , onPress =
+                        Preparation.UploadExtraResourceSelectFileRequested Nothing (Just gosIndex)
+                            |> Preparation.UploadExtraResourceMsg
+                            |> LoggedIn.PreparationMsg
+                            |> Core.LoggedInMsg
+                            |> Just
+                    }
                 ]
 
 
@@ -570,7 +588,7 @@ genericDesignSlideView _ options slideModel offset localIndex s =
                     Core.LoggedInMsg <|
                         LoggedIn.PreparationMsg <|
                             Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id)
+                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id) Nothing
 
                 promptMsg : Core.Msg
                 promptMsg =
