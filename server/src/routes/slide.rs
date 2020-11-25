@@ -59,10 +59,11 @@ pub fn get_slide(db: Database, user: User, id: i32) -> Result<JsonValue> {
 }
 
 /// The route to upload a new slide.
-#[put("/new-slide/<id>/<page>", data = "<data>")]
+#[put("/new-slide/<id>/<gos>/<page>", data = "<data>")]
 pub fn new_slide(
     config: State<Config>,
     id: i32,
+    gos: i32,
     page: Option<i32>,
     content_type: &ContentType,
     db: Database,
@@ -162,23 +163,36 @@ pub fn new_slide(
 
     let capsule = user.get_capsule_by_id(id, &db)?;
     let mut structure = capsule.structure()?;
-    structure.insert(
-        0,
-        GosStructure {
-            slides: vec![slide.id],
-            transitions: vec![],
-            record_path: None,
-            background_path: None,
-            locked: false,
-            production_choices: None,
-        },
-    );
 
-    use crate::schema::capsules::dsl;
-    diesel::update(crate::schema::capsules::table)
-        .filter(dsl::id.eq(id))
-        .set(dsl::structure.eq(serde_json!(structure)))
-        .execute(&db.0)?;
+    println!("Received {}", gos);
+
+    if gos < 0 {
+        structure.insert(
+            0,
+            GosStructure {
+                slides: vec![slide.id],
+                transitions: vec![],
+                record_path: None,
+                background_path: None,
+                locked: false,
+                production_choices: None,
+            },
+        );
+        use crate::schema::capsules::dsl;
+        diesel::update(crate::schema::capsules::table)
+            .filter(dsl::id.eq(id))
+            .set(dsl::structure.eq(serde_json!(structure)))
+            .execute(&db.0)?;
+    } else {
+        if let Some(gos) = structure.get_mut(gos as usize) {
+            gos.slides.push(slide.id);
+        }
+        use crate::schema::capsules::dsl;
+        diesel::update(crate::schema::capsules::table)
+            .filter(dsl::id.eq(id))
+            .set(dsl::structure.eq(serde_json!(structure)))
+            .execute(&db.0)?;
+    }
 
     let capsule = user.get_capsule_by_id(id, &db)?;
     format_capsule_data(&db, &capsule)
