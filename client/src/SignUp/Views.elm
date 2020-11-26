@@ -32,8 +32,25 @@ view { username, password, passwordConfirmation, email, status } =
             else
                 Nothing
 
+        isEmailValid =
+            case String.split "@" email of
+                a :: b :: [] ->
+                    if not (String.isEmpty a) then
+                        case String.split "." b of
+                            a2 :: b2 :: c2 ->
+                                List.all (String.isEmpty >> not) (a2 :: b2 :: c2)
+
+                            _ ->
+                                False
+
+                    else
+                        False
+
+                _ ->
+                    False
+
         submitOnEnter =
-            case ( status, isUsernameValid ) of
+            case ( status, canSend ) of
                 ( Status.Sent, _ ) ->
                     []
 
@@ -43,36 +60,42 @@ view { username, password, passwordConfirmation, email, status } =
                 ( _, False ) ->
                     []
 
-                _ ->
+                ( _, True ) ->
                     [ Ui.onEnter SignUp.Submitted ]
 
         submitButton =
-            case status of
-                Status.Sent ->
+            case ( status, canSend ) of
+                ( Status.Sent, _ ) ->
                     Ui.primaryButtonDisabled "Inscription en cours ..."
 
-                Status.Success () ->
+                ( Status.Success (), _ ) ->
                     Ui.primaryButtonDisabled "Inscription terminée !"
 
-                _ ->
+                ( _, False ) ->
+                    Element.none
+
+                ( _, True ) ->
                     Ui.primaryButton submitIfUsernameValid "S'inscrire"
 
-        message =
-            case ( status, isUsernameValid, isPasswordValid ) of
-                ( Status.Success (), _, _ ) ->
-                    Just (Ui.successModal "Un email vous a été envoyé !")
+        ( message, canSend ) =
+            case ( ( status, isUsernameValid ), ( isEmailValid, isPasswordValid ) ) of
+                ( ( Status.Success (), _ ), ( _, _ ) ) ->
+                    ( Just (Ui.successModal "Un email vous a été envoyé !"), False )
 
-                ( Status.Error m, _, _ ) ->
-                    Just (Ui.errorModal m)
+                ( ( Status.Error m, _ ), ( _, _ ) ) ->
+                    ( Just (Ui.errorModal m), True )
 
-                ( _, False, _ ) ->
-                    Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres, chiffres, points, tirets et traits et doit faire plus de 3 caractères")
+                ( ( _, False ), ( _, _ ) ) ->
+                    ( Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres, chiffres, points, tirets et traits et doit faire plus de 3 caractères"), False )
 
-                ( _, _, False ) ->
-                    Just (Ui.errorModal "Les deux mots de passe ne correspondent pas")
+                ( ( _, _ ), ( False, _ ) ) ->
+                    ( Just (Ui.errorModal "Votre adresse e-mail n'est pas correcte"), False )
+
+                ( ( _, _ ), ( _, False ) ) ->
+                    ( Just (Ui.errorModal "Les deux mots de passe ne correspondent pas"), False )
 
                 _ ->
-                    Nothing
+                    ( Nothing, True )
 
         header =
             Element.row [ Element.centerX ] [ Element.text "S'inscrire" ]
