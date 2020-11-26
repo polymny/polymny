@@ -342,6 +342,12 @@ topBar global model =
                 _ ->
                     0
 
+        question =
+            Element.newTabLink []
+                { label = Icons.questionCircle
+                , url = "https://github.com/polymny/polymny/wiki/Tutoriels--de-polymny.studio"
+                }
+
         unreadNotificationsInFront =
             let
                 size =
@@ -431,7 +437,8 @@ topBar global model =
         row =
             case model of
                 Core.LoggedIn { session } ->
-                    [ notificationIcon
+                    [ question
+                    , notificationIcon
                     , settingsButton session.username
                     , logoutButton
                     ]
