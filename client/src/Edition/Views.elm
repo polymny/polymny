@@ -362,7 +362,14 @@ bottomRow global model =
                             { url = x.asset_path
                             , label = Element.text "Voir la vidéo"
                             }
-                        , Ui.downloadButton x.asset_path "Télécharger la vidéo"
+                        , Element.download
+                            [ Font.color Colors.link
+                            , Border.color Colors.link
+                            , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                            ]
+                            { url = x.asset_path
+                            , label = Element.text "Télécharger la vidéo"
+                            }
                         ]
 
                 Nothing ->
