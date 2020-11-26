@@ -8,6 +8,7 @@ module Ui.Icons exposing
     , chain
     , clear
     , closeLock
+    , download
     , edit
     , font
     , image
@@ -121,6 +122,11 @@ times =
 bell : Element msg
 bell =
     buttonFromIcon FontAwesome.bell
+
+
+download : Element msg
+download =
+    buttonFromIcon FontAwesome.download
 
 
 spinner : Element msg

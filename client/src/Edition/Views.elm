@@ -353,14 +353,17 @@ bottomRow global model =
         video =
             case model.details.capsule.video of
                 Just x ->
-                    Element.newTabLink
-                        [ Font.color Colors.link
-                        , Border.color Colors.link
-                        , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                    Element.row [ Element.spacing 5 ]
+                        [ Element.newTabLink
+                            [ Font.color Colors.link
+                            , Border.color Colors.link
+                            , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
+                            ]
+                            { url = x.asset_path
+                            , label = Element.text "Voir la vidéo"
+                            }
+                        , Ui.downloadButton x.asset_path "Télécharger la vidéo"
                         ]
-                        { url = x.asset_path
-                        , label = Element.text "Voir la vidéo"
-                        }
 
                 Nothing ->
                     Element.text "Pas de vidéo éditée pour l'instant"

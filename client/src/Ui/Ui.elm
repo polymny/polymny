@@ -9,6 +9,7 @@ module Ui.Ui exposing
     , chainButton
     , clearButton
     , closeLockButton
+    , downloadButton
     , editButton
     , errorModal
     , fontButton
@@ -265,6 +266,24 @@ iconButton icon onPress content tooltip =
     Input.button iconAttributes
         { onPress = onPress
         , label = Element.row [] [ icon, contentElement ]
+        }
+
+
+downloadButton : String -> String -> Element msg
+downloadButton url tooltip =
+    let
+        iconAttributes =
+            [ Font.color Colors.primary
+            , Background.color Colors.grey
+            , Border.color Colors.primary
+            , Element.padding 5
+            , Border.rounded 5
+            , Element.htmlAttribute (Html.Attributes.title tooltip)
+            ]
+    in
+    Element.download iconAttributes
+        { url = url
+        , label = Icons.download
         }
 
 
