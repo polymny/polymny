@@ -522,11 +522,16 @@ bottomBarDefault global =
                     { url = "mailto:contacter@polymny.studio"
                     , label = Element.text "contacter@polymny.studio"
                     }
-                , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
+                , Ui.linkButton (Just Core.AboutClicked) "A propos"
                 , Element.link
                     Ui.linkAttributes
-                    { url = "https://github.com/polymny/polymny/wiki/Protection-des-donn%C3%A9es"
+                    { url = global.home ++ "/protection-des-donnees/"
                     , label = Element.text "Données personnelles"
+                    }
+                , Element.link
+                    Ui.linkAttributes
+                    { url = global.home ++ "/cgu/"
+                    , label = Element.text "Conditions d'utilisation"
                     }
                 ]
             , Element.row [ Element.alignRight, Element.spacing 5 ]
@@ -578,8 +583,13 @@ bottomBarPhone global =
                 ]
             , Element.link
                 Ui.linkAttributes
-                { url = "https://polymny.studio/protection-des-donnees/"
-                , label = Element.el [ Font.bold ] <| Element.text "Données personnelles"
+                { url = global.home ++ "/protection-des-donnees/"
+                , label = Element.text "Données personnelles"
+                }
+            , Element.link
+                Ui.linkAttributes
+                { url = global.home ++ "/cgu/"
+                , label = Element.text "Conditions d'utilisation"
                 }
             , Element.paragraph []
                 [ Element.text
