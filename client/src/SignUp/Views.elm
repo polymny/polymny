@@ -86,7 +86,7 @@ view { username, password, passwordConfirmation, email, status } =
                     ( Just (Ui.errorModal m), True )
 
                 ( ( _, False ), ( _, _ ) ) ->
-                    ( Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres, chiffres, points, tirets et traits et doit faire plus de 3 caractères"), False )
+                    ( Just (Ui.errorModal "Votre nom d'utilisateur ne doit contenir que des lettres non accentuées, chiffres, points, tirets et traits et doit faire plus de 3 caractères"), False )
 
                 ( ( _, _ ), ( False, _ ) ) ->
                     ( Just (Ui.errorModal "Votre adresse e-mail n'est pas correcte"), False )
