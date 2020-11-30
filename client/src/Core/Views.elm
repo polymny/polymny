@@ -342,6 +342,12 @@ topBar global model =
                 _ ->
                     0
 
+        question =
+            Element.newTabLink []
+                { label = Icons.questionCircle
+                , url = "https://github.com/polymny/polymny/wiki/Tutoriels--de-polymny.studio"
+                }
+
         unreadNotificationsInFront =
             let
                 size =
@@ -431,7 +437,8 @@ topBar global model =
         row =
             case model of
                 Core.LoggedIn { session } ->
-                    [ notificationIcon
+                    [ question
+                    , notificationIcon
                     , settingsButton session.username
                     , logoutButton
                     ]
@@ -532,6 +539,11 @@ bottomBarDefault global =
                     , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
                     }
                 , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
+                , Element.link
+                    []
+                    { url = "https://github.com/polymny/polymny/wiki/Protection-des-donn%C3%A9es"
+                    , label = Element.el [ Font.bold ] <| Element.text "Données personnelles"
+                    }
                 ]
             , Element.row [ Element.alignRight, Element.spacing 5 ]
                 [ Element.link
@@ -581,6 +593,11 @@ bottomBarPhone global =
                     , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
                     }
                 ]
+            , Element.link
+                []
+                { url = "https://github.com/polymny/polymny/wiki/Protection-des-donn%C3%A9es"
+                , label = Element.el [ Font.bold ] <| Element.text "Données personnelles"
+                }
             , Element.paragraph []
                 [ Element.text
                     ("Polymny"

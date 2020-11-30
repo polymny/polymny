@@ -804,10 +804,10 @@ slideDeleteExtraResource resultToMsg id =
         }
 
 
-insertSlide : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Maybe Int -> Cmd msg
-insertSlide resultToMsg capsuleId file page =
+insertSlide : (Result Http.Error CapsuleDetails -> msg) -> Int -> File.File -> Maybe Int -> Maybe Int -> Cmd msg
+insertSlide resultToMsg capsuleId file gos page =
     put
-        { url = "/api/new-slide/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt (Maybe.withDefault 0 page)
+        { url = "/api/new-slide/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt (Maybe.withDefault -1 gos) ++ "/" ++ String.fromInt (Maybe.withDefault 0 page)
         , expect = Http.expectJson resultToMsg decodeCapsuleDetails
         , body = Http.multipartBody [ Http.filePart "file" file ]
         }

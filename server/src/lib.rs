@@ -296,6 +296,7 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::project_json,
                 routes::settings_html,
                 routes::settings_json,
+                routes::auth::login_and_redirect,
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,

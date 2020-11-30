@@ -724,20 +724,25 @@ capsuleProgressIconsView global capsule =
         videoUrl asset =
             global.videoRoot ++ "/?v=" ++ asset.uuid ++ "/"
 
+        downloadButton v =
+            Ui.downloadButton v.asset_path "Télécharger la vidéo"
+
         icons =
-            case ( capsule.video, capsule.published ) of
-                ( Just v, Api.Done ) ->
+            case ( capsule.video, capsule.edited, capsule.published ) of
+                ( Just v, Api.Done, Api.Done ) ->
                     [ Element.newTabLink []
                         { url = videoUrl v, label = Ui.movieButton Nothing "" "Voir la vidéo" }
+                    , downloadButton v
                     , Ui.chainButton
                         (Just (Core.CopyUrl (videoUrl v)))
                         ""
                         "Copier l'url"
                     ]
 
-                ( Just v, _ ) ->
+                ( Just v, Api.Done, _ ) ->
                     [ Element.newTabLink []
                         { url = v.asset_path, label = Ui.movieButton Nothing "" "Voir la vidéo" }
+                    , downloadButton v
                     ]
 
                 _ ->

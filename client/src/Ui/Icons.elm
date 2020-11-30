@@ -8,6 +8,7 @@ module Ui.Icons exposing
     , chain
     , clear
     , closeLock
+    , download
     , edit
     , font
     , image
@@ -15,6 +16,7 @@ module Ui.Icons exposing
     , movie
     , openLock
     , pen
+    , questionCircle
     , spinner
     , startRecord
     , stopRecord
@@ -121,6 +123,16 @@ times =
 bell : Element msg
 bell =
     buttonFromIcon FontAwesome.bell
+
+
+download : Element msg
+download =
+    buttonFromIcon FontAwesome.download
+
+
+questionCircle : Element msg
+questionCircle =
+    buttonFromIcon FontAwesome.questionCircle
 
 
 spinner : Element msg

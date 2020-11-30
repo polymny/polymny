@@ -32,6 +32,7 @@ type alias Global =
     { zone : Time.Zone
     , beta : Bool
     , mattingEnabled : Bool
+    , home : String
     , socketRoot : String
     , videoRoot : String
     , version : String

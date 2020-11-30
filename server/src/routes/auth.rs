@@ -1,8 +1,10 @@
 //! This module contains all the routes related to login.
 
+use std::borrow::Cow;
 use std::io::Cursor;
 
 use rocket::http::{ContentType, Cookie, Cookies};
+use rocket::request::Form;
 use rocket::response::{Redirect, Response};
 use rocket::State;
 
@@ -14,6 +16,16 @@ use crate::db::user::User;
 use crate::templates::index_html;
 use crate::webcam::{webcam_position_to_str, webcam_size_to_str};
 use crate::{Database, Error, Result};
+
+/// Creates an authentication cookie.
+fn cookie(value: &str, config: &Config) -> Cookie<'static> {
+    let v = Cow::into_owned(value.into());
+    let mut cookie = Cookie::new("EXAUTH", v);
+    if let Some(domain) = config.cookie_domain.as_ref() {
+        cookie.set_domain(Cow::into_owned(domain.into()));
+    }
+    cookie
+}
 
 /// A struct that serves the purpose of veryifing the form.
 #[derive(Deserialize)]
@@ -45,15 +57,20 @@ pub fn new_user(db: Database, config: State<Config>, user: Json<NewUserForm>) ->
 
 /// The route to active a user.
 #[get("/activate/<key>")]
-pub fn activate(db: Database, key: String, mut cookies: Cookies) -> Result<Redirect> {
+pub fn activate(
+    db: Database,
+    key: String,
+    mut cookies: Cookies,
+    config: State<Config>,
+) -> Result<Redirect> {
     let user = User::activate(&key, &db)?;
     let session = user.save_session(&db)?;
-    cookies.add_private(Cookie::new("EXAUTH", session.secret));
+    cookies.add_private(cookie(&session.secret, &config));
     Ok(Redirect::to("/"))
 }
 
 /// A struct that serves for form veryfing.
-#[derive(Deserialize)]
+#[derive(Deserialize, FromForm)]
 pub struct LoginForm {
     /// The username in the form.
     username: String,
@@ -64,12 +81,31 @@ pub struct LoginForm {
 
 /// The login page.
 #[post("/login", data = "<login>")]
-pub fn login(db: Database, mut cookies: Cookies, login: Json<LoginForm>) -> Result<JsonValue> {
+pub fn login_and_redirect(
+    db: Database,
+    mut cookies: Cookies,
+    login: Form<LoginForm>,
+    config: State<Config>,
+) -> Result<Redirect> {
+    let user = User::authenticate(&login.username, &login.password, &db)?;
+    let session = user.save_session(&db)?;
+    cookies.add_private(cookie(&session.secret, &config.inner()));
+    Ok(Redirect::to("/"))
+}
+
+/// The login page.
+#[post("/login", data = "<login>")]
+pub fn login(
+    db: Database,
+    mut cookies: Cookies,
+    login: Json<LoginForm>,
+    config: State<Config>,
+) -> Result<JsonValue> {
     let user = User::authenticate(&login.username, &login.password, &db)?;
     let session = user.save_session(&db)?;
 
     let edition_options = user.get_edition_options()?;
-    cookies.add_private(Cookie::new("EXAUTH", session.secret.clone()));
+    cookies.add_private(cookie(&session.secret, &config));
 
     Ok(json!({"username": user.username,
         "page": "home",
@@ -99,11 +135,15 @@ pub fn session(db: Database, user: User) -> Result<JsonValue> {
 
 /// The logout page.
 #[post("/logout")]
-pub fn logout(db: Database, mut cookies: Cookies) -> Result<()> {
-    let cookie = cookies.get_private("EXAUTH");
-    if let Some(cookie) = cookie {
-        Session::delete_from_secret(cookie.value(), &db)?;
+pub fn logout(db: Database, mut cookies: Cookies, config: State<Config>) -> Result<()> {
+    {
+        let cookie = cookies.get_private("EXAUTH");
+        if let Some(cookie) = cookie {
+            Session::delete_from_secret(cookie.value(), &db)?;
+        }
     }
+    let cookie = cookie("EXAUTH", &config);
+    cookies.remove_private(cookie);
     Ok(())
 }
 
@@ -164,6 +204,7 @@ pub fn change_password(
     db: Database,
     form: Json<ChangePasswordForm>,
     mut cookies: Cookies,
+    config: State<Config>,
 ) -> Result<JsonValue> {
     let user = match (&form.username_and_old_password, &form.key) {
         (None, None) => return Err(Error::NotFound),
@@ -177,7 +218,7 @@ pub fn change_password(
 
     let session = user.save_session(&db)?;
     let edition_options = user.get_edition_options()?;
-    cookies.add_private(Cookie::new("EXAUTH", session.secret.clone()));
+    cookies.add_private(cookie(&session.secret, &config));
     let notifications = user.notifications(&db).unwrap();
 
     Ok(json!({"username": user.username,

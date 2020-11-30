@@ -56,7 +56,7 @@ update msg { global, model } =
                     ( Core.FullModel global (Core.homeLogin Login.init), Cmd.none )
 
                 ( Core.LogoutClicked, _ ) ->
-                    ( Core.FullModel global Core.home, Api.logOut (\_ -> Core.Noop) )
+                    ( Core.FullModel global model, Api.logOut (\_ -> Core.UrlRequested (Browser.External global.home)) )
 
                 ( Core.SignUpClicked, _ ) ->
                     ( Core.FullModel global (Core.homeSignUp SignUp.init), Cmd.none )
