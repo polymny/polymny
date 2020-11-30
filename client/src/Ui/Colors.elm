@@ -1,42 +1,11 @@
-module Ui.Colors exposing
-    ( artEvening
-    , artIrises
-    , artStarryNight
-    , artSunFlowers
-    , black
-    , brandeisBlue
-    , brightGreen
-    , danger
-    , dangerDark
-    , dangerLight
-    , grey
-    , greyDark
-    , greyLight
-    , link
-    , menthol
-    , primary
-    , primaryDark
-    , primaryLight
-    , purpleHeart
-    , purplePlum
-    , success
-    , successDark
-    , successLight
-    , vividCerulean
-    , warning
-    , warningDark
-    , warningLight
-    , white
-    , whiteDark
-    , whiteDarker
-    )
+module Ui.Colors exposing (..)
 
 import Element
 import SolidColor exposing (SolidColor)
 
 
-colorToUi : SolidColor -> Element.Color
-colorToUi color =
+toUi : SolidColor -> Element.Color
+toUi color =
     let
         ( r, g, b ) =
             SolidColor.toRGB color
@@ -44,319 +13,161 @@ colorToUi color =
     Element.rgb255 (floor r) (floor g) (floor b)
 
 
-greyValue : Float
-greyValue =
-    175
-
-
-greyColor : SolidColor
-greyColor =
-    SolidColor.fromRGB ( greyValue, greyValue, greyValue )
-
-
-whiteColor : SolidColor
-whiteColor =
-    SolidColor.fromRGB ( 255, 255, 255 )
-
-
-blackColor : SolidColor
-blackColor =
-    SolidColor.fromRGB ( 0, 0, 0 )
-
-
-primaryColor : SolidColor
-primaryColor =
-    irisesColor
-
-
-successColor : SolidColor
-successColor =
-    SolidColor.fromRGB ( 40, 167, 69 )
-
-
-warningColor : SolidColor
-warningColor =
-    SolidColor.fromRGB ( 255, 221, 87 )
-
-
-dangerColor : SolidColor
-dangerColor =
-    SolidColor.fromRGB ( 241, 70, 104 )
-
-
-lightParameter : Float
-lightParameter =
-    30
-
-
-primaryLightColor : SolidColor
-primaryLightColor =
-    SolidColor.addLightness lightParameter primaryColor
-
-
-successLightColor : SolidColor
-successLightColor =
-    SolidColor.addLightness lightParameter successColor
-
-
-warningLightColor : SolidColor
-warningLightColor =
-    SolidColor.addLightness lightParameter warningColor
-
-
-dangerLightColor : SolidColor
-dangerLightColor =
-    SolidColor.addLightness lightParameter dangerColor
-
-
-greyLightColor : SolidColor
-greyLightColor =
-    SolidColor.addLightness lightParameter greyColor
-
-
-darkParameter : Float
-darkParameter =
-    -30
-
-
-primaryDarkColor : SolidColor
-primaryDarkColor =
-    SolidColor.addLightness darkParameter primaryColor
-
-
-successDarkColor : SolidColor
-successDarkColor =
-    SolidColor.addLightness darkParameter successColor
-
-
-warningDarkColor : SolidColor
-warningDarkColor =
-    SolidColor.addLightness darkParameter warningColor
-
-
-dangerDarkColor : SolidColor
-dangerDarkColor =
-    SolidColor.addLightness darkParameter dangerColor
-
-
-greyDarkColor : SolidColor
-greyDarkColor =
-    SolidColor.addLightness darkParameter greyColor
-
-
-whiteDarkColor : SolidColor
-whiteDarkColor =
-    SolidColor.fromRGB ( 250, 251, 252 )
-
-
-whiteDarkerColor : SolidColor
-whiteDarkerColor =
-    SolidColor.fromRGB ( 234, 236, 239 )
-
-
-grey : Element.Color
-grey =
-    colorToUi greyColor
-
-
-greyLight : Element.Color
-greyLight =
-    colorToUi greyLightColor
-
-
-greyDark : Element.Color
-greyDark =
-    colorToUi greyDarkColor
+navbar : Element.Color
+navbar =
+    SolidColor.fromRGB ( 72, 199, 116 ) |> toUi
 
 
 white : Element.Color
 white =
-    colorToUi whiteColor
-
-
-whiteDark : Element.Color
-whiteDark =
-    colorToUi whiteDarkColor
-
-
-whiteDarker : Element.Color
-whiteDarker =
-    colorToUi whiteDarkerColor
+    SolidColor.fromHSL ( 0, 0, 100 ) |> toUi
 
 
 black : Element.Color
 black =
-    colorToUi blackColor
+    SolidColor.fromHSL ( 0, 0, 4 ) |> toUi
+
+
+light : Element.Color
+light =
+    SolidColor.fromHSL ( 0, 0, 96 ) |> toUi
+
+
+dark : Element.Color
+dark =
+    SolidColor.fromHSL ( 0, 0, 21 ) |> toUi
 
 
 primary : Element.Color
 primary =
-    colorToUi primaryColor
-
-
-success : Element.Color
-success =
-    colorToUi successColor
-
-
-warning : Element.Color
-warning =
-    colorToUi warningColor
-
-
-danger : Element.Color
-danger =
-    colorToUi dangerColor
-
-
-primaryLight : Element.Color
-primaryLight =
-    colorToUi primaryLightColor
-
-
-successLight : Element.Color
-successLight =
-    colorToUi successLightColor
-
-
-warningLight : Element.Color
-warningLight =
-    colorToUi warningLightColor
-
-
-dangerLight : Element.Color
-dangerLight =
-    colorToUi dangerLightColor
-
-
-primaryDark : Element.Color
-primaryDark =
-    colorToUi primaryDarkColor
-
-
-successDark : Element.Color
-successDark =
-    colorToUi successDarkColor
-
-
-warningDark : Element.Color
-warningDark =
-    colorToUi warningDarkColor
-
-
-dangerDark : Element.Color
-dangerDark =
-    colorToUi dangerDarkColor
+    SolidColor.fromHSL ( 171, 100, 41 ) |> toUi
 
 
 link : Element.Color
 link =
-    Element.rgb255 0 0 255
+    SolidColor.fromHSL ( 217, 71, 53 ) |> toUi
 
 
-
--- Try palette : https://www.schemecolor.com/bright-blue-green-and-purple.php
-
-
-brandeisBlueColor : SolidColor
-brandeisBlueColor =
-    SolidColor.fromRGB ( 0, 99, 255 )
+info : Element.Color
+info =
+    SolidColor.fromHSL ( 204, 86, 53 ) |> toUi
 
 
-brandeisBlue : Element.Color
-brandeisBlue =
-    colorToUi brandeisBlueColor
+success : Element.Color
+success =
+    SolidColor.fromHSL ( 141, 71, 48 ) |> toUi
 
 
-vividCeruleanColor : SolidColor
-vividCeruleanColor =
-    SolidColor.fromRGB ( 0, 164, 255 )
+warning : Element.Color
+warning =
+    SolidColor.fromHSL ( 48, 100, 67 ) |> toUi
 
 
-vividCerulean : Element.Color
-vividCerulean =
-    colorToUi vividCeruleanColor
+danger : Element.Color
+danger =
+    SolidColor.fromHSL ( 348, 100, 61 ) |> toUi
 
 
-mentholColor : SolidColor
-mentholColor =
-    SolidColor.fromRGB ( 176, 255, 151 )
+blackBis : Element.Color
+blackBis =
+    SolidColor.fromHSL ( 0, 0, 7 ) |> toUi
 
 
-menthol : Element.Color
-menthol =
-    colorToUi mentholColor
+blackTer : Element.Color
+blackTer =
+    SolidColor.fromHSL ( 0, 0, 14 ) |> toUi
 
 
-brightGreenColor : SolidColor
-brightGreenColor =
-    SolidColor.fromRGB ( 99, 252, 1 )
+greyDarker : Element.Color
+greyDarker =
+    SolidColor.fromHSL ( 0, 0, 21 ) |> toUi
 
 
-brightGreen : Element.Color
-brightGreen =
-    colorToUi brightGreenColor
+greyDark : Element.Color
+greyDark =
+    SolidColor.fromHSL ( 0, 0, 29 ) |> toUi
 
 
-purpleHeartColor : SolidColor
-purpleHeartColor =
-    SolidColor.fromRGB ( 104, 53, 155 )
+grey : Element.Color
+grey =
+    SolidColor.fromHSL ( 0, 0, 48 ) |> toUi
 
 
-purpleHeart : Element.Color
-purpleHeart =
-    colorToUi purpleHeartColor
+greyLight : Element.Color
+greyLight =
+    SolidColor.fromHSL ( 0, 0, 71 ) |> toUi
 
 
-purplePlumColor : SolidColor
-purplePlumColor =
-    SolidColor.fromRGB ( 153, 79, 179 )
+greyLighter : Element.Color
+greyLighter =
+    SolidColor.fromHSL ( 0, 0, 86 ) |> toUi
 
 
-purplePlum : Element.Color
-purplePlum =
-    colorToUi purplePlumColor
+whiteTer : Element.Color
+whiteTer =
+    SolidColor.fromHSL ( 0, 0, 96 ) |> toUi
 
 
-
--- Art history https://www.canva.com/learn/website-color-schemes/
-
-
-sunFlowersColor : SolidColor
-sunFlowersColor =
-    SolidColor.fromRGB ( 255, 204, 0 )
+whiteBis : Element.Color
+whiteBis =
+    SolidColor.fromHSL ( 0, 0, 98 ) |> toUi
 
 
-artSunFlowers : Element.Color
-artSunFlowers =
-    colorToUi sunFlowersColor
+primaryLight : Element.Color
+primaryLight =
+    SolidColor.fromHSL ( 171, 100, 96 ) |> toUi
 
 
-starryNightColor : SolidColor
-starryNightColor =
-    SolidColor.fromRGB ( 3, 118, 180 )
+linkLight : Element.Color
+linkLight =
+    SolidColor.fromHSL ( 219, 70, 96 ) |> toUi
 
 
-artStarryNight : Element.Color
-artStarryNight =
-    colorToUi starryNightColor
+infoLight : Element.Color
+infoLight =
+    SolidColor.fromHSL ( 206, 70, 96 ) |> toUi
 
 
-irisesColor : SolidColor
-irisesColor =
-    SolidColor.fromRGB ( 0, 120, 72 )
+successLight : Element.Color
+successLight =
+    SolidColor.fromHSL ( 142, 52, 96 ) |> toUi
 
 
-artIrises : Element.Color
-artIrises =
-    colorToUi irisesColor
+warningLight : Element.Color
+warningLight =
+    SolidColor.fromHSL ( 48, 100, 96 ) |> toUi
 
 
-eveningColor : SolidColor
-eveningColor =
-    SolidColor.fromRGB ( 38, 34, 40 )
+dangerLight : Element.Color
+dangerLight =
+    SolidColor.fromHSL ( 347, 90, 96 ) |> toUi
 
 
-artEvening : Element.Color
-artEvening =
-    colorToUi eveningColor
+primaryDark : Element.Color
+primaryDark =
+    SolidColor.fromHSL ( 171, 100, 29 ) |> toUi
+
+
+linkDark : Element.Color
+linkDark =
+    SolidColor.fromHSL ( 217, 71, 45 ) |> toUi
+
+
+infoDark : Element.Color
+infoDark =
+    SolidColor.fromHSL ( 204, 71, 39 ) |> toUi
+
+
+successDark : Element.Color
+successDark =
+    SolidColor.fromHSL ( 141, 53, 31 ) |> toUi
+
+
+warningDark : Element.Color
+warningDark =
+    SolidColor.fromHSL ( 48, 100, 29 ) |> toUi
+
+
+dangerDark : Element.Color
+dangerDark =
+    SolidColor.fromHSL ( 348, 86, 43 ) |> toUi

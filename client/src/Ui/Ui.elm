@@ -1,52 +1,4 @@
-module Ui.Ui exposing
-    ( addButton
-    , arrowCircleRightButton
-    , blink
-    , borderBottom
-    , cameraButton
-    , cancelButton
-    , centerElement
-    , chainButton
-    , clearButton
-    , closeLockButton
-    , downloadButton
-    , editButton
-    , errorModal
-    , fontButton
-    , homeButton
-    , imageButton
-    , linkAttributes
-    , linkButton
-    , mainViewAttributes1
-    , mainViewAttributes2
-    , menuPointButton
-    , menuTabAttributes
-    , messageWithSpinner
-    , movieButton
-    , onEnter
-    , onEnterEscape
-    , onEscape
-    , openLockButton
-    , penButton
-    , popup
-    , popupWithSize
-    , primaryButton
-    , primaryButtonDisabled
-    , primaryButtonWithTooltip
-    , simpleButton
-    , simpleButtonDisabled
-    , spinner
-    , startRecordButton
-    , stopRecordButton
-    , successButton
-    , successModal
-    , tabButton
-    , tabButtonActive
-    , textButton
-    , timesButton
-    , topBarButton
-    , trashButton
-    )
+module Ui.Ui exposing (..)
 
 import Element exposing (Element)
 import Element.Background as Background
@@ -62,9 +14,8 @@ import Ui.Icons as Icons
 
 linkAttributes : List (Element.Attribute msg)
 linkAttributes =
-    [ Border.widthEach { top = 0, left = 0, bottom = 1, right = 0 }
-    , Border.color (Element.rgba255 255 255 255 255)
-    , Element.mouseOver [ Border.color Colors.link, Font.color Colors.link ]
+    [ Font.color Colors.link
+    , Element.mouseOver [ Font.color Colors.dark ]
     ]
 
 
@@ -129,15 +80,95 @@ onEnterEscape msgEnter msgEscape =
 
 buttonAttributes : List (Element.Attribute msg)
 buttonAttributes =
-    [ Font.color Colors.white
-    , Element.centerX
+    [ Element.centerX
     , Element.padding 10
-    , Background.color Colors.primary
-    , Border.color Colors.white
-    , Border.rounded 5
-    , Border.width 1
-    , Font.color Colors.white
+    , Border.rounded 50
+    , Font.bold
     ]
+
+
+primaryButton : Maybe msg -> String -> Element msg
+primaryButton msg text =
+    Input.button
+        [ Border.rounded 50
+        , Background.color Colors.navbar
+        , Font.color Colors.white
+        , Font.bold
+        , Element.padding 10
+        , Element.mouseOver
+            [ Background.color Colors.success
+            ]
+        ]
+        { label = Element.text text
+        , onPress = msg
+        }
+
+
+simpleButton : Maybe msg -> String -> Element msg
+simpleButton msg text =
+    Input.button
+        [ Border.rounded 50
+        , Background.color Colors.white
+        , Font.color Colors.dark
+        , Element.padding 10
+        , Border.width 1
+        , Border.color Colors.whiteTer
+        , Font.bold
+        , Element.mouseOver
+            [ Background.color Colors.whiteBis
+            , Font.color Colors.link
+            ]
+        ]
+        { label = Element.text text
+        , onPress = msg
+        }
+
+
+primaryButtonWithTooltip : Maybe msg -> String -> String -> Element msg
+primaryButtonWithTooltip msg text tooltip =
+    Input.button
+        [ Border.rounded 50
+        , Background.color Colors.navbar
+        , Font.color Colors.white
+        , Font.bold
+        , Element.padding 10
+        , Element.htmlAttribute (Html.Attributes.title tooltip)
+        , Element.mouseOver
+            [ Background.color Colors.success
+            ]
+        ]
+        { label = Element.text text
+        , onPress = msg
+        }
+
+
+linkButton : Maybe msg -> String -> Element msg
+linkButton msg text =
+    Input.button
+        linkAttributes
+        { label = Element.text text
+        , onPress = msg
+        }
+
+
+topBarButton : Maybe msg -> String -> Element msg
+topBarButton msg text =
+    -- TODO
+    Input.button
+        [ Border.rounded 50
+        , Background.color Colors.white
+        , Font.color Colors.dark
+        , Element.padding 10
+        , Border.width 1
+        , Border.color Colors.whiteTer
+        , Element.mouseOver
+            [ Background.color Colors.whiteBis
+            , Font.color Colors.link
+            ]
+        ]
+        { label = Element.text text
+        , onPress = msg
+        }
 
 
 blink : Element.Attribute msg
@@ -145,112 +176,12 @@ blink =
     Element.htmlAttribute (Html.Attributes.class "blink")
 
 
-textButton : Maybe msg -> String -> Element msg
-textButton onPress content =
-    Input.button buttonAttributes
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-linkButton : Maybe msg -> String -> Element msg
-linkButton onPress content =
-    Input.button
-        [ Font.color Colors.primary
-        , Font.underline
-        ]
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-topBarButton : Maybe msg -> String -> Element msg
-topBarButton onPress content =
-    let
-        attr =
-            buttonAttributes
-                ++ [ Background.color Colors.primary
-                   , Font.color Colors.artSunFlowers
-                   , Border.color Colors.artSunFlowers
-                   , Border.rounded 5
-                   , Border.width 1
-                   ]
-    in
-    Input.button
-        attr
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-simpleButton : Maybe msg -> String -> Element msg
-simpleButton onPress content =
-    let
-        attr =
-            buttonAttributes
-                ++ [ Background.color Colors.artSunFlowers
-                   , Font.color Colors.primary
-                   , Font.medium
-                   ]
-    in
-    Input.button
-        attr
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-simpleButtonDisabled : String -> Element msg
-simpleButtonDisabled content =
-    Input.button
-        [ Background.color Colors.white
-        , Font.color Colors.grey
-        ]
-        { onPress = Nothing
-        , label = Element.text content
-        }
-
-
-successButton : Maybe msg -> String -> Element msg
-successButton onPress content =
-    Input.button
-        (buttonAttributes
-            ++ [ Background.color Colors.primary
-               , Font.medium
-               , Font.color Colors.artSunFlowers
-               , Border.color Colors.artSunFlowers
-               ]
-        )
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-primaryButton : Maybe msg -> String -> Element msg
-primaryButton onPress content =
-    Input.button
-        buttonAttributes
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
-primaryButtonWithTooltip : Maybe msg -> String -> String -> Element msg
-primaryButtonWithTooltip onPress content tooltip =
-    Input.button
-        (Element.htmlAttribute (Html.Attributes.title tooltip) :: buttonAttributes)
-        { onPress = onPress
-        , label = Element.text content
-        }
-
-
 iconButton : Element msg -> Maybe msg -> String -> String -> Element msg
 iconButton icon onPress content tooltip =
     let
         iconAttributes =
-            [ Font.color Colors.primary
-            , Background.color Colors.grey
-            , Border.color Colors.primary
+            [ Font.color Colors.navbar
+            , Background.color Colors.light
             , Element.padding 5
             , Border.rounded 5
             , Element.htmlAttribute (Html.Attributes.title tooltip)
@@ -273,9 +204,8 @@ downloadButton : String -> String -> Element msg
 downloadButton url tooltip =
     let
         iconAttributes =
-            [ Font.color Colors.primary
-            , Background.color Colors.grey
-            , Border.color Colors.primary
+            [ Font.color Colors.success
+            , Background.color Colors.light
             , Element.padding 5
             , Border.rounded 5
             , Element.htmlAttribute (Html.Attributes.title tooltip)
@@ -399,8 +329,7 @@ homeButton onPress content =
                 }
     in
     Input.button
-        [ Background.color Colors.primary
-        , Font.color Colors.white
+        [ Font.color Colors.white
         ]
         { onPress = onPress
         , label = Element.row [] [ icon, Element.text content ]
@@ -487,7 +416,7 @@ spinner =
     Element.el
         [ Element.padding 10
         , Element.centerX
-        , Font.color Colors.artSunFlowers
+        , Font.color Colors.primary
         ]
         Icons.spinner
 
@@ -496,7 +425,7 @@ messageWithSpinner : String -> Element msg
 messageWithSpinner content =
     Element.column
         (buttonAttributes
-            ++ [ Border.color Colors.artIrises
+            ++ [ Border.color Colors.primary
                , Border.width 1
                , Element.centerX
                ]
@@ -547,12 +476,12 @@ popupWithSize : Int -> String -> Element msg -> Element msg
 popupWithSize ratio title content =
     centerElementWithSize ratio
         (Element.column [ Element.height Element.fill, Element.width Element.fill ]
-            [ Element.el [ Element.width Element.fill, Background.color Colors.primary ]
+            [ Element.el [ Element.width Element.fill, Background.color Colors.navbar ]
                 (Element.el
-                    [ Element.centerX, Font.color Colors.white, Element.padding 10 ]
+                    [ Element.centerX, Font.color Colors.white, Element.padding 10, Font.bold ]
                     (Element.text title)
                 )
-            , Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ] content
+            , Element.el [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.light ] content
             ]
         )
 

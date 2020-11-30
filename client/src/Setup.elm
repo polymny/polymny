@@ -278,7 +278,7 @@ viewContent model =
         (Element.height Element.fill
             :: Element.scrollbarY
             :: Element.width Element.fill
-            :: Background.color Colors.whiteDark
+            :: Background.color Colors.light
             :: []
         )
         [ top, content model ]

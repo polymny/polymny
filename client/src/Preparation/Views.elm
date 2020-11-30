@@ -107,7 +107,7 @@ mainView global _ model =
                 element =
                     Ui.popup "ATTENTION"
                         (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.greyLighter ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
                                 , Element.paragraph [] [ Element.text msg ]
@@ -138,7 +138,7 @@ mainView global _ model =
                     Ui.popupWithSize 5
                         "Prompteur"
                         (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.light ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ promptModal
                                 , Element.row [ Element.alignRight, Element.spacing 10 ]
@@ -242,7 +242,7 @@ mainView global _ model =
                 element =
                     Ui.popup "ATTENTION"
                         (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.whiteDark ]
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.greyDarker ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
                                 , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
@@ -475,24 +475,14 @@ genericGosView global numberOfSlidesPerRow options model offset index gos =
                         ++ eventLessAttributes
                     )
                     slides
-                , Input.button
-                    [ Background.color Colors.grey
-                    , Element.height Element.fill
-                    , Element.padding 10
-                    , Element.htmlAttribute (Html.Attributes.title "Ajouter une nouvelle planche")
-                    ]
-                    { label =
-                        Element.el
-                            [ Element.centerY
-                            ]
-                            (Element.text "+")
-                    , onPress =
-                        Preparation.UploadExtraResourceSelectFileRequested Nothing (Just gosIndex)
-                            |> Preparation.UploadExtraResourceMsg
-                            |> LoggedIn.PreparationMsg
-                            |> Core.LoggedInMsg
-                            |> Just
-                    }
+                , Ui.primaryButton
+                    (Preparation.UploadExtraResourceSelectFileRequested Nothing (Just gosIndex)
+                        |> Preparation.UploadExtraResourceMsg
+                        |> LoggedIn.PreparationMsg
+                        |> Core.LoggedInMsg
+                        |> Just
+                    )
+                    "+"
                 ]
 
 
@@ -701,7 +691,7 @@ leftColumnView details currentGos =
                             :: (case currentGos of
                                     Just gosIndex ->
                                         if gosIndex == ((i - 1) // 2) then
-                                            [ Border.width 5, Border.color Colors.primary ]
+                                            [ Border.width 5, Border.color Colors.success ]
 
                                         else
                                             []
@@ -724,7 +714,7 @@ leftColumnView details currentGos =
         , Element.padding 15
         , Element.spacing 15
         , Element.alignTop
-        , Background.color Colors.grey
+        , Background.color Colors.greyLighter
         ]
         goss
 

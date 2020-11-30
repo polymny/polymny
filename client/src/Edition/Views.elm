@@ -118,7 +118,7 @@ gosProductionChoicesView model =
                 }
 
         editGlobalConfig =
-            Ui.simpleButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Changer les paramètres par défaut"
+            Ui.primaryButton (Just (Core.LoggedInMsg (LoggedIn.EditionMsg Edition.ToggleEditDefault))) "Changer les paramètres par défaut"
 
         header =
             Element.el [ Element.centerX, Font.bold ] (Element.text "Options d'édition de la vidéo")
@@ -146,7 +146,7 @@ productionForm currentGos p =
 
         attr =
             if useDefault then
-                [ Font.color Colors.grey ]
+                [ Font.color Colors.greyLight ]
 
             else
                 []

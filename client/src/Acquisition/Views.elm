@@ -187,7 +187,7 @@ promptView model =
         status =
             Input.button []
                 { label =
-                    Element.column [ Element.padding 5, Border.color Colors.primary, Border.width 2, Border.rounded 5 ]
+                    Element.column [ Font.color Colors.white, Font.bold, Background.color Colors.navbar, Element.padding 5, Border.color Colors.success, Border.width 2, Border.rounded 50 ]
                         [ if model.recording then
                             Element.row [ Element.width Element.fill, Element.spacing 10 ]
                                 [ Element.el

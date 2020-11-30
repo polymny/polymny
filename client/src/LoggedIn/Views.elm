@@ -75,7 +75,7 @@ homeView global session uploadForm =
                     Element.row [ Element.width Element.fill, Element.height Element.fill ]
                         [ Element.el
                             [ Element.width (Element.fillPortion 1)
-                            , Background.color Colors.grey
+                            , Background.color Colors.greyLighter
                             , Element.height Element.fill
                             ]
                             (leftColumn global session uploadForm)
@@ -372,8 +372,15 @@ prePreparationView _ session uploadForm =
 
 leftColumn : Core.Global -> Api.Session -> LoggedIn.UploadForm -> Element Core.Msg
 leftColumn _ _ _ =
+    let
+        msg =
+            LoggedIn.UploadSlideShowSelectFileRequested
+                |> LoggedIn.UploadSlideShowMsg
+                |> Core.LoggedInMsg
+                |> Just
+    in
     Element.row [ Element.width Element.fill, Element.padding 10 ]
-        [ Element.el [ Element.centerX ] (Ui.primaryButton (Just (Core.LoggedInMsg (LoggedIn.UploadSlideShowMsg LoggedIn.UploadSlideShowSelectFileRequested))) "Créer un nouveau projet")
+        [ Element.el [ Element.centerX ] (Ui.primaryButton msg "Créer un nouveau projet")
         ]
 
 
@@ -390,11 +397,9 @@ projectViewTitle rename project =
         title =
             let
                 default =
-                    Input.button
-                        Ui.linkAttributes
-                        { onPress = Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id))
-                        , label = Element.text (prefix ++ project.name)
-                        }
+                    Ui.linkButton
+                        (Just (Core.LoggedInMsg (LoggedIn.ToggleFoldedProject project.id)))
+                        (prefix ++ project.name)
             in
             case rename of
                 Just (LoggedIn.RenameProject ( i, s )) ->
@@ -562,7 +567,7 @@ titleView global rename cop =
 
                 default =
                     Element.el [ Element.width Element.fill, Element.spacing 10 ]
-                        (Element.link []
+                        (Element.link Ui.linkAttributes
                             { url = Routes.preparation c.id
                             , label = Element.text c.name
                             }
@@ -657,13 +662,13 @@ capsuleProgressView capsule =
             Background.color <|
                 case status of
                     Api.Idle ->
-                        Colors.grey
+                        Colors.light
 
                     Api.Running ->
-                        Colors.successLight
+                        Colors.success
 
                     Api.Done ->
-                        Colors.successLight
+                        Colors.success
 
         acquisition =
             Element.el

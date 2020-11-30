@@ -1,16 +1,4 @@
-module Ui.Attributes exposing
-    ( attributesHomeTitle
-    , boxAttributes
-    , capsuleInfoViewAttributes
-    , designAttributes
-    , designGosAttributes
-    , designGosTitleAttributes
-    , fontMono
-    , fontRoboto
-    , fullModelAttributes
-    , genericDesignSlideViewAttributes
-    , uploadViewAttributes
-    )
+module Ui.Attributes exposing (..)
 
 import Element
 import Element.Background as Background
@@ -28,7 +16,8 @@ designAttributes =
 fullModelAttributes : List (Element.Attribute msg)
 fullModelAttributes =
     [ Font.size 15
-    , fontOpenSans
+    , Font.color Colors.dark
+    , fontCantarell
     ]
 
 
@@ -41,32 +30,12 @@ attributesHomeTitle =
     ]
 
 
-capsuleInfoViewAttributes : List (Element.Attribute msg)
-capsuleInfoViewAttributes =
-    Element.centerX
-        :: Element.alignTop
-        :: Element.spacing 10
-        :: Font.color Colors.artEvening
-        :: Element.width Element.shrink
-        :: designAttributes
-
-
 designGosAttributes : List (Element.Attribute msg)
 designGosAttributes =
     Element.spacing 9
         :: Element.width Element.fill
         :: Element.alignTop
         :: designAttributes
-
-
-designGosTitleAttributes : List (Element.Attribute msg)
-designGosTitleAttributes =
-    [ Element.padding 10
-    , Border.color Colors.artIrises
-    , Border.rounded 5
-    , Border.width 2
-    , Font.size 20
-    ]
 
 
 genericDesignSlideViewAttributes : List (Element.Attribute msg)
@@ -77,18 +46,6 @@ genericDesignSlideViewAttributes =
     , Border.rounded 5
     , Border.dashed
     , Border.width 3
-    ]
-
-
-uploadViewAttributes : List (Element.Attribute msg)
-uploadViewAttributes =
-    [ Element.alignLeft
-    , Element.width Element.fill
-    , Element.spacing 10
-    , Element.padding 10
-    , Border.rounded 5
-    , Border.width 1
-    , Border.color Colors.artIrises
     ]
 
 
@@ -114,6 +71,14 @@ fontAnton =
         ]
 
 
+fontCantarell : Element.Attribute msg
+fontCantarell =
+    Font.family
+        [ Font.typeface "Cantarell"
+        , Font.sansSerif
+        ]
+
+
 fontOpenSans : Element.Attribute msg
 fontOpenSans =
     Font.family
@@ -131,15 +96,3 @@ fontMono =
             }
         , Font.monospace
         ]
-
-
-boxAttributes : List (Element.Attribute msg)
-boxAttributes =
-    [ Background.color Colors.whiteDark
-    , Element.width
-        Element.fill
-    , Element.padding 10
-    , Border.color Colors.whiteDarker
-    , Border.rounded 5
-    , Border.width 1
-    ]

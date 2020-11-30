@@ -153,7 +153,7 @@ viewContent { global, model } =
         (Element.height Element.fill
             :: Element.scrollbarY
             :: Element.width Element.fill
-            :: Background.color Colors.whiteDark
+            :: Background.color Colors.light
             :: Element.inFront (Maybe.withDefault Element.none popup)
             :: attributes
         )
@@ -316,8 +316,7 @@ topBar global model =
                 (Element.padding 7
                     :: Element.height Element.fill
                     :: (if active then
-                            [ Background.color Colors.white
-                            , Font.color Colors.primary
+                            [ Background.color Colors.light
                             ]
 
                         else
@@ -343,9 +342,9 @@ topBar global model =
                     0
 
         question =
-            Element.newTabLink []
+            Element.newTabLink [ Font.color Colors.white ]
                 { label = Icons.questionCircle
-                , url = "https://github.com/polymny/polymny/wiki/Tutoriels--de-polymny.studio"
+                , url = "https://polymny.studio/tutoriels/"
                 }
 
         unreadNotificationsInFront =
@@ -372,7 +371,7 @@ topBar global model =
                 Element.none
 
         notificationIcon =
-            Input.button []
+            Input.button [ Font.color Colors.white ]
                 { label =
                     Element.el
                         [ Element.padding 5
@@ -447,9 +446,9 @@ topBar global model =
                     []
     in
     Element.row
-        (Background.color Colors.primary
-            :: Font.color Colors.white
+        (Background.color Colors.navbar
             :: Element.width Element.fill
+            :: Font.bold
             :: (case model of
                     Core.LoggedIn { session } ->
                         [ Element.below (notificationPanel global session) ]
@@ -501,7 +500,7 @@ notificationPanel global session =
         Element.row [ Element.width Element.fill, Element.paddingXY 10 0 ]
             [ Element.el [ Element.width (Element.fillPortion 3) ] Element.none
             , Element.column
-                [ Background.color Colors.whiteDark
+                [ Background.color Colors.light
                 , Font.color Colors.black
                 , Border.width 1
                 , Border.color Colors.black
@@ -522,7 +521,7 @@ bottomBarDefault : Core.Global -> Element Core.Msg
 bottomBarDefault global =
     Element.column
         [ Element.width Element.fill
-        , Background.color Colors.greyLight
+        , Background.color Colors.greyLighter
         , Border.color Colors.grey
         , Border.width 1
         , Font.size 12
@@ -534,22 +533,22 @@ bottomBarDefault global =
                 [ Element.text
                     "Polymny studio:"
                 , Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "mailto:contacter@polymny.studio"
-                    , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
+                    , label = Element.text "contacter@polymny.studio"
                     }
                 , Element.el [] <| Ui.linkButton (Just Core.AboutClicked) "A propos"
                 , Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "https://github.com/polymny/polymny/wiki/Protection-des-donn%C3%A9es"
-                    , label = Element.el [ Font.bold ] <| Element.text "Données personnelles"
+                    , label = Element.text "Données personnelles"
                     }
                 ]
             , Element.row [ Element.alignRight, Element.spacing 5 ]
                 [ Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
-                    , label = Element.el [ Font.bold ] <| Element.text "Gnu Affero V3. "
+                    , label = Element.text "Gnu Affero V3. "
                     }
                 , Element.text
                     ("Polymny "
@@ -562,9 +561,9 @@ bottomBarDefault global =
                            )
                     )
                 , Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "https://github.com/polymny/polymny"
-                    , label = Element.el [ Font.bold ] <| Element.text "Fork me!"
+                    , label = Element.text "Fork me!"
                     }
                 ]
             ]
@@ -575,9 +574,9 @@ bottomBarPhone : Core.Global -> Element Core.Msg
 bottomBarPhone global =
     Element.column
         [ Element.width Element.fill
-        , Background.color Colors.greyLight
+        , Background.color Colors.greyLighter
         , Border.color Colors.grey
-        , Border.width 1
+        , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
         , Font.size 10
         ]
         [ Element.el [ Element.height Element.fill ] Element.none
@@ -585,17 +584,16 @@ bottomBarPhone global =
             [ Element.width Element.fill, Element.alignBottom, Element.spacing 4, Element.padding 8 ]
             [ Element.paragraph
                 []
-                [ Element.text
-                    "Polymny studio:"
+                [ Element.text "Polymny studio:"
                 , Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "mailto:contacter@polymny.studio"
-                    , label = Element.el [ Font.bold ] <| Element.text "contacter@polymny.studio"
+                    , label = Element.text "contacter@polymny.studio"
                     }
                 ]
             , Element.link
-                []
-                { url = "https://github.com/polymny/polymny/wiki/Protection-des-donn%C3%A9es"
+                Ui.linkAttributes
+                { url = "https://polymny.studio/protection-des-donnees/"
                 , label = Element.el [ Font.bold ] <| Element.text "Données personnelles"
                 }
             , Element.paragraph []
@@ -613,14 +611,14 @@ bottomBarPhone global =
                 ]
             , Element.paragraph [ Element.alignLeft, Element.spacing 5 ]
                 [ Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "https://www.gnu.org/licenses/agpl-3.0.en.html"
-                    , label = Element.el [ Font.bold ] <| Element.text "Gnu Affero V3. "
+                    , label = Element.text "Gnu Affero V3. "
                     }
                 , Element.link
-                    []
+                    Ui.linkAttributes
                     { url = "https://github.com/polymny/polymny"
-                    , label = Element.el [ Font.bold ] <| Element.text "Fork me!"
+                    , label = Element.text "Fork me!"
                     }
                 ]
             ]
