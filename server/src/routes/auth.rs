@@ -3,6 +3,7 @@
 use std::io::Cursor;
 
 use rocket::http::{ContentType, Cookie, Cookies};
+use rocket::request::Form;
 use rocket::response::{Redirect, Response};
 use rocket::State;
 
@@ -53,13 +54,26 @@ pub fn activate(db: Database, key: String, mut cookies: Cookies) -> Result<Redir
 }
 
 /// A struct that serves for form veryfing.
-#[derive(Deserialize)]
+#[derive(Deserialize, FromForm)]
 pub struct LoginForm {
     /// The username in the form.
     username: String,
 
     /// The password in the form.
     password: String,
+}
+
+/// The login page.
+#[post("/login", data = "<login>")]
+pub fn login_and_redirect(
+    db: Database,
+    mut cookies: Cookies,
+    login: Form<LoginForm>,
+) -> Result<Redirect> {
+    let user = User::authenticate(&login.username, &login.password, &db)?;
+    let session = user.save_session(&db)?;
+    cookies.add_private(Cookie::new("EXAUTH", session.secret.clone()));
+    Ok(Redirect::to("/"))
 }
 
 /// The login page.
@@ -104,6 +118,7 @@ pub fn logout(db: Database, mut cookies: Cookies) -> Result<()> {
     if let Some(cookie) = cookie {
         Session::delete_from_secret(cookie.value(), &db)?;
     }
+    cookies.remove_private(Cookie::named("EXAUTH"));
     Ok(())
 }
 
