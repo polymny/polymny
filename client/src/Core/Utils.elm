@@ -86,6 +86,14 @@ globalFromFlags flags key =
                 Err _ ->
                     "/"
 
+        homePath =
+            case Decode.decodeValue (Decode.field "global" (Decode.field "home" Decode.string)) flags of
+                Ok r ->
+                    r
+
+                Err _ ->
+                    "/"
+
         socketRoot =
             case Decode.decodeValue (Decode.field "global" (Decode.field "socket_root" Decode.string)) flags of
                 Ok r ->
@@ -143,6 +151,7 @@ globalFromFlags flags key =
                     1080
     in
     { zone = Time.utc
+    , home = homePath
     , beta = beta
     , videoRoot = root
     , socketRoot = socketRoot

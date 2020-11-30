@@ -168,6 +168,7 @@ fn global(config: &State<Config>) -> JsonValue {
         "version": config.version,
         "commit": config.commit,
         "matting_enabled": config.matting_enabled,
+        "home": config.home,
     })
 }
 
