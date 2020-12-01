@@ -173,7 +173,9 @@ function setupPorts(app) {
             navigator.mediaDevices.getUserMedia(options)
                 .then(function(returnStream) {
                     stream = returnStream;
-                    callback(stream);
+                    if (typeof callback === 'function') {
+                        callback(stream);
+                    }
                 })
                 .catch(function(err) {
                     console.log(err);
@@ -305,10 +307,14 @@ function setupPorts(app) {
 
     function setAudioDevice(arg) {
         audioDeviceId = arg;
+        stream = null;
+        setupUserMedia();
     }
 
     function setVideoDevice(arg) {
         videoDeviceId = arg;
+        stream = null;
+        setupUserMedia();
     }
 
     subscribe(app.ports.init, function(args) {
