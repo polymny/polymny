@@ -1,8 +1,10 @@
 module Acquisition.Types exposing
-    ( Mode(..)
+    ( AudioDevice
+    , Mode(..)
     , Model
     , Msg(..)
     , Record
+    , VideoDevice
     , decodeDevices
     , init
     , initAtFirstNonRecorded
@@ -11,6 +13,7 @@ module Acquisition.Types exposing
 
 import Acquisition.Ports as Ports
 import Api
+import Dropdown
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode
 import Status exposing (Status)
@@ -84,7 +87,7 @@ type alias Model =
     , background : Maybe String
     , watchingWebcam : Bool
     , devices : Devices
-    , showSettings : Bool
+    , showSettings : Maybe ( Dropdown.State VideoDevice, Dropdown.State AudioDevice )
     }
 
 
@@ -136,7 +139,7 @@ init mattingEnabled details mode gos =
       , background = background
       , watchingWebcam = True
       , devices = initDevices
-      , showSettings = False
+      , showSettings = Nothing
       }
     , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )
@@ -181,3 +184,7 @@ type Msg
     | BackgroundCaptured String
     | NextSentence
     | ToggleSettings
+    | VideoDropdownMsg (Dropdown.Msg VideoDevice)
+    | AudioDropdownMsg (Dropdown.Msg AudioDevice)
+    | VideoOptionPicked (Maybe VideoDevice)
+    | AudioOptionPicked (Maybe AudioDevice)

@@ -12,6 +12,8 @@ port module Acquisition.Ports exposing
     , newRecord
     , nextSlideReceived
     , secondsRemaining
+    , setAudioDevice
+    , setVideoDevice
     , startRecording
     , stopRecording
     , streamUploaded
@@ -70,3 +72,9 @@ port secondsRemaining : (Int -> msg) -> Sub msg
 
 
 port backgroundCaptured : (String -> msg) -> Sub msg
+
+
+port setAudioDevice : String -> Cmd msg
+
+
+port setVideoDevice : String -> Cmd msg

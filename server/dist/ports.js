@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs, videoDeviceId, audioDeviceId;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -17,6 +17,8 @@ function setupPorts(app) {
         blobs = [];
         nextSlideCallbacks = [];
         inputs = {};
+        videoDeviceId = null;
+        audioDeviceId = null;
     }
 
     function sendWebSocketMessage(content) {
@@ -154,7 +156,21 @@ function setupPorts(app) {
         if (stream !== null) {
             callback(stream);
         } else {
-            navigator.mediaDevices.getUserMedia({audio: true, video: true})
+            let options = {};
+
+            if (audioDeviceId) {
+                options.audio = { deviceId: { exact: audioDeviceId }};
+            } else {
+                options.audio = true;
+            }
+
+            if (videoDeviceId) {
+                options.video = { deviceId: { exact: videoDeviceId }};
+            } else {
+                options.video = true;
+            }
+
+            navigator.mediaDevices.getUserMedia(options)
                 .then(function(returnStream) {
                     stream = returnStream;
                     callback(stream);
@@ -287,6 +303,14 @@ function setupPorts(app) {
         document.body.removeChild(el);
     }
 
+    function setAudioDevice(arg) {
+        audioDeviceId = arg;
+    }
+
+    function setVideoDevice(arg) {
+        videoDeviceId = arg;
+    }
+
     subscribe(app.ports.init, function(args) {
         init(args[0], args[1], args[2]);
     });
@@ -343,6 +367,14 @@ function setupPorts(app) {
 
     subscribe(app.ports.copyString, function(arg) {
         copyStringToClipboard(arg)
+    });
+
+    subscribe(app.ports.setAudioDevice, function(arg) {
+        setAudioDevice(arg);
+    });
+
+    subscribe(app.ports.setVideoDevice, function(arg) {
+        setVideoDevice(arg);
     });
 
 }

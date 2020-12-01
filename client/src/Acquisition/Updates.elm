@@ -2,8 +2,10 @@ module Acquisition.Updates exposing (update)
 
 import Acquisition.Ports as Ports
 import Acquisition.Types as Acquisition
+import Acquisition.Views as Acquisition
 import Api
 import Core.Types as Core
+import Dropdown
 import Edition.Types as Edition
 import Edition.Views as Edition
 import Json.Decode
@@ -51,7 +53,56 @@ update global session msg model =
             )
 
         Acquisition.ToggleSettings ->
-            ( makeModel { model | showSettings = not model.showSettings }, Ports.goToWebcam elementId )
+            let
+                newSettings =
+                    case model.showSettings of
+                        Just _ ->
+                            Nothing
+
+                        _ ->
+                            Just ( Dropdown.init "", Dropdown.init "" )
+            in
+            ( makeModel { model | showSettings = newSettings }, Ports.goToWebcam elementId )
+
+        Acquisition.VideoDropdownMsg vdMsg ->
+            case model.showSettings of
+                Just ( videoDropdown, audioDropdown ) ->
+                    let
+                        ( newModel, newCmd ) =
+                            Dropdown.update Acquisition.videoDropdownConfig vdMsg videoDropdown model.devices.video
+                    in
+                    ( makeModel { model | showSettings = Just ( newModel, audioDropdown ) }, newCmd )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
+
+        Acquisition.VideoOptionPicked voMsg ->
+            case voMsg of
+                Just device ->
+                    ( makeModel model, Ports.setVideoDevice device.deviceId )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
+
+        Acquisition.AudioDropdownMsg adMsg ->
+            case model.showSettings of
+                Just ( videoDropdown, audioDropdown ) ->
+                    let
+                        ( newModel, newCmd ) =
+                            Dropdown.update Acquisition.audioDropdownConfig adMsg audioDropdown model.devices.audio
+                    in
+                    ( makeModel { model | showSettings = Just ( videoDropdown, newModel ) }, newCmd )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
+
+        Acquisition.AudioOptionPicked aoMsg ->
+            case aoMsg of
+                Just device ->
+                    ( makeModel model, Ports.setAudioDevice device.deviceId )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )

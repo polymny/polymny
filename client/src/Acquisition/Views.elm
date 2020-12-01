@@ -1,8 +1,9 @@
-module Acquisition.Views exposing (subscriptions, view)
+module Acquisition.Views exposing (audioDropdownConfig, subscriptions, videoDropdownConfig, view)
 
 import Acquisition.Types as Acquisition
 import Api
 import Core.Types as Core
+import Dropdown
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -71,31 +72,40 @@ view _ _ model =
                         [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
                    )
 
-        popupElement =
-            Element.row [ Element.spacing 10 ]
-                [ Element.column [ Element.spacing 10 ]
-                    [ Element.column []
-                        (Element.text "Caméras disponibles"
-                            :: List.map (Element.text << .label) model.devices.video
-                        )
-                    , Element.column []
-                        (Element.text "Microphones disponibles"
-                            :: List.map (Element.text << .label) model.devices.audio
-                        )
-                    ]
-                , videoElement
-                ]
-
         popup =
-            if model.showSettings then
-                Just
-                    (Ui.popupWithSize 5
-                        "Paramètres"
-                        popupElement
-                    )
+            case model.showSettings of
+                Just ( videoDropdown, audioDropdown ) ->
+                    let
+                        toggleMsg =
+                            Acquisition.ToggleSettings
+                                |> LoggedIn.AcquisitionMsg
+                                |> Core.LoggedInMsg
+                                |> Just
 
-            else
-                Nothing
+                        popupElement =
+                            Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                                [ Element.column [ Element.width Element.fill, Element.padding 20, Element.spacing 10 ]
+                                    [ Element.column [ Element.width Element.fill ]
+                                        [ Element.text "Caméras disponibles"
+                                        , Dropdown.view videoDropdownConfig videoDropdown model.devices.video
+                                        ]
+                                    , Element.column [ Element.width Element.fill ]
+                                        [ Element.text "Microphones disponibles"
+                                        , Dropdown.view audioDropdownConfig audioDropdown model.devices.audio
+                                        ]
+                                    , Ui.primaryButton toggleMsg "Valider"
+                                    ]
+                                , videoElement
+                                ]
+                    in
+                    Just
+                        (Ui.popupWithSize 5
+                            "Paramètres"
+                            popupElement
+                        )
+
+                _ ->
+                    Nothing
     in
     ( Element.row
         [ Element.width Element.fill
@@ -359,11 +369,12 @@ rightColumn model =
             Ui.primaryButton settingsMsg "Paramètres"
     in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
-        [ if model.showSettings then
-            Element.none
+        [ case model.showSettings of
+            Just _ ->
+                Element.none
 
-          else
-            videoElement
+            _ ->
+                videoElement
         , settingsButton
         , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
             [ Element.el [ Element.centerX ] (Element.text "Enregistrements")
@@ -400,3 +411,82 @@ url capsuleId gosId =
 elementId : String
 elementId =
     "video"
+
+
+videoDropdownConfig : Dropdown.Config Acquisition.VideoDevice Core.Msg
+videoDropdownConfig =
+    dropdownConfig
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoDropdownMsg x)))
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoOptionPicked x)))
+
+
+audioDropdownConfig : Dropdown.Config Acquisition.AudioDevice Core.Msg
+audioDropdownConfig =
+    dropdownConfig
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioDropdownMsg x)))
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioOptionPicked x)))
+
+
+dropdownConfig : (Dropdown.Msg { a | label : String } -> Core.Msg) -> (Maybe { a | label : String } -> Core.Msg) -> Dropdown.Config { a | label : String } Core.Msg
+dropdownConfig makeMsg1 makeMsg2 =
+    let
+        containerAttrs =
+            [ Element.width Element.fill ]
+
+        selectAttrs =
+            [ Border.width 1
+            , Border.rounded 5
+            , Element.paddingXY 16 8
+            , Element.spacing 10
+            , Element.width Element.fill
+            ]
+
+        searchAttrs =
+            [ Border.width 0, Element.padding 0, Element.width Element.fill ]
+
+        listAttrs =
+            [ Border.width 1
+            , Border.roundEach { topLeft = 0, topRight = 0, bottomLeft = 5, bottomRight = 5 }
+            , Element.width Element.fill
+            , Element.clip
+            , Element.scrollbarY
+            , Element.height (Element.fill |> Element.maximum 200)
+            ]
+
+        itemToPrompt item =
+            Element.text item.label
+
+        itemToElement selected highlighted i =
+            let
+                bgColor =
+                    if highlighted then
+                        Element.rgb255 128 128 128
+
+                    else if selected then
+                        Element.rgb255 100 100 100
+
+                    else
+                        Element.rgb255 255 255 255
+            in
+            Element.row
+                [ Background.color bgColor
+                , Element.padding 8
+                , Element.spacing 10
+                , Element.width Element.fill
+                ]
+                [ Element.el [] (Element.text "-")
+                , Element.el [ Font.size 16 ] (Element.text i.label)
+                ]
+    in
+    Dropdown.filterable
+        makeMsg1
+        makeMsg2
+        itemToPrompt
+        itemToElement
+        .label
+        |> Dropdown.withContainerAttributes containerAttrs
+        |> Dropdown.withSelectAttributes selectAttrs
+        |> Dropdown.withListAttributes listAttrs
+        |> Dropdown.withSearchAttributes searchAttrs
+        |> Dropdown.withFilterPlaceholder "Choisir"
+        |> Dropdown.withPromptElement (Element.text "Choisir")
