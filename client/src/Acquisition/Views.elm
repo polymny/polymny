@@ -8,6 +8,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Element.Keyed
 import FontAwesome
 import Html
 import Html.Attributes
@@ -58,7 +59,7 @@ subscriptions model =
         ]
 
 
-view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
+view : Core.Global -> Api.Session -> Acquisition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view _ _ model =
     let
         attributes =
@@ -69,8 +70,34 @@ view _ _ model =
                     else
                         [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
                    )
+
+        popupElement =
+            Element.row [ Element.spacing 10 ]
+                [ Element.column [ Element.spacing 10 ]
+                    [ Element.column []
+                        (Element.text "Caméras disponibles"
+                            :: List.map (Element.text << .label) model.devices.video
+                        )
+                    , Element.column []
+                        (Element.text "Microphones disponibles"
+                            :: List.map (Element.text << .label) model.devices.audio
+                        )
+                    ]
+                , videoElement
+                ]
+
+        popup =
+            if model.showSettings then
+                Just
+                    (Ui.popupWithSize 5
+                        "Paramètres"
+                        popupElement
+                    )
+
+            else
+                Nothing
     in
-    Element.row
+    ( Element.row
         [ Element.width Element.fill
         , Element.height Element.fill
         , Element.scrollbarY
@@ -79,6 +106,8 @@ view _ _ model =
         , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
         , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
         ]
+    , popup
+    )
 
 
 centerView : Acquisition.Model -> Element Core.Msg
@@ -320,9 +349,22 @@ rightColumn model =
 
             else
                 Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
+
+        settingsButton : Element Core.Msg
+        settingsButton =
+            let
+                settingsMsg =
+                    Acquisition.ToggleSettings |> LoggedIn.AcquisitionMsg |> Core.LoggedInMsg |> Just
+            in
+            Ui.primaryButton settingsMsg "Paramètres"
     in
     Element.column [ Element.width Element.fill, Element.height Element.fill ]
-        [ Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
+        [ if model.showSettings then
+            Element.none
+
+          else
+            videoElement
+        , settingsButton
         , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
             [ Element.el [ Element.centerX ] (Element.text "Enregistrements")
             , Element.column
@@ -334,6 +376,11 @@ rightColumn model =
 
 
 -- CONSTANTS AND UTILS
+
+
+videoElement =
+    Element.html
+        (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
 
 
 text : Acquisition.Record -> String

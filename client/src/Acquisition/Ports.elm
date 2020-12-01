@@ -27,7 +27,7 @@ port init : ( String, Maybe String, Maybe String ) -> Cmd msg
 port bindWebcam : String -> Cmd msg
 
 
-port cameraReady : (() -> msg) -> Sub msg
+port cameraReady : (Json.Encode.Value -> msg) -> Sub msg
 
 
 port startRecording : () -> Cmd msg

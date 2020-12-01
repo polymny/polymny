@@ -22,8 +22,13 @@ update global session msg model =
     in
     case msg of
         -- INNER MESSAGES
-        Acquisition.CameraReady ->
-            ( makeModel { model | cameraReady = True }, Cmd.none )
+        Acquisition.CameraReady value ->
+            case Json.Decode.decodeValue Acquisition.decodeDevices value of
+                Ok v ->
+                    ( makeModel { model | cameraReady = True, devices = v }, Cmd.none )
+
+                Err _ ->
+                    ( makeModel { model | cameraReady = True }, Cmd.none )
 
         Acquisition.StartRecording ->
             let
@@ -44,6 +49,9 @@ update global session msg model =
                 }
             , cmd
             )
+
+        Acquisition.ToggleSettings ->
+            ( makeModel { model | showSettings = not model.showSettings }, Ports.goToWebcam elementId )
 
         Acquisition.StopRecording ->
             ( makeModel { model | recording = False }, Ports.stopRecording () )

@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs;
 
     function clearCallbacks() {
         for (let callback of nextSlideCallbacks) {
@@ -16,6 +16,7 @@ function setupPorts(app) {
         initializing = false;
         blobs = [];
         nextSlideCallbacks = [];
+        inputs = {};
     }
 
     function sendWebSocketMessage(content) {
@@ -56,32 +57,49 @@ function setupPorts(app) {
             blobs.push(maybeVideo);
         }
 
-        function keepWorking() {
-            initializing = true;
-            setupUserMedia(() => {
-                bindWebcam(elementId, () => {
-                    initializing = false;
-                    if (exitRequested) {
-                        exit();
-                    } else {
-                        app.ports.cameraReady.send(null);
-                    }
-                });
-            });
-        }
-
-        if (maybeBackground !== null) {
-            let img = new Image();
-            img.onload = () => {
-                backgroundCanvas.width = img.width;
-                backgroundCanvas.height = img.height;
-                backgroundCanvas.getContext('2d').drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
-                keepWorking();
+        navigator.mediaDevices.enumerateDevices().then(function (devices) {
+            inputs = {
+                video: [],
+                audio: [],
             };
-            img.src = maybeBackground;
-        } else {
-            keepWorking();
-        }
+
+            for(var i = 0; i < devices.length; i ++) {
+                var device = devices[i];
+                if (device.kind === 'videoinput') {
+                    inputs.video.push(device);
+                } else if (device.kind === 'audioinput') {
+                    inputs.audio.push(device);
+                }
+            };
+
+            function keepWorking() {
+                initializing = true;
+                setupUserMedia(() => {
+                    bindWebcam(elementId, () => {
+                        initializing = false;
+                        if (exitRequested) {
+                            exit();
+                        } else {
+                            app.ports.cameraReady.send(inputs);
+                        }
+                    });
+                });
+            }
+
+            if (maybeBackground !== null) {
+                let img = new Image();
+                img.onload = () => {
+                    backgroundCanvas.width = img.width;
+                    backgroundCanvas.height = img.height;
+                    backgroundCanvas.getContext('2d').drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
+                    keepWorking();
+                };
+                img.src = maybeBackground;
+            } else {
+                keepWorking();
+            }
+
+        });
 
 
     }
@@ -148,20 +166,22 @@ function setupPorts(app) {
     }
 
     function bindWebcam(elementId, callback) {
-        let element = document.getElementById(elementId);
+        requestAnimationFrame(() => {
+            let element = document.getElementById(elementId);
 
-        if (element === null) {
+            if (element === null) {
+                callback();
+                return;
+            }
+
+            element.focus();
+
+            element.srcObject = stream;
+            element.src = null;
+            element.muted = true;
+            element.play();
             callback();
-            return;
-        }
-
-        element.focus();
-
-        element.srcObject = stream;
-        element.src = null;
-        element.muted = true;
-        element.play();
-        callback();
+        });
     }
 
     function startRecording(callback) {
@@ -192,7 +212,7 @@ function setupPorts(app) {
     function goToWebcam(id) {
         clearCallbacks();
         bindWebcam(id, () => {
-            app.ports.cameraReady.send(null);
+            app.ports.cameraReady.send(inputs);
         });
     }
 

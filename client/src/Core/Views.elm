@@ -61,7 +61,7 @@ subscriptions { model } =
                                     , Acquisition.Ports.streamUploaded Acquisition.StreamUploaded
                                     , Acquisition.Ports.nextSlideReceived Acquisition.NextSlideReceived
                                     , Acquisition.Ports.goToNextSlide (\_ -> Acquisition.NextSlide False)
-                                    , Acquisition.Ports.cameraReady (\_ -> Acquisition.CameraReady)
+                                    , Acquisition.Ports.cameraReady (\jsonValue -> Acquisition.CameraReady jsonValue)
                                     , Acquisition.Ports.secondsRemaining Acquisition.SecondsRemaining
                                     , Acquisition.Ports.backgroundCaptured Acquisition.BackgroundCaptured
                                     ]

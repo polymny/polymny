@@ -1,7 +1,17 @@
-module Acquisition.Types exposing (Mode(..), Model, Msg(..), Record, init, initAtFirstNonRecorded, newRecord)
+module Acquisition.Types exposing
+    ( Mode(..)
+    , Model
+    , Msg(..)
+    , Record
+    , decodeDevices
+    , init
+    , initAtFirstNonRecorded
+    , newRecord
+    )
 
 import Acquisition.Ports as Ports
 import Api
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode
 import Status exposing (Status)
 
@@ -24,6 +34,40 @@ newRecord id started =
     { id = id, new = True, started = started, nextSlides = [] }
 
 
+type alias VideoDevice =
+    { deviceId : String, groupId : String, label : String }
+
+
+type alias AudioDevice =
+    { deviceId : String, groupId : String, label : String }
+
+
+decodeDevice : (String -> String -> String -> a) -> Decoder a
+decodeDevice constructor =
+    Decode.map3 constructor
+        (Decode.field "deviceId" Decode.string)
+        (Decode.field "groupId" Decode.string)
+        (Decode.field "label" Decode.string)
+
+
+type alias Devices =
+    { video : List VideoDevice
+    , audio : List AudioDevice
+    }
+
+
+initDevices : Devices
+initDevices =
+    Devices [] []
+
+
+decodeDevices : Decoder Devices
+decodeDevices =
+    Decode.map2 Devices
+        (Decode.field "video" (Decode.list (decodeDevice VideoDevice)))
+        (Decode.field "audio" (Decode.list (decodeDevice AudioDevice)))
+
+
 type alias Model =
     { records : List Record
     , recording : Bool
@@ -39,6 +83,8 @@ type alias Model =
     , secondsRemaining : Maybe Int
     , background : Maybe String
     , watchingWebcam : Bool
+    , devices : Devices
+    , showSettings : Bool
     }
 
 
@@ -89,6 +135,8 @@ init mattingEnabled details mode gos =
       , secondsRemaining = Nothing
       , background = background
       , watchingWebcam = True
+      , devices = initDevices
+      , showSettings = False
       }
     , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )
@@ -120,7 +168,7 @@ initAtFirstNonRecorded mattingEnabled details mode =
 type Msg
     = StartRecording
     | StopRecording
-    | CameraReady
+    | CameraReady Json.Encode.Value
     | GoToWebcam
     | GoToStream Int
     | NextSlide Bool
@@ -132,3 +180,4 @@ type Msg
     | SecondsRemaining Int
     | BackgroundCaptured String
     | NextSentence
+    | ToggleSettings

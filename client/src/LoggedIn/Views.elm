@@ -37,7 +37,7 @@ view global session tab =
                     Preparation.view global session preparationModel
 
                 LoggedIn.Acquisition acquisitionModel ->
-                    ( Acquisition.view global session acquisitionModel, Nothing )
+                    Acquisition.view global session acquisitionModel
 
                 LoggedIn.Edition editionModel ->
                     Edition.view global session editionModel
