@@ -79,7 +79,7 @@ update global session msg model =
         Acquisition.VideoOptionPicked voMsg ->
             case voMsg of
                 Just device ->
-                    ( makeModel model, Ports.setVideoDevice device.deviceId )
+                    ( makeModel model, Ports.setVideoDevice ( device.deviceId, elementId ) )
 
                 _ ->
                     ( makeModel model, Cmd.none )
@@ -99,7 +99,7 @@ update global session msg model =
         Acquisition.AudioOptionPicked aoMsg ->
             case aoMsg of
                 Just device ->
-                    ( makeModel model, Ports.setAudioDevice device.deviceId )
+                    ( makeModel model, Ports.setAudioDevice ( device.deviceId, elementId ) )
 
                 _ ->
                     ( makeModel model, Cmd.none )

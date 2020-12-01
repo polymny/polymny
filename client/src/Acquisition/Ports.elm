@@ -74,7 +74,7 @@ port secondsRemaining : (Int -> msg) -> Sub msg
 port backgroundCaptured : (String -> msg) -> Sub msg
 
 
-port setAudioDevice : String -> Cmd msg
+port setAudioDevice : ( String, String ) -> Cmd msg
 
 
-port setVideoDevice : String -> Cmd msg
+port setVideoDevice : ( String, String ) -> Cmd msg

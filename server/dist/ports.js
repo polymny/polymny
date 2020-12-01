@@ -17,8 +17,8 @@ function setupPorts(app) {
         blobs = [];
         nextSlideCallbacks = [];
         inputs = {};
-        videoDeviceId = null;
-        audioDeviceId = null;
+        videoDeviceId = localStorage.getItem("videoDeviceId") || null;
+        audioDeviceId = localStorage.getItem("audioDeviceId") || null;
     }
 
     function sendWebSocketMessage(content) {
@@ -305,16 +305,26 @@ function setupPorts(app) {
         document.body.removeChild(el);
     }
 
-    function setAudioDevice(arg) {
+    function setAudioDevice(arg, id) {
         audioDeviceId = arg;
+        localStorage.setItem("audioDeviceId", audioDeviceId);
         stream = null;
-        setupUserMedia();
+        setupUserMedia(() => {
+            bindWebcam(id, () => {
+                app.ports.cameraReady.send(null);
+            });
+        });
     }
 
-    function setVideoDevice(arg) {
+    function setVideoDevice(arg, id) {
         videoDeviceId = arg;
+        localStorage.setItem("videoDeviceId", videoDeviceId);
         stream = null;
-        setupUserMedia();
+        setupUserMedia(() => {
+            bindWebcam(id, () => {
+                app.ports.cameraReady.send(null);
+            });
+        });
     }
 
     subscribe(app.ports.init, function(args) {
@@ -376,11 +386,11 @@ function setupPorts(app) {
     });
 
     subscribe(app.ports.setAudioDevice, function(arg) {
-        setAudioDevice(arg);
+        setAudioDevice(arg[0], arg[1]);
     });
 
     subscribe(app.ports.setVideoDevice, function(arg) {
-        setVideoDevice(arg);
+        setVideoDevice(arg[0], arg[1]);
     });
 
 }
