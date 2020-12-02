@@ -263,7 +263,47 @@ fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
         .unwrap_or_else(|| json!(null)))
 }
 
-make_route!("/", db, user, index(db, user)?, index_html, index_json);
+/// Route to allow CORS request from home page.
+#[options("/")]
+pub fn index_cors<'a>(config: State<Config>) -> Response<'a> {
+    Response::build()
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type")
+        .finalize()
+}
+
+/// Route that returns the index as HTML format.
+#[get("/", format = "text/html", rank = 1)]
+pub fn index_html(config: State<Config>, db: Database, user: Option<User>) -> Response {
+    match index(db, user) {
+        Ok(flags) => Response::build()
+            .header(ContentType::HTML)
+            .raw_header("Access-Control-Allow-Origin", config.home.clone())
+            .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+            .raw_header("Access-Control-Allow-Headers", "Content-Type")
+            .sized_body(Cursor::new(templates::index_html(helper_json(
+                &config, flags,
+            ))))
+            .finalize(),
+        _ => Response::build()
+            .header(ContentType::HTML)
+            .raw_header("Access-Control-Allow-Origin", config.home.clone())
+            .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+            .raw_header("Access-Control-Allow-Headers", "Content-Type")
+            .sized_body(Cursor::new(templates::index_html(helper_json(
+                &config,
+                json!({}),
+            ))))
+            .finalize(),
+    }
+}
+
+/// Route that returns the index as JSON format.
+#[get("/", format = "application/json", rank = 2)]
+pub fn index_json(config: State<Config>, db: Database, user: Option<User>) -> Result<JsonValue> {
+    Ok(helper_json(&config, index(db, user)?))
+}
 
 make_route!(
     "/capsule/<id>/preparation",

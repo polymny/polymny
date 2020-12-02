@@ -284,6 +284,7 @@ pub fn start_server(rocket_config: RConfig) {
         .mount(
             "/",
             routes![
+                routes::index_cors,
                 routes::index_html,
                 routes::index_json,
                 routes::capsule_preparation_html,
@@ -296,7 +297,8 @@ pub fn start_server(rocket_config: RConfig) {
                 routes::project_json,
                 routes::settings_html,
                 routes::settings_json,
-                routes::auth::login_and_redirect,
+                routes::auth::login_external_cors,
+                routes::auth::login_external,
                 routes::auth::activate,
                 routes::auth::reset_password,
                 routes::auth::validate_email_change,

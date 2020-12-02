@@ -103,24 +103,49 @@ pub struct LoginForm {
     password: String,
 }
 
+/// Route to allow CORS request from home page.
+#[options("/login")]
+pub fn login_external_cors(config: State<Config>) -> Response {
+    Response::build()
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type")
+        .finalize()
+}
+
 /// The login page.
 #[post("/login", data = "<login>")]
-pub fn login_and_redirect(
+pub fn login_external<'a>(
     db: Database,
     mut cookies: Cookies,
     login: Form<LoginForm>,
     config: State<Config>,
-) -> Redirect {
+) -> Response<'a> {
+    let mut response = Response::build();
+    let response = response
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type");
+
     let user = match User::authenticate(&login.username, &login.password, &db) {
         Ok(u) => u,
-        Err(_) => return Redirect::to("/"),
+        Err(Error::AuthenticationFailed) => {
+            return response.status(Status::Unauthorized).finalize()
+        }
+        Err(_) => return response.status(Status::InternalServerError).finalize(),
     };
+
     let session = match user.save_session(&db) {
         Ok(u) => u,
-        Err(_) => return Redirect::to("/"),
+        Err(_) => return response.status(Status::InternalServerError).finalize(),
     };
+
     cookies.add_private(cookie(&session.secret, &config.inner()));
-    Redirect::to("/")
+
+    response
+        .raw_header("Location", config.root.clone())
+        .status(Status::SeeOther)
+        .finalize()
 }
 
 /// The login page.
