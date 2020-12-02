@@ -90,7 +90,7 @@ pub fn activate(
     let user = User::activate(&key, &db)?;
     let session = user.save_session(&db)?;
     cookies.add_private(cookie(&session.secret, &config));
-    Ok(Redirect::to("/"))
+    Ok(Redirect::to(config.home.clone()))
 }
 
 /// A struct that serves for form veryfing.

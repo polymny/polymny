@@ -1,6 +1,7 @@
 module ResetPassword.Updates exposing (update)
 
 import Api
+import Browser.Navigation as Nav
 import Core.Types as Core
 import LoggedIn.Types as LoggedIn
 import ResetPassword.Types as ResetPassword
@@ -8,8 +9,8 @@ import Status
 import Utils
 
 
-update : ResetPassword.Msg -> ResetPassword.Model -> ( Core.Model, Cmd Core.Msg )
-update msg content =
+update : Core.Global -> ResetPassword.Msg -> ResetPassword.Model -> ( Core.Model, Cmd Core.Msg )
+update global msg content =
     case msg of
         ResetPassword.PasswordChanged newPassword ->
             ( Core.ResetPassword { content | password = newPassword }, Cmd.none )
@@ -23,7 +24,7 @@ update msg content =
             )
 
         ResetPassword.Success s ->
-            ( Core.LoggedIn (LoggedIn.Model s LoggedIn.init), Cmd.none )
+            ( Core.ResetPassword content, Nav.pushUrl global.key "/" )
 
         ResetPassword.Failed ->
             ( Core.ResetPassword { content | status = Status.Error () }, Cmd.none )
