@@ -110,11 +110,17 @@ pub fn login_and_redirect(
     mut cookies: Cookies,
     login: Form<LoginForm>,
     config: State<Config>,
-) -> Result<Redirect> {
-    let user = User::authenticate(&login.username, &login.password, &db)?;
-    let session = user.save_session(&db)?;
+) -> Redirect {
+    let user = match User::authenticate(&login.username, &login.password, &db) {
+        Ok(u) => u,
+        Err(_) => return Redirect::to("/"),
+    };
+    let session = match user.save_session(&db) {
+        Ok(u) => u,
+        Err(_) => return Redirect::to("/"),
+    };
     cookies.add_private(cookie(&session.secret, &config.inner()));
-    Ok(Redirect::to("/"))
+    Redirect::to("/")
 }
 
 /// The login page.
