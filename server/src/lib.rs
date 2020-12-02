@@ -307,10 +307,12 @@ pub fn start_server(rocket_config: RConfig) {
         .mount(
             "/api/",
             routes![
+                routes::auth::new_user_cors,
                 routes::auth::new_user,
                 routes::auth::login,
                 routes::auth::logout,
                 routes::auth::change_password,
+                routes::auth::request_new_password_cors,
                 routes::auth::request_new_password,
                 routes::auth::change_email,
                 routes::project::new_project,
