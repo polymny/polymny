@@ -88,7 +88,7 @@ update msg { global, model } =
                 ( Core.ResetPasswordMsg resetPasswordMsg, Core.ResetPassword resetPasswordModel ) ->
                     let
                         ( m, cmd ) =
-                            ResetPassword.update resetPasswordMsg resetPasswordModel
+                            ResetPassword.update global resetPasswordMsg resetPasswordModel
                     in
                     ( Core.FullModel global m, cmd )
 
