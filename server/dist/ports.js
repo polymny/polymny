@@ -258,9 +258,13 @@ function setupPorts(app) {
 
         if (options.resolution === undefined) {
             // Find camera by deviceId
-            let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact);
-            options.video.width = input.resolutions[0].width;
-            options.video.height = input.resolutions[0].height;
+            let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact)[0];
+            if (input === undefined) {
+                options.video = true;
+            } else {
+                options.video.width = input.resolutions[0].width;
+                options.video.height = input.resolutions[0].height;
+            }
         }
 
         try {
