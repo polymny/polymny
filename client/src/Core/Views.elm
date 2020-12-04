@@ -345,7 +345,7 @@ topBar global model =
         question =
             Element.newTabLink []
                 { label = Icons.questionCircle
-                , url = "https://github.com/polymny/polymny/wiki/Tutoriels--de-polymny.studio"
+                , url = "https://polymny.studio/tutoriels/"
                 }
 
         unreadNotificationsInFront =
