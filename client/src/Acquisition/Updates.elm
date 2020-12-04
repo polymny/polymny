@@ -60,18 +60,18 @@ update global session msg model =
                             Nothing
 
                         _ ->
-                            Just ( Dropdown.init "", Dropdown.init "" )
+                            Just ( Dropdown.init "", Dropdown.init "", Dropdown.init "" )
             in
             ( makeModel { model | showSettings = newSettings }, Ports.goToWebcam elementId )
 
         Acquisition.VideoDropdownMsg vdMsg ->
             case model.showSettings of
-                Just ( videoDropdown, audioDropdown ) ->
+                Just ( videoDropdown, resolutionDropdowns, audioDropdown ) ->
                     let
                         ( newModel, newCmd ) =
                             Dropdown.update Acquisition.videoDropdownConfig vdMsg videoDropdown model.devices.video
                     in
-                    ( makeModel { model | showSettings = Just ( newModel, audioDropdown ) }, newCmd )
+                    ( makeModel { model | showSettings = Just ( newModel, resolutionDropdowns, audioDropdown ) }, newCmd )
 
                 _ ->
                     ( makeModel model, Cmd.none )
@@ -79,19 +79,21 @@ update global session msg model =
         Acquisition.VideoOptionPicked voMsg ->
             case voMsg of
                 Just device ->
-                    ( makeModel model, Ports.setVideoDevice ( device.deviceId, elementId ) )
+                    ( makeModel { model | device = Acquisition.replaceVideo (Just device) model.device }
+                    , Ports.setVideoDevice ( device.deviceId, elementId )
+                    )
 
                 _ ->
                     ( makeModel model, Cmd.none )
 
         Acquisition.AudioDropdownMsg adMsg ->
             case model.showSettings of
-                Just ( videoDropdown, audioDropdown ) ->
+                Just ( videoDropdown, resolutionDropdowns, audioDropdown ) ->
                     let
                         ( newModel, newCmd ) =
                             Dropdown.update Acquisition.audioDropdownConfig adMsg audioDropdown model.devices.audio
                     in
-                    ( makeModel { model | showSettings = Just ( videoDropdown, newModel ) }, newCmd )
+                    ( makeModel { model | showSettings = Just ( videoDropdown, resolutionDropdowns, newModel ) }, newCmd )
 
                 _ ->
                     ( makeModel model, Cmd.none )
@@ -99,7 +101,31 @@ update global session msg model =
         Acquisition.AudioOptionPicked aoMsg ->
             case aoMsg of
                 Just device ->
-                    ( makeModel model, Ports.setAudioDevice ( device.deviceId, elementId ) )
+                    ( makeModel { model | device = Acquisition.replaceAudio (Just device) model.device }
+                    , Ports.setAudioDevice ( device.deviceId, elementId )
+                    )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
+
+        Acquisition.ResolutionDropdownMsg rdMsg ->
+            case ( model.showSettings, model.device ) of
+                ( Just ( videoDropdown, resolutionDropdown, audioDropdown ), ( Just video, _, _ ) ) ->
+                    let
+                        ( newModel, newCmd ) =
+                            Dropdown.update Acquisition.resolutionDropdownConfig rdMsg resolutionDropdown video.resolutions
+                    in
+                    ( makeModel { model | showSettings = Just ( videoDropdown, newModel, audioDropdown ) }, newCmd )
+
+                _ ->
+                    ( makeModel model, Cmd.none )
+
+        Acquisition.ResolutionOptionPicked roMsg ->
+            case roMsg of
+                Just resolution ->
+                    ( makeModel { model | device = Acquisition.replaceResolution (Just resolution) model.device }
+                    , Ports.setResolution ( ( resolution.width, resolution.height ), elementId )
+                    )
 
                 _ ->
                     ( makeModel model, Cmd.none )

@@ -13,6 +13,7 @@ port module Acquisition.Ports exposing
     , nextSlideReceived
     , secondsRemaining
     , setAudioDevice
+    , setResolution
     , setVideoDevice
     , startRecording
     , stopRecording
@@ -78,3 +79,6 @@ port setAudioDevice : ( String, String ) -> Cmd msg
 
 
 port setVideoDevice : ( String, String ) -> Cmd msg
+
+
+port setResolution : ( ( Int, Int ), String ) -> Cmd msg

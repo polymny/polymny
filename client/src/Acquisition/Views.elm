@@ -1,4 +1,4 @@
-module Acquisition.Views exposing (audioDropdownConfig, subscriptions, videoDropdownConfig, view)
+module Acquisition.Views exposing (audioDropdownConfig, resolutionDropdownConfig, subscriptions, videoDropdownConfig, view)
 
 import Acquisition.Types as Acquisition
 import Api
@@ -74,7 +74,7 @@ view _ _ model =
 
         popup =
             case model.showSettings of
-                Just ( videoDropdown, audioDropdown ) ->
+                Just ( videoDropdown, resolutionDropdown, audioDropdown ) ->
                     let
                         toggleMsg =
                             Acquisition.ToggleSettings
@@ -89,6 +89,15 @@ view _ _ model =
                                         [ Element.text "Caméras disponibles"
                                         , Dropdown.view videoDropdownConfig videoDropdown model.devices.video
                                         ]
+                                    , case Acquisition.video model of
+                                        Just video ->
+                                            Element.column [ Element.width Element.fill ]
+                                                [ Element.text "Résolutions disponibles"
+                                                , Dropdown.view resolutionDropdownConfig resolutionDropdown video.resolutions
+                                                ]
+
+                                        _ ->
+                                            Element.none
                                     , Element.column [ Element.width Element.fill ]
                                         [ Element.text "Microphones disponibles"
                                         , Dropdown.view audioDropdownConfig audioDropdown model.devices.audio
@@ -416,19 +425,29 @@ elementId =
 videoDropdownConfig : Dropdown.Config Acquisition.VideoDevice Core.Msg
 videoDropdownConfig =
     dropdownConfig
+        .label
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoDropdownMsg x)))
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoOptionPicked x)))
+
+
+resolutionDropdownConfig : Dropdown.Config Acquisition.Resolution Core.Msg
+resolutionDropdownConfig =
+    dropdownConfig
+        (\x -> String.fromInt x.width ++ "x" ++ String.fromInt x.height)
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionDropdownMsg x)))
+        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionOptionPicked x)))
 
 
 audioDropdownConfig : Dropdown.Config Acquisition.AudioDevice Core.Msg
 audioDropdownConfig =
     dropdownConfig
+        .label
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioDropdownMsg x)))
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioOptionPicked x)))
 
 
-dropdownConfig : (Dropdown.Msg { a | label : String } -> Core.Msg) -> (Maybe { a | label : String } -> Core.Msg) -> Dropdown.Config { a | label : String } Core.Msg
-dropdownConfig makeMsg1 makeMsg2 =
+dropdownConfig : (a -> String) -> (Dropdown.Msg a -> Core.Msg) -> (Maybe a -> Core.Msg) -> Dropdown.Config a Core.Msg
+dropdownConfig getLabel makeMsg1 makeMsg2 =
     let
         containerAttrs =
             [ Element.width Element.fill ]
@@ -454,7 +473,7 @@ dropdownConfig makeMsg1 makeMsg2 =
             ]
 
         itemToPrompt item =
-            Element.text item.label
+            Element.text (getLabel item)
 
         itemToElement selected highlighted i =
             let
@@ -475,7 +494,7 @@ dropdownConfig makeMsg1 makeMsg2 =
                 , Element.width Element.fill
                 ]
                 [ Element.el [] (Element.text "-")
-                , Element.el [ Font.size 16 ] (Element.text i.label)
+                , Element.el [ Font.size 16 ] (Element.text (getLabel i))
                 ]
     in
     Dropdown.filterable
@@ -483,7 +502,7 @@ dropdownConfig makeMsg1 makeMsg2 =
         makeMsg2
         itemToPrompt
         itemToElement
-        .label
+        getLabel
         |> Dropdown.withContainerAttributes containerAttrs
         |> Dropdown.withSelectAttributes selectAttrs
         |> Dropdown.withListAttributes listAttrs

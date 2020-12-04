@@ -4,11 +4,18 @@ module Acquisition.Types exposing
     , Model
     , Msg(..)
     , Record
+    , Resolution
     , VideoDevice
+    , audio
     , decodeDevices
     , init
     , initAtFirstNonRecorded
     , newRecord
+    , replaceAudio
+    , replaceResolution
+    , replaceVideo
+    , resolution
+    , video
     )
 
 import Acquisition.Ports as Ports
@@ -37,17 +44,37 @@ newRecord id started =
     { id = id, new = True, started = started, nextSlides = [] }
 
 
+type alias Resolution =
+    { width : Int, height : Int }
+
+
 type alias VideoDevice =
-    { deviceId : String, groupId : String, label : String }
+    { deviceId : String, groupId : String, label : String, resolutions : List Resolution }
 
 
 type alias AudioDevice =
     { deviceId : String, groupId : String, label : String }
 
 
-decodeDevice : (String -> String -> String -> a) -> Decoder a
-decodeDevice constructor =
-    Decode.map3 constructor
+decodeResolution : Decoder Resolution
+decodeResolution =
+    Decode.map2 Resolution
+        (Decode.field "width" Decode.int)
+        (Decode.field "height" Decode.int)
+
+
+decodeVideoDevice : Decoder VideoDevice
+decodeVideoDevice =
+    Decode.map4 VideoDevice
+        (Decode.field "deviceId" Decode.string)
+        (Decode.field "groupId" Decode.string)
+        (Decode.field "label" Decode.string)
+        (Decode.field "resolutions" (Decode.list decodeResolution))
+
+
+decodeAudioDevice : Decoder AudioDevice
+decodeAudioDevice =
+    Decode.map3 AudioDevice
         (Decode.field "deviceId" Decode.string)
         (Decode.field "groupId" Decode.string)
         (Decode.field "label" Decode.string)
@@ -67,8 +94,8 @@ initDevices =
 decodeDevices : Decoder Devices
 decodeDevices =
     Decode.map2 Devices
-        (Decode.field "video" (Decode.list (decodeDevice VideoDevice)))
-        (Decode.field "audio" (Decode.list (decodeDevice AudioDevice)))
+        (Decode.field "video" (Decode.list decodeVideoDevice))
+        (Decode.field "audio" (Decode.list decodeAudioDevice))
 
 
 type alias Model =
@@ -87,7 +114,8 @@ type alias Model =
     , background : Maybe String
     , watchingWebcam : Bool
     , devices : Devices
-    , showSettings : Maybe ( Dropdown.State VideoDevice, Dropdown.State AudioDevice )
+    , showSettings : Maybe ( Dropdown.State VideoDevice, Dropdown.State Resolution, Dropdown.State AudioDevice )
+    , device : ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )
     }
 
 
@@ -140,9 +168,52 @@ init mattingEnabled details mode gos =
       , watchingWebcam = True
       , devices = initDevices
       , showSettings = Nothing
+      , device = ( Nothing, Nothing, Nothing )
       }
     , Ports.init ( "video", Maybe.map Tuple.first record, background )
     )
+
+
+video : Model -> Maybe VideoDevice
+video model =
+    let
+        ( x, _, _ ) =
+            model.device
+    in
+    x
+
+
+resolution : Model -> Maybe Resolution
+resolution model =
+    let
+        ( _, x, _ ) =
+            model.device
+    in
+    x
+
+
+audio : Model -> Maybe AudioDevice
+audio model =
+    let
+        ( _, _, x ) =
+            model.device
+    in
+    x
+
+
+replaceVideo : Maybe VideoDevice -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice ) -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )
+replaceVideo toReplace ( _, y, z ) =
+    ( toReplace, Maybe.andThen (List.head << .resolutions) toReplace, z )
+
+
+replaceResolution : Maybe Resolution -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice ) -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )
+replaceResolution toReplace ( x, _, z ) =
+    ( x, toReplace, z )
+
+
+replaceAudio : Maybe AudioDevice -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice ) -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )
+replaceAudio toReplace ( x, y, _ ) =
+    ( x, y, toReplace )
 
 
 filterNonRecorded : ( Int, Api.Gos ) -> Maybe Int
@@ -186,5 +257,7 @@ type Msg
     | ToggleSettings
     | VideoDropdownMsg (Dropdown.Msg VideoDevice)
     | AudioDropdownMsg (Dropdown.Msg AudioDevice)
+    | ResolutionDropdownMsg (Dropdown.Msg Resolution)
     | VideoOptionPicked (Maybe VideoDevice)
     | AudioOptionPicked (Maybe AudioDevice)
+    | ResolutionOptionPicked (Maybe Resolution)
