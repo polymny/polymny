@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 use std::io::Cursor;
 
-use rocket::http::{ContentType, Cookie, Cookies};
+use rocket::http::{ContentType, Cookie, Cookies, Status};
 use rocket::request::Form;
 use rocket::response::{Redirect, Response};
 use rocket::State;
@@ -40,19 +40,43 @@ pub struct NewUserForm {
     password: String,
 }
 
+/// Route to allow CORS request from home page.
+#[options("/new-user")]
+pub fn new_user_cors<'a>(config: State<Config>) -> Response<'a> {
+    Response::build()
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type")
+        .finalize()
+}
+
 /// The route to register new users.
 #[post("/new-user", data = "<user>")]
-pub fn new_user(db: Database, config: State<Config>, user: Json<NewUserForm>) -> Result<Response> {
+pub fn new_user(db: Database, config: State<Config>, user: Json<NewUserForm>) -> Response {
+    let mut base = Response::build();
+    let base = base
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type");
+
     let user = User::create(
         &user.username,
         &user.email,
         &user.password,
         &config.mailer,
         &db,
-    )?;
-    user.save(&db)?;
+    );
 
-    Ok(Response::build().sized_body(Cursor::new("")).finalize())
+    let user = match user {
+        Ok(user) => user,
+        Err(Error::NotFound) => return base.status(Status::NotFound).finalize(),
+        _ => return base.status(Status::InternalServerError).finalize(),
+    };
+
+    match user.save(&db) {
+        Ok(_) => base.finalize(),
+        Err(_) => base.status(Status::InternalServerError).finalize(),
+    }
 }
 
 /// The route to active a user.
@@ -66,7 +90,7 @@ pub fn activate(
     let user = User::activate(&key, &db)?;
     let session = user.save_session(&db)?;
     cookies.add_private(cookie(&session.secret, &config));
-    Ok(Redirect::to("/"))
+    Ok(Redirect::to(config.home.clone()))
 }
 
 /// A struct that serves for form veryfing.
@@ -79,18 +103,49 @@ pub struct LoginForm {
     password: String,
 }
 
+/// Route to allow CORS request from home page.
+#[options("/login")]
+pub fn login_external_cors(config: State<Config>) -> Response {
+    Response::build()
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type")
+        .finalize()
+}
+
 /// The login page.
 #[post("/login", data = "<login>")]
-pub fn login_and_redirect(
+pub fn login_external<'a>(
     db: Database,
     mut cookies: Cookies,
     login: Form<LoginForm>,
     config: State<Config>,
-) -> Result<Redirect> {
-    let user = User::authenticate(&login.username, &login.password, &db)?;
-    let session = user.save_session(&db)?;
+) -> Response<'a> {
+    let mut response = Response::build();
+    let response = response
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type");
+
+    let user = match User::authenticate(&login.username, &login.password, &db) {
+        Ok(u) => u,
+        Err(Error::AuthenticationFailed) => {
+            return response.status(Status::Unauthorized).finalize()
+        }
+        Err(_) => return response.status(Status::InternalServerError).finalize(),
+    };
+
+    let session = match user.save_session(&db) {
+        Ok(u) => u,
+        Err(_) => return response.status(Status::InternalServerError).finalize(),
+    };
+
     cookies.add_private(cookie(&session.secret, &config.inner()));
-    Ok(Redirect::to("/"))
+
+    response
+        .raw_header("Location", config.root.clone())
+        .status(Status::SeeOther)
+        .finalize()
 }
 
 /// The login page.
@@ -147,6 +202,16 @@ pub fn logout(db: Database, mut cookies: Cookies, config: State<Config>) -> Resu
     Ok(())
 }
 
+/// Route to allow CORS request from home page.
+#[options("/request-new-password")]
+pub fn request_new_password_cors<'a>(config: State<Config>) -> Response<'a> {
+    Response::build()
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type")
+        .finalize()
+}
+
 /// The form for requesting a new password.
 #[derive(Serialize, Deserialize)]
 pub struct RequestNewPasswordForm {
@@ -160,10 +225,22 @@ pub fn request_new_password(
     config: State<Config>,
     db: Database,
     form: Json<RequestNewPasswordForm>,
-) -> Result<()> {
-    let mut user = User::get_by_email(&form.email, &db.0)?;
-    user.change_password(&config.mailer, &db.0)?;
-    Ok(())
+) -> Response {
+    let mut response = Response::build();
+    let response = response
+        .raw_header("Access-Control-Allow-Origin", config.home.clone())
+        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
+        .raw_header("Access-Control-Allow-Headers", "Content-Type");
+
+    let mut user = match User::get_by_email(&form.email, &db.0) {
+        Ok(user) => user,
+        Err(_) => return response.status(Status::NotFound).finalize(),
+    };
+
+    match user.change_password(&config.mailer, &db.0) {
+        Ok(_) => response.finalize(),
+        Err(_) => response.status(Status::InternalServerError).finalize(),
+    }
 }
 
 /// The page that prompts a user for a new password.
