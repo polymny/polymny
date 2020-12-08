@@ -274,7 +274,7 @@ slideView model =
                 , Element.height (Element.fillPortion 2)
                 , Element.htmlAttribute
                     (Html.Attributes.style "background"
-                        ("center / contain content-box no-repeat url(" ++ h.asset.asset_path ++ ")")
+                        ("center / contain content-box no-repeat url('" ++ h.asset.asset_path ++ "')")
                     )
                 ]
                 Element.none
