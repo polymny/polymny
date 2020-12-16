@@ -14,6 +14,7 @@ import Html.Attributes
 import Keyboard
 import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
+import Status
 import Ui.Colors as Colors
 import Ui.Icons
 import Ui.Ui as Ui
@@ -58,7 +59,7 @@ subscriptions model =
         ]
 
 
-view : Core.Global -> Api.Session -> Acquisition.Model -> Element Core.Msg
+view : Core.Global -> Api.Session -> Acquisition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 view _ _ model =
     let
         attributes =
@@ -69,16 +70,34 @@ view _ _ model =
                     else
                         [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
                    )
+
+        element =
+            Element.row
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.scrollbarY
+                ]
+                [ Preparation.leftColumnView model.details (Just model.gos)
+                , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
+                , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
+                ]
+
+        popup =
+            if model.status == Status.Sent then
+                Element.text "Envoi de l'enregistrement en cours..."
+                    |> Element.el [ Element.centerX, Element.centerY ]
+                    |> Element.el
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        , Background.color Colors.whiteDark
+                        ]
+                    |> Ui.popup "Envoi de l'enregistrement"
+                    |> Just
+
+            else
+                Nothing
     in
-    Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.scrollbarY
-        ]
-        [ Preparation.leftColumnView model.details (Just model.gos)
-        , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
-        , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
-        ]
+    ( element, popup )
 
 
 centerView : Acquisition.Model -> Element Core.Msg
