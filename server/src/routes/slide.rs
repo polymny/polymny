@@ -1,9 +1,9 @@
 //! This module contains all the routes related to slides.
 
+use serde_json::json as serde_json;
 use std::fs::{self, create_dir};
 use std::path::{Path, PathBuf};
-
-use serde_json::json as serde_json;
+use std::sync::mpsc::channel;
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
@@ -21,6 +21,8 @@ use rocket_multipart_form_data::{
 
 use tempfile::tempdir;
 use uuid::Uuid;
+
+use timer;
 
 use crate::command;
 use crate::command::VideoMetadata;
@@ -262,8 +264,6 @@ pub fn upload_resource(
     let mut asset_path = config.data_path.clone();
     asset_path.push(&asset.asset_path);
 
-    let metadata = VideoMetadata::metadata(&asset_path)?;
-
     let transcoded_asset = {
         let file_stem = Path::new(&asset.name)
             .file_stem()
@@ -288,87 +288,32 @@ pub fn upload_resource(
     transcoded_path.push(transcoded_asset.asset_path);
 
     let mut ffmpeg_command = Vec::new();
-    if metadata.with_audio {
-        ffmpeg_command.extend(
-            vec![
-                "ffmpeg",
-                "-hide_banner",
-                "-y",
-                "-i",
-                &asset_path.to_str().unwrap(),
-                "-profile:v",
-                "main",
-                "-pix_fmt",
-                "yuv420p",
-                "-level",
-                "3.1",
-                "-ar",
-                "48000",
-                "-ab",
-                "128k",
-                "-vcodec",
-                "libx264",
-                "-preset",
-                "fast",
-                "-tune",
-                "zerolatency",
-                "-b:v",
-                "5M",
-                "-acodec",
-                "aac",
-                "-s",
-                "hd1080",
-                "-r",
-                "25",
-                &transcoded_path.to_str().unwrap(),
-            ]
-            .into_iter(),
-        );
-    } else {
-        ffmpeg_command.extend(
-            vec![
-                "ffmpeg",
-                "-hide_banner",
-                "-y",
-                "-i",
-                &asset_path.to_str().unwrap(),
-                "-f",
-                "lavfi",
-                "-i",
-                "anullsrc=channel_layout=stereo:sample_rate=44100",
-                "-profile:v",
-                "main",
-                "-pix_fmt",
-                "yuv420p",
-                "-level",
-                "3.1",
-                "-b:v",
-                "440k",
-                "-ar",
-                "44100",
-                "-ab",
-                "128k",
-                "-vcodec",
-                "libx264",
-                "-preset",
-                "fast",
-                "-tune",
-                "zerolatency",
-                "-acodec",
-                "aac",
-                "-s",
-                "hd1080",
-                "-r",
-                "25",
-                "-shortest",
-                &transcoded_path.to_str().unwrap(),
-            ]
-            .into_iter(),
-        );
-    }
+    ffmpeg_command.extend(
+        vec![
+            "./src/sh/transcode_media.sh",
+            &asset_path.to_str().unwrap(),
+            &transcoded_path.to_str().unwrap(),
+        ]
+        .into_iter(),
+    );
 
-    let child = command::run_command(&ffmpeg_command).unwrap();
+    let child = command::spawn_command(&ffmpeg_command).unwrap();
 
+    println!("child id = {}", child.id());
+    let timer = timer::Timer::new();
+    //let (tx, rx) = channel();
+
+    let _guard = timer.schedule_with_delay(chrono::Duration::seconds(3), move || {
+        // This closure is executed on the scheduler thread,
+        // so we want to move it away asap.
+
+        println!("child id = {}", child.id());
+        //let _ignored = tx.send(()); // Avoid unwrapping here.
+    });
+
+    //rx.recv().unwrap();
+    //println!("This code has been executed after 3 seconds");
+    /*
     if child.status.success() {
         info!("status: {}", child.status);
         use crate::schema::slides::dsl;
@@ -400,6 +345,7 @@ pub fn upload_resource(
         return Err(Error::TranscodeError);
     };
 
+    */
     reset.ok();
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))

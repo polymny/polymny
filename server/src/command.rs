@@ -30,6 +30,16 @@ pub fn run_command(command: &Vec<&str>) -> io::Result<Output> {
     child
 }
 
+/// Runs a specified command.
+pub fn spawn_command(
+    command: &Vec<&str>,
+) -> std::result::Result<std::process::Child, std::io::Error> {
+    info!("Spawinng command: {:#?}", command.join(" "));
+    let child = Command::new(command[0]).args(&command[1..]).spawn();
+
+    child
+}
+
 /// Counts the pages of a PDF file.
 pub fn count_pages<P: AsRef<Path>>(input: P) -> Result<u32> {
     let output = run_command(&vec![
