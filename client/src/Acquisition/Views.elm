@@ -84,7 +84,11 @@ view _ _ model =
 
         popup =
             if model.status == Status.Sent then
-                Element.text "Envoi de l'enregistrement en cours..."
+                Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
+                    [ Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Envoi de l'enregistrement en cours." ]
+                    , Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Le temps de transfert peut-être long, notamment si l'enregistrement est long ou si la connexion est lente (par exemple ADSL)" ]
+                    , Element.el [ Element.centerX ] Ui.spinner
+                    ]
                     |> Element.el [ Element.centerX, Element.centerY ]
                     |> Element.el
                         [ Element.width Element.fill
