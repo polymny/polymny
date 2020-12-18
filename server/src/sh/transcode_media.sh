@@ -48,21 +48,28 @@ OUTPUT_PATH=$2
 
 DETECT_AUDIO=$(ffprobe -hide_banner -print_format json -show_streams -select_streams a $INPUT_PATH |\
 jq '.[] | length')
+# for method to count frames:
+# https://stackoverflow.com/questions/2017843/fetch-frame-count-with-ffmpeg
 
-if [ $DETECT_AUDIO = 0 ];
+NB_FRAMES=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nokey=1:noprint_wrappers=1 $INPUT_PATH)
+printf  'total_frames=%i\n' $NB_FRAMES
+
+if [[ $DETECT_AUDIO == 0 ]];
 then
     printf  'no audio track\n';
+else
+    printf  'DETECT_AUDIO = %i\n' $DETECT_AUDIO;
 fi
 
 
 CMD="ffmpeg \
 -nostats \
--progress /tmp/progress.log \
+-progress pipe:1 \
 -loglevel $loglevel \
 -hide_banner -y \
 -i $INPUT_PATH "
 
-if [ $DETECT_AUDIO = 0 ]; then
+if [[ $DETECT_AUDIO == 0 ]]; then
     CMD+="-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 ";
 fi
 
@@ -74,7 +81,7 @@ CMD+="-profile:v main -pix_fmt yuv420p \
 -acodec aac \
 -s hd1080 \
 -r 25 "
-if [ $DETECT_AUDIO = 0 ]; then
+if [[ $DETECT_AUDIO == 0 ]]; then
     CMD+="-shortest "
 fi
 

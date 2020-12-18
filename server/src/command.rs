@@ -1,7 +1,7 @@
 //! This module helps us to run commands.
 use std::io;
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 use crate::config::Config;
 use crate::{Error, Result};
@@ -35,7 +35,10 @@ pub fn spawn_command(
     command: &Vec<&str>,
 ) -> std::result::Result<std::process::Child, std::io::Error> {
     info!("Spawinng command: {:#?}", command.join(" "));
-    let child = Command::new(command[0]).args(&command[1..]).spawn();
+    let child = Command::new(command[0])
+        .args(&command[1..])
+        .stdout(Stdio::piped())
+        .spawn();
 
     child
 }

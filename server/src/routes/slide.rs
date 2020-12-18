@@ -2,6 +2,7 @@
 
 use serde_json::json as serde_json;
 use std::fs::{self, create_dir};
+use std::io::{BufRead, BufReader, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
 
@@ -297,9 +298,32 @@ pub fn upload_resource(
         .into_iter(),
     );
 
-    let child = command::spawn_command(&ffmpeg_command).unwrap();
+    let mut child = command::spawn_command(&ffmpeg_command).unwrap();
 
     println!("child id = {}", child.id());
+    let stdout = child.stdout.take().unwrap();
+    let reader = BufReader::new(stdout);
+    let mut total_frames = 1;
+    for line in reader.lines() {
+        let bidule = line.unwrap();
+        let data = bidule.split("=").collect::<Vec<_>>();
+        match data[..] {
+            ["frame", x] => {
+                let frames = x.parse::<i32>().unwrap();
+                println!(
+                    "frame count = {:#?} -  progress= {:.2}%",
+                    frames,
+                    ((frames as f32) / total_frames as f32) * 100.
+                )
+            }
+            ["total_frames", x] => {
+                total_frames = x.parse::<i32>().unwrap();
+                println!("total_frames  {:#?}", total_frames);
+            }
+            _ => {}
+        };
+    }
+    /*
     let timer = timer::Timer::new();
     //let (tx, rx) = channel();
 
@@ -313,6 +337,7 @@ pub fn upload_resource(
 
     //rx.recv().unwrap();
     //println!("This code has been executed after 3 seconds");
+    */
     /*
     if child.status.success() {
         info!("status: {}", child.status);
