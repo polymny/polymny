@@ -2,9 +2,8 @@
 
 use serde_json::json as serde_json;
 use std::fs::{self, create_dir};
-use std::io::{BufRead, BufReader, ErrorKind};
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
 
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
@@ -22,8 +21,6 @@ use rocket_multipart_form_data::{
 
 use tempfile::tempdir;
 use uuid::Uuid;
-
-use timer;
 
 use crate::command;
 use crate::command::VideoMetadata;
@@ -314,7 +311,17 @@ pub fn upload_resource(
                     "frame count = {:#?} -  progress= {:.2}%",
                     frames,
                     ((frames as f32) / total_frames as f32) * 100.
-                )
+                );
+                user.notify(
+                    socks.inner(),
+                    NotificationStyle::Progress,
+                    "Transcodage en cours",
+                    &format!(
+                        "progression {} %.",
+                        ((frames as f32) / total_frames as f32) * 100.
+                    ),
+                    &db,
+                )?;
             }
             ["total_frames", x] => {
                 total_frames = x.parse::<i32>().unwrap();

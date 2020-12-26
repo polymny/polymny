@@ -15,6 +15,7 @@ type alias Notification =
 
 type Style
     = Info
+    | Progress
     | Warning
     | Error
 
@@ -31,6 +32,9 @@ decodeStyle =
             case x of
                 "warning" ->
                     Decode.succeed Warning
+
+                "Progress" ->
+                    Decode.succeed Progress
 
                 "error" ->
                     Decode.succeed Error

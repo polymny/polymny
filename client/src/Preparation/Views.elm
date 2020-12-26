@@ -30,7 +30,7 @@ view global session model =
 
 
 mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-mainView global _ model =
+mainView global session model =
     let
         slide : Maybe Api.Slide
         slide =
@@ -239,6 +239,19 @@ mainView global _ model =
 
         ( _, ( _, Api.Running ), _ ) ->
             let
+                notifications =
+                    case global.progressNotifications of
+                        Just notifs ->
+                            case List.head notifs of
+                                Just x ->
+                                    Element.el [] <| Element.text x.content
+
+                                _ ->
+                                    Element.none
+
+                        _ ->
+                            Element.none
+
                 element =
                     Ui.popup "ATTENTION"
                         (Element.el
@@ -247,6 +260,7 @@ mainView global _ model =
                                 [ Element.el [ Element.height Element.fill ] Element.none
                                 , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
                                 , Ui.spinner
+                                , notifications
                                 , Element.paragraph [] [ Element.text "Merci de patienter un peu." ]
                                 , Element.el [ Element.height Element.fill ] Element.none
                                 ]

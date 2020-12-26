@@ -164,6 +164,7 @@ globalFromFlags flags key =
     , showAbout = False
     , notificationPanelVisible = False
     , device = Element.classifyDevice { width = width, height = height }
+    , progressNotifications = Nothing
     }
 
 

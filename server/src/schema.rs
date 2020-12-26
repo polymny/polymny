@@ -76,8 +76,8 @@ table! {
         user_id -> Int4,
         title -> Varchar,
         content -> Varchar,
-        style -> Notification_style,
         read -> Bool,
+        style -> Notification_style,
     }
 }
 

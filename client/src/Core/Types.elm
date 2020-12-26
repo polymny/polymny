@@ -43,6 +43,7 @@ type alias Global =
     , showAbout : Bool
     , notificationPanelVisible : Bool
     , device : Element.Device
+    , progressNotifications : Maybe (List Notification)
     }
 
 

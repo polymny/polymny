@@ -148,15 +148,25 @@ update msg { global, model } =
                 -- Websocket messages
                 ( Core.WebSocket wMsg, Core.LoggedIn { session, tab } ) ->
                     let
-                        newSession =
+                        ( newSession, newGlobal ) =
                             case Decode.decodeString Notification.decode wMsg.content of
                                 Ok notif ->
-                                    { session | notifications = notif :: session.notifications }
+                                    case notif.style of
+                                        Notification.Progress ->
+                                            case global.progressNotifications of
+                                                Just x ->
+                                                    ( session, { global | progressNotifications = Just (notif :: x) } )
+
+                                                Nothing ->
+                                                    ( session, { global | progressNotifications = Just [ notif ] } )
+
+                                        _ ->
+                                            ( { session | notifications = notif :: session.notifications }, global )
 
                                 _ ->
-                                    session
+                                    ( session, global )
                     in
-                    ( Core.FullModel global (Core.LoggedIn (LoggedIn.Model newSession tab)), Cmd.none )
+                    ( Core.FullModel newGlobal (Core.LoggedIn (LoggedIn.Model newSession tab)), Cmd.none )
 
                 ( Core.WithNotification n m, Core.LoggedIn { session, tab } ) ->
                     let

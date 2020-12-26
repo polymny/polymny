@@ -14,6 +14,9 @@ mod notification_style {
         /// Some information about something that happened.
         Info,
 
+        /// Progress information for a long job
+        Progress,
+
         /// A warning that indicates that a problem may occur.
         Warning,
 
@@ -26,6 +29,7 @@ mod notification_style {
         pub fn to_str(self) -> &'static str {
             match self {
                 NotificationStyle::Info => "info",
+                NotificationStyle::Progress => "progress",
                 NotificationStyle::Warning => "warning",
                 NotificationStyle::Error => "danger",
             }
@@ -53,11 +57,11 @@ pub struct Notification {
     /// The message of the notification.
     pub content: String,
 
-    /// The style of the notification.
-    pub style: NotificationStyle,
-
     /// Whether the notification is read or not.
     pub read: bool,
+
+    /// The style of the notification.
+    pub style: NotificationStyle,
 }
 
 impl Notification {
