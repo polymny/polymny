@@ -317,7 +317,7 @@ pub fn upload_resource(
                     NotificationStyle::Progress,
                     "Transcodage en cours",
                     &format!(
-                        "progression {} %.",
+                        "progression = {:.2} %.",
                         ((frames as f32) / total_frames as f32) * 100.
                     ),
                     &db,
@@ -345,9 +345,8 @@ pub fn upload_resource(
     //rx.recv().unwrap();
     //println!("This code has been executed after 3 seconds");
     */
-    /*
-    if child.status.success() {
-        info!("status: {}", child.status);
+    let ecode = child.wait().expect("failed to wait on child");
+    if ecode.success() {
         use crate::schema::slides::dsl;
         diesel::update(slides::table)
             .filter(dsl::id.eq(slide.id))
@@ -377,7 +376,6 @@ pub fn upload_resource(
         return Err(Error::TranscodeError);
     };
 
-    */
     reset.ok();
     let slide = user.get_slide_by_id(id, &db)?;
     Ok(json!(SlideWithAsset::get_by_id(slide.id, &db)?))

@@ -244,7 +244,7 @@ mainView global session model =
                         Just notifs ->
                             case List.head notifs of
                                 Just x ->
-                                    Element.el [] <| Element.text x.content
+                                    Ui.messageWithSpinner x.content
 
                                 _ ->
                                     Element.none
@@ -259,7 +259,6 @@ mainView global session model =
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
                                 , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
-                                , Ui.spinner
                                 , notifications
                                 , Element.paragraph [] [ Element.text "Merci de patienter un peu." ]
                                 , Element.el [ Element.height Element.fill ] Element.none
