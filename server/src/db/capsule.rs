@@ -8,30 +8,12 @@ use diesel::prelude::*;
 use crate::db::asset::Asset;
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::slide::{Slide, SlideWithAsset};
+use crate::db::task::TaskStatus;
 use crate::schema::{capsules, capsules_projects};
 use crate::webcam::{
     str_to_webcam_position, str_to_webcam_size, ProductionChoices, WebcamPosition, WebcamSize,
 };
 use crate::Result;
-
-#[allow(missing_docs)]
-mod task_status {
-    /// The different published states possible.
-    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize, Copy, Clone)]
-    pub enum TaskStatus {
-        /// Not started.
-        Idle,
-
-        /// Running.
-        Running,
-
-        /// Done.
-        Done,
-    }
-}
-
-pub use task_status::TaskStatusMapping as Task_status;
-pub use task_status::{TaskStatus, TaskStatusMapping};
 
 /// A capsule of preparation
 #[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]

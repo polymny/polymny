@@ -33,6 +33,7 @@ table! {
     use crate::db::asset::*;
     use crate::db::capsule::*;
     use crate::db::notification::*;
+    use crate::db::task::*;
 
     capsules (id) {
         id -> Int4,
@@ -70,6 +71,7 @@ table! {
     use crate::db::asset::*;
     use crate::db::capsule::*;
     use crate::db::notification::*;
+    use crate::db::task::*;
 
     notifications (id) {
         id -> Int4,
@@ -128,6 +130,23 @@ table! {
     use crate::db::asset::*;
     use crate::db::capsule::*;
     use crate::db::notification::*;
+    use crate::db::task::*;
+
+    tasks (id) {
+        id -> Int4,
+        user_id -> Int4,
+        pid -> Int4,
+        content -> Varchar,
+        progress -> Float8,
+        state -> Task_status,
+    }
+}
+
+table! {
+    use diesel::sql_types::*;
+    use crate::db::asset::*;
+    use crate::db::capsule::*;
+    use crate::db::notification::*;
 
     users (id) {
         id -> Int4,
@@ -149,6 +168,7 @@ joinable!(notifications -> users (user_id));
 joinable!(projects -> users (user_id));
 joinable!(sessions -> users (user_id));
 joinable!(slides -> capsules (capsule_id));
+joinable!(tasks -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
     assets,
@@ -159,5 +179,6 @@ allow_tables_to_appear_in_same_query!(
     projects,
     sessions,
     slides,
+    tasks,
     users,
 );

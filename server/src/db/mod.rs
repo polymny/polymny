@@ -6,4 +6,5 @@ pub mod notification;
 pub mod project;
 pub mod session;
 pub mod slide;
+pub mod task;
 pub mod user;
