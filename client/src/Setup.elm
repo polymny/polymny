@@ -481,4 +481,4 @@ topBar =
 
 homeButton : Element Msg
 homeButton =
-    Element.el [ Font.bold, Font.size 18 ] (Ui.textButton Nothing "Preparation")
+    Element.el [ Font.bold, Font.size 18 ] (Ui.simpleButton Nothing "Preparation")
