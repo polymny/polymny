@@ -8,6 +8,7 @@ pub mod notification;
 pub mod project;
 pub mod setup;
 pub mod slide;
+pub mod task;
 
 use std::io::Cursor;
 use std::path::PathBuf;

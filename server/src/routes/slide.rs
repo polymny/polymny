@@ -2,7 +2,6 @@
 
 use serde_json::json as serde_json;
 use std::fs::{self, create_dir};
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use diesel::ExpressionMethods;
@@ -23,7 +22,6 @@ use tempfile::tempdir;
 use uuid::Uuid;
 
 use crate::command;
-use crate::command::VideoMetadata;
 use crate::config::Config;
 use crate::db::asset::{Asset, AssetType, AssetsObject};
 use crate::db::capsule::GosStructure;
@@ -32,6 +30,7 @@ use crate::db::slide::{Slide, SlideWithAsset};
 use crate::db::task::TaskStatus;
 use crate::db::user::User;
 use crate::routes::capsule::{format_capsule_data, TaskStatusReset};
+use crate::routes::task::TaskManager;
 use crate::schema::slides;
 use crate::{Database, Error, Result, WebSockets};
 
@@ -295,59 +294,11 @@ pub fn upload_resource(
         ]
         .into_iter(),
     );
+    let mut manager = TaskManager::new(&db, user.id)?;
+    manager.spawn(&ffmpeg_command)?;
+    manager.ffmpeg_task_progress(socks.inner())?;
 
-    let mut child = command::spawn_command(&ffmpeg_command).unwrap();
-
-    println!("child id = {}", child.id());
-    let stdout = child.stdout.take().unwrap();
-    let reader = BufReader::new(stdout);
-    let mut total_frames = 1;
-    for line in reader.lines() {
-        let bidule = line.unwrap();
-        let data = bidule.split("=").collect::<Vec<_>>();
-        match data[..] {
-            ["frame", x] => {
-                let frames = x.parse::<i32>().unwrap();
-                println!(
-                    "frame count = {:#?} -  progress= {:.2}%",
-                    frames,
-                    ((frames as f32) / total_frames as f32) * 100.
-                );
-                user.notify(
-                    socks.inner(),
-                    NotificationStyle::Progress,
-                    "Transcodage en cours",
-                    &format!(
-                        "progression = {:.2} %.",
-                        ((frames as f32) / total_frames as f32) * 100.
-                    ),
-                    &db,
-                )?;
-            }
-            ["total_frames", x] => {
-                total_frames = x.parse::<i32>().unwrap();
-                println!("total_frames  {:#?}", total_frames);
-            }
-            _ => {}
-        };
-    }
-    /*
-    let timer = timer::Timer::new();
-    //let (tx, rx) = channel();
-
-    let _guard = timer.schedule_with_delay(chrono::Duration::seconds(3), move || {
-        // This closure is executed on the scheduler thread,
-        // so we want to move it away asap.
-
-        println!("child id = {}", child.id());
-        //let _ignored = tx.send(()); // Avoid unwrapping here.
-    });
-
-    //rx.recv().unwrap();
-    //println!("This code has been executed after 3 seconds");
-    */
-    let ecode = child.wait().expect("failed to wait on child");
-    if ecode.success() {
+    if manager.success() {
         use crate::schema::slides::dsl;
         diesel::update(slides::table)
             .filter(dsl::id.eq(slide.id))
