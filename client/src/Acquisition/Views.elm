@@ -83,7 +83,7 @@ view _ _ model =
                                 |> Just
 
                         popupElement =
-                            Element.row [ Element.width Element.fill, Element.spacing 10 ]
+                            Element.row [ Element.centerY, Element.width Element.fill, Element.spacing 10 ]
                                 [ Element.column [ Element.width Element.fill, Element.padding 20, Element.spacing 10 ]
                                     [ Element.column [ Element.width Element.fill ]
                                         [ Element.text "Caméras disponibles"
@@ -104,7 +104,7 @@ view _ _ model =
                                         ]
                                     , Ui.primaryButton toggleMsg "Valider"
                                     ]
-                                , videoElement
+                                , Element.el [ Element.width Element.fill ] videoElement
                                 ]
                     in
                     Just

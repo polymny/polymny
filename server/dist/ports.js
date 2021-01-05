@@ -75,7 +75,12 @@ function setupPorts(app) {
         inputs = {};
         videoDeviceId = localStorage.getItem("videoDeviceId") || null;
         audioDeviceId = localStorage.getItem("audioDeviceId") || null;
-        resolution    = localStorage.getItem("resolution") || null;
+        resolution    = null;
+        try {
+            resolution = JSON.parse(localStorage.getItem("resolution"));
+        } catch (e) {
+            // Leave it null
+        }
     }
 
     function sendWebSocketMessage(content) {
@@ -246,8 +251,8 @@ function setupPorts(app) {
         if (videoDeviceId) {
             options.video = { deviceId: { exact: videoDeviceId }};
             if (resolution) {
-                options.video.width = resolution.width;
-                options.video.height = resolution.height;
+                options.video.width = { exact: resolution.width };
+                options.video.height = { exact: resolution.height };
             }
         }
 
@@ -256,7 +261,7 @@ function setupPorts(app) {
             options.video = { deviceId: { exact: input.deviceId } };
         }
 
-        if (options.resolution === undefined) {
+        if (resolution === null) {
             // Find camera by deviceId
             let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact);
             if (input === undefined) {
@@ -435,7 +440,7 @@ function setupPorts(app) {
 
     async function setResolution(width, height, id) {
         resolution = { width, height };
-        localStorage.setItem("resolution", resolution);
+        localStorage.setItem("resolution", JSON.stringify(resolution));
         stream = null;
         await setupUserMedia();
         await bindWebcam(id);
