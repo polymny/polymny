@@ -16,6 +16,7 @@ import Html.Attributes
 import Keyboard
 import LoggedIn.Types as LoggedIn
 import Preparation.Views as Preparation
+import Status
 import Ui.Colors as Colors
 import Ui.Icons
 import Ui.Ui as Ui
@@ -73,8 +74,23 @@ view _ _ model =
                    )
 
         popup =
-            case model.showSettings of
-                Just ( videoDropdown, resolutionDropdown, audioDropdown ) ->
+            case ( model.status, model.showSettings ) of
+                ( Status.Sent, _ ) ->
+                    Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
+                        [ Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Envoi de l'enregistrement en cours." ]
+                        , Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Le temps de transfert peut-être long, notamment si l'enregistrement est long ou si la connexion est lente (par exemple ADSL)" ]
+                        , Element.el [ Element.centerX ] Ui.spinner
+                        ]
+                        |> Element.el [ Element.centerX, Element.centerY ]
+                        |> Element.el
+                            [ Element.width Element.fill
+                            , Element.height Element.fill
+                            , Background.color Colors.light
+                            ]
+                        |> Ui.popup "Envoi de l'enregistrement"
+                        |> Just
+
+                ( _, Just ( videoDropdown, resolutionDropdown, audioDropdown ) ) ->
                     let
                         toggleMsg =
                             Acquisition.ToggleSettings
@@ -127,6 +143,25 @@ view _ _ model =
         ]
     , popup
     )
+
+
+
+-- element =
+--     Element.row
+--         [ Element.width Element.fill
+--         , Element.height Element.fill
+--         , Element.scrollbarY
+--         ]
+--         [ Preparation.leftColumnView model.details (Just model.gos)
+--         , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
+--         , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
+--         ]
+-- popup =
+--     if model.status == Status.Sent then
+--         --     else
+--         Nothing
+-- in
+-- ( element, popup )
 
 
 centerView : Acquisition.Model -> Element Core.Msg
