@@ -1,12 +1,15 @@
 module Acquisition.Types exposing
     ( AudioDevice
+    , AudioDeviceInfo
     , Mode(..)
     , Model
     , Msg(..)
     , Record
     , Resolution
     , VideoDevice
+    , VideoDeviceInfo
     , audio
+    , audioLabel
     , decodeDevices
     , init
     , initAtFirstNonRecorded
@@ -15,7 +18,9 @@ module Acquisition.Types exposing
     , replaceResolution
     , replaceVideo
     , resolution
+    , resolutionLabel
     , video
+    , videoLabel
     )
 
 import Acquisition.Ports as Ports
@@ -49,11 +54,39 @@ type alias Resolution =
 
 
 type alias VideoDevice =
+    Maybe VideoDeviceInfo
+
+
+type alias VideoDeviceInfo =
     { deviceId : String, groupId : String, label : String, resolutions : List Resolution }
 
 
+videoLabel : VideoDevice -> String
+videoLabel v =
+    case v of
+        Nothing ->
+            "Désactivé"
+
+        Just x ->
+            x.label
+
+
 type alias AudioDevice =
+    Maybe AudioDeviceInfo
+
+
+type alias AudioDeviceInfo =
     { deviceId : String, groupId : String, label : String }
+
+
+audioLabel : AudioDevice -> String
+audioLabel a =
+    case a of
+        Nothing ->
+            "Désactivé"
+
+        Just x ->
+            x.label
 
 
 decodeResolution : Decoder Resolution
@@ -63,21 +96,36 @@ decodeResolution =
         (Decode.field "height" Decode.int)
 
 
+resolutionLabel : Resolution -> String
+resolutionLabel r =
+    String.fromInt r.width ++ "x" ++ String.fromInt r.height
+
+
 decodeVideoDevice : Decoder VideoDevice
 decodeVideoDevice =
-    Decode.map4 VideoDevice
-        (Decode.field "deviceId" Decode.string)
-        (Decode.field "groupId" Decode.string)
-        (Decode.field "label" Decode.string)
-        (Decode.field "resolutions" (Decode.list decodeResolution))
+    Decode.oneOf
+        [ Decode.map Just
+            (Decode.map4 VideoDeviceInfo
+                (Decode.field "deviceId" Decode.string)
+                (Decode.field "groupId" Decode.string)
+                (Decode.field "label" Decode.string)
+                (Decode.field "resolutions" (Decode.list decodeResolution))
+            )
+        , Decode.succeed Nothing
+        ]
 
 
 decodeAudioDevice : Decoder AudioDevice
 decodeAudioDevice =
-    Decode.map3 AudioDevice
-        (Decode.field "deviceId" Decode.string)
-        (Decode.field "groupId" Decode.string)
-        (Decode.field "label" Decode.string)
+    Decode.oneOf
+        [ Decode.map Just
+            (Decode.map3 AudioDeviceInfo
+                (Decode.field "deviceId" Decode.string)
+                (Decode.field "groupId" Decode.string)
+                (Decode.field "label" Decode.string)
+            )
+        , Decode.succeed Nothing
+        ]
 
 
 type alias Devices =
@@ -203,7 +251,15 @@ audio model =
 
 replaceVideo : Maybe VideoDevice -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice ) -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )
 replaceVideo toReplace ( _, y, z ) =
-    ( toReplace, Maybe.andThen (List.head << .resolutions) toReplace, z )
+    case toReplace of
+        Nothing ->
+            ( Nothing, Nothing, z )
+
+        Just Nothing ->
+            ( Just Nothing, Nothing, z )
+
+        Just (Just v) ->
+            ( toReplace, List.head v.resolutions, z )
 
 
 replaceResolution : Maybe Resolution -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice ) -> ( Maybe VideoDevice, Maybe Resolution, Maybe AudioDevice )

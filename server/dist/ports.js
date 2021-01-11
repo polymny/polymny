@@ -73,8 +73,8 @@ function setupPorts(app) {
         blobs = [];
         nextSlideCallbacks = [];
         inputs = {};
-        videoDeviceId = localStorage.getItem("videoDeviceId") || null;
-        audioDeviceId = localStorage.getItem("audioDeviceId") || null;
+        videoDeviceId = localStorage.getItem("videoDeviceId"); if (videoDeviceId == undefined) videoDeviceId = null;;
+        audioDeviceId = localStorage.getItem("audioDeviceId"); if (audioDeviceId == undefined) audioDeviceId = null;;
         resolution    = null;
         try {
             resolution = JSON.parse(localStorage.getItem("resolution"));
@@ -123,8 +123,8 @@ function setupPorts(app) {
 
         let devices = await navigator.mediaDevices.enumerateDevices();
         inputs = {
-            video: [],
-            audio: [],
+            video: [{disabled: true}],
+            audio: [{disabled: true}],
         };
 
         for(let i = 0; i < devices.length; i ++) {
@@ -244,8 +244,8 @@ function setupPorts(app) {
 
         if (audioDeviceId) {
             options.audio = { deviceId: { exact: audioDeviceId }};
-        } else {
-            options.audio = true;
+        } else  {
+            options.audio = audioDeviceId !== "";
         }
 
         if (videoDeviceId) {
@@ -261,7 +261,11 @@ function setupPorts(app) {
             options.video = { deviceId: { exact: input.deviceId } };
         }
 
-        if (resolution === null) {
+        if (videoDeviceId === "") {
+            options.video = false;
+        }
+
+        if (resolution === null && options.video !== false) {
             // Find camera by deviceId
             let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact);
             if (input === undefined) {
@@ -309,15 +313,32 @@ function setupPorts(app) {
             recorder.stop();
         }
 
-        let options = {
-            audioBitsPerSecond : 128000,
-            videoBitsPerSecond : 2500000,
-            mimeType : 'video/webm;codecs=opus,vp8'
-        };
+        let options;
+        if (stream.getVideoTracks().length === 0) {
+            options = {
+                audioBitsPerSecond : 128000,
+                mimeType : 'audio/ogg;codecs=opus'
+            };
+        } else if (stream.getAudioTracks().length === 0) {
+            options = {
+                videoBitsPerSecond : 2500000,
+                mimeType : 'video/webm;codecs=vp8'
+            };
+        } else {
+            options = {
+                audioBitsPerSecond : 128000,
+                videoBitsPerSecond : 2500000,
+                mimeType : 'video/webm;codecs=opus,vp8'
+            };
+        }
+
 
         recorder = new MediaRecorder(stream, options);
         recorder.ondataavailable = (data) => {
             blobs.push(data.data);
+        };
+        recorder.onerror = (err) => {
+            console.log(err);
         };
 
         recorder.start();

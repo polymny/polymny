@@ -80,7 +80,7 @@ update global session msg model =
             case voMsg of
                 Just device ->
                     ( makeModel { model | device = Acquisition.replaceVideo (Just device) model.device }
-                    , Ports.setVideoDevice ( device.deviceId, elementId )
+                    , Ports.setVideoDevice ( Maybe.map .deviceId device |> Maybe.withDefault "", elementId )
                     )
 
                 _ ->
@@ -102,7 +102,7 @@ update global session msg model =
             case aoMsg of
                 Just device ->
                     ( makeModel { model | device = Acquisition.replaceAudio (Just device) model.device }
-                    , Ports.setAudioDevice ( device.deviceId, elementId )
+                    , Ports.setAudioDevice ( Maybe.map .deviceId device |> Maybe.withDefault "", elementId )
                     )
 
                 _ ->
@@ -110,7 +110,7 @@ update global session msg model =
 
         Acquisition.ResolutionDropdownMsg rdMsg ->
             case ( model.showSettings, model.device ) of
-                ( Just ( videoDropdown, resolutionDropdown, audioDropdown ), ( Just video, _, _ ) ) ->
+                ( Just ( videoDropdown, resolutionDropdown, audioDropdown ), ( Just (Just video), _, _ ) ) ->
                     let
                         ( newModel, newCmd ) =
                             Dropdown.update Acquisition.resolutionDropdownConfig rdMsg resolutionDropdown video.resolutions

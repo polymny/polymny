@@ -106,7 +106,7 @@ view _ _ model =
                                         , Dropdown.view videoDropdownConfig videoDropdown model.devices.video
                                         ]
                                     , case Acquisition.video model of
-                                        Just video ->
+                                        Just (Just video) ->
                                             Element.column [ Element.width Element.fill ]
                                                 [ Element.text "Résolutions disponibles"
                                                 , Dropdown.view resolutionDropdownConfig resolutionDropdown video.resolutions
@@ -460,7 +460,7 @@ elementId =
 videoDropdownConfig : Dropdown.Config Acquisition.VideoDevice Core.Msg
 videoDropdownConfig =
     dropdownConfig
-        .label
+        Acquisition.videoLabel
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoDropdownMsg x)))
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoOptionPicked x)))
 
@@ -468,7 +468,7 @@ videoDropdownConfig =
 resolutionDropdownConfig : Dropdown.Config Acquisition.Resolution Core.Msg
 resolutionDropdownConfig =
     dropdownConfig
-        (\x -> String.fromInt x.width ++ "x" ++ String.fromInt x.height)
+        Acquisition.resolutionLabel
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionDropdownMsg x)))
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionOptionPicked x)))
 
@@ -476,7 +476,7 @@ resolutionDropdownConfig =
 audioDropdownConfig : Dropdown.Config Acquisition.AudioDevice Core.Msg
 audioDropdownConfig =
     dropdownConfig
-        .label
+        Acquisition.audioLabel
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioDropdownMsg x)))
         (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioOptionPicked x)))
 
