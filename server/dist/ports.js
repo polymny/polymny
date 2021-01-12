@@ -287,6 +287,8 @@ function setupPorts(app) {
                 await setupUserMedia(true);
             } else {
                 console.log(err);
+                setAudioAndVideoDevice(null, null);
+                await setupUserMedia(true);
             }
         }
     }
@@ -468,6 +470,10 @@ function setupPorts(app) {
         app.ports.cameraReady.send(inputs);
     }
 
+    function clearDevices() {
+        setAudioAndVideoDevice(null, null);
+    }
+
     subscribe(app.ports.init, function(args) {
         init(args[0], args[1], args[2]);
     });
@@ -533,6 +539,10 @@ function setupPorts(app) {
 
     subscribe(app.ports.setResolution, function(arg) {
         setResolution(arg[0][0], arg[0][1], arg[1]);
+    });
+
+    subscribe(app.ports.clearDevices, function() {
+        clearDevices();
     });
 
 }

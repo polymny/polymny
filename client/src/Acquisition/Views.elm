@@ -78,7 +78,7 @@ view _ _ model =
                 ( Status.Sent, _ ) ->
                     Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
                         [ Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Envoi de l'enregistrement en cours." ]
-                        , Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Le temps de transfert peut-être long, notamment si l'enregistrement est long ou si la connexion est lente (par exemple ADSL)" ]
+                        , Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Le temps de transfert peut être long, notamment si l'enregistrement est long ou si la connexion est lente (par exemple ADSL)" ]
                         , Element.el [ Element.centerX ] Ui.spinner
                         ]
                         |> Element.el [ Element.centerX, Element.centerY ]
@@ -118,16 +118,17 @@ view _ _ model =
                                         [ Element.text "Microphones disponibles"
                                         , Dropdown.view audioDropdownConfig audioDropdown model.devices.audio
                                         ]
-                                    , Ui.primaryButton toggleMsg "Valider"
+                                    , case model.device of
+                                        ( Just Nothing, _, Just Nothing ) ->
+                                            Element.text "Vous devez au moins activer la webcam ou le micro"
+
+                                        _ ->
+                                            Ui.primaryButton toggleMsg "Valider"
                                     ]
                                 , Element.el [ Element.width Element.fill ] videoElement
                                 ]
                     in
-                    Just
-                        (Ui.popupWithSize 5
-                            "Paramètres"
-                            popupElement
-                        )
+                    Just (Ui.popupWithSize 5 "Paramètres" popupElement)
 
                 _ ->
                     Nothing

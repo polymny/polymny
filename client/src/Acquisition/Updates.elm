@@ -54,15 +54,15 @@ update global session msg model =
 
         Acquisition.ToggleSettings ->
             let
-                newSettings =
+                ( newSettings, newCmd ) =
                     case model.showSettings of
                         Just _ ->
-                            Nothing
+                            ( Nothing, Cmd.none )
 
                         _ ->
-                            Just ( Dropdown.init "", Dropdown.init "", Dropdown.init "" )
+                            ( Just ( Dropdown.init "", Dropdown.init "", Dropdown.init "" ), Cmd.none )
             in
-            ( makeModel { model | showSettings = newSettings }, Ports.goToWebcam elementId )
+            ( makeModel { model | showSettings = newSettings }, Cmd.batch [ Ports.goToWebcam elementId, newCmd ] )
 
         Acquisition.VideoDropdownMsg vdMsg ->
             case model.showSettings of
