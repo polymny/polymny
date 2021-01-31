@@ -61,10 +61,10 @@ setup-watch:
 	@cd client && $(ELMLIVE) src/Setup.elm -p 7000 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/setup.js
 
 server-dev:
-	@cd server && cargo +nightly build
+	@cd server && cargo build
 
 server-release:
-	@cd server && cargo +nightly build --release
+	@cd server && cargo build --release
 
 clean-client:
 	@/bin/echo -e "\033[32;1m    Cleaning\033[0m client"
