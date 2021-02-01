@@ -24,6 +24,7 @@ use crate::db::notification::{Notification, NotificationStyle};
 use crate::db::project::{Project, ProjectWithCapsules};
 use crate::db::session::{NewSession, Session};
 use crate::db::slide::Slide;
+use crate::db::task::Task;
 use crate::mailer::Mailer;
 use crate::schema::{sessions, users};
 use crate::templates::{
@@ -494,6 +495,14 @@ impl User {
     ) -> Result<()> {
         let notification = Notification::new(style, self.id, title, content, db)?;
         let text = serde_json::to_string(&notification).unwrap();
+        sock.write_message(self.id, Message::Text(text.clone()));
+        Ok(())
+    }
+
+    /// Sends a task porgress to user.
+    pub fn task_progress(&self, sock: &WebSockets, task_id: i32, db: &Database) -> Result<()> {
+        let task = Task::get_by_id(task_id, db)?;
+        let text = serde_json::to_string(&task).unwrap();
         sock.write_message(self.id, Message::Text(text.clone()));
         Ok(())
     }

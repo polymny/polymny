@@ -6,7 +6,6 @@ use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 
 use crate::command;
-use crate::db::notification::NotificationStyle;
 use crate::db::task::{Task, TaskStatus};
 use crate::db::user::User;
 use crate::schema::tasks;
@@ -83,16 +82,7 @@ impl<'a> TaskManager<'a> {
                                 .set(dsl::progress.eq(progress as f64))
                                 .execute(&self.db.0)?;
 
-                            user.notify(
-                                socks,
-                                NotificationStyle::Progress,
-                                "Transcodage en cours",
-                                &format!(
-                                    "progression = {:.2} %.",
-                                    ((frames as f32) / total_frames as f32) * 100.
-                                ),
-                                self.db,
-                            )?;
+                            user.task_progress(socks, self.task.id, self.db)?;
                         }
                         ["total_frames", x] => {
                             total_frames = x.parse::<i32>().unwrap();
