@@ -423,7 +423,7 @@ topBar global model =
                 Core.LoggedIn { session } ->
                     [ question
                     , notificationIcon
-                    , settingsButton session.username
+                    , Element.text session.username
                     , logoutButton
                     ]
 
