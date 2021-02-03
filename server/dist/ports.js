@@ -1,6 +1,6 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs, videoDeviceId, audioDeviceId, resolution;
+    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs, videoDeviceId, audioDeviceId, resolution, audio;
 
     const quickScan = [
         {
@@ -81,6 +81,10 @@ function setupPorts(app) {
         } catch (e) {
             // Leave it null
         }
+
+        console.log("Video device id: " + videoDeviceId);
+        console.log("Video resolution: " + JSON.stringify(resolution));
+        console.log("Audio device id: " + audioDeviceId);
     }
 
     function sendWebSocketMessage(content) {
@@ -124,7 +128,7 @@ function setupPorts(app) {
         let devices = await navigator.mediaDevices.enumerateDevices();
         inputs = {
             video: [{disabled: true}],
-            audio: [{disabled: true}],
+            audio: [],
         };
 
         for(let i = 0; i < devices.length; i ++) {
@@ -270,6 +274,8 @@ function setupPorts(app) {
             let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact);
             if (input === undefined) {
                 options.video = true;
+            } else if (input.disabled === true) {
+                options.video = false;
             } else {
                 options.video.width = input.resolutions[0].width;
                 options.video.height = input.resolutions[0].height;

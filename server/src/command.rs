@@ -307,3 +307,19 @@ pub fn extract_audio<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Res
         None => return Err(Error::TranscodeError),
     }
 }
+
+/// Returns true if the path is a video that doesn't have only sound.
+pub fn has_images<P: AsRef<Path>>(input: P) -> Result<bool> {
+    let child = run_command(dbg!(&vec![
+        "ffprobe",
+        "-i",
+        input.as_ref().to_str().unwrap(),
+        "-show_streams",
+        "-select_streams",
+        "v",
+        "-loglevel",
+        "error"
+    ]))?;
+    println!("{:?}", child.stdout);
+    Ok(!child.stdout.is_empty())
+}

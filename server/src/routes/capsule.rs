@@ -854,7 +854,13 @@ pub fn capsule_edition(
             None => capsule_production_choices.clone(),
         };
 
-        for (slide_index, slide_id) in gos.slides.into_iter().enumerate() {
+        let GosStructure {
+            slides,
+            record_path,
+            ..
+        } = gos;
+
+        for (slide_index, slide_id) in slides.into_iter().enumerate() {
             // Slide in GoS iteration
             let slide = SlideWithAsset::get_by_id(slide_id, &db)?;
 
@@ -986,7 +992,9 @@ pub fn capsule_edition(
                                 record.push(record_path);
                                 //reencode input
 
-                                if production_choices.with_video {
+                                if production_choices.with_video
+                                    && command::has_images(record_path)?
+                                {
                                     ffmpeg_command.extend(
                                         vec![
                                             "ffmpeg",
