@@ -1316,7 +1316,14 @@ pub fn capsule_publication(
     let input_path = input_path.to_str().unwrap();
     let output_path = config.videos_path.join(asset.0.uuid.to_string());
     let output_path = output_path.to_str().unwrap();
-    let command = vec!["dash-encode", "encode", input_path, output_path];
+    let command = vec![
+        "../../hls/hls",
+        input_path,
+        output_path,
+        "360p",
+        "480p",
+        "720p",
+    ];
 
     let child = command::run_command(&command)?;
 
