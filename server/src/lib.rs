@@ -219,7 +219,17 @@ impl WebSockets {
         let mut to_remove = vec![];
 
         for (i, s) in entry.into_iter().enumerate() {
+            let mut count = 0;
             loop {
+                count += 1;
+
+                if count > 50 {
+                    // Infinite loop detection
+                    to_remove.push(i);
+                    println!("INFINITE LOOP DETECTED");
+                    break;
+                }
+
                 match s.read_message() {
                     Err(TError::ConnectionClosed) | Err(TError::AlreadyClosed) => {
                         to_remove.push(i);
