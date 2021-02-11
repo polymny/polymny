@@ -262,7 +262,11 @@ function setupPorts(app) {
 
         if (options.video === undefined) {
             let input = inputs.video[0];
-            options.video = { deviceId: { exact: input.deviceId } };
+            if (input.disabled === true) {
+                options.video = false;
+            } else {
+                options.video = { deviceId: { exact: input.deviceId } };
+            }
         }
 
         if (videoDeviceId === "") {
