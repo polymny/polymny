@@ -226,7 +226,7 @@ impl WebSockets {
                 if count > 50 {
                     // Infinite loop detection
                     to_remove.push(i);
-                    println!("INFINITE LOOP DETECTED");
+                    info!("INFINITE LOOP DETECTED");
                     break;
                 }
 
