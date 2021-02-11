@@ -242,7 +242,7 @@ mainView global _ model =
                 element =
                     Ui.popup "ATTENTION"
                         (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.greyDarker ]
+                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.light ]
                             (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
                                 [ Element.el [ Element.height Element.fill ] Element.none
                                 , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
