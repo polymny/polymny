@@ -272,6 +272,8 @@ pub fn transcode_blob<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Re
         "15",
         "-acodec",
         "aac",
+        "-max_muxing_queue_size",
+        "2048",
         output.as_ref().to_str().unwrap(),
     ];
     let child = run_command(&command)?;
