@@ -185,7 +185,7 @@ pub fn upload_slides(
     if let Some(file) = file {
         match file {
             FileField::Single(file) => {
-                let file_name = &file.file_name;
+                let file_name = file.file_name.as_ref().map(|x| x.replace("'", "_"));
                 let path = &file.path;
                 if let Some(file_name) = file_name {
                     let mut server_path = PathBuf::from(&user.username);
@@ -194,7 +194,7 @@ pub fn upload_slides(
                     let asset = Asset::new(
                         &db,
                         uuid,
-                        file_name,
+                        file_name.as_ref(),
                         server_path.to_str().unwrap(),
                         Some(file.content_type.as_ref().unwrap().essence_str()),
                     )?;
@@ -235,7 +235,7 @@ pub fn upload_slides(
                     for (idx, e) in entries.iter().enumerate() {
                         // Create one GOS and associated per image
                         // one slide per GOS
-                        let stem = Path::new(file_name).file_stem().unwrap().to_str().unwrap();
+                        let stem = Path::new(&file_name).file_stem().unwrap().to_str().unwrap();
                         let uuid = Uuid::new_v4();
                         let slide_name = format!("{}__{}.png", stem, idx);
                         let mut server_path = PathBuf::from(&user.username);
@@ -313,7 +313,7 @@ fn upload_file(
     if let Some(file) = file {
         match file {
             FileField::Single(file) => {
-                let file_name = &file.file_name;
+                let file_name = file.file_name.as_ref().map(|x| x.replace("'", "_"));
                 let path = &file.path;
                 if let Some(file_name) = file_name {
                     let mut server_path = PathBuf::from(&user.username);
@@ -322,7 +322,7 @@ fn upload_file(
                     let asset = Asset::new(
                         &db,
                         uuid,
-                        file_name,
+                        file_name.as_ref(),
                         server_path.to_str().unwrap(),
                         Some(file.content_type.as_ref().unwrap().essence_str()),
                     )?;

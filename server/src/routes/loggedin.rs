@@ -54,7 +54,7 @@ pub fn quick_upload_slides(
     if let Some(file) = file {
         match file {
             FileField::Single(file) => {
-                let file_name = &file.file_name;
+                let file_name = file.file_name.as_ref().map(|x| x.replace("'", "_"));
                 let path = &file.path;
                 if let Some(file_name) = file_name {
                     let mut server_path = PathBuf::from(&user.username);
@@ -63,7 +63,7 @@ pub fn quick_upload_slides(
                     let asset = Asset::new(
                         &db,
                         uuid,
-                        file_name,
+                        file_name.as_ref(),
                         server_path.to_str().unwrap(),
                         Some(file.content_type.as_ref().unwrap().essence_str()),
                     )?;
@@ -78,7 +78,7 @@ pub fn quick_upload_slides(
                     let project = Project::create(
                         &format!(
                             "{}__{}",
-                            PathBuf::from(file_name)
+                            PathBuf::from(&file_name)
                                 .file_stem()
                                 .unwrap()
                                 .to_str()
@@ -92,7 +92,7 @@ pub fn quick_upload_slides(
                         &db,
                         &format!(
                             "{}__{}",
-                            PathBuf::from(file_name)
+                            PathBuf::from(&file_name)
                                 .file_stem()
                                 .unwrap()
                                 .to_str()
