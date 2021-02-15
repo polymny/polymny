@@ -329,7 +329,7 @@ function setupPorts(app) {
         if (stream.getVideoTracks().length === 0) {
             options = {
                 audioBitsPerSecond : 128000,
-                mimeType : 'audio/ogg;codecs=opus'
+                mimeType : 'audio/webm;codecs=opus'
             };
         } else if (stream.getAudioTracks().length === 0) {
             options = {
