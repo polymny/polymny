@@ -23,7 +23,7 @@ jobs:
         run: |
           apt update
           apt install -y --no-install-recommends git clang curl pkg-config libssl-dev libpq-dev
-      - uses: polymny/setup-elm@ee2fb83
+      - uses: polymny/setup-elm@ee2fb83b65e2506c84aea6942092491feccd876a
         name : Set up Elm
         with:
           elm-version: 0.19.1
