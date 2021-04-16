@@ -9,16 +9,15 @@ pub mod project;
 pub mod setup;
 pub mod slide;
 
+use std::fs::File;
 use std::io::Cursor;
 use std::path::PathBuf;
 
 use rocket::http::ContentType;
-use rocket::response::Response;
+use rocket::response::{Response, Stream};
 use rocket::State;
 
 use rocket_contrib::json::JsonValue;
-
-use rocket_seek_stream::SeekStream;
 
 use crate::config::Config;
 use crate::db::user::User;
@@ -369,10 +368,11 @@ pub fn setup<'a>() -> Response<'a> {
 
 /// The route for static files that require authorization.
 #[get("/<path..>")]
-pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Result<SeekStream<'a>> {
+pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Result<Stream<File>> {
     if path.starts_with(user.username) {
         let data_path = config.data_path.join(path);
-        Ok(SeekStream::from_path(data_path)?)
+        // 4MB chunks
+        Ok(Stream::chunked(File::open(data_path)?, 4194304))
     } else {
         Err(Error::NotFound)
     }

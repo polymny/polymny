@@ -854,11 +854,7 @@ pub fn capsule_edition(
             None => capsule_production_choices.clone(),
         };
 
-        let GosStructure {
-            slides,
-            record_path,
-            ..
-        } = gos;
+        let GosStructure { slides, .. } = gos;
 
         for (slide_index, slide_id) in slides.into_iter().enumerate() {
             // Slide in GoS iteration
