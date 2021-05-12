@@ -472,28 +472,25 @@ pub fn upload_record(
             FileField::Single(file) => {
                 let file_name = &file.file_name;
                 let path = &file.path;
-                if let Some(file_name) = file_name {
-                    let mut server_path = PathBuf::from(&user.username);
-                    let uuid = Uuid::new_v4();
-                    server_path.push(format!("{}_{}", uuid, file_name));
-                    let asset = Asset::new(
-                        &db,
-                        uuid,
-                        file_name,
-                        server_path.to_str().unwrap(),
-                        Some(file.content_type.as_ref().unwrap().essence_str()),
-                    )?;
-                    AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
-                    let mut output_path = config.data_path.clone();
-                    output_path.push(server_path);
-                    info!("record  output_path {:#?}", output_path);
-                    create_dir(output_path.parent().unwrap()).ok();
-                    fs::copy(path, &output_path)?;
-                    let _metadata = VideoMetadata::metadata(&output_path);
-                    asset
-                } else {
-                    todo!();
-                }
+                let file_name = file_name.clone().unwrap_or("unnamed".to_owned());
+                let mut server_path = PathBuf::from(&user.username);
+                let uuid = Uuid::new_v4();
+                server_path.push(format!("{}_{}", uuid, file_name));
+                let asset = Asset::new(
+                    &db,
+                    uuid,
+                    &file_name,
+                    server_path.to_str().unwrap(),
+                    Some(file.content_type.as_ref().unwrap().essence_str()),
+                )?;
+                AssetsObject::new(&db, asset.id, capsule_id, AssetType::Capsule)?;
+                let mut output_path = config.data_path.clone();
+                output_path.push(server_path);
+                info!("record  output_path {:#?}", output_path);
+                create_dir(output_path.parent().unwrap()).ok();
+                fs::copy(path, &output_path)?;
+                let _metadata = VideoMetadata::metadata(&output_path);
+                asset
             }
             FileField::Multiple(_files) => {
                 // TODO: handle mutlile files
