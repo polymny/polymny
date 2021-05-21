@@ -263,7 +263,7 @@ pub fn transcode_blob<P: AsRef<Path>, Q: AsRef<Path>>(input: P, output: Q) -> Re
         "-i",
         input.as_ref().to_str().unwrap(),
         "-filter:v",
-        "fps=fps=25",
+        "fps=fps=25,scale=trunc(iw/2)*2:trunc(ih/2)*2",
         "-vsync",
         "cfr",
         "-vcodec",

@@ -125,6 +125,8 @@ function setupPorts(app) {
             blobs.push(maybeVideo);
         }
 
+        await navigator.mediaDevices.getUserMedia({audio: true, video: true});
+
         let devices = await navigator.mediaDevices.enumerateDevices();
         inputs = {
             video: [{disabled: true}],
