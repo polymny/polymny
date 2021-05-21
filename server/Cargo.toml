@@ -11,7 +11,7 @@ default = ["git"]
 git = ["compile-time-run"]
 
 [dependencies]
-rocket = "0.4.4"
+rocket = "0.4.9"
 mime = "0.3.12"
 diesel = { version = "1.4.3", features = ["chrono", "uuid", "serde_json"] }
 diesel-derive-enum = { version = "0.4", features = ["postgres"] }
@@ -35,7 +35,7 @@ rayon = "1.4.1"
 tungstenite = "0.11.1"
 
 [dependencies.rocket_contrib]
-version = "0.4.4"
+version = "0.4.9"
 default-features = false
 features = ["serve", "diesel_postgres_pool", "json"]
 
