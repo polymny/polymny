@@ -1,6 +1,6 @@
-module Preparation.Views exposing (gosGhostView, leftColumnView, slideGhostView, view)
+module Preparation.Views exposing (..)
 
-import Api
+import Capsule
 import Core.Types as Core
 import DnDList
 import DnDList.Groups
@@ -9,254 +9,526 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Html exposing (Html)
+import FontAwesome as Fa
+import Html
 import Html.Attributes
-import LoggedIn.Types as LoggedIn
+import Lang
 import Preparation.Types as Preparation
-import Routes
+import Preparation.Updates as P2
 import Status
-import Ui.Attributes as Attributes
 import Ui.Colors as Colors
-import Ui.Ui as Ui
+import Ui.LeftColumn as Ui
+import Ui.Utils as Ui
+import User exposing (User)
 
 
-view : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-view global session model =
-    mainView global session model
-
-
-
--- mainView global _ { details, slides, editPrompt, slideModel, gosModel, broken, uploadForms } =
-
-
-mainView : Core.Global -> Api.Session -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-mainView global _ model =
+view : Core.Global -> User -> Preparation.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
+view global _ model =
     let
-        slide : Maybe Api.Slide
-        slide =
-            List.concat model.slides
-                |> List.filterMap Preparation.filterSlide
-                |> List.filter (\x -> x.id == model.editPrompt.slideId)
-                |> List.head
-
         calculateOffset : Int -> Int
         calculateOffset index =
             model.slides |> List.map (\l -> List.length l) |> List.take index |> List.foldl (+) 0
 
-        increaseMsg =
-            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.IncreaseNumberOfSlidesPerRow
+        zoomOutButton =
+            Ui.iconButton
+                [ Font.color Colors.navbar ]
+                { onPress = Just Core.ZoomOut, icon = Fa.searchMinus, text = Nothing, tooltip = Just (Lang.zoomOut global.lang) }
 
-        decreaseMsg =
-            Core.LoggedInMsg <| LoggedIn.PreparationMsg <| Preparation.DecreaseNumberOfSlidesPerRow
+        zoomInButton =
+            Ui.iconButton
+                [ Font.color Colors.navbar ]
+                { onPress = Just Core.ZoomIn, icon = Fa.searchPlus, text = Nothing, tooltip = Just (Lang.zoomIn global.lang) }
 
-        newSlideMsg =
-            Preparation.UploadExtraResourceSelectFileRequested Nothing Nothing
-                |> Preparation.UploadExtraResourceMsg
-                |> LoggedIn.PreparationMsg
-                |> Core.LoggedInMsg
+        toolbar =
+            Element.row
+                [ Element.alignRight, Element.spacing 10, Element.padding 10 ]
+                [ zoomOutButton, zoomInButton ]
 
-        autoEdition =
-            Element.link []
-                { url = Routes.acquisition model.details.capsule.id
-                , label = Ui.primaryButton Nothing "Filmer"
+        output =
+            model.slides
+                |> List.indexedMap Tuple.pair
+                |> filterConsecutiveGosIds
+                |> List.map (\( i, s ) -> viewGos global model (calculateOffset i) i s)
+                |> Element.column [ Ui.wf, Element.padding 10 ]
+
+        popup =
+            case ( model.editPrompt, model.changeSlideForm, model.tracker ) of
+                ( Just s, _, _ ) ->
+                    Just (viewEditPrompt global model s)
+
+                ( _, _, Just p ) ->
+                    Just (waitView global (Tuple.second p))
+
+                ( _, Just i, _ ) ->
+                    Just (viewSlideChangeSlideForm global i)
+
+                _ ->
+                    Nothing
+    in
+    ( Element.column [ Ui.wf, Ui.hf ] [ toolbar, output ], popup )
+
+
+viewSlideChangeSlideForm : Core.Global -> Preparation.ChangeSlideForm -> Element Core.Msg
+viewSlideChangeSlideForm global { page, status } =
+    let
+        validate =
+            case String.toInt page of
+                Just o ->
+                    if o >= 1 then
+                        Ui.primaryButton
+                            { onPress = Just (Core.PreparationMsg Preparation.ExtraResourcePageValidate)
+                            , label = Element.text (Lang.confirm global.lang)
+                            }
+
+                    else
+                        Element.text (Lang.insertNumber global.lang)
+
+                _ ->
+                    Element.text (Lang.insertNumber global.lang)
+
+        cancel =
+            Ui.simpleButton
+                { onPress = Just (Core.PreparationMsg Preparation.ExtraResourcePageCancel)
+                , label = Element.text (Lang.cancel global.lang)
                 }
 
-        resultView =
-            Element.row [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-                [ leftColumnView model.details Nothing
-                , Element.column [ Element.width (Element.fillPortion 7), Element.height Element.fill ]
-                    [ Element.column [ Element.width Element.fill ]
-                        [ Element.row [ Element.spacing 5, Element.padding 5, Element.alignRight ]
-                            [ Ui.primaryButton (Just newSlideMsg) "Ajouter une nouvelle planche"
-                            , Ui.primaryButton (Just increaseMsg) "-"
-                            , Element.text "Zoom"
-                            , Ui.primaryButton (Just decreaseMsg) "+"
-                            ]
-                        ]
-                    , Element.el
-                        [ Element.padding 10
-                        , Element.height Element.fill
-                        , Element.scrollbarY
-                        ]
-                        (Element.row [ Element.width Element.fill ]
-                            [ Element.column
-                                [ Element.alignTop
-                                , Element.width Element.fill
-                                ]
-                                [ Element.column (Element.width Element.fill :: Attributes.designAttributes)
-                                    (List.map
-                                        (\( i, s ) -> capsuleGosView global global.numberOfSlidesPerRow model (calculateOffset i) i s)
-                                        (filterConsecutiveGosIds (List.indexedMap Tuple.pair model.slides))
-                                    )
-                                , Element.el [ Element.padding 20, Element.alignLeft ] autoEdition
-                                ]
-                            ]
+        error =
+            case status of
+                Status.Error ->
+                    Ui.error (Element.text (Lang.pdfConvertFailed global.lang))
+
+                _ ->
+                    Element.none
+    in
+    Ui.customSizedPopup 1
+        (Lang.replaceSlide global.lang)
+        (Element.column [ Element.padding 10, Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
+            [ error
+            , Input.text [ Element.centerY, Element.htmlAttribute (Html.Attributes.type_ "number") ]
+                { label = Input.labelAbove [] (Element.text (Lang.whichPage global.lang))
+                , onChange = \x -> Core.PreparationMsg (Preparation.ExtraResourceChangePage x)
+                , placeholder = Nothing
+                , text = page
+                }
+            , Element.row [ Element.alignRight, Element.spacing 10 ] [ cancel, validate ]
+            ]
+        )
+
+
+waitView : Core.Global -> Preparation.Progress -> Element Core.Msg
+waitView global progress =
+    let
+        ( msg, pf ) =
+            case progress of
+                Preparation.Upload p ->
+                    ( Lang.uploading global.lang, p )
+
+                Preparation.Transcoding p ->
+                    ( Lang.transcoding global.lang, p )
+
+        cancel =
+            Ui.simpleButton
+                { onPress = Just (Core.PreparationMsg Preparation.ExtraResourceVideoUploadCancel)
+                , label = Element.text (Lang.cancel global.lang)
+                }
+    in
+    Ui.customSizedPopup 1
+        (Lang.replaceSlide global.lang)
+        (Element.el [ Element.padding 10, Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
+            (Element.column [ Ui.wf, Element.centerY ]
+                [ Element.paragraph [ Element.centerX, Element.centerY, Font.center ]
+                    [ Element.text msg ]
+                , Ui.progressBar pf
+                , Element.row [ Element.alignRight, Element.spacing 10 ] [ cancel ]
+                ]
+            )
+        )
+
+
+viewGos : Core.Global -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
+viewGos global model offset index slides =
+    let
+        gosIndex =
+            (index - 1) // 2
+
+        ty =
+            case Preparation.gosSystem.info model.gosModel of
+                Just { dragIndex } ->
+                    if dragIndex == gosIndex then
+                        EventLess
+
+                    else
+                        Drop
+
+                _ ->
+                    Drag
+    in
+    viewGosGeneric global model offset index slides ty
+
+
+viewGosGhost : Core.Global -> Preparation.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+viewGosGhost global model slides =
+    case maybeDragGos model.gosModel slides of
+        Just s ->
+            viewGosGeneric global model 0 0 s Ghost
+
+        _ ->
+            Element.none
+
+
+maybeDragGos : DnDList.Model -> List Preparation.MaybeSlide -> Maybe (List Preparation.MaybeSlide)
+maybeDragGos gosModel slides =
+    let
+        s =
+            P2.regroupSlides slides
+    in
+    Preparation.gosSystem.info gosModel
+        |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
+
+
+viewGosGeneric : Core.Global -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> DragOptions -> Element Core.Msg
+viewGosGeneric global model offset index slides ty =
+    let
+        gosIndex : Int
+        gosIndex =
+            (index - 1) // 2
+
+        gosId : String
+        gosId =
+            if ty == Ghost then
+                "gos-ghost"
+
+            else
+                "gos-" ++ String.fromInt index
+
+        dropAttributes : List (Element.Attribute Core.Msg)
+        dropAttributes =
+            if ty == Drop && not (isJustGosId slides) then
+                convertAttributes (Preparation.gosSystem.dropEvents index gosId)
+
+            else
+                []
+
+        ghostAttributes : List (Element.Attribute Core.Msg)
+        ghostAttributes =
+            if ty == Ghost then
+                convertAttributes (Preparation.gosSystem.ghostStyles model.gosModel)
+
+            else
+                []
+
+        eventLessAttributes : List (Element.Attribute Core.Msg)
+        eventLessAttributes =
+            if ty == EventLess then
+                [ Ui.hidden ]
+
+            else
+                []
+
+        slideDropAttributes : List (Element.Attribute Core.Msg)
+        slideDropAttributes =
+            convertAttributes (Preparation.slideSystem.dropEvents offset slideId)
+
+        slideDropAttributes2 : List (Element.Attribute Core.Msg)
+        slideDropAttributes2 =
+            let
+                o =
+                    offset + List.length slides - 1
+            in
+            convertAttributes (Preparation.slideSystem.dropEvents o ("slide-" ++ String.fromInt o))
+
+        slideId : String
+        slideId =
+            if ty == Ghost then
+                "slide-ghost"
+
+            else
+                "slide-" ++ String.fromInt offset
+
+        indexedSlides : List ( Int, Preparation.MaybeSlide )
+        indexedSlides =
+            List.indexedMap Tuple.pair slides
+
+        regroupedSlides : List (List ( Int, Maybe Preparation.MaybeSlide ))
+        regroupedSlides =
+            Preparation.regroupSlides global.zoomLevel indexedSlides
+
+        mapper : ( Int, Maybe Preparation.MaybeSlide ) -> Element Core.Msg
+        mapper ( i, s ) =
+            case s of
+                Just slide ->
+                    viewSlide global model gosIndex offset i slide
+
+                Nothing ->
+                    Element.el (Ui.hf :: Ui.wf :: slideDropAttributes2) Element.none
+
+        slideElement : Element Core.Msg
+        slideElement =
+            List.map (\x -> Element.row [ Ui.wf, Element.spacing 10 ] (List.map mapper x)) regroupedSlides
+                |> List.reverse
+                |> Element.column [ Element.spacing 10, Ui.wf ]
+    in
+    case slides of
+        [ Preparation.GosId _ ] ->
+            Element.el
+                [ Ui.id gosId, Ui.wf ]
+                (Element.el
+                    (Ui.id slideId :: Element.paddingXY 0 20 :: Ui.wf :: slideDropAttributes)
+                    (Element.el [ Element.centerY, Ui.wf ]
+                        (Element.el
+                            [ Ui.wf, Border.color Colors.greyLighter, Ui.borderBottom 1 ]
+                            Element.none
                         )
+                    )
+                )
+
+        _ ->
+            Element.row [ Ui.wf, Element.spacing 10 ]
+                [ Element.el
+                    (Ui.id gosId :: Ui.wf :: dropAttributes ++ ghostAttributes)
+                    (Element.el (Element.spacing 20 :: Ui.wf :: eventLessAttributes) slideElement)
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.PreparationMsg (Preparation.ExtraResourceSelect (Preparation.AddSlide gosIndex)))
+                    , icon = Fa.plusSquare
+                    , text = Nothing
+                    , tooltip = Just (Lang.addSlide global.lang)
+                    }
+                ]
+
+
+viewSlide : Core.Global -> Preparation.Model -> Int -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
+viewSlide global model gosIndex offset localIndex s =
+    let
+        ty =
+            case ( Preparation.slideSystem.info model.slideModel, maybeDragSlide model.slideModel ) of
+                ( Just { dragIndex }, _ ) ->
+                    if offset + localIndex == dragIndex then
+                        EventLess
+
+                    else
+                        Drop
+
+                _ ->
+                    Drag
+    in
+    viewSlideGeneric global model gosIndex offset localIndex s ty
+
+
+viewSlideGhost : Core.Global -> Preparation.Model -> List Preparation.MaybeSlide -> Element Core.Msg
+viewSlideGhost global model slides =
+    case maybeDragSlide model.slideModel slides of
+        Preparation.Slide _ s ->
+            viewSlideGeneric global model 0 0 0 (Preparation.Slide -1 s) Ghost
+
+        _ ->
+            Element.none
+
+
+viewSlideGeneric : Core.Global -> Preparation.Model -> Int -> Int -> Int -> Preparation.MaybeSlide -> DragOptions -> Element Core.Msg
+viewSlideGeneric global model gosIndex offset localIndex s ty =
+    let
+        globalIndex : Int
+        globalIndex =
+            offset + localIndex
+
+        slideId : String
+        slideId =
+            if ty == Ghost then
+                "slide-ghost"
+
+            else
+                "slide-" ++ String.fromInt globalIndex
+
+        dragAttributes : List (Element.Attribute Core.Msg)
+        dragAttributes =
+            if ty == Drag && isJustSlide s then
+                convertAttributes (Preparation.slideSystem.dragEvents globalIndex slideId)
+
+            else
+                []
+
+        dropAttributes : List (Element.Attribute Core.Msg)
+        dropAttributes =
+            if ty == Drop then
+                convertAttributes (Preparation.slideSystem.dropEvents globalIndex slideId)
+
+            else
+                []
+
+        ghostAttributes : List (Element.Attribute Core.Msg)
+        ghostAttributes =
+            if ty == Ghost then
+                convertAttributes (Preparation.slideSystem.ghostStyles model.slideModel)
+
+            else
+                []
+
+        media =
+            case s of
+                Preparation.Slide _ realSlide ->
+                    case realSlide.extra of
+                        Nothing ->
+                            Element.image [ Ui.wf, Border.width 1, Border.color Colors.greyLighter ]
+                                { src = Capsule.slidePath model.capsule realSlide, description = "" }
+
+                        Just uuid ->
+                            let
+                                src =
+                                    Capsule.assetPath model.capsule (uuid ++ ".mp4")
+                            in
+                            Element.html
+                                (Html.video
+                                    [ Html.Attributes.class "wf", Html.Attributes.controls True ]
+                                    [ Html.source [ Html.Attributes.src src, Html.Attributes.controls True ] [] ]
+                                )
+
+                _ ->
+                    Element.none
+
+        mkButton data =
+            Ui.iconButton
+                [ Font.color Colors.navbar
+                , Element.padding 5
+                , Background.color Colors.greyLighter
+                , Border.rounded 5
+                ]
+                data
+                |> Element.map Core.PreparationMsg
+
+        toolBar =
+            case s of
+                Preparation.Slide _ realSlide ->
+                    Element.row [ Element.alignRight, Element.padding 5, Element.spacing 5 ]
+                        [ mkButton
+                            { onPress = Just (Preparation.StartEditPrompt realSlide.uuid)
+                            , icon = Fa.font
+                            , text = Nothing
+                            , tooltip = Just (Lang.editPrompt global.lang)
+                            }
+                        , case realSlide.extra of
+                            Just _ ->
+                                mkButton
+                                    { onPress = Just (Preparation.ExtraResourceDelete realSlide)
+                                    , icon = Fa.times
+                                    , text = Nothing
+                                    , tooltip = Just (Lang.replaceSlideOrAddExternalResource global.lang)
+                                    }
+
+                            Nothing ->
+                                mkButton
+                                    { onPress = Just (Preparation.ExtraResourceSelect (Preparation.ReplaceSlide realSlide))
+                                    , icon = Fa.image
+                                    , text = Nothing
+                                    , tooltip = Just (Lang.replaceSlideOrAddExternalResource global.lang)
+                                    }
+                        , mkButton
+                            { onPress = Just (Preparation.RequestDeleteSlide realSlide.uuid)
+                            , icon = Fa.trash
+                            , text = Nothing
+                            , tooltip = Just (Lang.deleteSlide global.lang)
+                            }
+                        ]
+
+                _ ->
+                    Element.none
+
+        info =
+            Element.el
+                [ Element.alignTop
+                , Element.alignLeft
+                , Background.color Colors.greyLighter
+                , Border.roundEach { topLeft = 0, topRight = 0, bottomLeft = 0, bottomRight = 10 }
+                , Element.padding 5
+                ]
+                (Element.text
+                    (Lang.grain global.lang
+                        ++ " "
+                        ++ String.fromInt (gosIndex + 1)
+                        ++ " / "
+                        ++ Lang.slide global.lang
+                        ++ " "
+                        ++ String.fromInt localIndex
+                    )
+                )
+    in
+    case s of
+        Preparation.Slide _ _ ->
+            Element.el
+                (Ui.id slideId :: Ui.wf :: Element.inFront toolBar :: Element.inFront info :: dropAttributes ++ ghostAttributes)
+                (Element.el (Element.width Element.fill :: dragAttributes) media)
+
+        _ ->
+            Element.none
+
+
+viewEditPrompt : Core.Global -> Preparation.Model -> Capsule.Slide -> Element Core.Msg
+viewEditPrompt global model slide =
+    let
+        previousSlide =
+            Capsule.previousSlide slide model.capsule
+
+        nextSlide =
+            Capsule.nextSlide slide model.capsule
+
+        content =
+            Element.column [ Ui.wf, Ui.hf, Background.color Colors.whiteBis, Element.padding 10, Element.spacing 10 ]
+                [ Element.row [ Ui.wf, Ui.hf, Element.spacing 10 ]
+                    [ Element.column [ Element.spacing 10, Ui.wf, Element.centerY ]
+                        [ Element.image
+                            [ Ui.wf, Border.width 1, Border.color Colors.greyLighter ]
+                            { src = Capsule.slidePath model.capsule slide, description = "" }
+                        , Element.row [ Ui.wf ]
+                            [ case previousSlide of
+                                Just s ->
+                                    Ui.iconButton [ Font.color Colors.navbar ]
+                                        { onPress = Just (Core.PreparationMsg (Preparation.PromptChangeSlide (Just s)))
+                                        , icon = Fa.arrowLeft
+                                        , text = Nothing
+                                        , tooltip = Just (Lang.goToPreviousSlide global.lang)
+                                        }
+                                        |> Element.el [ Element.alignLeft ]
+
+                                _ ->
+                                    Element.none
+                            , case nextSlide of
+                                Just s ->
+                                    Ui.iconButton [ Font.color Colors.navbar ]
+                                        { onPress = Just (Core.PreparationMsg (Preparation.PromptChangeSlide (Just s)))
+                                        , icon = Fa.arrowRight
+                                        , text = Nothing
+                                        , tooltip = Just (Lang.goToNextSlide global.lang)
+                                        }
+                                        |> Element.el [ Element.alignRight ]
+
+                                _ ->
+                                    Element.none
+                            ]
+                        ]
+                    , Input.multiline [ Ui.wf, Ui.hf ]
+                        { label = Input.labelAbove [] Element.none
+                        , onChange = \x -> Core.PreparationMsg (Preparation.PromptChanged x)
+                        , placeholder = Nothing
+                        , spellcheck = False
+                        , text = slide.prompt
+                        }
+                    ]
+                , Element.row [ Element.alignRight, Element.spacing 10 ]
+                    [ Ui.simpleButton
+                        { onPress = Just (Core.PreparationMsg Preparation.CancelPromptChange)
+                        , label = Element.text (Lang.cancel global.lang)
+                        }
+                    , Ui.primaryButton
+                        { onPress = Just (Core.PreparationMsg (Preparation.PromptChangeSlide Nothing))
+                        , label = Element.text (Lang.confirm global.lang)
+                        }
                     ]
                 ]
     in
-    case ( model.broken, ( model.editPrompt.visible, model.details.capsule.uploaded ), model.uploadForms.extraResource.askForPage ) of
-        ( Preparation.Broken _ msg, _, _ ) ->
-            let
-                reject =
-                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.RejectBroken))
+    Ui.customSizedPopup 5 (Lang.promptEdition global.lang) content
 
-                accept =
-                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg Preparation.AcceptBroken))
 
-                element =
-                    Ui.popup "ATTENTION"
-                        (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.greyLighter ]
-                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
-                                [ Element.el [ Element.height Element.fill ] Element.none
-                                , Element.paragraph [] [ Element.text msg ]
-                                , Element.paragraph [] [ Element.text "Voulez-vous vraiment continuer ?" ]
-                                , Element.el [ Element.height Element.fill ] Element.none
-                                , Element.row [ Element.alignRight, Element.spacing 10 ] [ Ui.simpleButton reject "Annuler", Ui.primaryButton accept "Poursuivre" ]
-                                ]
-                            )
-                        )
-            in
-            ( resultView, Just element )
 
-        ( _, ( True, _ ), _ ) ->
-            let
-                cancel =
-                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptCloseDialog)))
-
-                validate =
-                    Just (Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.EditPromptMsg Preparation.EditPromptSubmitted)))
-
-                promptModal =
-                    bodyPromptModal slide model.editPrompt
-                        |> Element.map Preparation.EditPromptMsg
-                        |> Element.map LoggedIn.PreparationMsg
-                        |> Element.map Core.LoggedInMsg
-
-                element =
-                    Ui.popupWithSize 5
-                        "Prompteur"
-                        (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.light ]
-                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
-                                [ promptModal
-                                , Element.row [ Element.alignRight, Element.spacing 10 ]
-                                    [ Ui.simpleButton cancel "Annuler", Ui.primaryButton validate "Valider" ]
-                                ]
-                            )
-                        )
-            in
-            ( resultView, Just element )
-
-        ( _, _, True ) ->
-            let
-                cancelMsg =
-                    Preparation.UploadExtraResourceCancel
-                        |> Preparation.UploadExtraResourceMsg
-                        |> LoggedIn.PreparationMsg
-                        |> Core.LoggedInMsg
-                        |> Just
-
-                validateMsg =
-                    Preparation.UploadExtraResourceValidate
-                        |> Preparation.UploadExtraResourceMsg
-                        |> LoggedIn.PreparationMsg
-                        |> Core.LoggedInMsg
-                        |> Just
-
-                element =
-                    Ui.popup "Remplacer un slide"
-                        (Element.column
-                            [ Element.width Element.fill
-                            , Element.height Element.fill
-                            , Element.spacing 10
-                            , Element.padding 10
-                            ]
-                            [ Input.text [ Element.centerY, Element.htmlAttribute (Html.Attributes.type_ "number") ]
-                                { label = Input.labelAbove [] (Element.text "Quelle page du pdf voulez-vous utiliser ?")
-                                , onChange =
-                                    \x ->
-                                        case ( String.toInt x, x ) of
-                                            ( Just i, _ ) ->
-                                                Preparation.UploadExtraResourcePageChanged (Just i)
-                                                    |> Preparation.UploadExtraResourceMsg
-                                                    |> LoggedIn.PreparationMsg
-                                                    |> Core.LoggedInMsg
-
-                                            ( _, "" ) ->
-                                                Preparation.UploadExtraResourcePageChanged Nothing
-                                                    |> Preparation.UploadExtraResourceMsg
-                                                    |> LoggedIn.PreparationMsg
-                                                    |> Core.LoggedInMsg
-
-                                            _ ->
-                                                Core.Noop
-                                , placeholder = Nothing
-                                , text =
-                                    case model.uploadForms.extraResource.page of
-                                        Just i ->
-                                            String.fromInt i
-
-                                        _ ->
-                                            ""
-                                }
-                            , if model.uploadForms.extraResource.status == Status.Error () then
-                                Element.el [ Element.centerY ]
-                                    (Element.paragraph [ Font.color Colors.danger ]
-                                        [ Element.text "Une erreur est survenue, le numéro de la page est-il correct ?" ]
-                                    )
-
-                              else
-                                Element.none
-                            , Element.row [ Element.alignBottom, Element.alignRight, Element.spacing 10 ]
-                                (case model.uploadForms.extraResource.status of
-                                    Status.NotSent ->
-                                        [ Ui.simpleButton cancelMsg "Annuler"
-                                        , case model.uploadForms.extraResource.page of
-                                            Just _ ->
-                                                Ui.primaryButton validateMsg "Valider"
-
-                                            Nothing ->
-                                                Element.text "Entrez un numéro de slide"
-                                        ]
-
-                                    Status.Sent ->
-                                        [ Ui.spinner ]
-
-                                    Status.Success () ->
-                                        []
-
-                                    Status.Error () ->
-                                        [ Ui.simpleButton cancelMsg "Annuler"
-                                        , Ui.primaryButton validateMsg "Valider"
-                                        ]
-                                )
-                            ]
-                        )
-            in
-            ( resultView, Just element )
-
-        ( _, ( _, Api.Running ), _ ) ->
-            let
-                element =
-                    Ui.popup "ATTENTION"
-                        (Element.el
-                            [ Element.width Element.fill, Element.height Element.fill, Background.color Colors.light ]
-                            (Element.column [ Element.width Element.fill, Element.padding 10, Element.height Element.fill, Element.spacing 10, Font.center ]
-                                [ Element.el [ Element.height Element.fill ] Element.none
-                                , Element.paragraph [] [ Element.text "Téléchargement et transcodage en cours." ]
-                                , Ui.spinner
-                                , Element.paragraph [] [ Element.text "Merci de patienter un peu." ]
-                                , Element.el [ Element.height Element.fill ] Element.none
-                                ]
-                            )
-                        )
-            in
-            ( resultView, Just element )
-
-        _ ->
-            ( resultView, Nothing )
+-- Utils functions
 
 
 filterConsecutiveGosIds : List ( Int, List Preparation.MaybeSlide ) -> List ( Int, List Preparation.MaybeSlide )
@@ -281,241 +553,21 @@ filterConsecutiveGosIdsAux currentIsGosId current slides =
             filterConsecutiveGosIdsAux False (( index, list ) :: current) t
 
 
-
--- DRAG N DROP VIEWS
-
-
-type DragOptions
-    = Drag
-    | Drop
-    | Ghost
-    | EventLess
+convertAttributes : List (Html.Attribute Preparation.DnDMsg) -> List (Element.Attribute Core.Msg)
+convertAttributes attributes =
+    List.map
+        (\x -> Element.mapAttribute (\y -> Core.PreparationMsg (Preparation.DnD y)) x)
+        (List.map Element.htmlAttribute attributes)
 
 
-
--- GOS VIEWS
--- capsuleGosView : Core.Global -> Int -> DnDList.Model -> DnDList.Groups.Model -> Preparation.UploadExtraResourceForm -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
--- capsuleGosView global numberOfSlidesPerRow gosModel slideModel extraResource offset gosIndex gos =
-
-
-capsuleGosView : Core.Global -> Int -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-capsuleGosView global numberOfSlidesPerRow model offset gosIndex gos =
-    case Preparation.gosSystem.info model.gosModel of
-        Just { dragIndex } ->
-            if dragIndex /= gosIndex then
-                genericGosView global numberOfSlidesPerRow Drop model offset gosIndex gos
-
-            else
-                genericGosView global numberOfSlidesPerRow EventLess model offset gosIndex gos
-
-        _ ->
-            genericGosView global numberOfSlidesPerRow Drag model offset gosIndex gos
-
-
-gosGhostView : Core.Global -> Int -> List Preparation.MaybeSlide -> Preparation.Model -> Element Core.Msg
-gosGhostView global numberOfSlidesPerRow slides model =
-    case maybeDragGos model.gosModel slides of
-        Just s ->
-            genericGosView global numberOfSlidesPerRow Ghost model 0 0 s
-
-        _ ->
-            Element.none
-
-
-maybeDragGos : DnDList.Model -> List Preparation.MaybeSlide -> Maybe (List Preparation.MaybeSlide)
-maybeDragGos gosModel slides =
-    let
-        s =
-            Preparation.regroupSlides slides
-    in
-    Preparation.gosSystem.info gosModel
-        |> Maybe.andThen (\{ dragIndex } -> s |> List.drop dragIndex |> List.head)
-
-
-regroupSlidesAux : Int -> List (List ( Int, Maybe Preparation.MaybeSlide )) -> List ( Int, Maybe Preparation.MaybeSlide ) -> List (List ( Int, Maybe Preparation.MaybeSlide ))
-regroupSlidesAux number current list =
-    case ( list, current ) of
-        ( [], _ ) ->
-            current
-
-        ( h :: t, [] ) ->
-            regroupSlidesAux number [ [ h ] ] t
-
-        ( h :: t, h2 :: t2 ) ->
-            if List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h2) < number then
-                regroupSlidesAux number ((h2 ++ [ h ]) :: t2) t
-
-            else
-                regroupSlidesAux number ([ h ] :: h2 :: t2) t
-
-
-regroupSlides : Int -> List ( Int, Preparation.MaybeSlide ) -> List (List ( Int, Maybe Preparation.MaybeSlide ))
-regroupSlides number list =
-    case regroupSlidesAux number [] (List.map (\( a, b ) -> ( a, Just b )) list) of
-        [] ->
-            []
-
-        h :: t ->
-            (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> Preparation.filterSlide (Maybe.withDefault (Preparation.GosId -1) x)) h)) ( -1, Nothing )) :: t
-
-
-genericGosView : Core.Global -> Int -> DragOptions -> Preparation.Model -> Int -> Int -> List Preparation.MaybeSlide -> Element Core.Msg
-genericGosView global numberOfSlidesPerRow options model offset index gos =
-    let
-        gosId : String
-        gosId =
-            if options == Ghost then
-                "gos-ghost"
-
-            else
-                "gos-" ++ String.fromInt index
-
-        gosIndex : Int
-        gosIndex =
-            (index - 1) // 2
-
-        -- dragAttributes : List (Element.Attribute Core.Msg)
-        -- dragAttributes =
-        --     if options == Drag && not (Preparation.isJustGosId gos) then
-        --         convertAttributes (Preparation.gosSystem.dragEvents index gosId)
-        --     else
-        --         []
-        dropAttributes : List (Element.Attribute Core.Msg)
-        dropAttributes =
-            if options == Drop && not (Preparation.isJustGosId gos) then
-                convertAttributes (Preparation.gosSystem.dropEvents index gosId)
-
-            else
-                []
-
-        ghostAttributes : List (Element.Attribute Core.Msg)
-        ghostAttributes =
-            if options == Ghost then
-                convertAttributes (Preparation.gosSystem.ghostStyles model.gosModel)
-
-            else
-                []
-
-        eventLessAttributes : List (Element.Attribute Core.Msg)
-        eventLessAttributes =
-            if options == EventLess then
-                [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
-
-            else
-                []
-
-        slideDropAttributes : List (Element.Attribute Core.Msg)
-        slideDropAttributes =
-            convertAttributes (Preparation.slideSystem.dropEvents offset slideId)
-
-        slideId : String
-        slideId =
-            if options == Ghost then
-                "slide-ghost"
-
-            else
-                "slide-" ++ String.fromInt offset
-
-        indexedSlides : List ( Int, Preparation.MaybeSlide )
-        indexedSlides =
-            List.indexedMap (\i x -> ( i, x )) gos
-
-        regroupedSlides : List (List ( Int, Maybe Preparation.MaybeSlide ))
-        regroupedSlides =
-            regroupSlides numberOfSlidesPerRow indexedSlides
-
-        mapper : ( Int, Maybe Preparation.MaybeSlide ) -> Element Core.Msg
-        mapper ( i, s ) =
-            case s of
-                Just slide ->
-                    designSlideView global model offset i slide
-
-                Nothing ->
-                    Element.el [ Element.width Element.fill ] Element.none
-
-        slides : Element Core.Msg
-        slides =
-            Element.column [ Element.spacing 10, Element.width Element.fill ] (List.reverse (List.map (\x -> Element.row [ Element.width Element.fill, Element.spacing 10 ] (List.map mapper x)) regroupedSlides))
-    in
-    case gos of
+isJustGosId : List Preparation.MaybeSlide -> Bool
+isJustGosId slides =
+    case slides of
         [ Preparation.GosId _ ] ->
-            Element.column
-                [ Element.htmlAttribute (Html.Attributes.id gosId)
-                , Element.width Element.fill
-                ]
-                [ Element.el
-                    (Element.htmlAttribute (Html.Attributes.id slideId)
-                        :: Element.height (Element.px 50)
-                        :: Element.width Element.fill
-                        :: slideDropAttributes
-                    )
-                    (Element.el [ Element.centerY, Element.width Element.fill ]
-                        (Element.el
-                            [ Element.width Element.fill
-                            , Border.color Colors.black
-                            , Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }
-                            ]
-                            Element.none
-                        )
-                    )
-                ]
+            True
 
         _ ->
-            Element.row
-                (Element.htmlAttribute (Html.Attributes.id gosId)
-                    :: Element.width Element.fill
-                    :: dropAttributes
-                    ++ ghostAttributes
-                    ++ Attributes.designGosAttributes
-                )
-                [ Element.el
-                    (Element.spacing 20
-                        :: Element.width Element.fill
-                        :: Attributes.designAttributes
-                        ++ eventLessAttributes
-                    )
-                    slides
-                , Ui.primaryButton
-                    (Preparation.UploadExtraResourceSelectFileRequested Nothing (Just gosIndex)
-                        |> Preparation.UploadExtraResourceMsg
-                        |> LoggedIn.PreparationMsg
-                        |> Core.LoggedInMsg
-                        |> Just
-                    )
-                    "+"
-                ]
-
-
-
--- SLIDES VIEWS
-
-
-slideGhostView : Core.Global -> List Preparation.MaybeSlide -> Preparation.Model -> Element Core.Msg
-slideGhostView global slides model =
-    case maybeDragSlide model.slideModel slides of
-        Preparation.JustSlide s _ ->
-            genericDesignSlideView global Ghost model 0 0 (Preparation.JustSlide s -1)
-
-        _ ->
-            Element.none
-
-
-designSlideView : Core.Global -> Preparation.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-designSlideView global model offset localIndex slide =
-    let
-        t =
-            case ( Preparation.slideSystem.info model.slideModel, maybeDragSlide model.slideModel ) of
-                ( Just { dragIndex }, _ ) ->
-                    if offset + localIndex == dragIndex then
-                        EventLess
-
-                    else
-                        Drop
-
-                _ ->
-                    Drag
-    in
-    genericDesignSlideView global t model offset localIndex slide
+            False
 
 
 maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Preparation.MaybeSlide
@@ -526,266 +578,29 @@ maybeDragSlide slideModel slides =
                 |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
     in
     case x of
-        Just (Preparation.JustSlide n id) ->
-            Preparation.JustSlide n id
+        Just (Preparation.Slide id n) ->
+            Preparation.Slide id n
 
         _ ->
             Preparation.GosId -1
 
 
-genericDesignSlideView : Core.Global -> DragOptions -> Preparation.Model -> Int -> Int -> Preparation.MaybeSlide -> Element Core.Msg
-genericDesignSlideView _ options model offset localIndex s =
-    let
-        globalIndex : Int
-        globalIndex =
-            offset + localIndex
+isJustSlide : Preparation.MaybeSlide -> Bool
+isJustSlide slide =
+    case slide of
+        Preparation.Slide _ _ ->
+            True
 
-        slideId : String
-        slideId =
-            if options == Ghost then
-                "slide-ghost"
-
-            else
-                "slide-" ++ String.fromInt globalIndex
-
-        dragAttributes : List (Element.Attribute Core.Msg)
-        dragAttributes =
-            if options == Drag && Preparation.isJustSlide s then
-                convertAttributes (Preparation.slideSystem.dragEvents globalIndex slideId)
-
-            else
-                []
-
-        dropAttributes : List (Element.Attribute Core.Msg)
-        dropAttributes =
-            if options == Drop then
-                convertAttributes (Preparation.slideSystem.dropEvents globalIndex slideId)
-
-            else
-                []
-
-        ghostAttributes : List (Element.Attribute Core.Msg)
-        ghostAttributes =
-            if options == Ghost then
-                convertAttributes (Preparation.slideSystem.ghostStyles model.slideModel)
-
-            else
-                []
-    in
-    case s of
-        Preparation.GosId _ ->
-            Element.none
-
-        Preparation.JustSlide slide index ->
-            let
-                -- computing the gosid this way is ugly af
-                gosIndex : Int
-                gosIndex =
-                    (index - 1) // 2
-
-                ( media, deleteExtraMsg ) =
-                    case slide.extra of
-                        Just asset ->
-                            ( Element.html (htmlVideo asset.asset_path)
-                            , Preparation.DeleteExtraResource slide.id
-                                |> Preparation.UploadExtraResourceMsg
-                                |> LoggedIn.PreparationMsg
-                                |> Core.LoggedInMsg
-                                |> Just
-                            )
-
-                        Nothing ->
-                            ( viewSlideImage slide.asset.asset_path, Nothing )
-
-                extraResourceMsg : Core.Msg
-                extraResourceMsg =
-                    Core.LoggedInMsg <|
-                        LoggedIn.PreparationMsg <|
-                            Preparation.UploadExtraResourceMsg <|
-                                Preparation.UploadExtraResourceSelectFileRequested (Just slide.id) Nothing
-
-                promptMsg : Core.Msg
-                promptMsg =
-                    Core.LoggedInMsg <|
-                        LoggedIn.PreparationMsg <|
-                            Preparation.EditPromptMsg <|
-                                Preparation.EditPromptOpenDialog slide.id slide.prompt
-
-                deleteMsg : Core.Msg
-                deleteMsg =
-                    Core.LoggedInMsg <|
-                        LoggedIn.PreparationMsg <|
-                            Preparation.SlideDelete gosIndex slide.id
-
-                inFront =
-                    Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                        [ case deleteExtraMsg of
-                            Nothing ->
-                                Ui.imageButton (Just extraResourceMsg) "" "Remplacer le slide / ajouter une ressource externe"
-
-                            Just msg ->
-                                Ui.timesButton (Just msg) "" "Supprimer la ressource externe"
-                        , Ui.fontButton (Just promptMsg) "" "Changer le texte du prompteur"
-                        , Ui.trashButton (Just deleteMsg) "" "Supprimer le slide"
-                        ]
-            in
-            Element.el
-                (Element.htmlAttribute (Html.Attributes.id slideId)
-                    :: Element.inFront inFront
-                    :: Element.width Element.fill
-                    :: dropAttributes
-                    ++ ghostAttributes
-                )
-                (Element.el (Element.width Element.fill :: dragAttributes) media)
+        _ ->
+            False
 
 
-leftColumnView : Api.CapsuleDetails -> Maybe Int -> Element Core.Msg
-leftColumnView details currentGos =
-    let
-        slides =
-            Preparation.setupSlides details
 
-        getGos : Int -> Maybe Api.Gos
-        getGos gosIndex =
-            List.head (List.drop gosIndex details.structure)
-
-        inFront : Int -> Element Core.Msg
-        inFront i =
-            Element.el [ Element.width Element.fill ]
-                (Element.row [ Element.padding 10, Element.spacing 10, Element.alignRight ]
-                    [ case Maybe.map .record (getGos i) of
-                        Just (Just record) ->
-                            Element.newTabLink [] { url = record, label = Ui.movieButton Nothing "" "Voir la vidéo enregistrée" }
-
-                        _ ->
-                            Element.none
-                    , Ui.cameraButton
-                        (case currentGos of
-                            Just gosIndex ->
-                                if gosIndex == i then
-                                    Nothing
-
-                                else
-                                    Just (Core.LoggedInMsg (LoggedIn.Record details i))
-
-                            _ ->
-                                Just (Core.LoggedInMsg (LoggedIn.Record details i))
-                        )
-                        ""
-                        "Filmer"
-                    ]
-                )
-
-        gosView : List Preparation.MaybeSlide -> Element Core.Msg
-        gosView gos =
-            case gos of
-                [] ->
-                    Element.none
-
-                (Preparation.GosId _) :: t ->
-                    gosView t
-
-                (Preparation.JustSlide s i) :: _ ->
-                    Input.button
-                        (Element.inFront (inFront ((i - 1) // 2))
-                            :: (case currentGos of
-                                    Just gosIndex ->
-                                        if gosIndex == ((i - 1) // 2) then
-                                            [ Border.width 5, Border.color Colors.success ]
-
-                                        else
-                                            []
-
-                                    _ ->
-                                        []
-                               )
-                        )
-                        { onPress = Just (Core.LoggedInMsg (LoggedIn.GosClicked i))
-                        , label = viewSlideImage s.asset.asset_path
-                        }
-
-        goss =
-            List.map gosView slides
-    in
-    Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.scrollbarY
-        , Element.padding 15
-        , Element.spacing 15
-        , Element.alignTop
-        , Background.color Colors.greyLighter
-        ]
-        goss
+-- DnD shit
 
 
-htmlVideo : String -> Html msg
-htmlVideo url =
-    Html.video
-        [ Html.Attributes.controls True
-        , Html.Attributes.class "wf"
-        ]
-        [ Html.source
-            [ Html.Attributes.src url ]
-            []
-        ]
-
-
-viewSlideImage : String -> Element Core.Msg
-viewSlideImage url =
-    Element.image
-        [ Element.width Element.fill ]
-        { src = url, description = "One desc" }
-
-
-bodyPromptModal : Maybe Api.Slide -> Preparation.EditPrompt -> Element Preparation.EditPromptMsg
-bodyPromptModal slide { prompt } =
-    let
-        nextSlideMsg =
-            Just Preparation.EditPromptNextSlide
-
-        previousSlideMsg =
-            Just Preparation.EditPromptPreviousSlide
-
-        fields =
-            [ Input.multiline [ Element.height Element.fill ]
-                { label = Input.labelAbove [] Element.none
-                , onChange = Preparation.EditPromptTextChanged
-                , placeholder = Nothing
-                , text = prompt
-                , spellcheck = True
-                }
-            ]
-    in
-    Element.row [ Element.centerY, Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
-        [ case slide of
-            Just s ->
-                Element.column [ Element.width Element.fill, Element.centerY ]
-                    [ Element.image [ Element.width Element.fill, Element.height Element.fill ]
-                        { description = ""
-                        , src = s.asset.asset_path
-                        }
-                    , Element.row [ Element.width Element.fill ]
-                        [ Element.el [ Element.alignLeft ] (Ui.primaryButton previousSlideMsg "<")
-                        , Element.el [ Element.alignRight ] (Ui.primaryButton nextSlideMsg ">")
-                        ]
-                    ]
-
-            _ ->
-                Element.none
-        , Element.column
-            [ Element.centerX
-            , Element.padding 10
-            , Element.spacing 10
-            , Element.width Element.fill
-            , Element.height Element.fill
-            ]
-            fields
-        ]
-
-
-convertAttributes : List (Html.Attribute Preparation.DnDMsg) -> List (Element.Attribute Core.Msg)
-convertAttributes attributes =
-    List.map
-        (\x -> Element.mapAttribute (\y -> Core.LoggedInMsg (LoggedIn.PreparationMsg (Preparation.DnD y))) x)
-        (List.map Element.htmlAttribute attributes)
+type DragOptions
+    = Drag
+    | Drop
+    | Ghost
+    | EventLess

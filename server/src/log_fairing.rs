@@ -3,7 +3,7 @@
 use chrono::Local;
 
 use rocket::fairing::{Fairing, Info, Kind};
-use rocket::{Data, Request, Response, Rocket};
+use rocket::{Request, Response};
 
 /// The struct represents the fairing used to log things.
 #[derive(Clone)]
@@ -16,6 +16,7 @@ impl Log {
     }
 }
 
+#[rocket::async_trait]
 impl Fairing for Log {
     fn info(&self) -> Info {
         Info {
@@ -24,16 +25,8 @@ impl Fairing for Log {
         }
     }
 
-    fn on_attach(&self, rocket: Rocket) -> Result<Rocket, Rocket> {
-        Ok(rocket.manage(self.clone()))
-    }
-
-    fn on_launch(&self, _: &Rocket) {}
-
-    fn on_request(&self, _: &mut Request, _: &Data) {}
-
-    fn on_response(&self, request: &Request, response: &mut Response) {
-        let ip = match request.client_ip() {
+    async fn on_response<'r>(&self, req: &'r Request<'_>, res: &mut Response<'r>) {
+        let ip = match req.client_ip() {
             Some(ip) => format!("{}", ip),
             None => String::from("Unknown addr"),
         };
@@ -42,9 +35,9 @@ impl Fairing for Log {
             "{} - [{}] {} {} {}",
             ip,
             Local::now().to_rfc2822(),
-            request.method(),
-            request.uri(),
-            response.status().code
+            req.method(),
+            req.uri(),
+            res.status().code
         );
     }
 }

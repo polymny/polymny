@@ -1,550 +1,451 @@
-//! This module contains the structures to manipulate capsules.
+//! This module contains everything that manage the capsule in the database.
 
-use serde_json::{json, Value as Json};
+use chrono::{NaiveDateTime, Utc};
 
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
+use ergol::prelude::*;
+use ergol::tokio_postgres::types::Json;
 
-use crate::db::asset::Asset;
-use crate::db::project::{Project, ProjectWithCapsules};
-use crate::db::slide::{Slide, SlideWithAsset};
-use crate::schema::{capsules, capsules_projects};
-use crate::webcam::{
-    str_to_webcam_position, str_to_webcam_size, ProductionChoices, WebcamPosition, WebcamSize,
-};
-use crate::Result;
+use uuid::Uuid;
 
-#[allow(missing_docs)]
-mod task_status {
-    /// The different published states possible.
-    #[derive(Debug, PartialEq, Eq, DbEnum, Serialize, Copy, Clone)]
-    pub enum TaskStatus {
-        /// Not started.
-        Idle,
+use serde::{Deserialize, Serialize};
 
-        /// Running.
-        Running,
+use tungstenite::Message;
 
-        /// Done.
-        Done,
+use rocket::http::Status;
+use rocket::serde::json::{json, Value};
+
+use crate::db::task_status::TaskStatus;
+use crate::db::user::User;
+use crate::websockets::WebSockets;
+use crate::{Db, Error, Result, HARSH};
+
+/// The different roles a user can have for a capsule.
+#[derive(Debug, Copy, Clone, PgEnum, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    /// The user has read access to the capsule.
+    Read,
+
+    /// The user has write access to the capsule.
+    Write,
+
+    /// The user owns the capsule.
+    Owner,
+}
+
+/// A slide with its prompt.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Slide {
+    /// The uuid of the file.
+    pub uuid: Uuid,
+
+    /// The uuid of the extra resource if any.
+    pub extra: Option<Uuid>,
+
+    /// The prompt associated to the slide.
+    pub prompt: String,
+}
+
+/// The anchor of the webcam.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Anchor {
+    /// The top left corner.
+    TopLeft,
+
+    /// The top right corner.
+    TopRight,
+
+    /// The bottom left corner.
+    BottomLeft,
+
+    /// The bottom right corner.
+    BottomRight,
+}
+
+impl Default for Anchor {
+    fn default() -> Anchor {
+        Anchor::BottomLeft
     }
 }
 
-pub use task_status::TaskStatusMapping as Task_status;
-pub use task_status::{TaskStatus, TaskStatusMapping};
+impl Anchor {
+    /// Returns true if the anchor is top.
+    pub fn is_top(self) -> bool {
+        match self {
+            Anchor::TopLeft | Anchor::TopRight => true,
+            _ => false,
+        }
+    }
 
-/// A capsule of preparation
-#[derive(Identifiable, Queryable, Associations, PartialEq, Debug, Serialize)]
-#[belongs_to(Asset, foreign_key=slide_show_id)]
-pub struct Capsule {
-    /// The id of the capsule.
-    pub id: i32,
-
-    /// The (unique) name of the capsule.
-    pub name: String,
-
-    /// The title the capsule.
-    pub title: String,
-
-    /// Reference to slide show in asset table
-    pub slide_show_id: Option<i32>,
-
-    /// The description of the capsule.
-    pub description: String,
-
-    /// Reference to capsule backgound image
-    pub background_id: Option<i32>,
-
-    /// Reference to capsule logo
-    pub logo_id: Option<i32>,
-
-    /// Reference to generated video for this capsule
-    pub video_id: Option<i32>,
-
-    /// The structure of the capsule.
-    ///
-    /// This json should be of the form
-    /// ```
-    /// [ {
-    ///     record_path: Option<String>,
-    ///     background_path: Option<String>,
-    ///     slides: Vec<i32>,
-    ///     locked: bool,
-    /// } ]
-    /// ```
-    pub structure: Json,
-
-    /// Whether the capsule video is published.
-    pub published: TaskStatus,
-
-    /// The structure of the editions options.
-    ///
-    /// This json should be of the form
-    /// ```
-    ///  {
-    ///     with_video: bool,
-    ///     webcam_size:  WebcamSize,
-    ///     webcam_position: WebcamPosition,
-    ///  ]
-    /// ```
-    pub edition_options: Json,
-
-    /// Whether the capsule is active or not.
-    pub active: bool,
-
-    /// Whether the capsule video is edited.
-    pub edited: TaskStatus,
-
-    /// Whether a resource is uploaded.
-    pub uploaded: TaskStatus,
-}
-
-/// The capsule with the video as an asset.
-#[derive(PartialEq, Debug, Serialize)]
-pub struct CapsuleWithVideo {
-    /// The id of the capsule.
-    pub id: i32,
-
-    /// The (unique) name of the capsule.
-    pub name: String,
-
-    /// The title the capsule.
-    pub title: String,
-
-    /// Reference to slide show in asset table
-    pub slide_show_id: Option<i32>,
-
-    /// The description of the capsule.
-    pub description: String,
-
-    /// Reference to capsule backgound image
-    pub background_id: Option<i32>,
-
-    /// Reference to capsule logo
-    pub logo_id: Option<i32>,
-
-    /// Reference to generated video for this capsule
-    pub video: Option<Asset>,
-
-    /// The structure of the capsule.
-    ///
-    /// This json should be of the form
-    /// ```
-    /// [ {
-    ///     record_path: Option<String>,
-    ///     background_path: Option<String>,
-    ///     slides: Vec<i32>,
-    ///     locked: bool,
-    /// } ]
-    /// ```
-    pub structure: Json,
-
-    /// Whether the capsule video is edited.
-    pub edited: TaskStatus,
-
-    /// Whether the capsule video is published.
-    pub published: TaskStatus,
-
-    /// The structure of the editions options.
-    ///
-    /// This json should be of the form
-    /// ```
-    ///  {
-    ///     with_video: bool,
-    ///     webcam_size:  WebcamSize,
-    ///     webcam_position: WebcamPosition,
-    ///  ]
-    /// ```
-    pub edition_options: Json,
-
-    /// Whether the capsule is active or not.
-    pub active: bool,
-
-    /// Whether a resource is uploaded.
-    pub uploaded: TaskStatus,
-}
-
-/// The structure of a gos.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GosStructure {
-    /// The ids of the slides of the gos.
-    pub slides: Vec<i32>,
-
-    /// The moments when the user went to the next slides, in milliseconds.
-    pub transitions: Vec<i32>,
-
-    /// The path to the record if any.
-    pub record_path: Option<String>,
-
-    /// The path to the background image if any.
-    pub background_path: Option<String>,
-
-    /// Whether the gos is locked or not.
-    pub locked: bool,
-
-    /// Production option
-    pub production_choices: Option<ApiProductionChoices>,
-}
-
-/// Production choices for video Generation
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ApiProductionChoices {
-    /// Video and audio or audio only
-    pub with_video: Option<bool>,
-
-    /// Webcam size
-    pub webcam_size: Option<WebcamSize>,
-
-    /// Webcam  Position
-    pub webcam_position: Option<WebcamPosition>,
-}
-
-impl ApiProductionChoices {
-    /// Convert received production choices
-    pub fn to_edition_options(&self) -> ProductionChoices {
-        ProductionChoices {
-            with_video: self.with_video.unwrap_or(true),
-            webcam_size: self.webcam_size.unwrap_or_default(),
-            webcam_position: self.webcam_position.unwrap_or_default(),
+    /// Returns true if the anchor is left.
+    pub fn is_left(self) -> bool {
+        match self {
+            Anchor::TopLeft | Anchor::BottomLeft => true,
+            _ => false,
         }
     }
 }
 
-/// A capsule that isn't stored into the database yet.
-#[derive(Debug, Insertable)]
-#[table_name = "capsules"]
-pub struct NewCapsule {
-    /// The (unique) name of the capsule.
-    pub name: String,
+/// The webcam settings for a gos.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
+pub enum WebcamSettings {
+    /// The webcam is disabled.
+    Disabled,
 
-    /// The title the capsule.
-    pub title: String,
+    /// The webcam is in fullscreen mode.
+    Fullscreen {
+        /// The opacity of the webcam.
+        opacity: f32,
 
-    /// Reference to pdf file of caspusle
-    // TODO: add reference to asset table
-    pub slide_show_id: Option<Option<i32>>,
+        /// Keying color
+        keycolor: Option<String>,
+    },
 
-    /// The description of the capsule.
-    pub description: String,
+    /// The webcam is at a corner of the screen.
+    Pip {
+        /// The corner to which the webcam is attached.
+        anchor: Anchor,
 
-    /// Reference to capsule backgound image
-    pub background_id: Option<Option<i32>>,
+        /// The opacity of the webcam, between 0 and 1.
+        opacity: f32,
 
-    /// Reference to capsule logo
-    pub logo_id: Option<Option<i32>>,
+        /// The offset from the corner in pixels.
+        position: (i32, i32),
 
-    /// The structure of the capsule.
-    pub structure: Json,
+        /// The size of the webcam.
+        size: (i32, i32),
 
-    /// Whether the capsule video is edited.
-    pub edited: TaskStatus,
-
-    /// Whether the capsule video is published.
-    pub published: TaskStatus,
-
-    /// Whether a resource is uploaded.
-    pub uploaded: TaskStatus,
-
-    /// The structure of the editions options.
-    pub edition_options: Option<Json>,
-
-    /// Whether the capsule is active or not.
-    pub active: bool,
+        /// Keying color
+        keycolor: Option<String>,
+    },
 }
 
-/// A link between a capsule and a project.
-#[derive(Identifiable, Queryable, PartialEq, Debug, Serialize, Associations)]
-#[belongs_to(Capsule)]
-#[belongs_to(Project)]
-pub struct CapsulesProject {
-    /// Id of the association.
+impl Default for WebcamSettings {
+    fn default() -> WebcamSettings {
+        WebcamSettings::Pip {
+            anchor: Anchor::default(),
+            size: (533, 300),
+            position: (4, 4),
+            opacity: 1.0,
+            keycolor: None,
+        }
+    }
+}
+
+/// A record, with an uuid, a resolution and a duration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Record {
+    /// The uuid of the record.
+    pub uuid: Uuid,
+
+    /// The size of the record, if it contains video.
+    pub size: Option<(u32, u32)>,
+}
+
+/// The type of a record event.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EventType {
+    /// The record started
+    Start,
+
+    /// Go to the next slide.
+    NextSlide,
+
+    /// Go to the previous slide.
+    PreviousSlide,
+
+    /// Go to the next sentence.
+    NextSentence,
+
+    /// Start to play extra media.
+    Play,
+
+    /// Stop the extra media.
+    Stop,
+
+    /// The record ended.
+    End,
+}
+
+/// A record event.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Event {
+    /// The type of the event.
+    pub ty: EventType,
+
+    /// The time of the event in ms.
+    pub time: i32,
+}
+
+/// The different pieces of information that we collect about a gos.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Gos {
+    /// The path to the video recorded
+    pub record: Option<Record>,
+
+    /// The ids of the slides of the gos.
+    pub slides: Vec<Slide>,
+
+    /// The milliseconds where slides transition.
+    pub events: Vec<Event>,
+
+    /// The webcam settings of the gos.
+    pub webcam_settings: WebcamSettings,
+}
+
+impl Gos {
+    /// Creates a new empty gos.
+    pub fn new() -> Gos {
+        Gos {
+            record: None,
+            slides: vec![],
+            events: vec![],
+            webcam_settings: WebcamSettings::default(),
+        }
+    }
+}
+
+/// Privacy settings for a video.
+#[derive(PgEnum, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum Privacy {
+    /// Public video.
+    Public,
+
+    /// Unlisted video.
+    Unlisted,
+
+    /// Private video.
+    Private,
+}
+
+/// A video capsule.
+#[ergol]
+pub struct Capsule {
+    /// The id of the capsule.
+    #[id]
     pub id: i32,
 
-    /// Id of the associated capsule.
-    pub capsule_id: i32,
+    /// The project name.
+    pub project: String,
 
-    /// Id of the associated project.
-    pub project_id: i32,
-}
+    /// The name of the capsule.
+    pub name: String,
 
-/// A link between a capsule and a project.
-#[derive(Insertable, Debug)]
-#[table_name = "capsules_projects"]
-pub struct NewCapsuleProject {
-    /// Id of the associated capsule.
-    pub capsule_id: i32,
+    /// The task status of the video upload step.
+    pub video_uploaded: TaskStatus,
 
-    /// Id of the associated project.
-    pub project_id: i32,
+    /// The pid of video upload transcode if any.
+    pub video_uploaded_pid: Option<i32>,
+
+    /// The task status of the edition step.
+    pub produced: TaskStatus,
+
+    /// The pid of the production task if any.
+    pub production_pid: Option<i32>,
+
+    /// The task status of the publication step.
+    pub published: TaskStatus,
+
+    /// The pid of the publication task if any.
+    pub publication_pid: Option<i32>,
+
+    /// Whether the video is public, unlisted, or private.
+    pub privacy: Privacy,
+
+    /// Whether the prompt should be use as subtitles or not.
+    pub prompt_subtitles: bool,
+
+    /// The structure of the capsule.
+    pub structure: Json<Vec<Gos>>,
+
+    /// The last time the capsule was modified.
+    pub last_modified: NaiveDateTime,
+
+    /// Capsule disk usage (in MB)
+    pub disk_usage: i32,
+
+    /// The user that has rights on the capsule.
+    #[many_to_many(capsules, Role)]
+    pub users: User,
 }
 
 impl Capsule {
-    /// Creates a new capsule and stores it in the database.
-    pub fn new(
-        database: &PgConnection,
-        name: &str,
-        title: &str,
-        slide_show_id: Option<i32>,
-        description: &str,
-        background_id: Option<i32>,
-        logo_id: Option<i32>,
-        project: Option<Project>,
+    /// Creates a new capsule.
+    pub async fn new<P: Into<String>, Q: Into<String>>(
+        project: P,
+        name: Q,
+        owner: &User,
+        db: &Db,
     ) -> Result<Capsule> {
-        let capsule = NewCapsule {
-            name: String::from(name),
-            title: String::from(title),
-            slide_show_id: Some(slide_show_id),
-            description: String::from(description),
-            background_id: Some(background_id),
-            logo_id: Some(logo_id),
-            structure: json!([]),
-            edited: TaskStatus::Idle,
-            published: TaskStatus::Idle,
-            uploaded: TaskStatus::Idle,
-            edition_options: Some(json!([])),
-            active: false,
-        }
-        .save(&database)?;
+        let project = project.into();
+        let name = name.into();
 
-        if let Some(project) = project {
-            NewCapsuleProject {
-                capsule_id: capsule.id,
-                project_id: project.id,
-            }
-            .save(&database)?;
-        }
+        let capsule = Capsule::create(
+            project,
+            name,
+            TaskStatus::Idle,
+            None,
+            TaskStatus::Idle,
+            None,
+            TaskStatus::Idle,
+            None,
+            Privacy::Private,
+            true,
+            Json(vec![]),
+            Utc::now().naive_utc(),
+            0,
+        )
+        .save(&db)
+        .await?;
+
+        capsule.add_user(owner, Role::Owner, db).await?;
+
         Ok(capsule)
     }
 
-    /// Retrieves the structure of the capsule.
-    pub fn structure(&self) -> Result<Vec<GosStructure>> {
-        Ok(serde_json::from_value(self.structure.clone()).unwrap())
+    /// Sets the last modified to now.
+    pub fn set_changed(&mut self) {
+        self.last_modified = Utc::now().naive_utc();
     }
 
-    /// Creates a new capsule.
-    pub fn create(
-        name: &str,
-        title: &str,
-        slide_show_id: Option<i32>,
-        description: &str,
-        background_id: Option<i32>,
-        logo_id: Option<i32>,
-    ) -> Result<NewCapsule> {
-        Ok(NewCapsule {
-            name: String::from(name),
-            title: String::from(title),
-            slide_show_id: Some(slide_show_id),
-            description: String::from(description),
-            background_id: Some(background_id),
-            logo_id: Some(logo_id),
-            structure: json!([]),
-            edited: TaskStatus::Idle,
-            published: TaskStatus::Idle,
-            uploaded: TaskStatus::Idle,
-            edition_options: None,
-            active: false,
-        })
-    }
-
-    /// Adds the video to the capsule.
-    pub fn with_video(&self, db: &PgConnection) -> Result<CapsuleWithVideo> {
-        let v = self.get_video(&db)?;
-        Ok(CapsuleWithVideo {
-            id: self.id,
-            name: self.name.clone(),
-            title: self.title.clone(),
-            slide_show_id: self.slide_show_id,
-            description: self.description.clone(),
-            background_id: self.background_id,
-            logo_id: self.logo_id,
-            video: v,
-            structure: self.structure.clone(),
-            edited: self.edited,
-            published: self.published,
-            uploaded: self.uploaded,
-            edition_options: self.edition_options.clone(),
-            active: self.active,
-        })
-    }
-
-    /// Gets a capsule from its id.
-    pub fn get_by_id(id: i32, db: &PgConnection) -> Result<Capsule> {
-        use crate::schema::capsules::dsl;
-        Ok(dsl::capsules.filter(dsl::id.eq(id)).first::<Capsule>(db)?)
-    }
-
-    /// Gets a capsule from its name.
-    pub fn get_by_name(name: &str, db: &PgConnection) -> Result<Capsule> {
-        use crate::schema::capsules::dsl;
-        Ok(dsl::capsules
-            .filter(dsl::name.eq(name))
-            .first::<Capsule>(db)?)
-    }
-
-    /// get the projects associated to a user
-    pub fn get_projects(&self, db: &PgConnection) -> Result<Vec<Project>> {
-        let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        Ok(cap_p
+    /// Returns a json representation of the capsule.
+    pub async fn to_json(&self, role: Role, db: &Db) -> Result<Value> {
+        let users = self
+            .users(&db)
+            .await?
             .into_iter()
-            .map(|x| Project::get_by_id(x.project_id, &db).map(|x| x.to_project()))
-            .collect::<Result<Vec<Project>>>()?)
-    }
-
-    /// get the projects associated to a user
-    pub fn get_projects_with_capsules(
-        &self,
-        db: &PgConnection,
-    ) -> Result<Vec<ProjectWithCapsules>> {
-        let cap_p = CapsulesProject::belonging_to(self).load::<CapsulesProject>(db)?;
-        Ok(cap_p
-            .into_iter()
-            .map(|x| Project::get_by_id(x.project_id, &db).unwrap())
-            .collect())
-    }
-
-    /// get the slide show associated to capsule
-    pub fn get_slide_show(&self, db: &PgConnection) -> Result<Option<Asset>> {
-        match self.slide_show_id {
-            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
-            None => Ok(None),
-        }
-    }
-
-    /// get the background associated to capsule
-    pub fn get_background(&self, db: &PgConnection) -> Result<Option<Asset>> {
-        // TODO return default background instead of none ?
-        // --> implement default backgound ?
-        match self.background_id {
-            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
-            None => Ok(None),
-        }
-    }
-
-    /// get the logo associated to capsule
-    pub fn get_logo(&self, db: &PgConnection) -> Result<Option<Asset>> {
-        // TODO return default logo instead of none ?
-        // --> implement default logo ?
-        match self.logo_id {
-            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
-            None => Ok(None),
-        }
-    }
-
-    /// get the video associated to capsule
-    pub fn get_video(&self, db: &PgConnection) -> Result<Option<Asset>> {
-        match self.video_id {
-            Some(asset_id) => Ok(Some(Asset::get(asset_id, &db)?)),
-            None => Ok(None),
-        }
-    }
-
-    /// get the slide show associated to capsule
-    pub fn get_slides(&self, db: &PgConnection) -> Result<Vec<SlideWithAsset>> {
-        //TODO : Verify if gest slide is correct without GOS
-        //TODO : This is ugly as fuck, it would be cool to have something better
-        let all_slides = self
-            .structure
-            .as_array()
-            .unwrap()
-            .into_iter()
-            .map(|g| {
-                g["slides"]
-                    .as_array()
-                    .unwrap()
-                    .clone()
-                    .into_iter()
-                    .map(|s| s.as_i64().unwrap() as i32)
-                    .collect::<Vec<i32>>()
+            .map(|(x, role)| {
+                json!({
+                    "username": x.username,
+                    "role": role,
+                })
             })
-            .collect::<Vec<Vec<i32>>>()
-            .into_iter()
-            .flatten();
+            .collect::<Vec<_>>();
 
-        let mut ret = vec![];
+        Ok(json!({
+            "id": HARSH.encode(self.id),
+            "name": self.name,
+            "project": self.project,
+            "role": role,
+            "video_uploaded": self.video_uploaded,
+            "produced": self.produced,
+            "published": self.published,
+            "privacy": self.privacy,
+            "structure": self.structure.0,
+            "last_modified": self.last_modified.timestamp(),
+            "users": users,
+            "prompt_subtitles": self.prompt_subtitles,
+            "disk_usage":self.disk_usage,
+        }))
+    }
 
-        for i in all_slides {
-            ret.push(SlideWithAsset::new(&Slide::get(i, db)?, db)?);
+    /// Notify the users that a capsule has been produced.
+    pub async fn notify_production(&self, id: &str, db: &Db, sock: &WebSockets) -> Result<()> {
+        let text = json!({
+            "type": "capsule_production_finished",
+            "id": id,
+        });
+
+        for (user, _) in self.users(&db).await? {
+            sock.write_message(user.id, Message::Text(text.to_string()))
+                .await?;
         }
 
-        Ok(ret)
+        Ok(())
     }
 
-    /// Retrieves all capsules
-    pub fn all(db: &PgConnection) -> Result<Vec<Capsule>> {
-        use crate::schema::capsules::dsl;
-        let capsules = dsl::capsules.load::<Capsule>(db);
-        Ok(capsules?)
-    }
+    /// Notify the users that a capsule has been publicated.
+    pub async fn notify_publication(&self, id: &str, db: &Db, sock: &WebSockets) -> Result<()> {
+        let text = json!({
+            "type": "capsule_publication_finished",
+            "id": id,
+        });
 
-    /// delete a capsule.
-    pub fn delete(&self, db: &PgConnection) -> Result<usize> {
-        use crate::schema::capsules::dsl;
-        Ok(diesel::delete(capsules::table)
-            .filter(dsl::id.eq(self.id))
-            .execute(db)?)
-    }
-
-    /// Gets Webcam option in db or default values if not set
-    pub fn get_edition_options(&self) -> Result<ProductionChoices> {
-        let options = ProductionChoices {
-            with_video: self
-                .edition_options
-                .get("with_video")
-                .unwrap()
-                .as_bool()
-                .unwrap(),
-            webcam_size: str_to_webcam_size(
-                &self
-                    .edition_options
-                    .get("webcam_size")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-            webcam_position: str_to_webcam_position(
-                &self
-                    .edition_options
-                    .get("webcam_position")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string(),
-            ),
-        };
-        Ok(options)
-    }
-}
-
-impl CapsulesProject {
-    /// Creates a new capsule project and saves it into the database.
-    pub fn new(
-        database: &PgConnection,
-        capsule_id: i32,
-        project_id: i32,
-    ) -> Result<CapsulesProject> {
-        Ok(NewCapsuleProject {
-            capsule_id,
-            project_id,
+        for (user, _) in self.users(&db).await? {
+            sock.write_message(user.id, Message::Text(text.to_string()))
+                .await?;
         }
-        .save(&database)?)
-    }
-}
 
-impl NewCapsule {
-    /// Saves a new capsule into the database.
-    pub fn save(&self, database: &PgConnection) -> Result<Capsule> {
-        Ok(diesel::insert_into(capsules::table)
-            .values(self)
-            .get_result(database)?)
+        Ok(())
     }
-}
 
-impl NewCapsuleProject {
-    /// Saves a new capsule project into the database.
-    pub fn save(&self, database: &PgConnection) -> Result<CapsulesProject> {
-        Ok(diesel::insert_into(capsules_projects::table)
-            .values(self)
-            .get_result(database)?)
+    /// Notify the users that a capsule has been publicated.
+    pub async fn notify_video_upload(&self, id: &str, db: &Db, sock: &WebSockets) -> Result<()> {
+        let text = json!({
+            "type": "video_upload_finished",
+            "id": id,
+        });
+
+        for (user, _) in self.users(&db).await? {
+            sock.write_message(user.id, Message::Text(text.to_string()))
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Notify the users that a capsule in under production.
+    pub async fn notify_production_progress(
+        &self,
+        id: &str,
+        msg: &str,
+        db: &Db,
+        sock: &WebSockets,
+    ) -> Result<()> {
+        let text = json!({
+            "type": "capsule_production_progress",
+            "msg": msg,
+            "id": id,
+        });
+
+        for (user, _) in self.users(&db).await? {
+            sock.write_message(user.id, Message::Text(text.to_string()))
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Notify the users that a capsule in under production.
+    pub async fn notify_video_upload_progress(
+        &self,
+        id: &str,
+        msg: &str,
+        db: &Db,
+        sock: &WebSockets,
+    ) -> Result<()> {
+        let text = json!({
+            "type": "video_upload_progress",
+            "msg": msg.parse::<f32>().map_err(|_|Error(Status::InternalServerError))?,
+            "id": id,
+        });
+
+        for (user, _) in self.users(&db).await? {
+            sock.write_message(user.id, Message::Text(text.to_string()))
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    /// Notify the users that the capsule has been changed.
+    pub async fn notify_change(&self, db: &Db, sock: &WebSockets) -> Result<()> {
+        let mut json = self.to_json(Role::Read, &db).await?;
+        json["type"] = json!("capsule_changed");
+
+        for (user, role) in self.users(&db).await? {
+            json["role"] = json!(role);
+
+            sock.write_message(user.id, Message::Text(json.to_string()))
+                .await?;
+        }
+
+        Ok(())
     }
 }

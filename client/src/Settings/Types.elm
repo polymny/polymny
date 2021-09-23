@@ -1,24 +1,84 @@
-module Settings.Types exposing (Model, Msg(..), init)
+module Settings.Types exposing (..)
 
-import Api
 import Status exposing (Status)
-import Webcam
+import User exposing (User)
 
 
 type alias Model =
-    { status : Status () ()
+    { username : String
+    , newPassword : NewPassword
+    , newEmail : NewEmail
+    , delete : Delete
     }
 
 
-init : Model
-init =
-    Model Status.NotSent
+type alias NewEmail =
+    { newEmail : String
+    , status : Status
+    }
+
+
+newEmailInit : NewEmail
+newEmailInit =
+    { newEmail = ""
+    , status = Status.NotSent
+    }
+
+
+type alias NewPassword =
+    { username : String
+    , currentPassword : String
+    , newPassword : String
+    , newPasswordConfirm : String
+    , status : Status
+    }
+
+
+newPasswordInit : User -> NewPassword
+newPasswordInit user =
+    { username = user.username
+    , currentPassword = ""
+    , newPassword = ""
+    , newPasswordConfirm = ""
+    , status = Status.NotSent
+    }
+
+
+type alias Delete =
+    { currentPassword : String
+    , status : Status
+    }
+
+
+deleteInit : Delete
+deleteInit =
+    { currentPassword = ""
+    , status = Status.NotSent
+    }
+
+
+init : User -> Model
+init user =
+    { username = user.username
+    , newPassword = newPasswordInit user
+    , newEmail = newEmailInit
+    , delete = deleteInit
+    }
 
 
 type Msg
-    = WithVideoChanged Bool
-    | WebcamSizeChanged Webcam.WebcamSize
-    | WebcamPositionChanged Webcam.WebcamPosition
-    | OptionsSubmitted
-    | OptionsSuccess Api.Session
-    | OptionsFailed
+    = NewPasswordCurrentPasswordChanged String
+    | NewPasswordNewPasswordChanged String
+    | NewPasswordNewPasswordConfirmChanged String
+    | NewPasswordConfirm
+    | NewPasswordSuccess
+    | NewPasswordFailed
+    | NewEmailNewEmailChanged String
+    | NewEmailConfirm
+    | NewEmailSuccess
+    | NewEmailFailed
+    | DeletePasswordChanged String
+    | DeleteRequested
+    | DeleteConfirm
+    | DeleteSuccess
+    | DeleteFailed

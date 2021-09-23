@@ -1,6 +1,7 @@
 [package]
-name = "server"
-version = "0.4.0"
+name = "polymny"
+version = "0.5.0"
+authors = ["Thomas Forgione <thomas@forgione.fr>"]
 edition = "2018"
 default-run = "server"
 
@@ -11,39 +12,42 @@ default = ["git"]
 git = ["compile-time-run"]
 
 [dependencies]
-rocket = "0.4.4"
-mime = "0.3.12"
-diesel = { version = "1.4.3", features = ["chrono", "uuid", "serde_json"] }
-diesel-derive-enum = { version = "0.4", features = ["postgres"] }
-rand = "0.7.2"
-bcrypt = "0.6.1"
-lettre = "0.9.2"
-lettre_email = "0.9.2"
-chrono = "0.4"
-serde = { version = "1.0.44", features = ["derive"] }
-serde_yaml = "0.8"
-rocket-multipart-form-data = "0.7.2"
-uuid = { version = "0.6.5", features = ["serde", "v4"] }
-tempfile = "3.1.0"
-log = "0.4.8"
-serde_json = "1.0"
+bcrypt = "0.9.0"
+ergol = { version = "0.1.1", features = ["with-serde_json-1", "with-chrono-0_4", "with-rocket" ] }
+ergol_cli = "0.1.1"
+rand = "0.7.3"
+serde = { version = "1.0.117", features = ["derive"] }
+rocket = { version = "0.5.0-rc.1", features = ["json", "secrets" ] }
+lettre = "0.9.5"
+lettre_email = "0.9.4"
+tokio = { version = "1.6.1", features = ["fs"] }
+futures = "0.3.12"
+harsh = "0.2.1"
+rayon = "1.5.0"
+uuid = { version = "0.8.2", features = ["serde", "v4"] }
+compile-time-run = { version = "0.2.11", optional = true }
+chrono = "0.4.19"
+time = "0.2.26"
+tokio-tungstenite = "0.14.0"
+tungstenite = "0.13.0"
+futures-sink = "0.3.13"
+lazy_static = "1.4"
 simplelog = { git = "https://github.com/polymny/simplelog.rs" }
-compile-time-run = { version = "0.2.8", optional = true }
-image = "0.23.9"
-ffmpeg-next = "4.3.6"
-rocket_seek_stream = "0.2.3"
-rayon = "1.4.1"
-tungstenite = "0.11.1"
-
-[dependencies.rocket_contrib]
-version = "0.4.4"
-default-features = false
-features = ["serve", "diesel_postgres_pool", "json"]
 
 [[bin]]
 name = "server"
 path = "src/main.rs"
 
 [[bin]]
-name = "populate-db"
-path = "src/populate_db.rs"
+name = "reset-db"
+path = "src/reset_db.rs"
+
+[[bin]]
+name = "harsh"
+path = "src/harsh.rs"
+
+[[bin]]
+name = "user-disk_usage"
+path = "src/user_disk_usage.rs"
+
+

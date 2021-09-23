@@ -1,8 +1,8 @@
-module Status exposing (Status(..))
+module Status exposing (..)
 
 
-type Status t e
+type Status
     = NotSent
     | Sent
-    | Success t
-    | Error e
+    | Success
+    | Error

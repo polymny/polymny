@@ -1,48 +1,129 @@
-module Settings.Updates exposing (update)
+module Settings.Updates exposing (..)
 
 import Api
+import Browser.Navigation as Nav
 import Core.Types as Core
-import LoggedIn.Types as LoggedIn
+import Http
+import Lang
+import Popup
 import Settings.Types as Settings
 import Status
-import Utils
-import Webcam
 
 
-update : Api.Session -> Settings.Msg -> Settings.Model -> ( Api.Session, Settings.Model, Cmd Core.Msg )
-update session msg model =
-    case msg of
-        Settings.WithVideoChanged newWithVideo ->
-            ( { session | withVideo = Just newWithVideo }, model, Cmd.none )
+update : Core.Global -> Settings.Msg -> Core.Model -> ( Core.Model, Cmd Core.Msg )
+update global msg model =
+    case model.page of
+        Core.Settings m ->
+            let
+                { newPassword, newEmail, delete } =
+                    m
 
-        Settings.WebcamSizeChanged newWebcamSize ->
-            ( { session | webcamSize = Just newWebcamSize }, model, Cmd.none )
+                ( newModel, cmd, popup ) =
+                    case msg of
+                        Settings.NewPasswordCurrentPasswordChanged s ->
+                            ( { m | newPassword = { newPassword | currentPassword = s } }, Cmd.none, Nothing )
 
-        Settings.WebcamPositionChanged newWebcamPosition ->
-            ( { session | webcamPosition = Just newWebcamPosition }, model, Cmd.none )
+                        Settings.NewPasswordNewPasswordChanged s ->
+                            ( { m | newPassword = { newPassword | newPassword = s } }, Cmd.none, Nothing )
 
-        Settings.OptionsSubmitted ->
-            ( session
-            , { model | status = Status.Sent }
-            , Api.updateOptions resultToMsg
-                { withVideo = Maybe.withDefault True session.withVideo
-                , webcamSize = Maybe.withDefault Webcam.Medium session.webcamSize
-                , webcamPosition = Maybe.withDefault Webcam.BottomLeft session.webcamPosition
-                }
-            )
+                        Settings.NewPasswordNewPasswordConfirmChanged s ->
+                            ( { m | newPassword = { newPassword | newPasswordConfirm = s } }, Cmd.none, Nothing )
 
-        Settings.OptionsSuccess newSession ->
-            ( newSession, { model | status = Status.Success () }, Cmd.none )
+                        Settings.NewPasswordConfirm ->
+                            ( { m | newPassword = { newPassword | status = Status.Sent } }
+                            , Api.changePassword resultToMsg m.newPassword
+                            , Nothing
+                            )
 
-        Settings.OptionsFailed ->
-            ( session, { model | status = Status.Error () }, Cmd.none )
+                        Settings.NewPasswordSuccess ->
+                            ( { m | newPassword = { newPassword | status = Status.Success } }, Cmd.none, Nothing )
+
+                        Settings.NewPasswordFailed ->
+                            ( { m | newPassword = { newPassword | status = Status.Error } }, Cmd.none, Nothing )
+
+                        Settings.NewEmailNewEmailChanged s ->
+                            ( { m | newEmail = { newEmail | newEmail = s } }, Cmd.none, Nothing )
+
+                        Settings.NewEmailConfirm ->
+                            ( { m | newEmail = { newEmail | status = Status.Sent } }
+                            , Api.changeEmail resultToMsg2 m.newEmail
+                            , Nothing
+                            )
+
+                        Settings.NewEmailSuccess ->
+                            ( { m | newEmail = { newEmail | status = Status.Success } }, Cmd.none, Nothing )
+
+                        Settings.NewEmailFailed ->
+                            ( { m | newEmail = { newEmail | status = Status.Error } }, Cmd.none, Nothing )
+
+                        Settings.DeletePasswordChanged s ->
+                            ( { m | delete = { delete | currentPassword = s } }, Cmd.none, Nothing )
+
+                        Settings.DeleteRequested ->
+                            ( m
+                            , Cmd.none
+                            , Just
+                                (Popup.popup (Lang.warning global.lang)
+                                    (Lang.deleteSelf global.lang)
+                                    Core.Cancel
+                                    (Core.SettingsMsg Settings.DeleteConfirm)
+                                )
+                            )
+
+                        Settings.DeleteConfirm ->
+                            ( { m | delete = { delete | status = Status.Sent } }
+                            , Api.deleteUser resultToMsg3 m.delete.currentPassword
+                            , Nothing
+                            )
+
+                        Settings.DeleteSuccess ->
+                            ( m, Nav.load (Maybe.withDefault global.root global.home), Nothing )
+
+                        Settings.DeleteFailed ->
+                            ( { m | delete = { delete | status = Status.Error } }, Cmd.none, Nothing )
+            in
+            ( mkModel { model | popup = popup } (Core.Settings newModel), cmd )
+
+        _ ->
+            ( model, Cmd.none )
 
 
-resultToMsg : Result e Api.Session -> Core.Msg
+resultToMsg : Result Http.Error () -> Core.Msg
 resultToMsg result =
-    Utils.resultToMsg
-        (\x ->
-            Core.LoggedInMsg <| LoggedIn.SettingsMsg <| Settings.OptionsSuccess x
-        )
-        (\_ -> Core.LoggedInMsg <| LoggedIn.SettingsMsg <| Settings.OptionsFailed)
-        result
+    (case result of
+        Ok _ ->
+            Settings.NewPasswordSuccess
+
+        Err _ ->
+            Settings.NewPasswordFailed
+    )
+        |> Core.SettingsMsg
+
+
+resultToMsg2 : Result Http.Error () -> Core.Msg
+resultToMsg2 result =
+    (case result of
+        Ok _ ->
+            Settings.NewEmailSuccess
+
+        Err _ ->
+            Settings.NewEmailFailed
+    )
+        |> Core.SettingsMsg
+
+
+resultToMsg3 : Result Http.Error () -> Core.Msg
+resultToMsg3 result =
+    (case result of
+        Ok _ ->
+            Settings.DeleteSuccess
+
+        _ ->
+            Settings.DeleteFailed
+    )
+        |> Core.SettingsMsg
+
+
+mkModel : Core.Model -> Core.Page -> Core.Model
+mkModel input newPage =
+    { input | page = newPage }

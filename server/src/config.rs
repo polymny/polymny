@@ -2,124 +2,223 @@
 
 use std::path::PathBuf;
 
+use serde::Deserialize;
+
+use rocket::figment::Figment;
+use rocket::Phase;
+
 use crate::mailer::Mailer;
 
+fn default_data_path() -> PathBuf {
+    PathBuf::from("data")
+}
+
+fn default_log_path() -> PathBuf {
+    PathBuf::from("log.txt")
+}
+
+fn default_videos_path() -> PathBuf {
+    PathBuf::from("videos")
+}
+
+fn default_socket_listen() -> String {
+    String::from("localhost:8001")
+}
+
+fn default_socket_root() -> String {
+    String::from("/")
+}
+
+fn default_video_root() -> String {
+    String::from("/")
+}
+
+fn default_pdf_target_size() -> String {
+    String::from("1920x1080")
+}
+
+fn default_pdf_target_density() -> String {
+    String::from("380")
+}
+
+fn default_beta() -> bool {
+    false
+}
+
+fn default_mailer_enabled() -> bool {
+    false
+}
+
+fn default_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+fn default_concurrent_tasks() -> usize {
+    16
+}
+
+fn default_quota_disk_free() -> i32 {
+    3
+}
+
+fn default_quota_disk_premiumlvl1() -> usize {
+    15
+}
+
+fn default_quota_disk_admin() -> usize {
+    1000
+}
+
+fn default_registration_disabled() -> bool {
+    false
+}
+
+#[cfg(feature = "git")]
+fn default_commit() -> Option<&'static str> {
+    Some(compile_time_run::run_command_str!(
+        "git",
+        "rev-parse",
+        "--short",
+        "HEAD"
+    ))
+}
+
+#[cfg(not(feature = "git"))]
+fn default_commit() -> Option<&'static str> {
+    None
+}
+
+fn default_harsh_length() -> usize {
+    0
+}
+
+/// The databases of the server.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Databases {
+    /// The database of the server.
+    pub database: Database,
+}
+
+/// The url of the database.
+#[derive(Debug, Clone, Deserialize)]
+pub struct Database {
+    /// The url of the database.
+    pub url: String,
+}
+
 /// The config of the server.
-#[derive(Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     /// The root of the app.
     pub root: String,
 
     /// The homepage.
-    pub home: String,
+    pub home: Option<String>,
 
     /// The path where the data should be saved.
+    #[serde(default = "default_data_path")]
     pub data_path: PathBuf,
 
     /// The path where the log should be saved.
+    #[serde(default = "default_log_path")]
     pub log_path: PathBuf,
 
     /// The path where the videos will be published.
+    #[serde(default = "default_videos_path")]
     pub videos_path: PathBuf,
 
     /// The url to which the websocket server must listen.
+    #[serde(default = "default_socket_listen")]
     pub socket_listen: String,
 
     /// The root of the socket server.
+    #[serde(default = "default_socket_root")]
     pub socket_root: String,
 
     /// The root of the video streaming server.
+    #[serde(default = "default_video_root")]
     pub video_root: String,
 
     /// Whether the server is in beta mode or not.
+    #[serde(default = "default_beta")]
     pub beta: bool,
 
-    /// Whether the background matting is enabled or not.
-    pub matting_enabled: bool,
+    /// Whether new users can register on the website.
+    #[serde(default = "default_registration_disabled")]
+    pub registration_disabled: bool,
 
     /// The domain on which the cookies should be set.
     pub cookie_domain: Option<String>,
 
+    /// Whether the mailer is enabled or not.
+    #[serde(default = "default_mailer_enabled")]
+    pub mailer_enabled: bool,
+
     /// The mailer, if any.
+    #[serde(flatten)]
     pub mailer: Option<Mailer>,
 
     /// The version of the crate.
+    #[serde(default = "default_version")]
     pub version: &'static str,
 
     /// The hash of the git commit.
-    pub commit: &'static str,
+    #[serde(default = "default_commit")]
+    pub commit: Option<&'static str>,
 
-    /// pdf to png conversion : target size
+    /// Random string to compute harsh hashids.
+    pub harsh_secret: String,
+
+    /// Minimum length of harsh hashids.
+    #[serde(default = "default_harsh_length")]
+    pub harsh_length: usize,
+
+    /// Pdf to png conversion : target size.
+    #[serde(default = "default_pdf_target_size")]
     pub pdf_target_size: String,
 
-    /// pdf to png conversion : target density
+    /// Pdf to png conversion : target density.
+    #[serde(default = "default_pdf_target_density")]
     pub pdf_target_density: String,
+
+    /// Url of the databases.
+    pub databases: Databases,
+
+    /// Number of concurrent tasks allowed.
+    #[serde(default = "default_concurrent_tasks")]
+    pub concurrent_tasks: usize,
+
+    /// Disk quota for free account
+    #[serde(default = "default_quota_disk_free")]
+    pub quota_disk_free: i32,
+
+    /// Disk quota for premuim level 1 account
+    #[serde(default = "default_quota_disk_premiumlvl1")]
+    pub quota_disk_premiumlvl1: usize,
+
+    /// Disk quota for admin account
+    #[serde(default = "default_quota_disk_admin")]
+    pub quota_disk_admin: usize,
 }
 
 impl Config {
-    /// Creates the config struct from rocket's configuration.
-    pub fn from(config: &rocket::Config) -> Config {
-        let root = config.get_string("root").unwrap();
+    /// Creates the config struct from the rocket config.
+    pub fn from_rocket<P: Phase>(rocket: &rocket::Rocket<P>) -> Config {
+        Config::from_figment(rocket.figment())
+    }
 
-        let home = config.get_string("home").unwrap_or_else(|_| root.clone());
+    /// Creates the config struct from the rocket figment.
+    pub fn from_figment(figment: &Figment) -> Config {
+        let mut config: Config = figment.extract().expect("Failed to parse config");
 
-        let data_path = config
-            .get_string("data_path")
-            .unwrap_or_else(|_| String::from("data"));
-
-        let log_path = config
-            .get_string("log_path")
-            .unwrap_or_else(|_| String::from("log.txt"));
-
-        let videos_path = config
-            .get_string("videos_path")
-            .unwrap_or_else(|_| String::from("videos"));
-
-        let socket_listen = config
-            .get_string("socket_listen")
-            .unwrap_or_else(|_| String::from("localhost:8001"));
-
-        let socket_root = config
-            .get_string("socket_root")
-            .unwrap_or_else(|_| String::from("/"));
-
-        let video_root = config
-            .get_string("video_root")
-            .unwrap_or_else(|_| String::from("/"));
-
-        let pdf_target_size = config
-            .get_string("pdf_target_size")
-            .unwrap_or_else(|_| String::from("1920x1080"));
-
-        let pdf_target_density = config
-            .get_string("pdf_target_density")
-            .unwrap_or_else(|_| String::from("380"));
-
-        let beta = config.get_bool("beta").unwrap_or(false);
-        let matting_enabled = config.get_bool("matting_enabled").unwrap_or(false);
-
-        #[cfg(feature = "git")]
-        let commit = compile_time_run::run_command_str!("git", "rev-parse", "--short", "HEAD");
-        #[cfg(not(feature = "git"))]
-        let commit = "unknown";
-
-        Config {
-            root,
-            home,
-            data_path: PathBuf::from(data_path),
-            log_path: PathBuf::from(log_path),
-            videos_path: PathBuf::from(videos_path),
-            socket_listen,
-            socket_root,
-            video_root,
-            beta,
-            matting_enabled,
-            mailer: Mailer::from_config(config),
-            version: env!("CARGO_PKG_VERSION"),
-            commit,
-            pdf_target_size,
-            pdf_target_density,
-            cookie_domain: config.get_string("cookie_domain").ok(),
+        if !config.mailer_enabled {
+            config.mailer = None;
         }
+
+        if let Some(mailer) = config.mailer.as_mut() {
+            mailer.root = config.root.clone();
+        }
+
+        config
     }
 }

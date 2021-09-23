@@ -1,3 +1,4 @@
-fn main() {
-    server::start();
+#[rocket::main]
+async fn main() -> Result<(), rocket::Error> {
+    polymny::rocket().await
 }

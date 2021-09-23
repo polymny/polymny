@@ -11,9 +11,6 @@ jobs:
   build-linux:
     name: Polymny
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:4.3-ubuntu
-    strategy:
-      fail-fast: false
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
@@ -21,8 +18,8 @@ jobs:
             TZ: Antartica/Troll
             DEBIAN_FRONTEND: noninteractive
         run: |
-          apt update
-          apt install -y --no-install-recommends git clang curl pkg-config libssl-dev libpq-dev
+          sudo apt update
+          sudo apt install -y --no-install-recommends git clang curl pkg-config libssl-dev libpq-dev
       - uses: polymny/setup-elm@ee2fb83b65e2506c84aea6942092491feccd876a
         name : Set up Elm
         with:
@@ -32,11 +29,11 @@ jobs:
         env:
             ACTIONS_ALLOW_UNSECURE_COMMANDS: "true"
         with:
-          toolchain: nightly
+          toolchain: stable
           override: true
       - name : Build client
         run: |
-            cd client && cp src/Log.elm.debug src/Log.elm && elm make src/Main.elm && elm make src/Setup.elm
+            cd client && cp src/Log.elm.debug src/Log.elm && elm make src/Main.elm && elm make src/Unlogged.elm
       - name: Build server
         run: |
           cd server && cargo build --no-default-features

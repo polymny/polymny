@@ -1,54 +1,30 @@
-//! This module contains the structures needed to manipulate sessions.
+//! This module contains the session struct and how it interacts with the database.
 
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
+use ergol::prelude::*;
 
 use crate::db::user::User;
-use crate::schema::sessions;
-use crate::{Error, Result};
+use crate::{Db, Error};
 
-/// A session that belongs to a user.
-#[derive(Identifiable, Queryable, Associations, PartialEq, Debug)]
-#[belongs_to(User)]
+/// The cookie allowing a user to stay logged in.
+#[ergol]
 pub struct Session {
     /// The id of the session.
+    #[id]
     pub id: i32,
 
-    /// The owner of the session.
-    pub user_id: i32,
-
-    /// The secret id of the session.
+    /// The string encoding the session.
+    #[unique]
     pub secret: String,
+
+    /// The user referenced by the session.
+    #[many_to_one(sessions)]
+    pub owner: User,
 }
 
 impl Session {
-    /// Finds a session in the database from its secret key.
-    ///
-    /// Returns none if no session was found.
-    pub fn from_secret(key: &str, db: &PgConnection) -> Result<Session> {
-        use crate::schema::sessions::dsl::*;
-        sessions
-            .filter(secret.eq(key))
-            .select((id, user_id, secret))
-            .first::<Session>(db)
-            .map_err(|_| Error::SessionDoesNotExist)
+    /// Creates and saves a session.
+    pub async fn new(secret: String, owner: &User, db: &Db) -> Result<Session, Error> {
+        let session = Session::create(secret, owner).save(db).await?;
+        Ok(session)
     }
-
-    /// Removes a session in the database from its secret key.
-    pub fn delete_from_secret(key: &str, db: &PgConnection) -> Result<()> {
-        use crate::schema::sessions::dsl::*;
-        diesel::delete(sessions.filter(secret.eq(key))).execute(db)?;
-        Ok(())
-    }
-}
-
-/// A new session not stored in the database yet.
-#[derive(Debug, Insertable)]
-#[table_name = "sessions"]
-pub struct NewSession {
-    /// The owner of the session.
-    pub user_id: i32,
-
-    /// The secret id of the session.
-    pub secret: String,
 }

@@ -1,337 +1,366 @@
-module Acquisition.Updates exposing (update)
+module Acquisition.Updates exposing (..)
 
 import Acquisition.Ports as Ports
 import Acquisition.Types as Acquisition
-import Acquisition.Views as Acquisition
-import Api
+import Browser.Navigation as Nav
+import Capsule
+import Core.Ports as Ports
 import Core.Types as Core
-import Dropdown
-import Edition.Types as Edition
-import Edition.Views as Edition
-import Json.Decode
-import Log
-import LoggedIn.Types as LoggedIn
-import Preparation.Types as Preparation
+import Route
 import Status
+import User
 
 
-update : Core.Global -> Api.Session -> Acquisition.Msg -> Acquisition.Model -> ( LoggedIn.Model, Cmd Core.Msg )
-update global session msg model =
+update : Acquisition.Msg -> Core.Model -> ( Core.Model, Cmd Core.Msg )
+update msg model =
     let
-        makeModel : Acquisition.Model -> LoggedIn.Model
-        makeModel m =
-            { session = session, tab = LoggedIn.Acquisition m }
+        { global } =
+            model
     in
     case msg of
-        -- INNER MESSAGES
-        Acquisition.CameraReady value ->
-            case Json.Decode.decodeValue Acquisition.decodeDevices value of
-                Ok v ->
-                    ( makeModel { model | cameraReady = True, devices = v }, Cmd.none )
+        Acquisition.Noop ->
+            ( model, Cmd.none )
 
-                Err _ ->
-                    ( makeModel { model | cameraReady = True }, Cmd.none )
+        Acquisition.DevicesReceived devices ->
+            let
+                newGlobal =
+                    { global | devices = Just devices }
+
+                ( page, cmd ) =
+                    case model.page of
+                        Core.Acquisition p ->
+                            let
+                                device =
+                                    Acquisition.deviceFromIds devices global
+
+                                newPage =
+                                    { p | chosenDevice = device, state = Acquisition.BindingWebcam }
+
+                                sub =
+                                    Acquisition.toSubmodel devices newPage
+                            in
+                            ( Core.Acquisition newPage
+                            , Acquisition.bindWebcam sub.chosenDevice
+                            )
+
+                        x ->
+                            ( x, Cmd.none )
+            in
+            ( { model | global = newGlobal, page = page }, cmd )
+
+        Acquisition.DeviceDetectionFailed ->
+            case model.page of
+                Core.Acquisition page ->
+                    ( { model | page = Core.Acquisition { page | state = Acquisition.ErrorDetectingDevices } }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.WebcamBindingFailed ->
+            case model.page of
+                Core.Acquisition page ->
+                    ( { model | page = Core.Acquisition { page | state = Acquisition.ErrorBindingWebcam } }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.WebcamBound ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | webcamBound = True }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.InvertAcquisition ->
+            let
+                newGlobal =
+                    { global | acquisitionInverted = not global.acquisitionInverted }
+            in
+            ( { model | global = newGlobal }, Ports.setAcquisitionInverted newGlobal.acquisitionInverted )
 
         Acquisition.StartRecording ->
-            let
-                cmd =
-                    case model.currentVideo of
-                        Just _ ->
-                            Cmd.batch [ Ports.goToWebcam elementId, Ports.startRecording () ]
-
-                        Nothing ->
-                            Ports.startRecording ()
-            in
-            ( makeModel
-                { model
-                    | recording = True
-                    , currentVideo = Just (List.length model.records)
-                    , currentSlide = 0
-                    , currentLine = 0
-                }
-            , cmd
-            )
-
-        Acquisition.ToggleSettings ->
-            let
-                ( newSettings, newCmd ) =
-                    case model.showSettings of
-                        Just _ ->
-                            ( Nothing, Cmd.none )
-
-                        _ ->
-                            ( Just ( Dropdown.init "", Dropdown.init "", Dropdown.init "" ), Cmd.none )
-            in
-            ( makeModel { model | showSettings = newSettings }, Cmd.batch [ Ports.goToWebcam elementId, newCmd ] )
-
-        Acquisition.VideoDropdownMsg vdMsg ->
-            case model.showSettings of
-                Just ( videoDropdown, resolutionDropdowns, audioDropdown ) ->
-                    let
-                        ( newModel, newCmd ) =
-                            Dropdown.update Acquisition.videoDropdownConfig vdMsg videoDropdown model.devices.video
-                    in
-                    ( makeModel { model | showSettings = Just ( newModel, resolutionDropdowns, audioDropdown ) }, newCmd )
-
-                _ ->
-                    ( makeModel model, Cmd.none )
-
-        Acquisition.VideoOptionPicked voMsg ->
-            case voMsg of
-                Just device ->
-                    ( makeModel { model | device = Acquisition.replaceVideo (Just device) model.device }
-                    , Ports.setVideoDevice ( Maybe.map .deviceId device |> Maybe.withDefault "", elementId )
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | recording = True, currentSlide = 0, currentLine = 0 })
+                    , Ports.startRecording ()
                     )
 
                 _ ->
-                    ( makeModel model, Cmd.none )
-
-        Acquisition.AudioDropdownMsg adMsg ->
-            case model.showSettings of
-                Just ( videoDropdown, resolutionDropdowns, audioDropdown ) ->
-                    let
-                        ( newModel, newCmd ) =
-                            Dropdown.update Acquisition.audioDropdownConfig adMsg audioDropdown model.devices.audio
-                    in
-                    ( makeModel { model | showSettings = Just ( videoDropdown, resolutionDropdowns, newModel ) }, newCmd )
-
-                _ ->
-                    ( makeModel model, Cmd.none )
-
-        Acquisition.AudioOptionPicked aoMsg ->
-            case aoMsg of
-                Just device ->
-                    ( makeModel { model | device = Acquisition.replaceAudio (Just device) model.device }
-                    , Ports.setAudioDevice ( Maybe.map .deviceId device |> Maybe.withDefault "", elementId )
-                    )
-
-                _ ->
-                    ( makeModel model, Cmd.none )
-
-        Acquisition.ResolutionDropdownMsg rdMsg ->
-            case ( model.showSettings, model.device ) of
-                ( Just ( videoDropdown, resolutionDropdown, audioDropdown ), ( Just (Just video), _, _ ) ) ->
-                    let
-                        ( newModel, newCmd ) =
-                            Dropdown.update Acquisition.resolutionDropdownConfig rdMsg resolutionDropdown video.resolutions
-                    in
-                    ( makeModel { model | showSettings = Just ( videoDropdown, newModel, audioDropdown ) }, newCmd )
-
-                _ ->
-                    ( makeModel model, Cmd.none )
-
-        Acquisition.ResolutionOptionPicked roMsg ->
-            case roMsg of
-                Just resolution ->
-                    ( makeModel { model | device = Acquisition.replaceResolution (Just resolution) model.device }
-                    , Ports.setResolution ( ( resolution.width, resolution.height ), elementId )
-                    )
-
-                _ ->
-                    ( makeModel model, Cmd.none )
+                    ( model, Cmd.none )
 
         Acquisition.StopRecording ->
-            ( makeModel { model | recording = False }, Ports.stopRecording () )
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | recording = False }), Ports.stopRecording () )
 
-        Acquisition.NewRecord n ->
-            ( makeModel { model | records = Acquisition.newRecord (List.length model.records) n :: model.records }, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
-        Acquisition.GoToWebcam ->
-            case model.currentVideo of
-                Just _ ->
-                    ( makeModel { model | watchingWebcam = True }, Ports.goToWebcam elementId )
+        Acquisition.RecordArrived record ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Ports.stopRecording () )
 
-                Nothing ->
-                    ( makeModel model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
-        Acquisition.GoToStream n ->
-            case List.head (List.drop n (List.reverse model.records)) of
-                Just { started, nextSlides } ->
-                    ( makeModel { model | currentVideo = Just n, currentSlide = 0, watchingWebcam = False }
-                    , Ports.goToStream ( elementId, n, Just (List.map (\x -> x - started) nextSlides) )
+        Acquisition.ToggleSettings ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | showSettings = not p.showSettings }), Ports.playWebcam () )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.VideoDeviceChanged v ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        chosenDevice =
+                            p.chosenDevice
+
+                        resolution =
+                            Maybe.andThen (\x -> List.head x.resolutions) v
+
+                        newChosenDevice =
+                            { chosenDevice | video = v, resolution = resolution }
+                    in
+                    ( mkModel
+                        { model | global = Core.updateDevice newChosenDevice model.global }
+                        (Core.Acquisition { p | chosenDevice = newChosenDevice })
+                    , Cmd.batch
+                        [ Acquisition.bindWebcam newChosenDevice
+                        , Ports.setVideoDeviceId (v |> Maybe.map .deviceId |> Maybe.withDefault "disabled")
+                        ]
                     )
 
                 _ ->
-                    ( makeModel model, Cmd.none )
+                    ( model, Cmd.none )
 
-        Acquisition.UploadStream url stream ->
-            let
-                transitions =
-                    List.head (List.drop stream (List.reverse model.records))
+        Acquisition.ResolutionChanged v ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        chosenDevice =
+                            p.chosenDevice
 
-                isNew =
-                    case transitions of
-                        Just { new } ->
-                            new
-
-                        _ ->
-                            False
-            in
-            if not isNew then
-                case model.mode of
-                    Acquisition.Single ->
-                        ( { session = session, tab = LoggedIn.Preparation (Preparation.init model.details) }, Cmd.none )
-
-                    Acquisition.All ->
-                        if model.gos + 1 == List.length model.details.structure then
-                            ( { session = session, tab = LoggedIn.Preparation (Preparation.init model.details) }, Cmd.none )
-
-                        else
-                            let
-                                ( m, cmd ) =
-                                    Acquisition.init global.mattingEnabled model.details model.mode (model.gos + 1)
-                            in
-                            ( makeModel m, cmd |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
-
-            else
-                let
-                    structure =
-                        List.head (List.drop model.gos model.details.structure)
-
-                    newTransitions =
-                        case ( structure, transitions ) of
-                            ( Just s, Just { started, nextSlides } ) ->
-                                Just { s | transitions = List.reverse (List.map (\x -> x - started) nextSlides) }
-
-                            _ ->
-                                Nothing
-
-                    newStructure =
-                        case newTransitions of
-                            Just y ->
-                                List.take model.gos model.details.structure ++ (y :: List.drop (model.gos + 1) model.details.structure)
-
-                            _ ->
-                                model.details.structure
-
-                    details =
-                        model.details
-
-                    newDetails =
-                        { details | structure = newStructure }
-                in
-                ( makeModel { model | details = newDetails, status = Status.Sent }
-                , Ports.uploadStream ( url, stream, Api.encodeSlideStructure newDetails )
-                )
-
-        Acquisition.StreamUploaded value ->
-            let
-                ( newModel, newCmd ) =
-                    case
-                        ( Json.Decode.decodeValue Api.decodeCapsuleDetails value
-                        , model.mode
-                        , model.gos + 1 == List.length model.details.structure
-                        )
-                    of
-                        ( Ok v, Acquisition.Single, _ ) ->
-                            ( { session = session, tab = LoggedIn.Preparation (Preparation.init v) }
-                            , Cmd.none
-                            )
-
-                        ( Ok v, Acquisition.All, True ) ->
-                            ( { session = session
-                              , tab = LoggedIn.Edition (Edition.init v)
-                              }
-                            , Cmd.none
-                            )
-
-                        ( Ok v, Acquisition.All, False ) ->
-                            let
-                                ( m, c ) =
-                                    Acquisition.init global.mattingEnabled v model.mode (model.gos + 1)
-                            in
-                            ( makeModel m, c |> Cmd.map LoggedIn.AcquisitionMsg |> Cmd.map Core.LoggedInMsg )
-
-                        ( Err e, _, _ ) ->
-                            let
-                                _ =
-                                    Log.debug "Error decoding capsule details" e
-                            in
-                            ( makeModel model, Cmd.none )
-            in
-            ( newModel, newCmd )
-
-        Acquisition.NextSlide record ->
-            if model.currentSlide + 1 >= List.length (Maybe.withDefault [] model.slides) then
-                ( makeModel model, Cmd.none )
-
-            else
-                ( makeModel { model | currentSlide = model.currentSlide + 1 }
-                , if record then
-                    Ports.askNextSlide ()
-
-                  else
-                    Cmd.none
-                )
-
-        Acquisition.NextSlideReceived time ->
-            let
-                records =
-                    case model.records of
-                        h :: t ->
-                            { h | nextSlides = time :: h.nextSlides } :: t
-
-                        t ->
-                            t
-            in
-            ( makeModel { model | records = records }, Cmd.none )
-
-        Acquisition.CaptureBackground ->
-            ( makeModel model, Ports.captureBackground elementId )
-
-        Acquisition.SecondsRemaining n ->
-            if n == 0 then
-                ( makeModel { model | secondsRemaining = Nothing }, Cmd.none )
-
-            else
-                ( makeModel { model | secondsRemaining = Just n }, Cmd.none )
-
-        Acquisition.BackgroundCaptured u ->
-            ( makeModel { model | background = Just u }, Cmd.none )
-
-        Acquisition.NextSentence ->
-            let
-                currentSlide : Maybe Api.Slide
-                currentSlide =
-                    List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
-
-                nextSlide : Maybe Api.Slide
-                nextSlide =
-                    List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
-
-                lineNumber =
-                    case currentSlide of
-                        Just j ->
-                            List.length (String.split "\n" j.prompt)
-
-                        _ ->
-                            0
-            in
-            case ( model.currentLine + 1 < lineNumber, nextSlide, model.recording ) of
-                ( True, _, _ ) ->
-                    -- If there is another line, go to the next line
-                    ( makeModel { model | currentLine = model.currentLine + 1 }, Cmd.none )
-
-                ( _, Just _, True ) ->
-                    -- If there is no other line but a next slide, go to the next slide
-                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
-                    , Ports.askNextSlide ()
+                        newChosenDevice =
+                            { chosenDevice | resolution = Just v }
+                    in
+                    ( mkModel
+                        { model | global = Core.updateDevice newChosenDevice model.global }
+                        (Core.Acquisition { p | chosenDevice = newChosenDevice })
+                    , Cmd.batch
+                        [ Acquisition.bindWebcam newChosenDevice
+                        , Ports.setResolution (Acquisition.format v)
+                        ]
                     )
 
-                ( _, Just _, False ) ->
-                    ( makeModel { model | currentSlide = model.currentSlide + 1, currentLine = 0 }
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.AudioDeviceChanged v ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        chosenDevice =
+                            p.chosenDevice
+
+                        newChosenDevice =
+                            { chosenDevice | audio = Just v }
+                    in
+                    ( mkModel
+                        { model | global = Core.updateDevice newChosenDevice model.global }
+                        (Core.Acquisition { p | chosenDevice = newChosenDevice })
+                    , Cmd.batch
+                        [ Acquisition.bindWebcam newChosenDevice
+                        , Ports.setAudioDeviceId v.deviceId
+                        ]
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.NextSentence ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        slides : List Capsule.Slide
+                        slides =
+                            List.drop p.gos p.capsule.structure
+                                |> List.head
+                                |> Maybe.map .slides
+                                |> Maybe.withDefault []
+
+                        currentSlide : Maybe Capsule.Slide
+                        currentSlide =
+                            List.head (List.drop p.currentSlide slides)
+
+                        nextSlide : Maybe Capsule.Slide
+                        nextSlide =
+                            List.head (List.drop (p.currentSlide + 1) slides)
+
+                        lineNumber =
+                            case currentSlide of
+                                Just j ->
+                                    List.length (String.split "\n" j.prompt)
+
+                                _ ->
+                                    0
+                    in
+                    case ( p.currentLine + 1 < lineNumber, nextSlide, p.recording ) of
+                        ( True, _, True ) ->
+                            -- If there is another line, go to the next line
+                            ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
+                            , Ports.askNextSentence ()
+                            )
+
+                        ( _, Just _, True ) ->
+                            -- If there is no other line but a next slide, go to the next slide
+                            ( mkModel model (Core.Acquisition { p | currentSlide = p.currentSlide + 1, currentLine = 0 })
+                            , Ports.askNextSlide ()
+                            )
+
+                        ( True, _, False ) ->
+                            ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
+                            , Cmd.none
+                            )
+
+                        ( _, Just _, False ) ->
+                            ( mkModel model (Core.Acquisition { p | currentSlide = p.currentSlide + 1, currentLine = 0 })
+                            , Cmd.none
+                            )
+
+                        ( _, _, True ) ->
+                            -- If recording and end reach, stop recording
+                            ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0, recording = False })
+                            , Ports.stopRecording ()
+                            )
+
+                        ( _, _, _ ) ->
+                            -- Otherwise, go back to begining
+                            ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0 }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PlayRecord record ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 })
+                    , Ports.playRecord (Acquisition.encodeRecord record)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.NextSlideReceived ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        slides : List Capsule.Slide
+                        slides =
+                            List.drop p.gos p.capsule.structure
+                                |> List.head
+                                |> Maybe.map .slides
+                                |> Maybe.withDefault []
+
+                        nextSlide =
+                            if p.currentSlide == List.length slides - 1 then
+                                0
+
+                            else
+                                p.currentSlide + 1
+                    in
+                    ( mkModel model (Core.Acquisition { p | currentSlide = nextSlide }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PlayRecordFinished ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.UploadRecord record ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | uploading = Just 0.0, status = Status.Sent })
+                    , Ports.uploadRecord ( p.capsule.id, p.gos, Acquisition.encodeRecord record )
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.UploadRecordFailed ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | status = Status.Error, uploading = Nothing }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.UploadRecordFailedAck ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | status = Status.NotSent, uploading = Nothing }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.CapsuleUpdated c ->
+            let
+                newUser =
+                    case c of
+                        Just ca ->
+                            User.changeCapsule ca model.user
+
+                        _ ->
+                            model.user
+            in
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        _ =
+                            case c of
+                                Just ca ->
+                                    { p | capsule = ca }
+
+                                _ ->
+                                    p
+                    in
+                    -- Go to the next record if any, production otherwise
+                    if p.gos + 1 < List.length p.capsule.structure then
+                        ( { model | user = newUser }
+                        , Nav.pushUrl model.global.key (Route.toUrl (Route.Acquisition p.capsule.id (p.gos + 1)))
+                        )
+
+                    else
+                        ( { model | user = newUser }
+                        , Nav.pushUrl model.global.key (Route.toUrl (Route.Production p.capsule.id 0))
+                        )
+
+                _ ->
+                    ( { model | user = newUser }, Cmd.none )
+
+        Acquisition.ProgressReceived progress ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | uploading = Just progress })
                     , Cmd.none
                     )
 
-                ( _, _, True ) ->
-                    -- If recording and end reach, stop recording
-                    ( makeModel { model | currentSlide = 0, currentLine = 0, recording = False }, Ports.stopRecording () )
+                _ ->
+                    ( model, Cmd.none )
 
-                ( _, _, _ ) ->
-                    -- Otherwise, go back to begining
-                    ( makeModel { model | currentSlide = 0, currentLine = 0 }, Cmd.none )
+        Acquisition.RefreshDevices ->
+            ( { model | global = { global | devices = Nothing } }, Ports.findDevices True )
 
 
-elementId : String
-elementId =
-    "video"
+mkModel : Core.Model -> Core.Page -> Core.Model
+mkModel input newPage =
+    { input | page = newPage }
