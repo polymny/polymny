@@ -1,7 +1,7 @@
 [package]
 name = "polymny"
-version = "0.5.0"
-authors = ["Thomas Forgione <thomas@forgione.fr>"]
+version = "1.0.0"
+authors = ["Thomas Forgione <thomas@polymny.studio>", "Nicolas Bertrand <nicolas@polymny.studio>"]
 edition = "2018"
 default-run = "server"
 
