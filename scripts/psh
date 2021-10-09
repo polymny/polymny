@@ -612,9 +612,11 @@ compose_goss(){
                     printf '\n%s %3s %%' "$echo_header" "100"
                     output="../assets/${extra}.mp4"
                 else
-                    # mix video resource with record
-                    # no slide is dislpayed
-                    echo "coucou" >&2
+                    # FIXME: mix video resource with record
+                    # no slide is dislpayed.
+                    # until fix only extra is displayed
+                    printf '\n%s %3s %%' "$echo_header" "100"
+                    output="../assets/${extra}.mp4"
                 fi
 
             fi
