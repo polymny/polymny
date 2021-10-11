@@ -17,7 +17,7 @@ decode =
 
 default : Lang
 default =
-    EnUs
+    FrFr
 
 
 toString : Lang -> String

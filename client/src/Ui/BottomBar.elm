@@ -8,6 +8,7 @@ import Lang exposing (Lang)
 import Route exposing (Route)
 import Ui.Colors as Colors
 import Ui.Utils as Ui
+import User exposing (User)
 
 
 linkButton : List (Element.Attribute msg) -> { onPress : Maybe msg, label : Element msg } -> Element msg
@@ -20,8 +21,8 @@ newTabLink attr { route, label } =
     Ui.newTabLink (Element.mouseOver [ Font.color Colors.white ] :: attr) { route = route, label = label }
 
 
-bottomBar : (Lang -> msg) -> Core.Global -> Element msg
-bottomBar langMsg global =
+bottomBar : (Lang -> msg) -> Core.Global -> User -> Element msg
+bottomBar langMsg global user =
     Element.row
         [ Font.color Colors.white
         , Font.size 16
@@ -55,8 +56,12 @@ bottomBar langMsg global =
                 { route = Route.Custom "https://github.com/polymny/polymny/"
                 , label = Element.text (Lang.source global.lang)
                 }
-            , linkButton []
-                { onPress = Just (langMsg (Lang.other global.lang)), label = Element.text (Lang.view global.lang) }
+            , if User.isPremium user then
+                linkButton []
+                    { onPress = Just (langMsg (Lang.other global.lang)), label = Element.text (Lang.view global.lang) }
+
+              else
+                Element.none
             , Lang.version global.lang ++ " " ++ global.version |> Element.text
             , case global.commit of
                 Just c ->

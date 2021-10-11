@@ -9,6 +9,7 @@ module User exposing
     , decode
     , decodeNotification
     , decodePlan
+    , isPremium
     , makeProject
     , printPlan
     , removeCapsule
@@ -35,12 +36,20 @@ decodePlan =
                     "free" ->
                         Decode.succeed Free
 
+                    "premium_lvl1" ->
+                        Decode.succeed PremiumLvl1
+
                     "admin" ->
                         Decode.succeed Admin
 
                     _ ->
                         Decode.fail <| "Unkown plan: " ++ str
             )
+
+
+isPremium : User -> Bool
+isPremium user =
+    user.plan == PremiumLvl1 || user.plan == Admin
 
 
 type alias Notification =

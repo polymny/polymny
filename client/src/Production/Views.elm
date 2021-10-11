@@ -46,7 +46,7 @@ view global user model =
 
 
 leftColumn : Core.Global -> User -> Production.Model -> Capsule.Gos -> Element Core.Msg
-leftColumn global _ _ gos =
+leftColumn global user _ gos =
     let
         webcamSettings =
             case gos.webcamSettings of
@@ -218,54 +218,66 @@ leftColumn global _ _ gos =
                 |> Element.text
                 |> Element.el [ Ui.wfp 1, Element.alignBottom ]
             ]
-        , Element.el (Ui.formTitle ++ disabledAttr) (Element.text (Lang.key global.lang))
-        , Input.checkbox
-            disabledAttr
-            { checked = isJust currentKeyColor
-            , icon = Input.defaultCheckbox
-            , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateKeying global.lang))
-            , onChange =
-                \x ->
-                    Core.ProductionMsg
-                        (Production.WebcamKeyColorChanged
-                            (case currentKeyColor of
-                                Just _ ->
-                                    Nothing
+        , if User.isPremium user then
+            Element.el (Ui.formTitle ++ disabledAttr) (Element.text (Lang.key global.lang))
 
-                                Nothing ->
-                                    Just "#00FF00"
-                            )
-                        )
-                        |> forceDisableMsg
-            }
-        , Element.row disabledAttr
-            [ Element.el
-                (if isJust currentKeyColor then
-                    []
+          else
+            Element.none
+        , if User.isPremium user then
+            Input.checkbox
+                disabledAttr
+                { checked = isJust currentKeyColor
+                , icon = Input.defaultCheckbox
+                , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateKeying global.lang))
+                , onChange =
+                    \x ->
+                        Core.ProductionMsg
+                            (Production.WebcamKeyColorChanged
+                                (case currentKeyColor of
+                                    Just _ ->
+                                        Nothing
 
-                 else
-                    Ui.disabled
-                )
-                (Element.text (Lang.keyColor global.lang))
-            , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
-                (Element.html
-                    (Html.input
-                        [ Html.Attributes.type_ "color"
-                        , Html.Attributes.value (Maybe.withDefault "#00FF00" currentKeyColor)
-                        , Html.Attributes.disabled (not (isJust currentKeyColor))
-                        , Html.Events.onInput
-                            (\x ->
-                                Core.ProductionMsg
-                                    (Production.WebcamKeyColorChanged
-                                        (Maybe.map (\_ -> x) currentKeyColor)
-                                    )
-                                    |> disableMsg
+                                    Nothing ->
+                                        Just "#00FF00"
+                                )
                             )
-                        ]
+                            |> forceDisableMsg
+                }
+
+          else
+            Element.none
+        , if User.isPremium user then
+            Element.row disabledAttr
+                [ Element.el
+                    (if isJust currentKeyColor then
                         []
+
+                     else
+                        Ui.disabled
                     )
-                )
-            ]
+                    (Element.text (Lang.keyColor global.lang))
+                , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
+                    (Element.html
+                        (Html.input
+                            [ Html.Attributes.type_ "color"
+                            , Html.Attributes.value (Maybe.withDefault "#00FF00" currentKeyColor)
+                            , Html.Attributes.disabled (not (isJust currentKeyColor))
+                            , Html.Events.onInput
+                                (\x ->
+                                    Core.ProductionMsg
+                                        (Production.WebcamKeyColorChanged
+                                            (Maybe.map (\_ -> x) currentKeyColor)
+                                        )
+                                        |> disableMsg
+                                )
+                            ]
+                            []
+                        )
+                    )
+                ]
+
+          else
+            Element.none
 
         --Input.text []
         --  { label = Input.labelHidden ""
@@ -281,13 +293,29 @@ mainView global user model gos slide =
     let
         image : Element Core.Msg
         image =
-            Element.image
-                [ Ui.wf
-                , Element.centerY
-                , Border.width 1
-                , Border.color Colors.greyLighter
-                ]
-                { src = Capsule.slidePath model.capsule slide, description = "" }
+            case ( gos.slides, slide.extra ) of
+                ( _ :: [], Just path ) ->
+                    Element.el
+                        [ Ui.wf
+                        , Element.centerY
+                        , Border.width 1
+                        , Border.color Colors.greyLighter
+                        ]
+                        (Element.html
+                            (Html.video
+                                [ Html.Attributes.controls False, Html.Attributes.class "wf" ]
+                                [ Html.source [ Html.Attributes.src (Capsule.assetPath model.capsule (path ++ ".mp4")) ] [] ]
+                            )
+                        )
+
+                _ ->
+                    Element.image
+                        [ Ui.wf
+                        , Element.centerY
+                        , Border.width 1
+                        , Border.color Colors.greyLighter
+                        ]
+                        { src = Capsule.slidePath model.capsule slide, description = "" }
 
         overlay : Element Core.Msg
         overlay =

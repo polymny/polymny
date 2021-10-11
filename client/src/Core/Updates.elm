@@ -80,7 +80,16 @@ updateModel msg model =
                     ( { model | user = { user | projects = List.map replaceProject user.projects } }, Cmd.none )
 
                 Core.SlideUploadRequested project ->
-                    ( model, Ports.select ( project, [ "application/pdf", "application/zip" ] ) )
+                    ( model
+                    , Ports.select
+                        ( project
+                        , if User.isPremium user then
+                            [ "application/pdf", "application/zip" ]
+
+                          else
+                            [ "application/pdf" ]
+                        )
+                    )
 
                 -- Select.file [ "application/pdf", "application/zip" ] (Core.SlideUploaded project) )
                 Core.SlideUploaded project file ->
@@ -103,7 +112,13 @@ updateModel msg model =
                             )
 
                         "application/zip" ->
-                            ( model, Ports.importCapsule ( project, file.value ) )
+                            ( model
+                            , if User.isPremium user then
+                                Ports.importCapsule ( project, file.value )
+
+                              else
+                                Cmd.none
+                            )
 
                         _ ->
                             ( model, Cmd.none )

@@ -434,6 +434,7 @@ function setupPorts(app) {
 
         let zip = new JSZip();
         let content = await zip.loadAsync(capsule);
+        console.log(content);
         let structure = JSON.parse(await content.file("structure.json").async("string"));
 
         // Creates the empty capsule.
