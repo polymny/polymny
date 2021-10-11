@@ -21,7 +21,7 @@ newTabLink attr { route, label } =
     Ui.newTabLink (Element.mouseOver [ Font.color Colors.white ] :: attr) { route = route, label = label }
 
 
-bottomBar : (Lang -> msg) -> Core.Global -> User -> Element msg
+bottomBar : (Lang -> msg) -> Core.Global -> Maybe User -> Element msg
 bottomBar langMsg global user =
     Element.row
         [ Font.color Colors.white
@@ -56,7 +56,7 @@ bottomBar langMsg global user =
                 { route = Route.Custom "https://github.com/polymny/polymny/"
                 , label = Element.text (Lang.source global.lang)
                 }
-            , if User.isPremium user then
+            , if Maybe.map User.isPremium user |> Maybe.withDefault False then
                 linkButton []
                     { onPress = Just (langMsg (Lang.other global.lang)), label = Element.text (Lang.view global.lang) }
 

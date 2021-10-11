@@ -95,7 +95,7 @@ viewContent model =
                         ]
                         [ Ui.navbar m.global (Just m.user) (Just m.page)
                         , insideContent
-                        , Ui.bottomBar Core.LangChanged m.global m.user
+                        , Ui.bottomBar Core.LangChanged m.global (Just m.user)
                         ]
                     , m.global.lang
                     , p
