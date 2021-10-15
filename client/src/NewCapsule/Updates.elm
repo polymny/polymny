@@ -86,12 +86,12 @@ update msg model =
                 NewCapsule.Cancel ->
                     case m.capsule of
                         RemoteData.Success ( c, _ ) ->
-                            ( { model | page = Core.Home, user = User.removeCapsule c.id model.user }
+                            ( { model | page = Core.Home Core.newHomeModel, user = User.removeCapsule c.id model.user }
                             , Api.deleteCapsule (\_ -> Core.Noop) c.id
                             )
 
                         _ ->
-                            ( { model | page = Core.Home }, Cmd.none )
+                            ( { model | page = Core.Home Core.newHomeModel }, Cmd.none )
 
                 NewCapsule.ProjectChanged newProject ->
                     let

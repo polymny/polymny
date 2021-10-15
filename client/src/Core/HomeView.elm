@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import FontAwesome as Fa
 import Lang
 import Route
@@ -22,8 +23,8 @@ type ProjectOrCapsule
     | Capsule Capsule.Capsule
 
 
-view : Core.Global -> User -> (String -> Core.Msg) -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-view global user mkToggleFold =
+view : Core.Global -> User -> Core.HomeModel -> (String -> Core.Msg) -> ( Element Core.Msg, Maybe (Element Core.Msg) )
+view global user model mkToggleFold =
     if List.isEmpty user.projects then
         ( Element.row [ Ui.wf, Ui.hf, Element.padding 10 ]
             [ Element.el [ Ui.wf ] Element.none
@@ -104,8 +105,42 @@ view global user mkToggleFold =
                         ]
                     , Element.el [ Ui.wfp 1 ] Element.none
                     ]
+
+            popup =
+                case model.renameCapsule of
+                    Just capsule ->
+                        let
+                            validate =
+                                Ui.primaryButton
+                                    { onPress = Just (Core.ValidateRenameCapsule capsule)
+                                    , label = Element.text (Lang.confirm global.lang)
+                                    }
+
+                            cancel =
+                                Ui.simpleButton
+                                    { onPress = Just (Core.RenameCapsule Nothing)
+                                    , label = Element.text (Lang.cancel global.lang)
+                                    }
+                        in
+                        Just
+                            (Ui.customSizedPopup 1
+                                (Lang.renameCapsule global.lang)
+                                (Element.column [ Element.padding 10, Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
+                                    [ Input.text [ Element.centerY ]
+                                        { label = Input.labelAbove [] (Element.text (Lang.enterNewNameForCapsule global.lang))
+                                        , onChange = \x -> Core.RenameCapsule (Just { capsule | name = x })
+                                        , placeholder = Nothing
+                                        , text = capsule.name
+                                        }
+                                    , Element.row [ Element.alignRight, Element.spacing 10 ] [ cancel, validate ]
+                                    ]
+                                )
+                            )
+
+                    _ ->
+                        Nothing
         in
-        ( element, Nothing )
+        ( element, popup )
 
 
 titleView : Core.Global -> (String -> Core.Msg) -> ProjectOrCapsule -> Element Core.Msg
@@ -307,6 +342,9 @@ actionsView global projectOrCapsule =
 
         Capsule capsule ->
             let
+                renameCapsuleMsg =
+                    Core.RenameCapsule (Just capsule) |> Just
+
                 deleteCapsuleMsg =
                     Core.RequestDeleteCapsule capsule.id |> Just
 
@@ -314,7 +352,7 @@ actionsView global projectOrCapsule =
                     Core.ExportCapsule capsule |> Just
             in
             Element.row [ Element.spacing 10, Element.centerY ]
-                [ iconButton Nothing Fa.pen Nothing (Lang.renameCapsule global.lang)
+                [ iconButton renameCapsuleMsg Fa.pen Nothing (Lang.renameCapsule global.lang)
                 , iconButton exportMsg Fa.fileExport Nothing (Lang.exportCapsule global.lang)
                 , iconButton deleteCapsuleMsg Fa.trash Nothing (Lang.deleteCapsule global.lang)
                 ]

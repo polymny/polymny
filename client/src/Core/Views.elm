@@ -136,8 +136,8 @@ viewContent model =
 content : Core.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 content model =
     case model.page of
-        Core.Home ->
-            HomeView.view model.global model.user Core.ToggleFold
+        Core.Home homeModel ->
+            HomeView.view model.global model.user homeModel Core.ToggleFold
 
         Core.Preparation c ->
             let

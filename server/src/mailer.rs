@@ -1,6 +1,6 @@
 //! This module contains the mailer confguration
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use lettre::smtp::authentication::Credentials;
 use lettre::{SmtpClient, Transport};
@@ -15,7 +15,7 @@ fn default_mailer_root() -> String {
 /// A structure that will be used to hold a mail configuration.
 ///
 /// This is the mail account chouette will use to send its emails.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Mailer {
     /// Root of the server.
     ///

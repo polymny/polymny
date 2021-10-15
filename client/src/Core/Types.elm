@@ -105,7 +105,7 @@ updateDevice device global =
 
 
 type Page
-    = Home
+    = Home HomeModel
     | NewCapsule NewCapsule.Model
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
@@ -115,6 +115,15 @@ type Page
     | Settings Settings.Model
     | Admin Admin.Model
     | NotFound
+
+
+type alias HomeModel =
+    { renameCapsule : Maybe Capsule }
+
+
+newHomeModel : HomeModel
+newHomeModel =
+    { renameCapsule = Nothing }
 
 
 changeCapsule : Capsule -> Model -> Model
@@ -151,7 +160,7 @@ changeCapsuleById updater id model =
 routeFromPage : Page -> Route
 routeFromPage page =
     case page of
-        Home ->
+        Home _ ->
             Route.Home
 
         NewCapsule _ ->
@@ -215,6 +224,8 @@ type Msg
     = Noop
     | LogoutClicked
     | ToggleFold String
+    | RenameCapsule (Maybe Capsule)
+    | ValidateRenameCapsule Capsule
     | SlideUploadRequested (Maybe String)
     | SlideUploaded (Maybe String) File
     | SlideUploadResponded (WebData Capsule)

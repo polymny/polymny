@@ -1856,3 +1856,13 @@ grain lang =
 
         _ ->
             "Grain"
+
+
+enterNewNameForCapsule : Lang -> String
+enterNewNameForCapsule lang =
+    case lang of
+        FrFr ->
+            "Entrez le nouveau nom de la capsule"
+
+        _ ->
+            "Enter the new name for the capsule"

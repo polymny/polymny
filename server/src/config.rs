@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use rocket::figment::Figment;
 use rocket::Phase;
@@ -93,21 +93,21 @@ fn default_harsh_length() -> usize {
 }
 
 /// The databases of the server.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Databases {
     /// The database of the server.
     pub database: Database,
 }
 
 /// The url of the database.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Database {
     /// The url of the database.
     pub url: String,
 }
 
 /// The config of the server.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     /// The root of the app.
     pub root: String,

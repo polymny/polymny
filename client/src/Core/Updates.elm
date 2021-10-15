@@ -79,6 +79,18 @@ updateModel msg model =
                     in
                     ( { model | user = { user | projects = List.map replaceProject user.projects } }, Cmd.none )
 
+                Core.RenameCapsule capsule ->
+                    ( { model | page = Core.Home { renameCapsule = capsule } }, Cmd.none )
+
+                Core.ValidateRenameCapsule capsule ->
+                    let
+                        changedModel =
+                            Core.changeCapsule capsule model
+                    in
+                    ( { changedModel | page = Core.Home { renameCapsule = Nothing } }
+                    , Api.updateCapsule Core.Noop capsule
+                    )
+
                 Core.SlideUploadRequested project ->
                     ( model
                     , Ports.select
