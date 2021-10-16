@@ -1866,3 +1866,23 @@ enterNewNameForCapsule lang =
 
         _ ->
             "Enter the new name for the capsule"
+
+
+createNewProject : Lang -> String
+createNewProject lang =
+    case lang of
+        FrFr ->
+            "Créer un nouveau projet"
+
+        _ ->
+            "Create new project"
+
+
+chooseProject : Lang -> String
+chooseProject lang =
+    case lang of
+        FrFr ->
+            "Choisir le project"
+
+        _ ->
+            "Choose project"

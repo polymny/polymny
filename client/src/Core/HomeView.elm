@@ -9,6 +9,9 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import FontAwesome as Fa
+import Html
+import Html.Attributes
+import Html.Events
 import Lang
 import Route
 import TimeUtils
@@ -121,12 +124,69 @@ view global user model mkToggleFold =
                                     { onPress = Just (Core.RenameCapsule Nothing)
                                     , label = Element.text (Lang.cancel global.lang)
                                     }
+
+                            onProjectChange =
+                                Html.Events.onInput
+                                    (\x ->
+                                        Core.RenameCapsule
+                                            (Just
+                                                { capsule
+                                                    | project =
+                                                        if x == "__empty" then
+                                                            ""
+
+                                                        else
+                                                            x
+                                                }
+                                            )
+                                    )
+
+                            projects =
+                                (user.projects |> List.map Just) ++ [ Nothing ]
+
+                            projectOption : Maybe User.Project -> Html.Html Core.Msg
+                            projectOption project =
+                                case project of
+                                    Just p ->
+                                        Html.option
+                                            [ Html.Attributes.selected (capsule.project == p.name)
+                                            , Html.Attributes.value p.name
+                                            ]
+                                            [ Html.text p.name ]
+
+                                    Nothing ->
+                                        Html.option
+                                            [ Html.Attributes.value "__empty" ]
+                                            [ Html.text (Lang.createNewProject global.lang) ]
+
+                            showTextInput =
+                                List.all (\x -> capsule.project /= x) (List.map .name user.projects)
                         in
                         Just
                             (Ui.customSizedPopup 1
                                 (Lang.renameCapsule global.lang)
-                                (Element.column [ Element.padding 10, Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
-                                    [ Input.text [ Element.centerY ]
+                                (Element.column
+                                    [ Element.padding 10
+                                    , Ui.wf
+                                    , Ui.hf
+                                    , Element.spacing 20
+                                    , Background.color Colors.whiteBis
+                                    ]
+                                    [ Element.el [ Element.centerY ] (Element.text (Lang.chooseProject global.lang))
+                                    , Html.select [ onProjectChange ] (List.map projectOption projects)
+                                        |> Element.html
+                                        |> Element.el [ Element.centerY ]
+                                    , if showTextInput then
+                                        Input.text [ Element.centerY ]
+                                            { label = Input.labelHidden ""
+                                            , onChange = \x -> Core.RenameCapsule (Just { capsule | project = x })
+                                            , placeholder = Nothing
+                                            , text = capsule.project
+                                            }
+
+                                      else
+                                        Element.none
+                                    , Input.text [ Element.centerY ]
                                         { label = Input.labelAbove [] (Element.text (Lang.enterNewNameForCapsule global.lang))
                                         , onChange = \x -> Core.RenameCapsule (Just { capsule | name = x })
                                         , placeholder = Nothing
