@@ -58,15 +58,15 @@ fn default_concurrent_tasks() -> usize {
 }
 
 fn default_quota_disk_free() -> i32 {
-    3000
+    3
 }
 
 fn default_quota_disk_premiumlvl1() -> usize {
-    15000
+    15
 }
 
 fn default_quota_disk_admin() -> usize {
-    1000000
+    1000
 }
 
 fn default_registration_disabled() -> bool {

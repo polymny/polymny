@@ -1288,10 +1288,10 @@ spaceUsed : Lang -> String -> String -> String
 spaceUsed lang used max =
     case lang of
         FrFr ->
-            used ++ " Mo utilsés sur " ++ max ++ " Mo"
+            used ++ " Go utilsés sur " ++ max ++ " Go"
 
         _ ->
-            used ++ " MB used on " ++ max ++ " MB"
+            used ++ " GB used on " ++ max ++ " GB"
 
 
 produceVideo : Lang -> String
