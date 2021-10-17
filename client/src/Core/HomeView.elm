@@ -395,8 +395,8 @@ actionsView global projectOrCapsule =
                     Core.RequestDeleteProject project.name |> Just
             in
             Element.row [ Element.spacing 10, Element.centerY ]
-                [ iconButton Nothing Fa.pen Nothing (Lang.renameProject global.lang)
-                , iconButton deleteProjectMsg Fa.trash Nothing (Lang.deleteProject global.lang)
+                [ -- iconButton Nothing Fa.pen Nothing (Lang.renameProject global.lang)
+                  iconButton deleteProjectMsg Fa.trash Nothing (Lang.deleteProject global.lang)
                 , iconButton newCapsuleMsg Fa.plus Nothing (Lang.newCapsule global.lang)
                 ]
 
