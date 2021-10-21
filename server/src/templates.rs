@@ -142,6 +142,7 @@ const INDEX_HTML_AFTER_FLAGS: &str = r#";
             flags.global.videoDeviceId = localStorage.getItem('videoDeviceId');
             flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
             flags.global.resolution = localStorage.getItem('resolution');
+            flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
             var app = Elm.Main.init({
                 flags: flags,
                 node: document.getElementById('root')

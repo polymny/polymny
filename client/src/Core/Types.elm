@@ -37,6 +37,7 @@ type alias Flags =
     , videoDeviceId : Maybe String
     , resolution : Maybe String
     , audioDeviceId : Maybe String
+    , sortBy : ( User.SortBy, Bool )
     }
 
 
@@ -58,6 +59,7 @@ type alias Global =
     , videoDeviceId : Maybe String
     , resolution : Maybe String
     , audioDeviceId : Maybe String
+    , sortBy : ( User.SortBy, Bool )
     }
 
 
@@ -92,6 +94,7 @@ flagsToGlobal key flags =
     , videoDeviceId = flags.videoDeviceId
     , resolution = flags.resolution
     , audioDeviceId = flags.audioDeviceId
+    , sortBy = flags.sortBy
     }
 
 

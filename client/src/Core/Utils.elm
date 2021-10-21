@@ -27,11 +27,14 @@ import Utils exposing (andMap)
 init : Decode.Value -> Url.Url -> Browser.Navigation.Key -> ( Maybe Core.Model, Cmd Core.Msg )
 init flags url key =
     let
-        user =
-            Decode.decodeValue (Decode.field "user" User.decode) flags
-
         global =
             Decode.decodeValue (Decode.field "global" (decodeGlobal key)) flags
+
+        sortBy =
+            global |> Result.map .sortBy |> Result.withDefault ( User.LastModified, False )
+
+        user =
+            Decode.decodeValue (Decode.field "user" (User.decode sortBy)) flags
     in
     case ( user, global ) of
         ( Ok u, Ok g ) ->
@@ -71,6 +74,7 @@ decodeGlobal key =
         |> andMap (Decode.maybe (Decode.field "videoDeviceId" Decode.string))
         |> andMap (Decode.maybe (Decode.field "resolution" Decode.string))
         |> andMap (Decode.maybe (Decode.field "audioDeviceId" Decode.string))
+        |> andMap (Decode.field "sortBy" User.decodeSortBy)
         |> Decode.map (Core.flagsToGlobal key)
 
 

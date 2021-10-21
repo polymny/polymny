@@ -29,7 +29,7 @@ decodeUser =
         (Decode.field "id" Decode.int)
         (Decode.field "activated" Decode.bool)
         (Decode.field "newsletter_subscribed" Decode.bool)
-        UserMod.decode
+        (UserMod.decode ( UserMod.LastModified, False ))
 
 
 type alias DashboardData =

@@ -18,7 +18,7 @@ function setupPorts(app) {
         socket.send(flags.user.cookie);
     }
 
-    socket.onclose = function(event) {
+    socket.onclose = function() {
         // Reconnect if connection is lost
         setTimeout(() => {
             socket = new WebSocket(flags.global.socket_root);
@@ -53,6 +53,10 @@ function setupPorts(app) {
 
     function setAudioDeviceId(arg) {
         localStorage.setItem('audioDeviceId', arg);
+    }
+
+    function setSortBy(arg) {
+        localStorage.setItem('sortBy', JSON.stringify(arg));
     }
 
     async function findDevices(force) {
@@ -549,6 +553,7 @@ function setupPorts(app) {
     subscribe(app.ports.setVideoDeviceId, setVideoDeviceId);
     subscribe(app.ports.setResolution, setResolution);
     subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
+    subscribe(app.ports.setSortBy, setSortBy);
     subscribe(app.ports.findDevices, findDevices);
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);
