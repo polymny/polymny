@@ -844,7 +844,7 @@ pub async fn unpublish(user: User, id: HashId, db: Db, config: &S<Config>) -> Re
 /// The route that cancels the production of a capsule.
 #[post("/cancel-video-upload/<id>")]
 pub async fn cancel_video_upload(user: User, id: HashId, db: Db) -> Result<()> {
-    let (mut capsule, _) = user
+    let (capsule, _) = user
         .get_capsule_with_permission(*id, Role::Write, &db)
         .await?;
 

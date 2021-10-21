@@ -12,6 +12,10 @@ fn default_mailer_root() -> String {
     String::new()
 }
 
+fn default_mailer_delay() -> u64 {
+    60
+}
+
 /// A structure that will be used to hold a mail configuration.
 ///
 /// This is the mail account chouette will use to send its emails.
@@ -38,6 +42,11 @@ pub struct Mailer {
     /// The password of the mail account.
     #[serde(rename = "mailer_password")]
     pub password: String,
+
+    /// The delay between two mails for mailing campaign, in seconds.
+    #[serde(default = "default_mailer_delay")]
+    #[serde(rename = "mailer_delay")]
+    pub delay: u64,
 }
 
 impl Mailer {
@@ -48,6 +57,7 @@ impl Mailer {
         server: String,
         username: String,
         password: String,
+        delay: u64,
     ) -> Mailer {
         Mailer {
             root,
@@ -55,6 +65,7 @@ impl Mailer {
             server,
             username,
             password,
+            delay,
         }
     }
 

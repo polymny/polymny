@@ -14,6 +14,8 @@ pub mod routes;
 pub mod templates;
 pub mod websockets;
 
+use std::error::Error as StdError;
+use std::fmt;
 use std::fs::OpenOptions;
 use std::ops::Deref;
 use std::result::Result as StdResult;
@@ -68,6 +70,14 @@ impl<'r, 's: 'r> Responder<'r, 's> for Error {
         self.0.respond_to(request)
     }
 }
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "errored with status {}", self.0)
+    }
+}
+
+impl StdError for Error {}
 
 macro_rules! impl_from_error {
     ( $from: ty) => {
