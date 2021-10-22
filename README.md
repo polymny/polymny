@@ -69,7 +69,7 @@ root of the repository to build the client.
 Install the following package before rust compilation:
 
 ```
-sudo apt install libpoppler-glib-dev qpdf imagemagick ffmpeg jq
+sudo apt install libpoppler-glib-dev qpdf imagemagick ffmpeg jq bc
 ```
 
 You may need to remove the PDF line from `/etc/ImageMagick-<X>/policy.xml`

@@ -6,23 +6,27 @@ function setupPorts(app) {
         recorder,
         recording,
         currentEvents,
-        nextSlideCallbacks = [],
+        nextSlideCallbacks = [];
+
+    var socket;
+    if (flags.user) {
         socket = new WebSocket(flags.global.socket_root);
 
-    socket.onmessage = function(event) {
-        console.log(event.data);
-        app.ports.websocketMsg.send(JSON.parse(event.data));
-    }
+        socket.onmessage = function(event) {
+            console.log(event.data);
+            app.ports.websocketMsg.send(JSON.parse(event.data));
+        }
 
-    socket.onopen = function() {
-        socket.send(flags.user.cookie);
-    }
+        socket.onopen = function() {
+            socket.send(flags.user.cookie);
+        }
 
-    socket.onclose = function() {
-        // Reconnect if connection is lost
-        setTimeout(() => {
-            socket = new WebSocket(flags.global.socket_root);
-        }, 1000);
+        socket.onclose = function() {
+            // Reconnect if connection is lost
+            setTimeout(() => {
+                socket = new WebSocket(flags.global.socket_root);
+            }, 1000);
+        }
     }
 
     function subscribe(object, fun) {

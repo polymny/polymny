@@ -212,6 +212,7 @@ const UNLOGGED_HTML_AFTER_FLAGS: &str = r#";
             flags.global.width = window.innerWidth;
             flags.global.height = window.innerHeight;
             flags.global.language = localStorage.getItem('language');
+            flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
             var app = Elm.Unlogged.init({
                 flags: flags,
                 node: document.getElementById('root')
