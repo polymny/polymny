@@ -10,6 +10,10 @@ function setupPorts(app) {
 
     var socket;
     if (flags.user) {
+        initWebsocket();
+    }
+
+    function initWebsocket() {
         socket = new WebSocket(flags.global.socket_root);
 
         socket.onmessage = function(event) {
@@ -23,9 +27,7 @@ function setupPorts(app) {
 
         socket.onclose = function() {
             // Reconnect if connection is lost
-            setTimeout(() => {
-                socket = new WebSocket(flags.global.socket_root);
-            }, 1000);
+            setTimeout(initWebsocket, 1000);
         }
     }
 
