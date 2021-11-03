@@ -1,9 +1,7 @@
-//! This module contains everything related to the database.
+//! This module contains everything that helps us deal with the library.
 
-pub mod asset;
 pub mod capsule;
 pub mod notification;
-pub mod project;
 pub mod session;
-pub mod slide;
+pub mod task_status;
 pub mod user;

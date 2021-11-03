@@ -18,6 +18,11 @@ navbar =
     SolidColor.fromRGB ( 72, 199, 116 ) |> toUi
 
 
+navbarOver : Element.Color
+navbarOver =
+    SolidColor.fromRGB ( 58, 187, 103 ) |> toUi
+
+
 white : Element.Color
 white =
     SolidColor.fromHSL ( 0, 0, 100 ) |> toUi
@@ -171,3 +176,8 @@ warningDark =
 dangerDark : Element.Color
 dangerDark =
     SolidColor.fromHSL ( 348, 86, 43 ) |> toUi
+
+
+darkTransparent : Element.Color
+darkTransparent =
+    Element.rgba255 0 0 0 0.8

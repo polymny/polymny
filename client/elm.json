@@ -16,8 +16,11 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/json-extra": "4.3.0",
+            "elm-community/list-extra": "8.2.4",
             "frandibar/elm-font-awesome-5": "1.0.0",
+            "krisajenkins/remotedata": "6.0.1",
             "mdgriffith/elm-ui": "1.1.8",
+            "mpizenberg/elm-file": "1.0.0",
             "ohanhi/keyboard": "2.0.1",
             "tesk9/palette": "3.0.1"
         },

@@ -1,135 +1,99 @@
 function setupPorts(app) {
 
-    let stream, recorder, recording, blobs, initializing, exitRequested = false, nextSlideCallbacks, backgroundCanvas = document.createElement('canvas'), backgroundBlob, socket, inputs, videoDeviceId, audioDeviceId, resolution, audio;
-
-    const quickScan = [
-        {
-            "width": 3840,
-            "height": 2160,
-        },
-        {
-            "width": 1920,
-            "height": 1080,
-        },
-        {
-            "width": 1600,
-            "height": 1200,
-        },
-        {
-            "width": 1280,
-            "height": 720,
-        },
-        {
-            "width": 800,
-            "height": 600,
-        },
-        {
-            "width": 640,
-            "height": 480,
-        },
-        {
-            "width": 640,
-            "height": 360,
-        },
-        {
-            "width": 352,
-            "height": 288,
-        },
-        {
-            "width": 320,
-            "height": 240,
-        },
-        {
-            "width": 176,
-            "height": 144,
-        },
-        {
-            "width": 160,
-            "height": 120,
-        }
-    ];
-
-    function addImageProcess(src) {
-        return new Promise((resolve, reject) => {
-            let img = new Image()
-            img.onload = () => resolve(img)
-            img.onerror = reject
-            img.src = src
-        })
-    }
-
-    function clearCallbacks() {
-        for (let callback of nextSlideCallbacks) {
-            clearTimeout(callback);
-        }
+    var stream = null,
+        bindingWebcam = false,
+        unbindRequested = false,
+        recorder,
+        recording,
+        currentEvents,
         nextSlideCallbacks = [];
+
+    var socket;
+    if (flags.user) {
+        initWebsocket();
     }
 
-    function initVariables() {
-        stream = null;
-        recorder = null;
-        recording = false;
-        initializing = false;
-        blobs = [];
-        nextSlideCallbacks = [];
-        inputs = {};
-        videoDeviceId = localStorage.getItem("videoDeviceId"); if (videoDeviceId == undefined) videoDeviceId = null;;
-        audioDeviceId = localStorage.getItem("audioDeviceId"); if (audioDeviceId == undefined) audioDeviceId = null;;
-        resolution    = null;
-        try {
-            resolution = JSON.parse(localStorage.getItem("resolution"));
-        } catch (e) {
-            // Leave it null
-        }
+    function initWebsocket() {
+        socket = new WebSocket(flags.global.socket_root);
 
-        console.log("Video device id: " + videoDeviceId);
-        console.log("Video resolution: " + JSON.stringify(resolution));
-        console.log("Audio device id: " + audioDeviceId);
-    }
-
-    function sendWebSocketMessage(content) {
-        if (socket == undefined) {
-            throw new Error("Can't send message to undefined socket");
-        }
-
-        socket.send(content);
-    }
-
-    function initWebSocket(url, cookie) {
-        // If the socket exists, and not closing or closed.
-        if (socket != undefined && socket.readyState <= 2) {
-            return;
-        }
-
-        socket = new WebSocket(url);
         socket.onmessage = function(event) {
-            app.ports.onWebSocketMessage.send(event.data);
-        };
+            console.log(event.data);
+            app.ports.websocketMsg.send(JSON.parse(event.data));
+        }
+
         socket.onopen = function() {
-            socket.send(cookie);
+            socket.send(flags.user.cookie);
+        }
+
+        socket.onclose = function() {
+            // Reconnect if connection is lost
+            setTimeout(initWebsocket, 1000);
         }
     }
 
-    async function init(elementId, maybeVideo, maybeBackground) {
-        if (exitRequested) {
-            exitRequested = false;
+    function subscribe(object, fun) {
+        if (object !== undefined) {
+            object.subscribe(fun);
         }
+    }
 
-        if (initializing) {
+    function setLanguage(arg) {
+        localStorage.setItem('language', arg);
+    }
+
+    function setZoomLevel(arg) {
+        localStorage.setItem('zoomLevel', arg);
+    }
+
+    function setAcquisitionInverted(arg) {
+        localStorage.setItem('acquisitionInverted', arg);
+    }
+
+    function setVideoDeviceId(arg) {
+        localStorage.setItem('videoDeviceId', arg);
+    }
+
+    function setResolution(arg) {
+        localStorage.setItem('resolution', arg);
+    }
+
+    function setAudioDeviceId(arg) {
+        localStorage.setItem('audioDeviceId', arg);
+    }
+
+    function setSortBy(arg) {
+        localStorage.setItem('sortBy', JSON.stringify(arg));
+    }
+
+    async function findDevices(force) {
+
+        let inputs = localStorage.getItem('devices');
+
+        if (inputs !== null && !force) {
+            console.log("Detecting devices from cache");
+            app.ports.devicesReceived.send(JSON.parse(inputs));
             return;
         }
 
-        initVariables();
+        console.log("Detecting devices");
 
-        if (maybeVideo !== null) {
-            blobs.push(maybeVideo);
+        // Ask user media to ask permission so we can read labels later.
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+        } catch (e) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({video: false, audio: true});
+            } catch(e) {
+                app.ports.deviceDetectionFailed.send(null);
+                return;
+            }
         }
 
-        await navigator.mediaDevices.getUserMedia({audio: true, video: true});
+        await unbindWebcam();
 
         let devices = await navigator.mediaDevices.enumerateDevices();
         inputs = {
-            video: [{disabled: true}],
+            video: [],
             audio: [],
         };
 
@@ -155,7 +119,8 @@ function setupPorts(app) {
                     };
 
                     try {
-                        await navigator.mediaDevices.getUserMedia(options);
+                        stream = await navigator.mediaDevices.getUserMedia(options);
+                        await unbindWebcam();
                         device.resolutions.push(res);
                     } catch (err) {
                         // Just don't add it
@@ -170,265 +135,395 @@ function setupPorts(app) {
             }
         };
 
-        async function keepWorking() {
-            initializing = true;
-            await setupUserMedia();
-            await bindWebcam(elementId);
-            initializing = false;
-            if (exitRequested) {
-                exit();
-            } else {
-                app.ports.cameraReady.send(inputs);
-            }
-        }
-
-        if (maybeBackground !== null) {
-            let img = await addImageProcess(maybeBackground);
-            backgroundCanvas.width = img.width;
-            backgroundCanvas.height = img.height;
-            backgroundCanvas.getContext('2d').drawImage(img, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
-            await keepWorking();
-        } else {
-            await keepWorking();
-        }
-
+        localStorage.setItem('devices', JSON.stringify(inputs));
+        app.ports.devicesReceived.send(inputs);
     }
 
-    function captureBackground(elementId) {
-        let element = document.getElementById(elementId);
+    async function bindWebcam(args) {
+        let cameraOptions = args[0];
+        let recorderOptions = args[1];
 
-        if (element === null) {
+        if (unbindRequested) {
+            unbindRequested = false;
+        }
+
+        if (bindingWebcam) {
             return;
         }
 
-        let i = 5;
-        app.ports.secondsRemaining.send(i);
-
-        function lambda() {
-            setTimeout(() => {
-                i--;
-                app.ports.secondsRemaining.send(i);
-                if (i === 0) {
-                    backgroundCanvas.width = element.videoWidth;
-                    backgroundCanvas.height = element.videoHeight;
-                    backgroundCanvas.getContext('2d').drawImage(element, 0, 0, backgroundCanvas.width, backgroundCanvas.height);
-
-                    backgroundCanvas.toBlob(function(blob) {
-                        backgroundBlob = blob;
-
-                        let url = URL.createObjectURL(blob);
-                        app.ports.backgroundCaptured.send(url);
-
-                        // For debug purposes
-                        // let newImg = document.createElement('img'),
-                        // newImg.onload = function() {
-                        //     backgroundBlob = blob;
-                        //     console.log(newImg);
-                        // };
-
-                        // newImg.src = url;
-                    });
-
-
-                } else {
-                    lambda();
-                }
-            }, 1000);
-        }
-
-        lambda();
-
-    }
-
-    async function setupUserMedia(secondRun) {
-
+        // Unbound webcam before rebinding it.
         if (stream !== null) {
+            await unbindWebcam();
+        }
+
+        console.log("Binding webcam");
+        bindingWebcam = true;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(cameraOptions);
+        } catch (e) {
+            app.ports.bindingWebcamFailed.send(null);
             return;
         }
 
-        let options = {};
-
-        if (audioDeviceId) {
-            options.audio = { deviceId: { exact: audioDeviceId }};
-        } else  {
-            options.audio = audioDeviceId !== "";
+        if (unbindRequested) {
+            await unbindWebcam();
         }
 
-        if (videoDeviceId) {
-            options.video = { deviceId: { exact: videoDeviceId }};
-            if (resolution) {
-                options.video.width = { exact: resolution.width };
-                options.video.height = { exact: resolution.height };
-            }
-        }
+        await playWebcam();
 
-        if (options.video === undefined) {
-            let input = inputs.video[0];
-            if (input.disabled === true) {
-                options.video = false;
-            } else {
-                options.video = { deviceId: { exact: input.deviceId } };
-            }
-        }
+        recorder = new MediaRecorder(stream, recorderOptions);
+        recorder.ondataavailable = (data) => {
+            app.ports.recordArrived.send({
+                blob: data.data,
+                events: currentEvents,
+            });
+        };
+        recorder.onerror = (err) => {
+            console.log(err);
+        };
 
-        if (videoDeviceId === "") {
-            options.video = false;
-        }
+        bindingWebcam = false;
 
-        if (resolution === null && options.video !== false) {
-            // Find camera by deviceId
-            let input = inputs.video.find(element => element.deviceId === options.video.deviceId.exact);
-            if (input === undefined) {
-                options.video = true;
-            } else if (input.disabled === true) {
-                options.video = false;
-            } else {
-                options.video.width = input.resolutions[0].width;
-                options.video.height = input.resolutions[0].height;
-            }
-        }
-
-        try {
-            stream = await navigator.mediaDevices.getUserMedia(options);
-        } catch (err) {
-            if (secondRun) {
-                console.error("Could not set webcam");
-                return;
-            } else if (err.name === "OverconstrainedError") {
-                setAudioAndVideoDevice(null, null);
-                await setupUserMedia(true);
-            } else {
-                console.log(err);
-                setAudioAndVideoDevice(null, null);
-                await setupUserMedia(true);
-            }
-        }
+        console.log("Webcam bound");
+        app.ports.webcamBound.send(null);
     }
 
-    async function bindWebcam(elementId) {
-        await new Promise(requestAnimationFrame);
-        let element = document.getElementById(elementId);
+    async function unbindWebcam() {
+        if (stream === null || bindingWebcam) {
+            unbindRequested = true;
+            return
+        }
 
-        if (element === null) {
+        console.log("Unbinding webcam");
+        stream.getTracks().forEach(function(track) {
+            track.stop();
+        });
+        stream = null;
+    }
+
+    async function playWebcam() {
+        if (stream === null) {
+            return;
+        }
+
+        await new Promise(requestAnimationFrame);
+
+        let element = document.getElementById(videoId);
+
+        if (element == null) {
             return;
         }
 
         element.focus();
-
         element.srcObject = stream;
         element.src = null;
         element.muted = true;
         element.play();
     }
 
-    function startRecording() {
-        if (recording) {
-            recording = false;
-            recorder.stop();
-        }
+    async function playRecord(record) {
+        let video = document.getElementById(videoId);
+        video.srcObject = null;
 
-        let options;
-        if (stream.getVideoTracks().length === 0) {
-            options = {
-                audioBitsPerSecond : 128000,
-                mimeType : 'audio/webm;codecs=opus'
-            };
-        } else if (stream.getAudioTracks().length === 0) {
-            options = {
-                videoBitsPerSecond : 2500000,
-                mimeType : 'video/webm;codecs=vp8'
-            };
+        if (typeof record.blob === "string" || record.blob instanceof String) {
+            video.src = record.blob;
         } else {
-            options = {
-                audioBitsPerSecond : 128000,
-                videoBitsPerSecond : 2500000,
-                mimeType : 'video/webm;codecs=opus,vp8'
-            };
+            video.src = URL.createObjectURL(record.blob);
         }
 
+        video.muted = false;
 
-        recorder = new MediaRecorder(stream, options);
-        recorder.ondataavailable = (data) => {
-            blobs.push(data.data);
-        };
-        recorder.onerror = (err) => {
-            console.log(err);
+        video.onended = () => {
+            playWebcam();
+            let extra = document.getElementById('extra');
+            if (extra instanceof HTMLVideoElement) {
+                extra.pause();
+                extra.currentTime = 0;
+            }
+            app.ports.playRecordFinished.send(null);
         };
 
-        recorder.start();
+        // Skip last transition which is the end of the video.
+        for (let i = 0; i < record.events.length - 1; i++) {
+            let event = record.events[i];
+            let callback;
+            switch (event.ty) {
+                case "next_slide":
+                    callback = () => app.ports.nextSlideReceived.send(null);
+                    break;
+                case "play":
+                    callback = () => {
+                        let extra = document.getElementById('extra');
+                        extra.muted = true;
+                        extra.currentTime = 0;
+                        extra.play();
+                    };
+                    break;
+                case "stop":
+                    callback = () => {
+                        let extra = document.getElementById('extra');
+                        extra.currentTime = 0;
+                        extra.stop();
+                    };
+                    break;
+            }
+
+            if (callback !== undefined) {
+                nextSlideCallbacks.push(setTimeout(callback, event.time));
+            }
+        }
+
+        video.play();
+    }
+
+    function startRecording() {
+        if (recorder !== undefined && !recording) {
+            recording = true;
+            recorder.start();
+            currentEvents = [{
+                time: Math.round(window.performance.now()),
+                ty: "start"
+            }];
+            let extra = document.getElementById('extra');
+            if (extra instanceof HTMLVideoElement) {
+                extra.muted = true;
+                extra.currentTime = 0;
+                extra.play();
+                currentEvents.push({
+                    time: 0,
+                    ty: "play"
+                });
+            }
+        }
     }
 
     function stopRecording() {
-        recorder.stop();
-    }
+        if (recording) {
+            let time = Math.round(window.performance.now()) - currentEvents[0].time;
 
-    async function goToWebcam(id) {
-        clearCallbacks();
-        await bindWebcam(id);
-        app.ports.cameraReady.send(inputs);
-    }
-
-    function goToStream(id, n, nextSlides) {
-        clearCallbacks();
-
-        let video = document.getElementById(id);
-        video.srcObject = null;
-        if (typeof blobs[n] === "string" || blobs[n] instanceof String) {
-            video.src = blobs[n];
-        } else {
-            video.src = URL.createObjectURL(blobs[n]);
-        }
-        video.muted = false;
-        video.play();
-        for (let time of nextSlides) {
-            nextSlideCallbacks.push(setTimeout(() => app.ports.goToNextSlide.send(null), time));
-        }
-    }
-
-    function uploadStream(url, n, json) {
-        let streamToUpload = blobs[n];
-
-        let formData = new FormData();
-        formData.append("file", streamToUpload);
-        formData.append("background", backgroundBlob);
-        formData.append("structure", JSON.stringify(json));
-
-        let xhr = new XMLHttpRequest();
-        xhr.open("POST", url, true);
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                app.ports.streamUploaded.send(JSON.parse(xhr.responseText));
+            let extra = document.getElementById('extra');
+            if (extra instanceof HTMLVideoElement) {
+                extra.muted = true;
+                extra.pause();
+                extra.currentTime = 0;
+                currentEvents.push({
+                    ty: "stop",
+                    time: time
+                });
             }
-        }
-        xhr.send(formData);
-    }
 
-    function exit() {
-        if (stream !== null && !initializing) {
-            stream.getTracks().forEach(function(track) {
-                track.stop();
+            currentEvents.push({
+                time: time,
+                ty: "end",
             });
 
-            initVariables();
+            currentEvents[0].time = 0;
+            recorder.stop();
+            recording = false;
+        }
+    }
+
+    function uploadRecord(args) {
+        let capsuleId = args[0];
+        let gos = args[1];
+        let record = args[2];
+
+        if (typeof record.blob === "string" || record.blob instanceof String) {
+
+            // User wants to validate the old record, don't need to do anything,
+            // just send the message to let them know it's done
+            app.ports.capsuleUpdated.send(null);
+
         } else {
-            exitRequested = true;
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/upload-record/" + capsuleId + "/" + gos, true);
+
+            xhr.upload.onprogress = (e) => {
+                app.ports.progressReceived.send(e.loaded / e.total);
+            };
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        let capsule = JSON.parse(xhr.responseText);
+                        capsule.structure[gos].events = record.events;
+
+                        let xhr2 = new XMLHttpRequest();
+                        xhr2.open("POST", "/api/update-capsule/", true);
+
+                        xhr2.onreadystatechange = () => {
+                            if (xhr2.readyState === 4) {
+                                if (xhr2.status === 200) {
+                                    app.ports.capsuleUpdated.send(capsule);
+                                } else {
+                                    app.ports.uploadRecordFailed.send(null);
+                                }
+                            };
+                        }
+
+                        xhr2.send(JSON.stringify(capsule));
+                    } else {
+                        app.ports.uploadRecordFailed.send(null);
+                    }
+                }
+            }
+
+            xhr.send(record.blob);
         }
     }
 
-    function subscribe(object, fun) {
-        if (object !== undefined) {
-            object.subscribe(fun);
-        }
+    function askNextSlide() {
+        currentEvents.push({
+            time: Math.round(window.performance.now()) - currentEvents[0].time,
+            ty: "next_slide"
+        });
     }
 
-    function scrollIntoView(anchor) {
-        let element = document.getElementById(anchor);
-        if (element !== null) {
-            element.scrollIntoView();
-        }
+    function askNextSentence() {
+        currentEvents.push({
+            time: Math.round(window.performance.now()) - currentEvents[0].time,
+            ty: "next_sentence"
+        });
     }
 
-    function copyStringToClipboard(str) {
+    async function exportCapsule(capsule) {
+        let zip = new JSZip();
+
+        for (let gosIndex = 0; gosIndex < capsule.structure.length; gosIndex++) {
+
+            let gos = capsule.structure[gosIndex];
+            let gosDir = zip.folder(gosIndex + 1);
+
+            for (let slideIndex  = 0; slideIndex < gos.slides.length; slideIndex++) {
+                let slide = gos.slides[slideIndex];
+
+                let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.uuid + ".png");
+                let blob = await resp.blob();
+
+                gosDir.file((slideIndex + 1) + ".png", blob);
+
+                slide.uuid = (gosIndex + 1) + "/" + (slideIndex + 1) + ".png";
+
+                if (slide.extra != undefined) {
+                    let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.extra + ".mp4");
+                    let blob = await resp.blob();
+
+                    gosDir.file((slideIndex + 1) + ".mp4", blob);
+                    slide.extra = (gosIndex + 1) + "/" + (slideIndex + 1) + ".mp4";
+                }
+
+
+            }
+
+            if (gos.record != undefined) {
+                let resp = await fetch("/data/" + capsule.id + "/assets/" + gos.record.uuid + ".webm");
+                let blob = await resp.blob();
+
+                gosDir.file("record.webm", blob);
+                gos.record = (gosIndex + 1) + "/record.webm";
+            }
+
+        }
+
+        if (capsule.produced) {
+            let resp = await fetch("/data/" + capsule.id + "/output.mp4");
+            let blob = await resp.blob();
+            zip.file("output.mp4", blob);
+        }
+
+        zip.file("structure.json", JSON.stringify(capsule, null, 4));
+
+        let content = await zip.generateAsync({type: "blob"});
+        saveAs(content, capsule.id + ".zip");
+    }
+
+    async function importCapsule(args) {
+        let project = args[0];
+        let capsule = args[1];
+
+        let zip = new JSZip();
+        let content = await zip.loadAsync(capsule);
+        console.log(content);
+        let structure = JSON.parse(await content.file("structure.json").async("string"));
+
+        // Creates the empty capsule.
+        let resp = await fetch("/api/empty-capsule/" + project + "/" + structure.name + " (copie)", {method: "POST"});
+        let json = await resp.json();
+
+        structure.id = json.id;
+
+        // Upload the slides.
+        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
+            let gos = structure.structure[gosIndex];
+
+            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                let slide = gos.slides[slideIndex];
+                let image = await content.file(slide.uuid).async("blob");
+                image = image.slice(0, image.size, "image/png")
+
+                // Upload the slide.
+                let resp = await fetch("/api/add-slide/" + json.id + "/-1/-1", {method: "POST", body: image});
+                resp = await resp.json();
+
+                // Find uuid of the slide we added.
+                let newGos = resp.structure[resp.structure.length - 1];
+                let newSlide = newGos.slides[newGos.slides.length - 1];
+
+                slide.uuid = newSlide.uuid;
+            }
+
+        }
+
+        // Set the correct structure.
+        // Remove records because they are currently null.
+        let structureClone = JSON.parse(JSON.stringify(structure));
+        for (let gos of structureClone.structure) {
+            gos.record = null;
+            for (let slide of gos.slides) {
+                slide.extra = null;
+            }
+        }
+
+        // Remove from json attributes that the server doesn't want.
+        delete structureClone.produced;
+
+        await fetch("/api/update-capsule/", {
+            method: "POST",
+            body: JSON.stringify(structureClone),
+            headers: {"Content-Type": "application/json"},
+        });
+
+        resp = undefined;
+
+        // Upload the records and extra
+        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
+            let gos = structure.structure[gosIndex];
+
+            // Upload the gos record if any.
+            if (gos.record !== null) {
+                let blob = await content.file(gos.record).async("blob");
+                blob = blob.slice(0, blob.size, "video/webm");
+                resp = await fetch("/api/upload-record/" + json.id + "/" + gosIndex, {method: "POST", body: blob});
+            }
+
+            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                let slide = gos.slides[slideIndex];
+                if (slide.extra !== null) {
+                    let blob = await content.file(slide.extra).async("blob");
+                    blob = blob.slice(0, blob.size, "video/mp4");
+                    resp = await fetch("/api/replace-slide/" + json.id + "/" + slide.uuid + "/-1", {method: "POST", body: blob});
+
+                }
+            }
+        }
+
+        // let lastStructure = resp !== undefined ? await resp.json() : structureClone;
+        // app.ports.capsuleUpdated.send(lastStructure);
+
+    }
+
+    function copyString(str) {
         let el = document.createElement('textarea');
         el.value = str;
         el.setAttribute('readonly', '');
@@ -439,122 +534,54 @@ function setupPorts(app) {
         document.body.removeChild(el);
     }
 
-    function setAudioAndVideoDevice(arg1, arg2) {
-        audioDeviceId = arg1;
-        videoDeviceId = arg2;
-        if (arg1 === null) {
-            localStorage.removeItem("audioDeviceId");
-        } else {
-            localStorage.setItem("audioDeviceId", audioDeviceId);
-        }
-
-        if (arg2 === null) {
-            localStorage.removeItem("videoDeviceId");
-        } else {
-            localStorage.setItem("videoDeviceId", videoDeviceId);
+    function scrollIntoView(anchor) {
+        let element = document.getElementById(anchor);
+        if (element !== null) {
+            element.scrollIntoView();
         }
     }
 
-    async function setAudioDevice(arg, id) {
-        audioDeviceId = arg;
-        localStorage.setItem("audioDeviceId", audioDeviceId);
-        stream = null;
-        await setupUserMedia();
-        await bindWebcam(id);
-        app.ports.cameraReady.send(inputs);
+    function select(args) {
+        let project = args[0];
+        let mimes = args[1];
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = mimes.join(',');
+        input.onchange = function(e) {
+            app.ports.selected.send([project, e.target.files[0]]);
+        };
+        input.click();
     }
 
-    async function setVideoDevice(arg, id) {
-        videoDeviceId = arg;
-        localStorage.setItem("videoDeviceId", videoDeviceId);
-        stream = null;
-        await setupUserMedia();
-        await bindWebcam(id);
-        app.ports.cameraReady.send(inputs);
-    }
+    subscribe(app.ports.setLanguage, setLanguage);
+    subscribe(app.ports.setZoomLevel, setZoomLevel);
+    subscribe(app.ports.setAcquisitionInverted, setAcquisitionInverted);
+    subscribe(app.ports.setVideoDeviceId, setVideoDeviceId);
+    subscribe(app.ports.setResolution, setResolution);
+    subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
+    subscribe(app.ports.setSortBy, setSortBy);
+    subscribe(app.ports.findDevices, findDevices);
+    subscribe(app.ports.playWebcam, playWebcam);
+    subscribe(app.ports.bindWebcam, bindWebcam);
+    subscribe(app.ports.unbindWebcam, unbindWebcam);
+    subscribe(app.ports.startRecording, startRecording);
+    subscribe(app.ports.stopRecording, stopRecording);
+    subscribe(app.ports.playRecord, playRecord);
+    subscribe(app.ports.askNextSlide, askNextSlide);
+    subscribe(app.ports.askNextSentence, askNextSentence);
+    subscribe(app.ports.uploadRecord, uploadRecord);
+    subscribe(app.ports.copyString, copyString);
+    subscribe(app.ports.scrollIntoView, scrollIntoView);
+    subscribe(app.ports.exportCapsule, exportCapsule);
+    subscribe(app.ports.importCapsule, importCapsule);
+    subscribe(app.ports.select, select);
 
-    async function setResolution(width, height, id) {
-        resolution = { width, height };
-        localStorage.setItem("resolution", JSON.stringify(resolution));
-        stream = null;
-        await setupUserMedia();
-        await bindWebcam(id);
-        app.ports.cameraReady.send(inputs);
-    }
+    const quickScan = [
+        { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },
+        { "width": 1280, "height":  720 }, { "width":  800, "height":  600 }, { "width":  640, "height":  480 },
+        { "width":  640, "height":  360 }, { "width":  352, "height":  288 }, { "width":  320, "height":  240 },
+        { "width":  176, "height":  144 }, { "width":  160, "height":  120 }
+    ];
 
-    function clearDevices() {
-        setAudioAndVideoDevice(null, null);
-    }
-
-    subscribe(app.ports.init, function(args) {
-        init(args[0], args[1], args[2]);
-    });
-
-    subscribe(app.ports.initWebSocket, function(args) {
-        initWebSocket(args[0], args[1]);
-    })
-
-    subscribe(app.ports.bindWebcam, async function(id) {
-        await setupUserMedia();
-        await bindWebcam(id);
-        app.ports.cameraReady.send(inputs);
-    });
-
-    subscribe(app.ports.startRecording, function() {
-        startRecording();
-        app.ports.newRecord.send(Math.round(performance.now()));
-    });
-
-    subscribe(app.ports.stopRecording, function() {
-        stopRecording();
-    });
-
-    subscribe(app.ports.goToWebcam, function(attr) {
-        goToWebcam(attr);
-    });
-
-    subscribe(app.ports.goToStream, function(attr) {
-        goToStream(attr[0], attr[1], attr[2]);
-    });
-
-    subscribe(app.ports.uploadStream, function(attr) {
-        uploadStream(attr[0], attr[1], attr[2]);
-    });
-
-    subscribe(app.ports.exit, function() {
-        exit();
-    });
-
-    subscribe(app.ports.askNextSlide, function() {
-        app.ports.nextSlideReceived.send(Math.round(performance.now()));
-    });
-
-    subscribe(app.ports.captureBackground, function(attr) {
-        captureBackground(attr);
-    });
-
-    subscribe(app.ports.scrollIntoView, function(arg) {
-        scrollIntoView(arg)
-    });
-
-    subscribe(app.ports.copyString, function(arg) {
-        copyStringToClipboard(arg)
-    });
-
-    subscribe(app.ports.setAudioDevice, function(arg) {
-        setAudioDevice(arg[0], arg[1]);
-    });
-
-    subscribe(app.ports.setVideoDevice, function(arg) {
-        setVideoDevice(arg[0], arg[1]);
-    });
-
-    subscribe(app.ports.setResolution, function(arg) {
-        setResolution(arg[0][0], arg[0][1], arg[1]);
-    });
-
-    subscribe(app.ports.clearDevices, function() {
-        clearDevices();
-    });
-
+    const videoId = "video";
 }

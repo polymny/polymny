@@ -1,3 +1,0 @@
-file 'tmp/pip1.mp4'
-file 'tmp/pip2.mp4'
-file 'tmp/pip3.mp4'

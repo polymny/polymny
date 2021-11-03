@@ -1,252 +1,396 @@
-module Core.Updates exposing (onUrlChange, onUrlRequest, update)
+module Core.Updates exposing (..)
 
 import Acquisition.Ports as Ports
+import Acquisition.Updates as Acquisition
+import Admin.Types as Admin
+import Admin.Updates as Admin
 import Api
-import Browser
 import Browser.Navigation as Nav
+import Capsule
+import CapsuleSettings.Types as CapsuleSettings
+import CapsuleSettings.Updates as CapsuleSettings
 import Core.Ports as Ports
 import Core.Types as Core
 import Core.Utils as Core
-import Element
-import ForgotPassword.Types as ForgotPassword
-import ForgotPassword.Updates as ForgotPassword
-import Http
-import Json.Decode as Decode
-import Log
-import LoggedIn.Types as LoggedIn
-import LoggedIn.Updates as LoggedIn
-import Login.Types as Login
-import Login.Updates as Login
-import Notification.Types as Notification
-import ResetPassword.Types as ResetPassword
-import ResetPassword.Updates as ResetPassword
-import SignUp.Types as SignUp
-import SignUp.Updates as SignUp
+import Lang
+import NewCapsule.Types as NewCapsule
+import NewCapsule.Updates as NewCapsule
+import Popup
+import Preparation.Types as Preparation
+import Preparation.Updates as Preparation
+import Production.Types as Production
+import Production.Updates as Production
+import Publication.Updates as Publication
+import RemoteData
+import Route
+import Settings.Updates as Settings
 import Url
+import User
 
 
-update : Core.Msg -> Core.FullModel -> ( Core.FullModel, Cmd Core.Msg )
-update msg { global, model } =
+update : Core.Msg -> Maybe Core.Model -> ( Maybe Core.Model, Cmd Core.Msg )
+update msg model =
+    case model of
+        Just m ->
+            let
+                ( newModel, newCommand ) =
+                    updateModel msg m
+            in
+            ( Just newModel, newCommand )
+
+        _ ->
+            ( Nothing, Cmd.none )
+
+
+updateModel : Core.Msg -> Core.Model -> ( Core.Model, Cmd Core.Msg )
+updateModel msg model =
     let
-        ( returnModel, returnCmd ) =
-            case ( msg, model ) of
-                -- INNER MESSAGES
-                ( Core.Noop, _ ) ->
-                    ( Core.FullModel global model, Cmd.none )
+        { user, global, page } =
+            model
 
-                ( Core.TimeZoneChanged newTimeZone, _ ) ->
-                    ( Core.FullModel { global | zone = newTimeZone } model, Cmd.none )
+        unbindWebcam =
+            case ( page, newModel.page ) of
+                ( _, Core.Acquisition _ ) ->
+                    Cmd.none
 
-                ( Core.SizeReceived width height, _ ) ->
-                    ( Core.FullModel { global | device = Element.classifyDevice { width = width, height = height } } model
-                    , Cmd.none
-                    )
-
-                ( Core.HomeClicked, Core.LoggedIn { session } ) ->
-                    ( Core.FullModel global
-                        (Core.LoggedIn
-                            { session = session
-                            , tab = LoggedIn.init
-                            }
-                        )
-                    , Nav.pushUrl global.key "/"
-                    )
-
-                ( Core.LoginClicked, _ ) ->
-                    ( Core.FullModel global (Core.homeLogin Login.init), Cmd.none )
-
-                ( Core.LogoutClicked, _ ) ->
-                    ( Core.FullModel global model, Api.logOut (\_ -> Core.UrlRequested (Browser.External global.home)) )
-
-                ( Core.SignUpClicked, _ ) ->
-                    ( Core.FullModel global (Core.homeSignUp SignUp.init), Cmd.none )
-
-                ( Core.ForgotPasswordClicked, _ ) ->
-                    ( Core.FullModel global (Core.homeForgotPassword ForgotPassword.init), Cmd.none )
-
-                ( Core.AboutClicked, _ ) ->
-                    ( Core.FullModel { global | showAbout = True } model, Cmd.none )
-
-                ( Core.AboutClosed, _ ) ->
-                    ( Core.FullModel { global | showAbout = False } model, Cmd.none )
-
-                -- OTHER MODULES MESSAGES
-                ( Core.LoginMsg loginMsg, Core.Home (Core.HomeLogin loginModel) ) ->
-                    let
-                        ( m, cmd ) =
-                            Login.update loginMsg loginModel
-                    in
-                    ( Core.FullModel global m, cmd )
-
-                ( Core.ForgotPasswordMsg forgotPasswordMsg, Core.Home (Core.HomeForgotPassword forgotPasswordModel) ) ->
-                    let
-                        ( m, cmd ) =
-                            ForgotPassword.update forgotPasswordMsg forgotPasswordModel
-                    in
-                    ( Core.FullModel global m, cmd )
-
-                ( Core.ResetPasswordMsg resetPasswordMsg, Core.ResetPassword resetPasswordModel ) ->
-                    let
-                        ( m, cmd ) =
-                            ResetPassword.update global resetPasswordMsg resetPasswordModel
-                    in
-                    ( Core.FullModel global m, cmd )
-
-                ( Core.SignUpMsg signUpMsg, Core.Home (Core.HomeSignUp signUpModel) ) ->
-                    let
-                        ( m, cmd ) =
-                            SignUp.update signUpMsg signUpModel
-                    in
-                    ( Core.FullModel global (Core.homeSignUp m), cmd )
-
-                ( Core.LoggedInMsg newProjectMsg, Core.LoggedIn { session, tab } ) ->
-                    let
-                        ( newGlobal, m, cmd ) =
-                            LoggedIn.update newProjectMsg global (LoggedIn.Model session tab)
-                    in
-                    ( Core.FullModel newGlobal (Core.LoggedIn m), cmd )
-
-                ( Core.NotificationMsg nMsg, Core.LoggedIn { session, tab } ) ->
-                    let
-                        ( newGlobal, newSession, cmd ) =
-                            updateNotification nMsg global session
-                    in
-                    ( Core.FullModel newGlobal (Core.LoggedIn (LoggedIn.Model newSession tab)), cmd )
-
-                -- Url message
-                ( Core.UrlRequested (Browser.Internal url), _ ) ->
-                    ( Core.FullModel global model
-                    , Cmd.batch
-                        [ Nav.pushUrl global.key (Url.toString url)
-                        , case url.fragment of
-                            Just s ->
-                                Ports.scrollIntoView s
-
-                            Nothing ->
-                                Cmd.none
-                        ]
-                    )
-
-                ( Core.UrlRequested (Browser.External url), _ ) ->
-                    ( Core.FullModel global model, Nav.load url )
-
-                ( Core.UrlChanged url, _ ) ->
-                    ( Core.FullModel global model
-                    , Api.get
-                        { url = Url.toString url
-                        , body = Http.emptyBody
-                        , expect = Http.expectJson (resultToMsg global) Decode.value
-                        }
-                    )
-
-                ( Core.UrlReceived m c, _ ) ->
-                    ( Core.FullModel global m, c )
-
-                ( Core.CopyUrl url, _ ) ->
-                    ( Core.FullModel global model, Ports.copyString url )
-
-                -- Websocket messages
-                ( Core.WebSocket wMsg, Core.LoggedIn { session, tab } ) ->
-                    let
-                        newSession =
-                            case Decode.decodeString Notification.decode wMsg.content of
-                                Ok notif ->
-                                    { session | notifications = notif :: session.notifications }
-
-                                _ ->
-                                    session
-                    in
-                    ( Core.FullModel global (Core.LoggedIn (LoggedIn.Model newSession tab)), Cmd.none )
-
-                ( Core.WithNotification n m, Core.LoggedIn { session, tab } ) ->
-                    let
-                        newSession =
-                            { session | notifications = n :: session.notifications }
-                    in
-                    update m (Core.FullModel global (Core.LoggedIn (LoggedIn.Model newSession tab)))
-
-                ( m, _ ) ->
-                    let
-                        _ =
-                            Log.debug "Unhandled message" m
-                    in
-                    ( Core.FullModel global model, Cmd.none )
-
-        -- If model is acquisition and returnModel is not, we need to turn off the camera
-        closeCamera =
-            case ( isAcquisition model, isAcquisition returnModel.model ) of
-                ( True, False ) ->
-                    Ports.exit ()
+                ( Core.Acquisition _, _ ) ->
+                    Ports.unbindWebcam ()
 
                 _ ->
                     Cmd.none
-    in
-    ( returnModel, Cmd.batch [ returnCmd, closeCamera ] )
 
+        ( newModel, newCmd ) =
+            case msg of
+                Core.TimeZoneChanged newTimeZone ->
+                    ( { model | global = { global | zone = newTimeZone } }, Cmd.none )
 
-updateNotification : Core.NotificationMsg -> Core.Global -> Api.Session -> ( Core.Global, Api.Session, Cmd Core.Msg )
-updateNotification msg global session =
-    case msg of
-        Core.NewNotification notif ->
-            ( global, { session | notifications = notif :: session.notifications }, Cmd.none )
+                Core.LogoutClicked ->
+                    ( model, Api.logout (\_ -> Core.ExternalUrl (Maybe.withDefault "/" global.home)) )
 
-        Core.ToggleNotificationPanel ->
-            ( { global | notificationPanelVisible = not global.notificationPanelVisible }, session, Cmd.none )
+                Core.ToggleFold project ->
+                    let
+                        replaceProject : User.Project -> User.Project
+                        replaceProject p =
+                            if p.name == project then
+                                { p | folded = not p.folded }
 
-        Core.MarkNotificationRead notif id ->
-            let
-                newNotifications =
-                    session.notifications
-                        |> List.indexedMap
-                            (\i x ->
-                                if i == id then
-                                    { x | read = True }
+                            else
+                                p
+                    in
+                    ( { model | user = { user | projects = List.map replaceProject user.projects } }, Cmd.none )
 
-                                else
-                                    x
+                Core.RenameCapsule capsule ->
+                    ( { model | page = Core.Home { renameCapsule = capsule } }, Cmd.none )
+
+                Core.ValidateRenameCapsule capsule ->
+                    let
+                        changedModel =
+                            Core.changeCapsule capsule model
+                    in
+                    ( { changedModel | page = Core.Home { renameCapsule = Nothing } }
+                    , Api.updateCapsule Core.Noop capsule
+                    )
+
+                Core.SlideUploadRequested project ->
+                    ( model
+                    , Ports.select
+                        ( project
+                        , if User.isPremium user then
+                            [ "application/pdf", "application/zip" ]
+
+                          else
+                            [ "application/pdf" ]
+                        )
+                    )
+
+                -- Select.file [ "application/pdf", "application/zip" ] (Core.SlideUploaded project) )
+                Core.SlideUploaded project file ->
+                    case file.mime of
+                        "application/pdf" ->
+                            let
+                                name =
+                                    file.name
+                                        |> String.split "."
+                                        |> List.reverse
+                                        |> List.drop 1
+                                        |> List.reverse
+                                        |> String.join "."
+
+                                newCapsule =
+                                    NewCapsule.init project name
+                            in
+                            ( { model | page = Core.NewCapsule newCapsule }
+                            , Api.uploadSlideShow newCapsule.project file
                             )
 
-                cmd =
-                    case notif.id of
-                        Just i ->
-                            Api.markNotificationAsRead (\_ -> Core.Noop) i
+                        "application/zip" ->
+                            ( model
+                            , if User.isPremium user then
+                                Ports.importCapsule ( project, file.value )
+
+                              else
+                                Cmd.none
+                            )
 
                         _ ->
-                            Cmd.none
-            in
-            ( global, { session | notifications = newNotifications }, cmd )
+                            ( model, Cmd.none )
 
+                Core.SlideUploadResponded response ->
+                    let
+                        newPage =
+                            case page of
+                                Core.NewCapsule newCapsule ->
+                                    Core.NewCapsule (NewCapsule.changeCapsule response newCapsule)
 
-isAcquisition : Core.Model -> Bool
-isAcquisition model =
-    case model of
-        Core.LoggedIn { tab } ->
-            case tab of
-                LoggedIn.Acquisition _ ->
-                    True
+                                _ ->
+                                    page
 
-                _ ->
-                    False
+                        newUser =
+                            case response of
+                                RemoteData.Success c ->
+                                    User.addCapsule c user
 
-        _ ->
-            False
+                                _ ->
+                                    user
+                    in
+                    ( { model | user = newUser, page = newPage }
+                    , Cmd.none
+                    )
 
+                Core.NewCapsuleMsg m ->
+                    NewCapsule.update m model
 
-resultToMsg : Core.Global -> Result Http.Error Decode.Value -> Core.Msg
-resultToMsg global result =
-    case Result.map (\x -> Core.modelFromFlags global x) result of
-        Ok ( m, c ) ->
-            Core.UrlReceived m c
+                Core.PreparationMsg m ->
+                    Preparation.update m model
 
-        Err _ ->
-            Core.Noop
+                Core.AcquisitionMsg m ->
+                    Acquisition.update m model
 
+                Core.ProductionMsg m ->
+                    Production.update m model
 
-onUrlChange : Url.Url -> Core.Msg
-onUrlChange url =
-    Core.UrlChanged url
+                Core.PublicationMsg m ->
+                    Publication.update m model
 
+                Core.CapsuleSettingsMsg m ->
+                    CapsuleSettings.update m model
 
-onUrlRequest : Browser.UrlRequest -> Core.Msg
-onUrlRequest request =
-    Core.UrlRequested request
+                Core.SettingsMsg m ->
+                    Settings.update global m model
+
+                Core.AdminMsg m ->
+                    Admin.update m model
+
+                Core.Popup newPopup ->
+                    ( { model | popup = Just newPopup }, Cmd.none )
+
+                Core.Cancel ->
+                    ( { model | popup = Nothing }, Cmd.none )
+
+                Core.RequestDeleteProject name ->
+                    let
+                        newPopup =
+                            Popup.popup
+                                (Lang.warning global.lang)
+                                (Lang.deleteProjectConfirm global.lang)
+                                Core.Cancel
+                                (Core.DeleteProject name)
+                    in
+                    ( { model | popup = Just newPopup }, Cmd.none )
+
+                Core.RequestDeleteCapsule id ->
+                    let
+                        newPopup =
+                            Popup.popup
+                                (Lang.warning global.lang)
+                                (Lang.deleteCapsuleConfirm global.lang)
+                                Core.Cancel
+                                (Core.DeleteCapsule id)
+                    in
+                    ( { model | popup = Just newPopup }, Cmd.none )
+
+                Core.DeleteCapsule id ->
+                    ( { model | user = User.removeCapsule id user, popup = Nothing }
+                    , Api.deleteCapsule (\_ -> Core.Noop) id
+                    )
+
+                Core.DeleteProject name ->
+                    ( { model | user = User.removeProject name user, popup = Nothing }
+                    , Api.deleteProject Core.Noop name
+                    )
+
+                Core.OnUrlChange url ->
+                    let
+                        ( p, cmd ) =
+                            Core.pageFromRoute global user page (Route.fromUrl url) Nothing
+                    in
+                    ( { model | page = p }, cmd )
+
+                Core.InternalUrl url ->
+                    if String.startsWith "/data/" url.path then
+                        ( model, Nav.load (Url.toString url) )
+
+                    else
+                        let
+                            ( path, otherCmd ) =
+                                case url.fragment of
+                                    Just fragment ->
+                                        ( url.path ++ "#" ++ fragment, Ports.scrollIntoView fragment )
+
+                                    _ ->
+                                        ( url.path, Cmd.none )
+                        in
+                        ( model, Cmd.batch [ otherCmd, Nav.pushUrl global.key path ] )
+
+                Core.ExternalUrl url ->
+                    ( model, Nav.load url )
+
+                Core.LangChanged newLang ->
+                    ( { model | global = { global | lang = newLang } }
+                    , Ports.setLanguage (Lang.toString newLang)
+                    )
+
+                Core.ZoomIn ->
+                    let
+                        newZoomLevel =
+                            global.zoomLevel - 1 |> max 2
+                    in
+                    ( { model | global = { global | zoomLevel = newZoomLevel } }
+                    , Ports.setZoomLevel newZoomLevel
+                    )
+
+                Core.ZoomOut ->
+                    let
+                        newZoomLevel =
+                            global.zoomLevel + 1 |> min 5
+                    in
+                    ( { model | global = { global | zoomLevel = newZoomLevel } }
+                    , Ports.setZoomLevel newZoomLevel
+                    )
+
+                Core.Copy s ->
+                    ( model, Ports.copyString s )
+
+                Core.ToggleNotificationPanel ->
+                    ( { model | global = { global | notificationPanelVisible = not global.notificationPanelVisible } }
+                    , Cmd.none
+                    )
+
+                Core.MarkNotificationAsRead notif ->
+                    let
+                        notifs =
+                            user.notifications
+                                |> List.map
+                                    (\x ->
+                                        if x.id == notif.id then
+                                            { x | read = True }
+
+                                        else
+                                            x
+                                    )
+                    in
+                    ( { model | user = { user | notifications = notifs } }
+                    , Api.markNotificationAsRead Core.Noop notif
+                    )
+
+                Core.DeleteNotification notif ->
+                    ( { model | user = { user | notifications = user.notifications |> List.filter (\x -> x.id /= notif.id) } }
+                    , Api.deleteNotification Core.Noop notif
+                    )
+
+                Core.NotificationReceived notif ->
+                    ( { model | user = { user | notifications = notif :: user.notifications } }
+                    , Cmd.none
+                    )
+
+                Core.VideoUploadProgress id notif ->
+                    let
+                        newPage =
+                            case model.page of
+                                Core.Preparation p ->
+                                    Core.Preparation { p | tracker = Just ( "", Preparation.Transcoding notif ) }
+
+                                _ ->
+                                    model.page
+
+                        tmpModel =
+                            Core.changeCapsuleById
+                                (\x -> { x | videoUploaded = Capsule.Running (Just "") })
+                                id
+                                model
+                    in
+                    ( { tmpModel | page = newPage }
+                    , Cmd.none
+                    )
+
+                Core.VideoUploadFinished id ->
+                    let
+                        newPage =
+                            case model.page of
+                                Core.Preparation p ->
+                                    Core.Preparation { p | tracker = Nothing }
+
+                                _ ->
+                                    model.page
+
+                        tmpModel =
+                            Core.changeCapsuleById
+                                (\x -> { x | videoUploaded = Capsule.Done })
+                                id
+                                model
+                    in
+                    ( { tmpModel | page = newPage }
+                    , Cmd.none
+                    )
+
+                Core.ProductionProgress id notif ->
+                    ( Core.changeCapsuleById
+                        (\x -> { x | produced = Capsule.Running (Just notif) })
+                        id
+                        model
+                    , Cmd.none
+                    )
+
+                Core.ProductionFinished id ->
+                    ( Core.changeCapsuleById (\x -> { x | produced = Capsule.Done }) id model, Cmd.none )
+
+                Core.PublicationFinished id ->
+                    ( Core.changeCapsuleById (\x -> { x | published = Capsule.Done }) id model, Cmd.none )
+
+                Core.ExportCapsule capsule ->
+                    ( model, Ports.exportCapsule (Capsule.encodeAll capsule) )
+
+                Core.CapsuleChanged capsule ->
+                    ( Core.changeCapsule capsule model, Cmd.none )
+
+                Core.ExtraCapsuleReceived route capsule ->
+                    ( { model | page = Tuple.first (Core.pageFromRoute global user page route (Just capsule)) }, Cmd.none )
+
+                Core.AdminDashboard dashboard ->
+                    let
+                        adminModel =
+                            Admin.initModel Admin.Dashboard
+                    in
+                    ( { model | page = Core.Admin { adminModel | stats = dashboard } }, Cmd.none )
+
+                Core.AdminUsers users pagination ->
+                    let
+                        adminModel =
+                            Admin.initModel <| Admin.UsersPage pagination
+                    in
+                    ( { model | page = Core.Admin { adminModel | users = users } }, Cmd.none )
+
+                Core.AdminUser u ->
+                    ( { model | page = Core.Admin <| Admin.initModel <| Admin.UserPage u }, Cmd.none )
+
+                Core.AdminCapsules capsules pagination ->
+                    let
+                        adminModel =
+                            Admin.initModel <| Admin.CapsulesPage pagination
+                    in
+                    ( { model | page = Core.Admin { adminModel | capsules = capsules } }, Cmd.none )
+
+                Core.Noop ->
+                    ( model, Cmd.none )
+    in
+    ( newModel, Cmd.batch [ newCmd, unbindWebcam ] )

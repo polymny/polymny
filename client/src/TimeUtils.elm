@@ -1,50 +1,91 @@
 module TimeUtils exposing (timeToString)
 
+import Lang exposing (Lang)
 import Time
 
 
-monthToString : Time.Month -> String
-monthToString month =
-    case month of
-        Time.Jan ->
-            "Janvier"
+monthToString : Lang -> Time.Month -> String
+monthToString lang month =
+    case lang of
+        Lang.FrFr ->
+            case month of
+                Time.Jan ->
+                    "Janvier"
 
-        Time.Feb ->
-            "Février"
+                Time.Feb ->
+                    "Février"
 
-        Time.Mar ->
-            "Mars"
+                Time.Mar ->
+                    "Mars"
 
-        Time.Apr ->
-            "Avril"
+                Time.Apr ->
+                    "Avril"
 
-        Time.May ->
-            "Mai"
+                Time.May ->
+                    "Mai"
 
-        Time.Jun ->
-            "Juin"
+                Time.Jun ->
+                    "Juin"
 
-        Time.Jul ->
-            "Juillet"
+                Time.Jul ->
+                    "Juillet"
 
-        Time.Aug ->
-            "Août"
+                Time.Aug ->
+                    "Août"
 
-        Time.Sep ->
-            "Septembre"
+                Time.Sep ->
+                    "Septembre"
 
-        Time.Oct ->
-            "Octobre"
+                Time.Oct ->
+                    "Octobre"
 
-        Time.Nov ->
-            "Novembre"
+                Time.Nov ->
+                    "Novembre"
 
-        Time.Dec ->
-            "Décembre"
+                Time.Dec ->
+                    "Décembre"
+
+        _ ->
+            case month of
+                Time.Jan ->
+                    "January"
+
+                Time.Feb ->
+                    "February"
+
+                Time.Mar ->
+                    "March"
+
+                Time.Apr ->
+                    "April"
+
+                Time.May ->
+                    "May"
+
+                Time.Jun ->
+                    "June"
+
+                Time.Jul ->
+                    "July"
+
+                Time.Aug ->
+                    "August"
+
+                Time.Sep ->
+                    "September"
+
+                Time.Oct ->
+                    "October"
+
+                Time.Nov ->
+                    "November"
+
+                Time.Dec ->
+                    "December"
 
 
-dateToString : Time.Zone -> Int -> String
-dateToString z t =
+dateToString : Lang -> Time.Zone -> Int -> String
+dateToString l z t =
     let
         time =
             Time.millisToPosix (1000 * t)
@@ -53,22 +94,27 @@ dateToString z t =
             String.fromInt (Time.toYear z time)
 
         month =
-            monthToString (Time.toMonth z time)
+            monthToString l (Time.toMonth z time)
 
         day =
             String.fromInt (Time.toDay z time)
     in
-    day ++ " " ++ month ++ " " ++ year
+    case l of
+        Lang.FrFr ->
+            day ++ " " ++ month ++ " " ++ year
+
+        _ ->
+            month ++ " " ++ day ++ ", " ++ year
 
 
-timeToString : Time.Zone -> Int -> String
-timeToString z t =
+timeToString : Lang -> Time.Zone -> Int -> String
+timeToString l z t =
     let
         time =
             Time.millisToPosix (1000 * t)
 
         date =
-            dateToString z t
+            dateToString l z t
 
         hours =
             String.pad 2 '0' (String.fromInt (Time.toHour z time))
@@ -79,4 +125,9 @@ timeToString z t =
         seconds =
             String.pad 2 '0' (String.fromInt (Time.toSecond z time))
     in
-    date ++ " à " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds
+    case l of
+        Lang.FrFr ->
+            date ++ " à " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds
+
+        _ ->
+            date ++ " at " ++ hours ++ ":" ++ minutes ++ ":" ++ seconds

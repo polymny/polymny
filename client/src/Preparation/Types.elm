@@ -1,226 +1,170 @@
-module Preparation.Types exposing
-    ( Broken(..)
-    , DnDMsg(..)
-    , EditPrompt
-    , EditPromptMsg(..)
-    , Forms
-    , MaybeSlide(..)
-    , Model
-    , Msg(..)
-    , ReplaceSlideForm
-    , ReplaceSlideMsg(..)
-    , Tab(..)
-    , UploadBackgroundMsg(..)
-    , UploadExtraResourceForm
-    , UploadExtraResourceMsg(..)
-    , UploadForm
-    , UploadLogoMsg(..)
-    , UploadModel(..)
-    , UploadSlideShowMsg(..)
-    , extractStructure
-    , filterSlide
-    , gosConfig
-    , gosSystem
-    , init
-    , isJustGosId
-    , isJustSlide
-    , regroupSlides
-    , setupSlides
-    , slideSystem
-    )
+module Preparation.Types exposing (..)
 
-import Api
+import Capsule exposing (Capsule)
 import DnDList
 import DnDList.Groups
 import File exposing (File)
 import Status exposing (Status)
 
 
+type Progress
+    = Upload Float
+    | Transcoding Float
+
+
 type alias Model =
-    { details : Api.CapsuleDetails
+    { capsule : Capsule
     , slides : List (List MaybeSlide)
-    , uploadForms : Forms
-    , editPrompt : EditPrompt
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
-    , t : Tab
-    , broken : Broken
+    , editPrompt : Maybe Capsule.Slide
+    , changeSlideForm : Maybe ChangeSlideForm
+    , tracker : Maybe ( String, Progress )
     }
 
 
-type Broken
-    = NotBroken
-    | Broken Model String
+type ChangeSlide
+    = ReplaceSlide Capsule.Slide
+    | AddSlide Int
+
+
+type alias ChangeSlideForm =
+    { slide : ChangeSlide
+    , page : String
+    , file : File
+    , status : Status
+    }
+
+
+initReplaceForm : Capsule.Slide -> Int -> File -> ChangeSlideForm
+initReplaceForm slide page file =
+    { slide = ReplaceSlide slide, page = String.fromInt page, file = file, status = Status.NotSent }
+
+
+initAddSlideForm : Int -> Int -> File -> ChangeSlideForm
+initAddSlideForm gos page file =
+    { slide = AddSlide gos, page = String.fromInt page, file = file, status = Status.NotSent }
+
+
+initChangeSlideForm : ChangeSlide -> Int -> File -> ChangeSlideForm
+initChangeSlideForm slide page file =
+    { slide = slide, page = String.fromInt page, file = file, status = Status.NotSent }
 
 
 type MaybeSlide
-    = JustSlide Api.Slide Int
+    = Slide Int Capsule.Slide
     | GosId Int
 
 
-type alias UploadForm =
-    { status : Status () ()
-    , file : Maybe File
-    }
-
-
-initUploadForm : UploadForm
-initUploadForm =
-    UploadForm Status.NotSent Nothing
-
-
-type alias UploadExtraResourceForm =
-    { status : Status () ()
-    , deleteStatus : Status () ()
-    , file : Maybe File
-    , activeSlideId : Maybe Int
-    , targetGos : Maybe Int
-    , page : Maybe Int
-    , askForPage : Bool
-    }
-
-
-initUploadExtraResourceForm : UploadExtraResourceForm
-initUploadExtraResourceForm =
-    UploadExtraResourceForm Status.NotSent Status.NotSent Nothing Nothing Nothing Nothing False
-
-
-type alias ReplaceSlideForm =
-    { status : Status () ()
-    , file : Maybe File
-    , ractiveSlideId : Maybe Int
-    , activeGosIndex : Maybe Int
-    , hide : Bool
-    }
-
-
-initReplaceSlideForm : ReplaceSlideForm
-initReplaceSlideForm =
-    ReplaceSlideForm Status.NotSent Nothing Nothing Nothing True
-
-
-type alias Forms =
-    { slideShow : UploadForm
-    , background : UploadForm
-    , logo : UploadForm
-    , extraResource : UploadExtraResourceForm
-    , replaceSlide : ReplaceSlideForm
-    }
-
-
-initForms : Forms
-initForms =
-    { slideShow = initUploadForm
-    , background = initUploadForm
-    , logo = initUploadForm
-    , extraResource = initUploadExtraResourceForm
-    , replaceSlide = initReplaceSlideForm
-    }
-
-
-type alias EditPrompt =
-    { status : Status () ()
-    , visible : Bool
-    , prompt : String
-    , slideId : Int
-    }
-
-
-initEditPrompt : EditPrompt
-initEditPrompt =
-    EditPrompt Status.NotSent False "" 0
-
-
-type Tab
-    = First
-    | Second
-    | Third
-
-
 type Msg
-    = DnD DnDMsg
-    | SwitchLock Int
-    | GosDelete Int
-    | SlideDelete Int Int
-    | EditPromptMsg EditPromptMsg
-    | UploadSlideShowMsg UploadSlideShowMsg
-    | UploadBackgroundMsg UploadBackgroundMsg
-    | UploadLogoMsg UploadLogoMsg
-    | UploadExtraResourceMsg UploadExtraResourceMsg
-    | ReplaceSlideMsg ReplaceSlideMsg
-    | UserSelectedTab Tab
-    | IncreaseNumberOfSlidesPerRow
-    | DecreaseNumberOfSlidesPerRow
-    | RejectBroken
-    | AcceptBroken
+    = StartEditPrompt String
+    | PromptChanged String
+    | CancelPromptChange
+    | PromptChangeSlide (Maybe Capsule.Slide)
+    | RequestDeleteSlide String
+    | DeleteSlide String
+    | DnD DnDMsg
+    | ExtraResourceSelect ChangeSlide
+    | ExtraResourceSelected ChangeSlide File
+    | ExtraResourceChangePage String
+    | ExtraResourcePageValidate
+    | ExtraResourcePageCancel
+    | ExtraResourceFinished Capsule String
+    | ExtraResourceFailed
+    | ExtraResourceDelete Capsule.Slide
+    | ExtraResourceProgress String Progress
+    | ExtraResourceVideoUploadCancel
 
 
 type DnDMsg
     = SlideMoved DnDList.Groups.Msg
     | GosMoved DnDList.Msg
+    | ConfirmBroken Capsule
+    | CancelBroken Capsule
 
 
-type EditPromptMsg
-    = EditPromptOpenDialog Int String
-    | EditPromptCloseDialog
-    | EditPromptTextChanged String
-    | EditPromptSubmitted
-    | EditPromptSuccess Api.Slide
-    | EditPromptError
-    | EditPromptNextSlide
-    | EditPromptPreviousSlide
+init : Capsule -> Model
+init capsule =
+    { capsule = capsule
+    , slides = setupSlides capsule
+    , slideModel = slideSystem.model
+    , gosModel = gosSystem.model
+    , editPrompt = Nothing
+    , changeSlideForm = Nothing
+    , tracker = Nothing
+    }
 
 
-type UploadSlideShowMsg
-    = UploadSlideShowSelectFileRequested
-    | UploadSlideShowFileReady File
-    | UploadSlideShowFormSubmitted
+replaceCapsule : Model -> Capsule -> Model
+replaceCapsule model capsule =
+    let
+        editPrompt =
+            model.editPrompt
+                |> Maybe.andThen (\x -> Capsule.findSlide x.uuid capsule)
+                |> Maybe.andThen (\_ -> model.editPrompt)
+
+        keepCurrentChangeSlide =
+            case model.changeSlideForm of
+                Just slide ->
+                    case slide.slide of
+                        ReplaceSlide s ->
+                            Capsule.findSlide s.uuid capsule /= Nothing
+
+                        _ ->
+                            True
+
+                _ ->
+                    True
+
+        changeSlideForm =
+            if keepCurrentChangeSlide then
+                model.changeSlideForm
+
+            else
+                Nothing
+    in
+    { capsule = capsule
+    , slides = setupSlides capsule
+    , slideModel = slideSystem.model
+    , gosModel = gosSystem.model
+    , editPrompt = editPrompt
+    , changeSlideForm = changeSlideForm
+    , tracker = model.tracker
+    }
 
 
-type UploadBackgroundMsg
-    = UploadBackgroundSelectFileRequested
-    | UploadBackgroundFileReady File
-    | UploadBackgroundFormSubmitted
+setupSlides : Capsule -> List (List MaybeSlide)
+setupSlides capsule =
+    let
+        list : List (List MaybeSlide)
+        list =
+            capsule.structure
+                |> List.indexedMap (\id x -> GosId -1 :: List.map (\y -> Slide id y) x.slides)
+                |> List.intersperse [ GosId -1 ]
+
+        extremities =
+            [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)
+    in
+    List.indexedMap indexedLambda extremities
 
 
-type UploadLogoMsg
-    = UploadLogoSelectFileRequested
-    | UploadLogoFileReady File
-    | UploadLogoFormSubmitted
+filter : MaybeSlide -> Maybe ( Int, Capsule.Slide )
+filter input =
+    case input of
+        Slide i s ->
+            Just ( i, s )
+
+        _ ->
+            Nothing
 
 
-type UploadExtraResourceMsg
-    = UploadExtraResourceSelectFileRequested (Maybe Int) (Maybe Int)
-    | UploadExtraResourceFileReady File (Maybe Int) (Maybe Int)
-    | UploadExtraResourceSuccess Api.Slide
-    | UploadExtraResourceError
-    | DeleteExtraResource Int
-    | DeleteExtraResourceSuccess Api.Slide
-    | DeleteExtraResourceError
-    | UploadExtraResourcePageChanged (Maybe Int)
-    | UploadExtraResourceCancel
-    | UploadExtraResourceValidate
-    | UploadExtraResourceDetailsChanged Api.CapsuleDetails
+indexedLambda : Int -> List MaybeSlide -> List MaybeSlide
+indexedLambda id slides =
+    List.map (updateGosId id) slides
 
 
-type ReplaceSlideMsg
-    = ReplaceSlideShowForm Int Int
-    | ReplaceSlideSelectFileRequested
-    | ReplaceSlideFileReady File
-    | ReplaceSlideFormSubmitted
-    | ReplaceSlideSuccess Api.Slide
-    | ReplaceSlideError
 
-
-type UploadModel
-    = SlideShow
-    | Background
-    | Logo
-
-
-init : Api.CapsuleDetails -> Model
-init details =
-    Model details (setupSlides details) initForms initEditPrompt slideSystem.model gosSystem.model First NotBroken
+-- DnD shit
 
 
 slideConfig : DnDList.Groups.Config MaybeSlide
@@ -245,7 +189,7 @@ slideBeforeUpdate _ _ list =
 slideComparator : MaybeSlide -> MaybeSlide -> Bool
 slideComparator slide1 slide2 =
     case ( slide1, slide2 ) of
-        ( JustSlide _ gos1, JustSlide _ gos2 ) ->
+        ( Slide gos1 _, Slide gos2 _ ) ->
             gos1 == gos2
 
         ( GosId a, GosId b ) ->
@@ -258,14 +202,14 @@ slideComparator slide1 slide2 =
 slideSetter : MaybeSlide -> MaybeSlide -> MaybeSlide
 slideSetter slide1 slide2 =
     case ( slide1, slide2 ) of
-        ( JustSlide _ gos1, JustSlide s2 _ ) ->
-            JustSlide s2 gos1
+        ( Slide gos1 _, Slide _ s2 ) ->
+            Slide gos1 s2
 
-        ( GosId id, JustSlide s2 _ ) ->
-            JustSlide s2 id
+        ( GosId id, Slide _ s2 ) ->
+            Slide id s2
 
-        ( JustSlide s1 _, GosId id ) ->
-            JustSlide s1 id
+        ( Slide _ s1, GosId id ) ->
+            Slide id s1
 
         ( GosId i1, GosId _ ) ->
             GosId i1
@@ -296,131 +240,32 @@ updateGosId id slide =
         GosId _ ->
             GosId id
 
-        JustSlide s _ ->
-            JustSlide s id
+        Slide _ s ->
+            Slide id s
 
 
-indexedLambda : Int -> List MaybeSlide -> List MaybeSlide
-indexedLambda id slide =
-    List.map (updateGosId id) slide
-
-
-setupSlides : Api.CapsuleDetails -> List (List MaybeSlide)
-setupSlides capsule =
-    let
-        gos =
-            List.indexedMap (\id x -> ( id, x )) (Api.detailsSortSlides capsule)
-
-        list =
-            List.intersperse [ GosId -1 ] (List.map (\( id, x ) -> GosId -1 :: List.map (\y -> JustSlide y id) x) gos)
-
-        extremities =
-            [ GosId -1 ] :: List.reverse ([ GosId -1 ] :: List.reverse list)
-    in
-    List.indexedMap indexedLambda extremities
-
-
-regroupSlidesAux : List MaybeSlide -> List MaybeSlide -> List (List MaybeSlide) -> List (List MaybeSlide)
-regroupSlidesAux slides currentList total =
-    case slides of
-        [] ->
-            if currentList == [] then
-                total
-
-            else
-                currentList :: total
-
-        (JustSlide s gos) :: t ->
-            regroupSlidesAux t (JustSlide s gos :: currentList) total
-
-        (GosId id) :: t ->
-            if currentList == [] then
-                regroupSlidesAux t [ GosId id ] total
-
-            else
-                regroupSlidesAux t [ GosId id ] (currentList :: total)
-
-
-regroupSlides : List MaybeSlide -> List (List MaybeSlide)
-regroupSlides slides =
-    List.reverse (List.map List.reverse (regroupSlidesAux slides [] []))
-
-
-filterSlide : MaybeSlide -> Maybe Api.Slide
-filterSlide slide =
-    case slide of
-        JustSlide s _ ->
-            Just s
-
-        _ ->
-            Nothing
-
-
-isJustSlide : MaybeSlide -> Bool
-isJustSlide slide =
-    case slide of
-        JustSlide _ _ ->
-            True
-
-        _ ->
-            False
-
-
-isGosId : MaybeSlide -> Bool
-isGosId slide =
-    not (isJustSlide slide)
-
-
-isJustGosId : List MaybeSlide -> Bool
-isJustGosId slides =
-    case slides of
-        [ GosId _ ] ->
-            True
-
-        _ ->
-            False
-
-
-extractStructure : List MaybeSlide -> List Api.Gos
-extractStructure slides =
-    List.filter (\x -> x.slides /= []) (extractStructureAux (List.reverse slides) [] Nothing)
-
-
-extractStructureAux : List MaybeSlide -> List Api.Gos -> Maybe Api.Gos -> List Api.Gos
-extractStructureAux slides current currentGos =
-    case ( slides, currentGos ) of
-        ( [], Nothing ) ->
+regroupSlidesAux : Int -> List (List ( Int, Maybe MaybeSlide )) -> List ( Int, Maybe MaybeSlide ) -> List (List ( Int, Maybe MaybeSlide ))
+regroupSlidesAux number current list =
+    case ( list, current ) of
+        ( [], _ ) ->
             current
 
-        ( [], Just gos ) ->
-            gos :: current
+        ( h :: t, [] ) ->
+            regroupSlidesAux number [ [ h ] ] t
 
-        ( h :: t, _ ) ->
-            let
-                newCurrent =
-                    case ( isGosId h, currentGos ) of
-                        ( True, Just gos ) ->
-                            gos :: current
+        ( h :: t, h2 :: t2 ) ->
+            if List.length (List.filterMap (\( _, x ) -> filter (Maybe.withDefault (GosId -1) x)) h2) < number then
+                regroupSlidesAux number ((h2 ++ [ h ]) :: t2) t
 
-                        ( True, Nothing ) ->
-                            current
+            else
+                regroupSlidesAux number ([ h ] :: h2 :: t2) t
 
-                        ( False, _ ) ->
-                            current
 
-                newGos =
-                    case ( h, currentGos ) of
-                        ( JustSlide s _, Nothing ) ->
-                            { record = Nothing, slides = [ s ], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
+regroupSlides : Int -> List ( Int, MaybeSlide ) -> List (List ( Int, Maybe MaybeSlide ))
+regroupSlides number list =
+    case regroupSlidesAux number [] (List.map (\( a, b ) -> ( a, Just b )) list) of
+        [] ->
+            []
 
-                        ( JustSlide s _, Just gos ) ->
-                            let
-                                newSlides =
-                                    s :: gos.slides
-                            in
-                            { gos | slides = newSlides }
-
-                        ( GosId _, _ ) ->
-                            { record = Nothing, slides = [], locked = False, transitions = [], background = Nothing, production_choices = Nothing }
-            in
-            extractStructureAux t newCurrent (Just newGos)
+        h :: t ->
+            (h ++ List.repeat (number - List.length (List.filterMap (\( _, x ) -> filter (Maybe.withDefault (GosId -1) x)) h)) ( -1, Nothing )) :: t

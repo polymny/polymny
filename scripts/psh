@@ -1,0 +1,908 @@
+#!/usr/bin/env bash
+trap 'kill $(jobs -p)' EXIT SIGINT
+
+# USAGE:
+#   header
+#
+# EXAMPLE:
+#   header
+header() {
+    echo ffmpeg -nostats -loglevel error -hide_banner -y
+}
+
+# USAGE:
+#   header_progress
+#
+# EXAMPLE:
+#   header_progress
+header_progress() {
+    echo ffmpeg -nostdin -nostats -progress pipe:1 -loglevel error -hide_banner -y
+}
+
+
+# USAGE:
+#   transocode_video  <input_path> <output_path>
+#
+# EXAMPLE:
+#   transcode_video  invideo.mp4  mode  tmp/video.mp4
+transcode_video() {
+
+    input=$1
+    mode=$2
+    output=$3
+
+    fps="25"
+    vcodec="$vcodec264"
+    vcodec_opts="-crf 15"
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+
+    input_width=$(get_width $input)
+    if [ "$input_width" -gt "1920" ]; then
+        scalew="min'(1920,iw)'"
+    else
+        scalew="max'(1920,iw)'"
+    fi
+
+    input_height=$(get_height $input)
+    if [ "$input_height" -gt "1080" ]; then
+        scaleh="min'(1080,ih)'"
+    else
+        scaleh="max'(1080,ih)'"
+    fi
+
+    filterv="scale=${scalew}:${scaleh}:force_original_aspect_ratio=decrease,pad=1920:1080:-1:-1:color=black,setsar=1:1,fps=fps=$fps"
+    case $mode in
+        "silent")
+            echo -n -i $input \
+            -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 \
+            -filter:v $filterv\
+            -shortest \
+            ;;
+        "blob")
+            echo -n -i $input \
+            -filter:v fps=fps=$fps
+            ;;
+        *)
+            echo -n -i $input \
+            -filter:v $filterv\
+
+            ;;
+    esac
+
+    echo " -vsync cfr \
+        -pix_fmt yuv420p \
+        -vcodec $vcodec $vcodec_opts \
+        -acodec $acodec  \
+        -ar $arate \
+        -ac 2 \
+        -b:a $abitrate \
+        -max_muxing_queue_size 2048 \
+        $output"
+
+}
+
+
+get_overlay()
+{
+    webcam_settings=$1
+    shift
+    position=( $(echo $webcam_settings | jq -cr ".position[]") )
+    case $(echo $webcam_settings | jq -cr ".anchor") in
+        "top_left" )
+            overlay=$(printf "%s:%s" "${position[0]}" "${position[1]}")
+            ;;
+        "top_right" )
+            overlay=$(printf "W-w-%s:%s" "${position[0]}" "${position[1]}")
+            ;;
+        "bottom_left" )
+            overlay=$(printf "%s:H-h-%s" "${position[0]}" "${position[1]}")
+            ;;
+        "bottom_right" )
+            overlay=$(printf "W-w-%s:H-h-%s" "${position[0]}" "${position[1]}")
+            ;;
+        *)
+            overlay=$(printf "%s:H-h-%s" "${position[0]}" "${position[1]}")
+            ;;
+    esac
+    echo $overlay
+}
+
+get_webcam_size()
+{
+    webcam_settings=$1
+
+    echo $(printf "%s:-1" $(echo $webcam_settings | jq -cr ".size[0]") )
+}
+
+get_alpha()
+{
+    echo  $(echo $1| jq -cr ".opacity")
+}
+
+get_keycolor()
+{
+
+    echo  $(echo $1| jq -cr ".keycolor")
+}
+
+video_stream() {
+    res=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,sample_aspect_ratio,display_aspect_ratio -of json=c=1 $1)
+    res=$(echo $res | jq ".streams[]")
+    echo "$res"
+}
+get_width() {
+    res=$(video_stream $1)
+    echo $(echo $res | jq -r ".width")
+}
+
+get_height() {
+    res=$(video_stream $1)
+    echo $(echo $res | jq -r ".height")
+}
+
+
+get_aspect_ratio() {
+    res=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,sample_aspect_ratio,display_aspect_ratio -of json=c=1 $1)
+    res=$(echo $res | jq ".streams[]")
+    dar=$(echo $res | jq -r ".display_aspect_ratio")
+    width=$(echo $res | jq -r ".width")
+    height=$(echo $res | jq -r ".height")
+    case $dar in
+        "4:3")
+            echo "4:3"
+            ;;
+
+        "16:9")
+            echo "16:9"
+            ;;
+        "null")
+            if [ $(( $width * 3 )) -eq $(( $height * 4 )) ]; then
+                echo "4:3"
+            elif [ $(( $width * 9 )) -eq $(( $height * 16 )) ]; then
+                echo "16:9"
+            else
+                echo "unknown"
+            fi
+        ;;
+
+        *)
+            echo "unknown"
+            ;;
+    esac
+
+}
+
+colorkey(){
+    colorkey_color="$1"
+    # color key params
+    colorkey_similarity="0.3"
+    colorkey_blend="0.2"
+    colorkey="colorkey=$colorkey_color:$colorkey_similarity:$colorkey_blend"
+    despill="despill=green"
+    echo "$colorkey,$despill"
+}
+
+
+# USAGE:
+#   params_pip_slide_record  <slide_path> <record_path> <offset> <duration> <output_path>
+#
+# EXAMPLE:
+#   params  tmp/video.mp4
+params_pip_slide_record() {
+
+    slide=$1
+    shift
+
+    record=$1
+    shift
+
+    offset=$1
+    shift
+
+    duration=$1
+    shift
+
+    webcam_settings=$1
+    shift
+
+    output=$1
+    shift
+
+
+    width_slide="1920"
+    height_slide="1080"
+
+    vcodec=$vcodec264
+    vcodec_opts="-crf 15"
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+    composition_type=$(echo "$webcam_settings"| jq -cr ".type")
+
+    keying_filter="null"
+    color=$(get_keycolor "$webcam_settings")
+    if [[  "$color" != "null" ]]; then
+        keying_filter=$(colorkey $color)
+    fi
+
+    case $composition_type in
+         "pip" )
+            webcam_alpha=$(get_alpha "$webcam_settings")
+            size=$(echo "$webcam_settings" | jq -cr ".size[0]")
+            webcam_size=$(get_webcam_size "$webcam_settings")
+            overlay=$(get_overlay "$webcam_settings")
+            scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
+            filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$overlay,fps=fps=$fps"
+
+            echo -n -fflags \
+                 +genpts \
+                 -i $slide \
+                 -i $record \
+                 -filter_complex "$filter_complex"
+            ;;
+
+        "fullscreen" )
+            record_alpha=$(get_alpha "$webcam_settings")
+            overlay="0:0"
+            aspect_ratio=$(get_aspect_ratio $record)
+            case $aspect_ratio in
+                "4:3")
+                    record_filter="[1]$keying_filter,scale=1440:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="(W-w)/2:0"
+                    ;;
+                "16/9")
+                    record_filter="[1]$keying_filter,scale=${width_slide}:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="0:0"
+                    ;;
+
+                *)
+                    record_filter="[1]$keying_filter,scale=${width_slide}:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="(W-w)/2:(H-h)/2"
+                    ;;
+
+            esac
+            filter_complex="[0]scale=$width_slide:$height_slide[slide];${record_filter};[slide][record]overlay=$overlay"
+
+            echo -n -fflags \
+                 +genpts \
+                 -i $slide \
+                 -i $record \
+                 -filter_complex "$filter_complex"
+            ;;
+
+
+        "disabled" )
+                 echo -n -fflags \
+                 +genpts \
+                 -loop 1 \
+                 -i $slide \
+                 -i $record \
+                 -map 0:v \
+                 -map 1:a
+             ;;
+
+        "slide" )
+                 echo -n -fflags \
+                 +genpts \
+                 -f lavfi \
+                 -i anullsrc=channel_layout=stereo:sample_rate=$arate \
+                 -loop 1 \
+                 -i $slide
+             ;;
+
+        *)
+            return 1
+            ;;
+    esac
+    echo " -ss $offset \
+         -t $duration \
+          -vsync cfr \
+         -pix_fmt yuv420p \
+         -vcodec $vcodec $vcodec_opts\
+         -acodec $acodec \
+         -ar $arate \
+         -ac 2 \
+         -b:a $abitrate \
+         -s hd1080 \
+         $output"
+
+
+}
+
+
+# USAGE:
+#   concat_records <path to list of file to conat> <output>
+#
+# EXAMPLE:
+#   concat_records  tmp/seq_file.txt  tmp/capsule.mp4
+concat_records() {
+
+    input=$1
+    shift
+    output=$1
+    shift
+
+    echo -f concat \
+         -safe 0 \
+         -i $input \
+         -c copy \
+         -movflags \
+         +faststart \
+         $output
+
+}
+
+
+# USAGE:
+#   miniatures <input> <miniature> <output>
+# EXAMPLE:
+#   miniatures video.mkv 12233 video
+miniatures() {
+    input=$1
+    duration=$2
+    output=$3
+    middle=$(echo 'scale=6;' $duration ' / 2' | bc)
+    if [ "${middle:0:1}" = "." ] ; then
+        middle="0"
+    fi
+
+    width="400"
+    filter="scale=$width:-1"
+    echo -i $input \
+        -vf $filter \
+        -ss $middle \
+        -vframes 1 \
+        $output
+}
+
+# Get vars from Config.toml
+# USAGE:
+#   get_config <config_path>
+# EXAMPLE:
+#   get_config "url"
+get_config(){
+    get_config_raw $1 | cut -d '"' -f 2
+}
+
+# Get vars from Config.toml
+# USAGE:
+#   get_config <config_path>
+# EXAMPLE:
+#   get_config "url"
+get_config_raw() {
+    config=$1
+    while [ ! -f Rocket.toml ]; do
+        cd ..
+
+        if [ "$PWD" == "/" ]; then
+            echo -e >&2 "\033[31;1merror:\033[0m unable to find a Rocket.toml"
+            exit 1
+        fi
+    done
+    echo $(cat Rocket.toml | grep $config | cut -d '=' -f 2 | tr -d ' ')
+}
+
+# USAGE:
+#   get_duration  <video_path>
+#
+# EXAMPLE:
+#   get_duration  tmp/video.mp4
+get_duration() {
+    input=$1
+    duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_format_entry duration $input)
+
+    if [[ "$duration" == "N/A" ]]; then
+        dir=$(mktemp -d)
+        ffmpeg -i $input -vcodec copy -acodec copy $dir/tmp.webm > /dev/null 2>&1
+        duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_format_entry duration $dir/tmp.webm)
+        rm -r $dir
+    fi
+
+    echo $duration
+}
+
+
+get_video_size() {
+    ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 $1
+}
+
+
+
+video-type() {
+
+    input=$1
+    test_audio_streams="$(ffprobe -hide_banner -loglevel error -show_streams -select_streams a -of 'compact' $input | wc -c)"
+    test_video_streams="$(ffprobe -hide_banner -loglevel error -show_streams -select_streams v -of 'compact' $input | wc -c)"
+    if [ $test_audio_streams -eq  0 ] ; then
+        if [ $test_video_streams -eq  0 ] ; then
+            echo "nothing"
+        else
+            echo "video_only"
+        fi
+    else
+        if [ $test_video_streams -eq  0 ] ; then
+            echo "audio_only"
+        else
+            echo "audio_and_video"
+        fi
+
+    fi
+
+}
+# transcode records
+# USAGE:
+#   transcode_records <capsule id>
+# EXAMPLE:
+#   transcode_records 42
+transcode_records(){
+    cid=$1
+
+    capsule_path=$(get_config "data_path")"/$cid"
+    assets_path="${capsule_path}/assets"
+    tmp_path="${capsule_path}/tmp"
+    if [ ! -d "$tmp_path" ]; then
+        mkdir $tmp_path
+    fi
+
+    records="$(echo "$capsule_structure" | jq -r '.[] | .record.uuid')"
+    for i in $records
+    do
+        if [ $i = "null" ] ; then
+            continue
+        fi
+        input="${assets_path}/$i.webm"
+        output="$tmp_path/$i.mp4"
+
+        if [ -f $output ] ; then
+            continue
+        fi
+
+        command=$(header && transcode_video $input "blob" $output)
+        echo $command
+        START_TIME=$SECONDS
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            return $1
+        fi
+
+        ELAPSED_TIME=$(($SECONDS - $START_TIME))
+        duration=$(get_duration $output)
+        printf 'trancode duration = %s - record duration =%s  \n' "$ELAPSED_TIME" "$duration"
+
+        output="$tmp_path/$i.png"
+        command=$(header && miniatures $input  $duration $output)
+        echo $command
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            return $1
+        fi
+
+    done
+
+}
+
+
+run_ffmpeg_command(){
+    cmd=$1
+    duration_ms=$(echo "$2*1000000" | bc -l )
+    echo $duration_us>&2
+    echo "$cmd">&2
+
+    percent_progress="0"
+    $cmd | while read line; do
+        IFS='=' read -ra progress <<< $line
+        case "${progress[0]}" in
+            "out_time_us" )
+                ts="${progress[1]}"
+                percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
+                is_great=$(echo "$percent_progress > 1" | bc)
+                if [ $is_great -eq 1 ]; then
+                    percent_progress="1"
+                fi
+                ;;
+            "progress" )
+                if [[ "${progress[1]}" == "end" ]] ; then
+                    percent_progress="1"
+                fi
+                ;;
+            *)
+                ;;
+        esac
+
+        if [ -z "$3" ]; then
+            echo -en "\n$percent_progress"
+        else
+            echo -en "\n$3;$percent_progress"
+        fi
+    done
+
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return 1
+    fi
+
+}
+
+# combine slide and records
+# USAGE:
+#   compose_goss <capsule id>
+# EXAMPLE:
+#   compose_goss 42
+compose_goss(){
+    cid=$1
+    SLIDE_DEFAULT_DURATION="3"
+    capsule_path=$(get_config "data_path")"/$cid"
+    assets_path="${capsule_path}/assets"
+    tmp_path="${capsule_path}/tmp"
+    fps="25"
+    if [ ! -d $tmp_path ]; then
+        mkdir $tmp_path
+    fi
+
+
+    seq_file="$tmp_path/seq_file.txt"
+    if [ -f $seq_file ]; then
+        rm $seq_file
+    fi
+    touch $seq_file
+    # GOS loop
+
+    len=$(echo $capsule_structure | jq  '.|length')
+    for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
+    do
+        gos=$(echo "$capsule_structure" | jq .[$gos_i])
+        record=$(echo "$gos" | jq -cr ".record.uuid")
+
+         if [[ $record = "null" ]] ; then
+            webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
+            transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
+            input_record="${assets_path}/null.webm"
+        else
+            transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
+            webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
+            input_record="${assets_path}/$record.webm"
+        fi
+
+
+       len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
+       for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
+       do
+            slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
+            uuid=$(echo $slide |  jq  -rc ".uuid")
+            input_slide="${assets_path}/${uuid}.png"
+
+            extra=$(echo "$slide" |  jq  -rc ".extra")
+            echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+            echo $echo_header >&2
+
+
+            if [ $extra = "null" ] ; then
+                # No extra resource : compose slide with record
+                input_slide="${assets_path}/${uuid}.png"
+
+                if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                    # the slide have a transition and a record
+                    slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+
+                    slide_offset=${transitions[$slide_i]}
+                else
+                    # manage case of all slides transitions not done in GOS record
+                    # add empty slides
+                    slide_offset=0
+                    slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+                fi
+
+                output="slide_${gos_i}_${slide_i}.mp4"
+
+                cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
+
+                total_frames=$(echo "($slide_duration*25)/1000" | bc)
+
+                run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
+            else
+
+                if [[ $record = "null" ]] ; then
+                     # if no record , add extra resource instead of slide
+
+                    printf '\n%s %3s %%' "$echo_header" "100"
+                    output="../assets/${extra}.mp4"
+                else
+                    # FIXME: mix video resource with record
+                    # no slide is dislpayed.
+                    # until fix only extra is displayed
+                    printf '\n%s %3s %%' "$echo_header" "100"
+                    output="../assets/${extra}.mp4"
+                fi
+
+            fi
+
+            echo "file '$output'" >> $seq_file
+        done
+
+    done
+    output="$capsule_path/output.mp4"
+    command=$(header && concat_records $seq_file $output)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        echo $command
+        return 1
+    else
+        echo "Composition done"
+    fi
+
+
+}
+
+
+# USAGE:
+#   on-record <capsule-id> <uuid>
+#
+# EXAMPLE:
+#   on-record 23 cdebb5e4-ce26-42d5-98ba-41c76f71f08
+on-record() {
+    cid=$1
+    uuid=$2
+
+    capsule_path=$(get_config "data_path")"/$cid"
+    tmp_path="${capsule_path}/tmp"
+    if [ ! -d "$tmp_path" ]; then
+        mkdir $tmp_path
+    fi
+
+    input="${capsule_path}/assets/${uuid}.webm"
+    video_type=$(video-type $input)
+
+    case $video_type in
+        "video_only" | "audio_and_video" )
+            output="${capsule_path}/assets/${uuid}.png"
+            duration="0.000000"
+
+            command=$(header && miniatures $input  $duration $output)
+            $command
+            if (( $? != 0 )); then
+                echo "error with $1" >&2
+            return $1
+            fi
+
+            get_video_size $input
+            ;;
+        *)
+            ;;
+    esac
+}
+
+
+# USAGE:
+#   on-produce <capule_id>
+#     and stdin
+#
+# EXAMPLE:
+#
+on-produce() {
+    local cid=$1
+
+    #transcode_records $cid
+    echo "Composition start for capsule $cid" >&2
+    compose_goss $cid
+    echo "Composition end for capsule $cid" >&2
+}
+
+# USAGE:
+#   on-video-upload <video-in> <video-out>
+#
+# EXAMPLE:
+#
+on-video-upload() {
+    local input=$1
+    local output=$2
+    video_type=$(video-type $input)
+    duration=$(get_duration $input)
+    case $video_type in
+        "video_only")
+            cmd=$(header_progress && transcode_video $input "silent" $output)
+            ;;
+        *)
+            cmd=$(header_progress && transcode_video $input "standard" $output)
+            ;;
+    esac
+
+    duration_s=$(get_duration $input)
+    run_ffmpeg_command "$cmd" "$duration_s" ""
+
+}
+
+# USAGE:
+#  format_time <time in milliseconds>
+#
+# EXAMPLE:
+#  format_time 3600
+format_time() {
+    millis=$(($1 % 1000))
+    total_seconds=$(($1 / 1000))
+    seconds=$(($total_seconds % 60))
+    minutes=$((($total_seconds / 60) % 60))
+    hours=$(($total_seconds / 3600))
+    printf "%02g:%02g:%02g.%03g\n" $hours $minutes $seconds $millis
+}
+
+# USAGE:
+#  on-publish <input> <output> <generate_subtitles>
+on-publish() {
+    echo $@ >&2
+    ../../hls/hls $1 $2 360p 480p 720p
+
+    if [[ "$3" == "true" ]]; then
+        len=$(echo $capsule_structure | jq -cr '.|length')
+        slide_time=0
+        vtt_output="$2/subtitles.webvtt"
+        m3u8_output="$2/subtitles.m3u8"
+
+        # Generate vtt file
+        echo WEBVTT > $vtt_output
+        echo "X-TIMESTAMP-MAP=MPEGTS:120000,LOCAL:00:00:00.000" >> $vtt_output
+        echo >> $vtt_output
+
+        for i in `seq 0 $(($len - 1))`; do
+            last_time=0
+            slide_index=0
+            sentence_index=1
+
+            record=$(echo $capsule_structure | jq -cr ".[$i].record")
+
+            if [[ "$record" == "null" ]]; then
+                for slide in $(echo $capsule_structure | jq -cr ".[$i].slides[].extra"); do
+                    echo $slide >&2
+                    if [[ "$slide" == "null" ]]; then
+                        slide_time=$(($slide_time+3000))
+                    else
+                        echo $(dirname $1)/assets/$slide.mp4 >&2
+                        duration_s=$(get_duration $(dirname $1)/assets/$slide.mp4)
+                        duration=$(echo "scale=6; $duration_s * 1000" | bc | cut -d '.' -f 1)
+                        slide_time=$(($slide_time+$duration))
+                    fi
+                done
+            else
+                for event in $(echo $capsule_structure | jq -cr ".[$i].events[]"); do
+                    ty=$(echo $event | jq -cr ".ty")
+                    time=$(echo $event | jq -cr ".time")
+
+                    case $ty in
+                        "start") continue;;
+                    esac
+
+                    echo `format_time $(($last_time+$slide_time))` "-->" `format_time $(($time+$slide_time))` >> $vtt_output
+                    echo $capsule_structure | jq -cr ".[$i].slides[$slide_index].prompt" | sed "${sentence_index}q;d" >> $vtt_output
+                    echo >> $vtt_output
+
+                    last_time=$time
+
+                    case $ty in
+                        "next_slide") slide_index=$(($slide_index+1)); sentence_index=1;;
+                        "next_sentence") sentence_index=$(($sentence_index+1));;
+                        "end") slide_time=$(($slide_time+$time));;
+                    esac
+                done
+            fi
+        done
+
+        # Generate m3u8 file
+        duration_int=$((($slide_time)/1000+1))
+        duration=$(echo "scale=6; $(($slide_time))/1000" | bc)
+        echo "#EXTM3U" > $m3u8_output
+        echo "#EXT-X-TARGETDURATION:$duration_int" >> $m3u8_output
+        echo "#EXT-X-VERSION:3" >> $m3u8_output
+        echo "#EXT-X-MEDIA-SEQUENCE:0" >> $m3u8_output
+        echo "#EXT-X-PLAYLIST-TYPE:VOD" >> $m3u8_output
+        echo "#EXTINF:$duration," >> $m3u8_output
+        basename $vtt_output >> $m3u8_output
+        echo "#EXT-X-ENDLIST" >> $m3u8_output
+
+        # Extend hls manifest
+        echo '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog",NAME="Transcription",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="subtitles.m3u8"' >> $2/manifest.m3u8
+        echo "done" >&2
+    fi
+}
+
+pdf-to-png() {
+    local input=$1
+    local output=$2
+    local density=$3
+    local size=$4
+    colorspace="sRGB"
+
+    cmd=$(
+        echo "convert \
+        -density $density \
+        $input \
+        -colorspace $colorspace \
+        -resize $size \
+        -background white \
+        -gravity center \
+        -extent $size \
+        $output"
+    )
+    echo $cmd >&2
+    $cmd
+    if (( $? != 0 )); then
+       echo "error with $1" >&2
+       return $1
+    fi
+
+}
+
+disk-usage() {
+    local input=$1
+    du -s --block-size=1M $input | cut -f1 2>/dev/null
+    if (( $? != 0 )); then
+       echo "disk-usage error with $@" >&2
+       return 1
+    fi
+
+
+}
+
+main() {
+    # set codecs according graphic cards
+    use_nvenc=$(get_config_raw use_nvenc)
+    if [[ "$use_nvenc" == "true" ]]; then
+        vcodec264="libx264"
+        HWACCEL='nvidia'
+        if [[ $HWACCEL == 'nvidia' ]]; then
+            vcodec264="h264_nvenc"
+        fi
+    else
+        vcodec264=libx264
+    fi
+
+    local command=$1
+    shift
+    case $command in
+        "on-record")
+            on-record "$@"
+            ;;
+        "on-video-upload")
+            on-video-upload "$@"
+            ;;
+        "on-produce")
+            read -r capsule_structure
+            echo "$capsule_structure" | jq . >&2
+            on-produce "$@"
+            ;;
+        "on-publish")
+            read -r capsule_structure
+            on-publish "$@"
+            ;;
+        "aspect-ratio")
+            get_aspect_ratio "$@"
+            ;;
+        "duration")
+            get_duration "$@"
+            ;;
+
+        "video-type")
+            video-type "$@"
+            ;;
+
+        "pdf-to-png")
+            pdf-to-png "$@"
+            ;;
+
+        "du")
+            disk-usage "$@"
+            ;;
+
+
+        *)
+            echo "$@"
+
+    esac
+
+}
+
+main $@

@@ -1,34 +1,24 @@
-module Acquisition.Views exposing (audioDropdownConfig, resolutionDropdownConfig, subscriptions, videoDropdownConfig, view)
+module Acquisition.Views exposing (..)
 
 import Acquisition.Types as Acquisition
-import Api
+import Capsule
 import Core.Types as Core
-import Dropdown
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Element.Keyed
-import FontAwesome
+import FontAwesome as Fa
 import Html
 import Html.Attributes
+import Html.Events
 import Keyboard
-import LoggedIn.Types as LoggedIn
-import Preparation.Views as Preparation
+import Lang
 import Status
 import Ui.Colors as Colors
-import Ui.Icons
-import Ui.Ui as Ui
-
-
-mkmsg : Acquisition.Model -> Acquisition.Msg -> Core.Msg
-mkmsg model msg =
-    if model.cameraReady then
-        Core.LoggedInMsg (LoggedIn.AcquisitionMsg msg)
-
-    else
-        Core.Noop
+import Ui.Utils as Ui
+import User exposing (User)
+import Utils exposing (tern)
 
 
 shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
@@ -39,158 +29,364 @@ shortcuts model msg =
     in
     case raw of
         " " ->
-            mkmsg model
-                (if model.recording then
-                    Acquisition.StopRecording
+            if model.recording then
+                Core.AcquisitionMsg Acquisition.StopRecording
 
-                 else
-                    Acquisition.StartRecording
-                )
+            else
+                Core.AcquisitionMsg Acquisition.StartRecording
 
         "ArrowRight" ->
-            mkmsg model Acquisition.NextSentence
+            Core.AcquisitionMsg Acquisition.NextSentence
 
         _ ->
             Core.Noop
 
 
-subscriptions : Acquisition.Model -> Sub Core.Msg
-subscriptions model =
-    Sub.batch
-        [ Keyboard.ups (shortcuts model)
-        ]
-
-
-view : Core.Global -> Api.Session -> Acquisition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-view _ _ model =
+view : Core.Global -> User -> Acquisition.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
+view global user model =
     let
-        attributes =
-            Element.height Element.fill
-                :: (if model.cameraReady then
-                        []
+        content =
+            case ( global.devices, model.webcamBound ) of
+                ( Just d, True ) ->
+                    let
+                        submodel =
+                            Acquisition.toSubmodel d model
+                    in
+                    Element.el [ Ui.wfp 6, Ui.hf ] (centerElement global user submodel)
 
-                    else
-                        [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
-                   )
+                _ ->
+                    Element.column [ Ui.wfp 6, Ui.hf, Element.spacing 10 ]
+                        [ if Acquisition.isError model.state then
+                            Element.none
+
+                          else
+                            Element.el [ Element.centerX, Element.centerY ] Ui.spinner
+                        , Element.paragraph [ Font.center, Element.centerX, Element.centerY ]
+                            [ Element.text
+                                (case model.state of
+                                    Acquisition.DetectingDevices ->
+                                        Lang.detectingDevices global.lang
+
+                                    Acquisition.BindingWebcam ->
+                                        Lang.bindingWebcam global.lang
+
+                                    Acquisition.ErrorDetectingDevices ->
+                                        Lang.errorDetectingDevices global.lang
+
+                                    Acquisition.ErrorBindingWebcam ->
+                                        Lang.errorBindingWebcam global.lang
+                                )
+                            ]
+                        ]
 
         popup =
-            case ( model.status, model.showSettings ) of
-                ( Status.Sent, _ ) ->
-                    Element.column [ Element.width Element.fill, Element.padding 10, Element.spacing 10 ]
-                        [ Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Envoi de l'enregistrement en cours." ]
-                        , Element.paragraph [ Element.centerX, Font.center ] [ Element.text "Le temps de transfert peut être long, notamment si l'enregistrement est long ou si la connexion est lente (par exemple ADSL)" ]
-                        , Element.el [ Element.centerX ] Ui.spinner
-                        ]
-                        |> Element.el [ Element.centerX, Element.centerY ]
-                        |> Element.el
-                            [ Element.width Element.fill
-                            , Element.height Element.fill
-                            , Background.color Colors.light
-                            ]
-                        |> Ui.popup "Envoi de l'enregistrement"
-                        |> Just
-
-                ( _, Just ( videoDropdown, resolutionDropdown, audioDropdown ) ) ->
-                    let
-                        toggleMsg =
-                            Acquisition.ToggleSettings
-                                |> LoggedIn.AcquisitionMsg
-                                |> Core.LoggedInMsg
-                                |> Just
-
-                        popupElement =
-                            Element.row [ Element.centerY, Element.width Element.fill, Element.spacing 10 ]
-                                [ Element.column [ Element.width Element.fill, Element.padding 20, Element.spacing 10 ]
-                                    [ Element.column [ Element.width Element.fill ]
-                                        [ Element.text "Caméras disponibles"
-                                        , Dropdown.view videoDropdownConfig videoDropdown model.devices.video
-                                        ]
-                                    , case Acquisition.video model of
-                                        Just (Just video) ->
-                                            Element.column [ Element.width Element.fill ]
-                                                [ Element.text "Résolutions disponibles"
-                                                , Dropdown.view resolutionDropdownConfig resolutionDropdown video.resolutions
-                                                ]
-
-                                        _ ->
-                                            Element.none
-                                    , Element.column [ Element.width Element.fill ]
-                                        [ Element.text "Microphones disponibles"
-                                        , Dropdown.view audioDropdownConfig audioDropdown model.devices.audio
-                                        ]
-                                    , case model.device of
-                                        ( Just Nothing, _, Just Nothing ) ->
-                                            Element.text "Vous devez au moins activer la webcam ou le micro"
-
-                                        _ ->
-                                            Ui.primaryButton toggleMsg "Valider"
+            case ( model.showSettings, global.devices, ( model.status, model.uploading ) ) of
+                ( _, _, ( Status.Error, _ ) ) ->
+                    Just
+                        (Ui.customSizedPopup 1
+                            (Lang.error global.lang)
+                            (Element.el [ Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
+                                (Element.column [ Ui.wf, Ui.hf, Element.centerX, Font.center, Element.spacing 10 ]
+                                    [ Element.paragraph
+                                        [ Element.centerX, Element.centerY, Font.center ]
+                                        [ Element.text (Lang.uploadRecordFailed global.lang) ]
+                                    , Element.el [ Element.alignBottom, Element.alignRight, Element.padding 10 ]
+                                        (Ui.primaryButton
+                                            { onPress = Just (Core.AcquisitionMsg Acquisition.UploadRecordFailedAck)
+                                            , label = Element.text (Lang.confirm global.lang)
+                                            }
+                                        )
                                     ]
-                                , Element.el [ Element.width Element.fill ] videoElement
-                                ]
-                    in
-                    Just (Ui.popupWithSize 5 "Paramètres" popupElement)
+                                )
+                            )
+                        )
+
+                ( True, Just d, _ ) ->
+                    Just (settingsView global user (Acquisition.toSubmodel d model))
+
+                ( _, _, ( _, Just progress ) ) ->
+                    Just
+                        (Ui.customSizedPopup 1
+                            (Lang.loading global.lang)
+                            (Element.el [ Ui.wf, Ui.hf, Background.color Colors.whiteBis ]
+                                (Element.column [ Ui.wf, Element.centerX, Element.centerY, Font.center, Element.spacing 10 ]
+                                    [ Element.paragraph
+                                        [ Element.centerX, Element.centerY, Font.center ]
+                                        [ Element.text (Lang.uploading global.lang) ]
+                                    , Ui.progressBar progress
+                                    ]
+                                )
+                            )
+                        )
 
                 _ ->
                     Nothing
     in
-    ( Element.row
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.scrollbarY
-        ]
-        [ Preparation.leftColumnView model.details (Just model.gos)
-        , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
-        , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
+    ( Element.row [ Ui.wf, Ui.hf ]
+        [ content
+        , Element.el [ Ui.wfp 1, Ui.hf ]
+            (rightColumn global user (Maybe.map (\x -> Acquisition.toSubmodel x model) global.devices))
         ]
     , popup
     )
 
 
+rightColumn : Core.Global -> User -> Maybe Acquisition.Submodel -> Element Core.Msg
+rightColumn global _ submodel =
+    let
+        settingsButton =
+            Ui.primaryButton
+                { onPress = Just (Core.AcquisitionMsg Acquisition.ToggleSettings)
+                , label = Element.text (Lang.settings global.lang)
+                }
+                |> Element.el [ Element.centerX, Element.padding 10 ]
 
--- element =
---     Element.row
---         [ Element.width Element.fill
---         , Element.height Element.fill
---         , Element.scrollbarY
---         ]
---         [ Preparation.leftColumnView model.details (Just model.gos)
---         , Element.el (Element.width (Element.fillPortion 6) :: attributes) (centerView model)
---         , Element.el (Element.width (Element.fillPortion 1) :: attributes) (rightColumn model)
---         ]
--- popup =
---     if model.status == Status.Sent then
---         --     else
---         Nothing
--- in
--- ( element, popup )
+        info =
+            case submodel of
+                Just s ->
+                    Element.column [ Ui.wf, Element.spacing 5, Element.padding 10 ]
+                        [ Element.el [ Font.bold ] (Element.text (Lang.webcam global.lang))
+                        , s.chosenDevice.video
+                            |> Maybe.map .label
+                            |> Maybe.withDefault (Lang.disabled global.lang)
+                            |> Element.text
+                            |> paragraph
+                        , Element.el [ Font.bold ] (Element.text (Lang.resolution global.lang))
+                        , s.chosenDevice.resolution
+                            |> Maybe.map Acquisition.format
+                            |> Maybe.map Element.text
+                            |> Maybe.withDefault Element.none
+                        , Element.el [ Font.bold ] (Element.text (Lang.microphone global.lang))
+                        , s.chosenDevice.audio
+                            |> Maybe.map .label
+                            |> Maybe.withDefault (Lang.disabled global.lang)
+                            |> Element.text
+                            |> paragraph
+                        , settingsButton
+                        ]
 
+                _ ->
+                    Element.none
 
-centerView : Acquisition.Model -> Element Core.Msg
-centerView model =
-    Element.column [ Element.width Element.fill, Element.height Element.fill ]
-        [ promptView model
-        , slideView model
+        recordView : Int -> Acquisition.Record -> Element Core.Msg
+        recordView id record =
+            Element.row [ Ui.wf, Element.spacing 10, Element.paddingXY 0 10 ]
+                [ Element.text (String.fromInt (id + 1))
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
+                    , icon = Fa.play
+                    , text = Nothing
+                    , tooltip = Just (Lang.playRecord global.lang)
+                    }
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
+                    , icon = Fa.check
+                    , text = Nothing
+                    , tooltip = Just (Lang.uploadRecord global.lang)
+                    }
+                , record.events
+                    |> List.reverse
+                    |> List.head
+                    |> Maybe.map (\x -> formatTime x.time)
+                    |> Maybe.withDefault ""
+                    |> Element.text
+                ]
+
+        records =
+            case submodel of
+                Just s ->
+                    Element.column
+                        [ Ui.wf
+                        , Ui.hf
+                        , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
+                        , Border.color Colors.greyLighter
+                        , Element.padding 10
+                        ]
+                        (Element.el [ Element.centerX ] (Element.text (Lang.records global.lang))
+                            :: List.indexedMap recordView (List.reverse s.records)
+                        )
+
+                _ ->
+                    Element.none
+    in
+    Element.column
+        [ Border.color Colors.greyLighter
+        , Border.widthEach { left = 1, right = 0, top = 0, bottom = 0 }
+        , Background.color Colors.whiteTer
+        , Ui.wf
+        , Ui.hf
+        ]
+        [ if submodel |> Maybe.map .showSettings |> Maybe.withDefault False then
+            Element.none
+
+          else
+            videoElement [ Ui.wf ]
+        , info
+        , records
         ]
 
 
-promptView : Acquisition.Model -> Element Core.Msg
-promptView model =
+settingsView : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+settingsView global user model =
     let
-        promptAttributes : List (Element.Attribute Core.Msg)
-        promptAttributes =
-            [ Font.center
-            , Element.centerX
-            ]
+        onVideoChange =
+            Html.Events.onInput
+                (\x ->
+                    case Acquisition.videoDeviceFromId model.devices.video x of
+                        Just v ->
+                            Core.AcquisitionMsg (Acquisition.VideoDeviceChanged v)
 
-        currentSlide : Maybe Api.Slide
+                        _ ->
+                            Core.Noop
+                )
+
+        videoOption : Maybe Acquisition.VideoDevice -> Html.Html Core.Msg
+        videoOption device =
+            let
+                selected =
+                    Html.Attributes.selected (device == model.chosenDevice.video)
+            in
+            case device of
+                Just d ->
+                    Html.option [ selected, Html.Attributes.value d.deviceId ] [ Html.text d.label ]
+
+                _ ->
+                    Html.option
+                        [ selected
+                        , Html.Attributes.value "disabled"
+                        ]
+                        [ Html.text (Lang.disabled global.lang) ]
+
+        onResolutionChange =
+            Html.Events.onInput
+                (\x ->
+                    case model.chosenDevice.video of
+                        Just chosenDevice ->
+                            case Acquisition.resolutionFromString chosenDevice.resolutions x of
+                                Just v ->
+                                    Core.AcquisitionMsg (Acquisition.ResolutionChanged v)
+
+                                _ ->
+                                    Core.Noop
+
+                        _ ->
+                            Core.Noop
+                )
+
+        resolutionOption : Acquisition.Resolution -> Html.Html Core.Msg
+        resolutionOption resolution =
+            let
+                selected =
+                    Html.Attributes.selected (Just resolution == model.chosenDevice.resolution)
+            in
+            Html.option
+                [ selected
+                , Html.Attributes.value (Acquisition.format resolution)
+                ]
+                [ Html.text (Acquisition.format resolution) ]
+
+        onAudioChange =
+            Html.Events.onInput
+                (\x ->
+                    case Acquisition.audioDeviceFromId model.devices.audio x of
+                        Just v ->
+                            Core.AcquisitionMsg (Acquisition.AudioDeviceChanged v)
+
+                        _ ->
+                            Core.Noop
+                )
+
+        audioOption : Acquisition.AudioDevice -> Html.Html Core.Msg
+        audioOption device =
+            let
+                selected =
+                    Html.Attributes.selected (Just device == model.chosenDevice.audio)
+            in
+            Html.option
+                [ selected
+                , Html.Attributes.value device.deviceId
+                ]
+                [ Html.text device.label ]
+
+        form =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.text (Lang.webcam global.lang)
+                , (Nothing :: (model.devices.video |> List.map Just))
+                    |> List.map videoOption
+                    |> Html.select [ onVideoChange ]
+                    |> Element.html
+                    |> Element.el [ Element.paddingXY 0 10 ]
+                , case model.chosenDevice.video of
+                    Just _ ->
+                        Element.text (Lang.resolution global.lang)
+
+                    _ ->
+                        Element.none
+                , case model.chosenDevice.video of
+                    Just v ->
+                        Html.select [ onResolutionChange ] (List.map resolutionOption v.resolutions)
+                            |> Element.html
+                            |> Element.el [ Element.paddingXY 0 10 ]
+
+                    _ ->
+                        Element.none
+                , Element.text (Lang.microphone global.lang)
+                , Html.select [ onAudioChange ] (List.map audioOption model.devices.audio)
+                    |> Element.html
+                    |> Element.el [ Element.paddingXY 0 10 ]
+                , Ui.simpleButton
+                    { label = Element.text (Lang.refreshDevices global.lang)
+                    , onPress = Just (Core.AcquisitionMsg Acquisition.RefreshDevices)
+                    }
+                ]
+
+        element =
+            Element.column [ Ui.wf, Ui.hf, Background.color Colors.whiteBis, Element.spacing 10, Element.padding 10 ]
+                [ Element.row [ Ui.wf, Element.centerY, Background.color Colors.whiteBis, Element.spacing 10 ]
+                    [ form
+                    , Element.el [ Ui.wf, Ui.hf ] (videoElement [ Ui.wf, Ui.hf ])
+                    ]
+                , Element.el [ Element.alignBottom, Ui.wf ]
+                    (Element.el [ Element.alignRight ]
+                        (Ui.primaryButton
+                            { onPress = Just (Core.AcquisitionMsg Acquisition.ToggleSettings)
+                            , label = Element.text (Lang.confirm global.lang)
+                            }
+                        )
+                    )
+                ]
+    in
+    Ui.customSizedPopup 5 (Lang.settings global.lang) element
+
+
+centerElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+centerElement global user model =
+    let
+        prompt =
+            promptElement global user model
+
+        slide =
+            slideElement global user model
+    in
+    Element.column [ Ui.wf, Ui.hf ] (tern global.acquisitionInverted [ slide, prompt ] [ prompt, slide ])
+
+
+promptElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+promptElement global user model =
+    let
+        slides : List Capsule.Slide
+        slides =
+            List.drop model.gos model.capsule.structure |> List.head |> Maybe.map .slides |> Maybe.withDefault []
+
+        currentSlide : Maybe Capsule.Slide
         currentSlide =
-            List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides))
+            List.head (List.drop model.currentSlide slides)
 
-        nextSlide : Maybe Api.Slide
+        nextSlide : Maybe Capsule.Slide
         nextSlide =
-            List.head (List.drop (model.currentSlide + 1) (Maybe.withDefault [] model.slides))
+            List.head (List.drop (model.currentSlide + 1) slides)
 
-        getLine : Int -> Api.Slide -> Maybe String
+        getLine : Int -> Capsule.Slide -> Maybe String
         getLine n x =
             List.head (List.drop n (String.split "\n" x.prompt))
 
@@ -204,26 +400,30 @@ promptView model =
 
         nextSentence : Maybe String
         nextSentence =
+            let
+                tmp =
+                    nextSlide
+                        |> Maybe.map (\x -> List.head (String.split "\n" x.prompt))
+                        |> Maybe.withDefault Nothing
+            in
             case nextSentenceCurrentSlide of
                 Nothing ->
-                    Maybe.withDefault Nothing (Maybe.map List.head (Maybe.map (\x -> String.split "\n" x.prompt) nextSlide))
+                    tmp
 
                 x ->
                     x
 
         nextSlideIcon =
             if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
-                Element.html
-                    (Html.span [ Html.Attributes.style "padding-right" "10px" ]
-                        [ FontAwesome.iconWithOptions FontAwesome.arrowCircleRight FontAwesome.Solid [] []
-                        ]
-                    )
+                Element.html (Html.span [] [ Fa.iconWithOptions Fa.arrowCircleRight Fa.Solid [] [] ])
+                    |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
 
             else
                 Element.none
 
-        noPrompt =
-            List.all (\x -> x.prompt == "") (Maybe.withDefault [] model.slides)
+        promptAttributes : List (Element.Attribute Core.Msg)
+        promptAttributes =
+            [ Font.center, Element.centerX ]
 
         promptText =
             case currentSentence of
@@ -245,27 +445,23 @@ promptView model =
                 _ ->
                     Element.none
 
-        help =
-            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 5, Element.spacing 20 ]
-                [ Element.paragraph [] [ Element.text "Enregistrer : espace" ]
-                , Element.paragraph [] [ Element.text "Finir l'enregistrement : espace" ]
-                , Element.paragraph [] [ Element.text "Prochaine ligne : flèche à droite" ]
-                ]
-
         totalSlides =
-            List.length (Maybe.withDefault [] model.slides)
+            List.length slides
 
         totalLines =
-            Maybe.withDefault [] model.slides
+            slides
                 |> List.map (.prompt >> String.lines >> List.length)
                 |> List.foldl (+) 0
 
         -- Some mattpiz wizardry
         currentLine =
-            Maybe.withDefault [] model.slides
+            slides
                 |> List.take model.currentSlide
                 |> List.map (.prompt >> String.lines >> List.length)
                 |> List.foldl (+) (model.currentLine + 1)
+
+        noPrompt =
+            List.all (\x -> x.prompt == "") slides
 
         status : Element Core.Msg
         status =
@@ -277,7 +473,7 @@ promptView model =
                                 [ Element.el
                                     [ Font.size 25, Font.color (Element.rgb255 255 0 0) ]
                                     (Element.row [ Ui.blink ]
-                                        [ Ui.Icons.buttonFromIcon FontAwesome.circle
+                                        [ Element.none -- Ui.Icons.buttonFromIcon Fa.circle
                                         , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
                                             (Element.text "REC")
                                         ]
@@ -289,77 +485,97 @@ promptView model =
                                 [ Element.el
                                     []
                                     (Element.row []
-                                        [ Element.el [ Font.size 25 ] (Ui.Icons.buttonFromIcon FontAwesome.stopCircle)
+                                        [ Element.el [ Font.size 25 ] Element.none -- (Ui.Icons.buttonFromIcon Fa.stopCircle)
                                         , Element.el [ Element.paddingEach { left = 5, bottom = 0, top = 0, right = 0 } ]
-                                            (Element.text "Enregistrement arrêté")
+                                            (Element.text (Lang.recordingStopped global.lang))
                                         ]
                                     )
                                 ]
                         ]
-                , onPress =
-                    Just
-                        (mkmsg model
-                            (if model.recording then
-                                Acquisition.StopRecording
+                , onPress = Just (Core.AcquisitionMsg (tern model.recording Acquisition.StopRecording Acquisition.StartRecording))
+                }
 
-                             else
-                                Acquisition.StartRecording
-                            )
-                        )
+        invertButton =
+            Ui.iconButton [ Font.color Colors.navbar ]
+                { onPress = Just (Core.AcquisitionMsg Acquisition.InvertAcquisition)
+                , icon = Fa.arrowsAltVertical
+                , text = Nothing
+                , tooltip = Just (Lang.invertSlideAndPrompt global.lang)
                 }
 
         info =
-            Element.row [ Element.padding 10, Element.spacing 30, Element.width Element.fill ]
+            Element.row [ Element.padding 10, Element.spacing 30, Ui.wf ]
                 [ status
-                , Element.el [ Element.width Element.fill ] Element.none
-                , Element.text ("Slide " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
-                , Element.text ("Ligne " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
+                , Element.el [ Element.width Element.fill ] (Element.el [ Element.centerX ] invertButton)
+                , Element.text (Lang.slide global.lang ++ " " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
+                , Element.text (Lang.line global.lang ++ " " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
                 ]
-    in
-    Element.row
-        (if noPrompt then
-            [ Element.width Element.fill ]
 
-         else
-            [ Element.width Element.fill
-            , Element.height Element.fill
-            ]
-        )
-        [ Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] help
-        , if noPrompt then
-            Element.el [] info
+        fullPrompt =
+            if noPrompt then
+                Element.none
 
-          else
-            Element.column
-                [ Element.width (Element.fillPortion 3)
-                , Element.height Element.fill
-                ]
-                [ Element.column
-                    [ Element.width Element.fill
-                    , Element.height Element.fill
+            else
+                Element.column
+                    [ Ui.wf
+                    , Ui.hf
                     , Background.color Colors.black
                     , Element.padding 10
                     , Element.spacing 20
                     ]
                     [ promptText, nextPromptText ]
-                , info
-                ]
-        , Element.el [ Element.width (Element.fillPortion 1), Element.height Element.fill ] Element.none
+    in
+    Element.row (tern noPrompt [ Ui.wf ] [ Ui.wf, Ui.hf ])
+        [ Element.el
+            [ Ui.wf, Element.alignTop, Element.padding 10 ]
+            (Element.column [ Element.spacing 10 ] (List.map Element.text (Lang.shortcuts global.lang)))
+        , Element.column
+            [ Ui.wfp 3, Ui.hf ]
+            (tern global.acquisitionInverted [ info, fullPrompt ] [ fullPrompt, info ])
+        , Element.el [ Ui.wf ] Element.none
         ]
 
 
-slideView : Acquisition.Model -> Element Core.Msg
-slideView model =
-    case List.head (List.drop model.currentSlide (Maybe.withDefault [] model.slides)) of
-        Just h ->
+slideElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+slideElement global user model =
+    let
+        slides : List Capsule.Slide
+        slides =
+            List.drop model.gos model.capsule.structure |> List.head |> Maybe.map .slides |> Maybe.withDefault []
+
+        currentSlide : Maybe Capsule.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide slides)
+    in
+    case ( currentSlide, Maybe.andThen .extra currentSlide ) of
+        ( _, Just s ) ->
+            let
+                src =
+                    "/data/" ++ model.capsule.id ++ "/assets/" ++ s ++ ".mp4"
+            in
+            Element.row [ Ui.hfp 2, Ui.wf, Element.htmlAttribute (Html.Attributes.style "display" "flex") ]
+                [ Element.el [ Ui.wf ] Element.none
+                , Element.el [ Ui.wfp 2 ]
+                    (Element.html
+                        (Html.video
+                            [ Html.Attributes.attribute "muted" ""
+                            , Html.Attributes.id extraId
+                            , Html.Attributes.class "wf"
+                            ]
+                            [ Html.source [ Html.Attributes.src src ] [] ]
+                        )
+                    )
+                , Element.el [ Ui.wf ] Element.none
+                ]
+
+        ( Just s, Nothing ) ->
             Element.el
                 [ Input.focusedOnLoad
-                , Element.width Element.fill
-                , Element.height (Element.fillPortion 2)
-                , Element.htmlAttribute
-                    (Html.Attributes.style "background"
-                        ("center / contain content-box no-repeat url('" ++ h.asset.asset_path ++ "')")
-                    )
+                , Ui.wf
+                , Ui.hfp 2
+                , ("center / contain content-box no-repeat url('" ++ Capsule.slidePath model.capsule s ++ "')")
+                    |> Html.Attributes.style "background"
+                    |> Element.htmlAttribute
                 ]
                 Element.none
 
@@ -367,181 +583,50 @@ slideView model =
             Element.none
 
 
-rightColumn : Acquisition.Model -> Element Core.Msg
-rightColumn model =
-    let
-        recordView : Int -> Acquisition.Record -> Element Core.Msg
-        recordView index record =
-            Element.row [ Element.spacing 10 ]
-                [ Element.text (String.fromInt (index + 1))
-                , Ui.primaryButtonWithTooltip (msg record)
-                    (if model.currentVideo == Just index && not model.watchingWebcam then
-                        "◼"
-
-                     else
-                        "▶"
-                    )
-                    (if model.currentVideo == Just index && not model.watchingWebcam then
-                        "Revenir à la webcam"
-
-                     else
-                        "Lire l'enregistrement"
-                    )
-                , Acquisition.UploadStream (url model.details.capsule.id model.gos) index
-                    |> LoggedIn.AcquisitionMsg
-                    |> Core.LoggedInMsg
-                    |> Just
-                    |> (\x -> Ui.primaryButtonWithTooltip x "✔" "Valider cet enregistrement")
-                ]
-
-        msg : Acquisition.Record -> Maybe Core.Msg
-        msg i =
-            if model.recording then
-                Nothing
-
-            else if model.currentVideo == Just i.id && not model.watchingWebcam then
-                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg Acquisition.GoToWebcam))
-
-            else
-                Just (Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.GoToStream i.id)))
-
-        settingsButton : Element Core.Msg
-        settingsButton =
-            let
-                settingsMsg =
-                    Acquisition.ToggleSettings |> LoggedIn.AcquisitionMsg |> Core.LoggedInMsg |> Just
-            in
-            Ui.primaryButton settingsMsg "Paramètres"
-    in
-    Element.column [ Element.width Element.fill, Element.height Element.fill ]
-        [ case model.showSettings of
-            Just _ ->
-                Element.none
-
-            _ ->
-                videoElement
-        , settingsButton
-        , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.padding 10, Element.spacing 10 ]
-            [ Element.el [ Element.centerX ] (Element.text "Enregistrements")
-            , Element.column
-                [ Element.width Element.fill, Element.height Element.fill, Element.scrollbarY ]
-                (List.indexedMap recordView (List.reverse model.records))
-            ]
-        ]
-
-
-
--- CONSTANTS AND UTILS
-
-
-videoElement =
-    Element.html
-        (Html.video [ Html.Attributes.class "wf", Html.Attributes.id elementId ] [])
-
-
-text : Acquisition.Record -> String
-text record =
-    if record.new then
-        "enregistrement #" ++ String.fromInt record.id
-
-    else
-        " ancien enregistrement"
-
-
-url : Int -> Int -> String
-url capsuleId gosId =
-    "/api/capsule/" ++ String.fromInt capsuleId ++ "/" ++ String.fromInt gosId ++ "/upload_record"
-
-
-elementId : String
-elementId =
+videoId : String
+videoId =
     "video"
 
 
-videoDropdownConfig : Dropdown.Config Acquisition.VideoDevice Core.Msg
-videoDropdownConfig =
-    dropdownConfig
-        Acquisition.videoLabel
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoDropdownMsg x)))
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.VideoOptionPicked x)))
+extraId : String
+extraId =
+    "extra"
 
 
-resolutionDropdownConfig : Dropdown.Config Acquisition.Resolution Core.Msg
-resolutionDropdownConfig =
-    dropdownConfig
-        Acquisition.resolutionLabel
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionDropdownMsg x)))
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.ResolutionOptionPicked x)))
+videoElement : List (Element.Attribute Core.Msg) -> Element Core.Msg
+videoElement attr =
+    Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id videoId ] [])
 
 
-audioDropdownConfig : Dropdown.Config Acquisition.AudioDevice Core.Msg
-audioDropdownConfig =
-    dropdownConfig
-        Acquisition.audioLabel
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioDropdownMsg x)))
-        (\x -> Core.LoggedInMsg (LoggedIn.AcquisitionMsg (Acquisition.AudioOptionPicked x)))
+paragraph : Element Core.Msg -> Element Core.Msg
+paragraph x =
+    Element.paragraph [] [ x ]
 
 
-dropdownConfig : (a -> String) -> (Dropdown.Msg a -> Core.Msg) -> (Maybe a -> Core.Msg) -> Dropdown.Config a Core.Msg
-dropdownConfig getLabel makeMsg1 makeMsg2 =
+formatTime : Int -> String
+formatTime milliseconds =
     let
-        containerAttrs =
-            [ Element.width Element.fill ]
+        seconds =
+            milliseconds // 1000
 
-        selectAttrs =
-            [ Border.width 1
-            , Border.rounded 5
-            , Element.paddingXY 16 8
-            , Element.spacing 10
-            , Element.width Element.fill
-            ]
+        minutes =
+            seconds // 60
 
-        searchAttrs =
-            [ Border.width 0, Element.padding 0, Element.width Element.fill ]
+        secs =
+            modBy 60 seconds
 
-        listAttrs =
-            [ Border.width 1
-            , Border.roundEach { topLeft = 0, topRight = 0, bottomLeft = 5, bottomRight = 5 }
-            , Element.width Element.fill
-            , Element.clip
-            , Element.scrollbarY
-            , Element.height (Element.fill |> Element.maximum 200)
-            ]
+        secsString =
+            if secs < 10 then
+                "0" ++ String.fromInt secs
 
-        itemToPrompt item =
-            Element.text (getLabel item)
+            else
+                String.fromInt secs
 
-        itemToElement selected highlighted i =
-            let
-                bgColor =
-                    if highlighted then
-                        Element.rgb255 128 128 128
+        minutesString =
+            if minutes < 10 then
+                "0" ++ String.fromInt minutes
 
-                    else if selected then
-                        Element.rgb255 100 100 100
-
-                    else
-                        Element.rgb255 255 255 255
-            in
-            Element.row
-                [ Background.color bgColor
-                , Element.padding 8
-                , Element.spacing 10
-                , Element.width Element.fill
-                ]
-                [ Element.el [] (Element.text "-")
-                , Element.el [ Font.size 16 ] (Element.text (getLabel i))
-                ]
+            else
+                String.fromInt minutes
     in
-    Dropdown.filterable
-        makeMsg1
-        makeMsg2
-        itemToPrompt
-        itemToElement
-        getLabel
-        |> Dropdown.withContainerAttributes containerAttrs
-        |> Dropdown.withSelectAttributes selectAttrs
-        |> Dropdown.withListAttributes listAttrs
-        |> Dropdown.withSearchAttributes searchAttrs
-        |> Dropdown.withFilterPlaceholder "Choisir"
-        |> Dropdown.withPromptElement (Element.text "Choisir")
+    minutesString ++ ":" ++ secsString

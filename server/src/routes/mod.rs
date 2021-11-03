@@ -1,379 +1,294 @@
-//! This module contains all the routes.
+//! This module contains all the routes of the app.
 
-pub mod asset;
-pub mod auth;
-pub mod capsule;
-pub mod loggedin;
-pub mod notification;
-pub mod project;
-pub mod setup;
-pub mod slide;
-
-use std::fs::File;
-use std::io::Cursor;
 use std::path::PathBuf;
 
-use rocket::http::ContentType;
-use rocket::response::{Response, Stream};
-use rocket::State;
-
-use rocket_contrib::json::JsonValue;
+use rocket::fs::NamedFile;
+use rocket::http::Status;
+use rocket::request::{FromRequest, Request};
+use rocket::response::content::Html;
+use rocket::response::{self, Responder, Response};
+use rocket::serde::json::{json, Value};
+use rocket::State as S;
 
 use crate::config::Config;
+use crate::db::capsule::Role;
 use crate::db::user::User;
-use crate::templates;
-use crate::webcam::{webcam_position_to_str, webcam_size_to_str};
-use crate::{Database, Error, Result};
+use crate::templates::{index_html, unlogged_html};
+use crate::{Db, Error, HashId, Lang, Result};
 
-fn capsule_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        let x = user.get_capsule_by_id(id, &db)?;
-        let projects = x
-            .get_projects_with_capsules(&db)?
-            .into_iter()
-            .filter(|x| x.user_id == user.id)
-            .collect::<Vec<_>>();
-        Some((user, projects))
-    } else {
-        None
-    };
-    Ok(match user.as_ref().map(|x| x.get_capsule_by_id(id, &db)) {
-        Some(Ok(capsule)) => {
-            let slide_show = capsule.get_slide_show(&db)?;
-            let slides = capsule.get_slides(&db)?;
-            let background = capsule.get_background(&db)?;
-            let logo = capsule.get_logo(&db)?;
-            let capsule = capsule.with_video(&db)?;
+pub mod admin;
+pub mod capsule;
+pub mod notification;
+pub mod user;
+pub mod watch;
 
-            user_and_projects
-                .map(|(user, projects)| {
-                    let edition_options = user.get_edition_options().unwrap();
-                    let session = user.session(&db).unwrap();
-                    let notifications = user.notifications(&db).unwrap();
+/// A struct to help us deal with cross origin requests.
+pub struct Cors<R> {
+    /// The home to which you want to allow the cross origin requests.
+    home: Option<String>,
 
-                    json!({
-                        "page":       page,
-                        "username":   user.username,
-                        "projects":   projects,
-                        "capsule" :   capsule,
-                        "slide_show": slide_show,
-                        "slides":     slides,
-                        "background":  background,
-                        "logo":        logo,
-                        "active_project":"",
-                        "structure":   capsule.structure,
-                        "with_video": edition_options.with_video,
-                        "webcam_size": webcam_size_to_str(edition_options.webcam_size),
-                        "webcam_position": webcam_position_to_str(edition_options.webcam_position),
-                        "cookie": session.secret,
-                        "notifications": notifications,
-                    })
-                })
-                .unwrap_or_else(|| json!(null))
+    /// The inner response.
+    r: R,
+}
+
+impl<R> Cors<R> {
+    /// Creates a new cors response.
+    pub fn new(home: &Option<String>, r: R) -> Cors<R> {
+        Cors {
+            home: home.clone(),
+            r,
+        }
+    }
+
+    /// Creates a new ok cors response.
+    pub fn ok(home: &Option<String>, r: R) -> Cors<Result<R>> {
+        Cors {
+            home: home.clone(),
+            r: Ok(r),
+        }
+    }
+
+    /// Creates a new err cors response.
+    pub fn err(home: &Option<String>, e: Status) -> Cors<Result<R>> {
+        Cors {
+            home: home.clone(),
+            r: Err(Error(e)),
+        }
+    }
+}
+
+impl<'r, R> Responder<'r, 'static> for Cors<R>
+where
+    R: Responder<'r, 'static>,
+{
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
+        let mut response = match self.r.respond_to(request) {
+            Ok(r) => r,
+            Err(e) => Response::build().status(e).finalize(),
+        };
+
+        if let Some(home) = self.home {
+            response.set_raw_header("Access-Control-Allow-Origin", home);
+            response.set_raw_header("Access-Control-Allow-Methods", "OPTIONS,POST");
+            response.set_raw_header("Access-Control-Allow-Headers", "Content-Type");
         }
 
-        _ => user_and_projects
-            .map(|(user, projects)| {
-                let edition_options = user.get_edition_options().unwrap();
-                let session = user.session(&db).unwrap();
-                let notifications = user.notifications(&db).unwrap();
-
-                json!({
-                    "username": user.username,
-                    "projects": projects,
-                    "page": "index",
-                    "active_project": "",
-                    "with_video": edition_options.with_video,
-                    "webcam_size": webcam_size_to_str(edition_options.webcam_size),
-                    "webcam_position": webcam_position_to_str(edition_options.webcam_position),
-                    "cookie": session.secret,
-                    "notifications": notifications,
-                })
-            })
-            .unwrap_or_else(|| json!(null)),
-    })
+        Ok(response)
+    }
 }
 
-fn project_flags(db: &Database, user: &Option<User>, id: i32, page: &str) -> Result<JsonValue> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        let project = user.get_project_by_id(id, &db)?;
-        let capsules = project
-            .get_capsules(&db)?
-            .into_iter()
-            .map(|x| x.with_video(&db))
-            .collect::<Result<Vec<_>>>()?;
-        let projects = user.projects(&db)?;
-        Some((user, project, capsules, projects))
-    } else {
-        None
-    };
-
-    Ok(user_and_projects
-        .map(|(user, project, capsules, projects)| {
-            let edition_options = user.get_edition_options().unwrap();
-            let session = user.session(&db).unwrap();
-            let notifications = user.notifications(&db).unwrap();
-            json!({
-                "page": page,
-                "username": user.username,
-                "projects": projects,
-                "project": project,
-                "capsules": capsules,
-                "active_project": "",
-                "with_video": edition_options.with_video,
-                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
-                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
-                "cookie": session.secret,
-                "notifications": notifications,
-            })
-        })
-        .unwrap_or_else(|| json!(null)))
-}
-
-fn settings_flags(db: &Database, user: &Option<User>, page: &str) -> Result<JsonValue> {
-    let user_projects_options = if let Some(user) = user.as_ref() {
-        let projects = user.projects(&db)?;
-        let edition_options = user.get_edition_options().unwrap();
-        Some((user, projects, edition_options))
-    } else {
-        None
-    };
-
-    Ok(user_projects_options
-        .map(|(user, projects, edition_options)| {
-            let session = user.session(&db).unwrap();
-            let notifications = user.notifications(&db).unwrap();
-            json!({
-                "page": page,
-                "username": user.username,
-                "with_video": edition_options.with_video,
-                "projects": projects,
-                "active_project": "",
-                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
-                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
-                "cookie": session.secret,
-                "notifications": notifications,
-            })
-        })
-        .unwrap_or_else(|| json!(null)))
-}
-
-/// Returns the json for the global info.
-fn global(config: &State<Config>) -> JsonValue {
+/// Prepares the global flags.
+pub fn global_flags(config: &S<Config>, lang: &Lang) -> Value {
     json!({
+        "root": config.root,
         "socket_root": config.socket_root,
         "video_root": config.video_root,
-        "beta": config.beta,
         "version": config.version,
         "commit": config.commit,
-        "matting_enabled": config.matting_enabled,
         "home": config.home,
+        "registration_disabled": config.registration_disabled,
+        "request_language": lang,
     })
-}
-
-/// Helper to answer the HTML page with the Elm code as well as flags.
-fn helper_html<'a>(config: &State<Config>, flags: JsonValue) -> Response<'a> {
-    Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(templates::index_html(helper_json(
-            config, flags,
-        ))))
-        .finalize()
-}
-
-/// Helper to answer the JSON info as well as flags.
-fn helper_json(config: &State<Config>, flags: JsonValue) -> JsonValue {
-    json!({"global": global(config), "flags": flags})
-}
-
-macro_rules! make_route {
-    ($route: expr, $db: ident, $user: ident, $function: expr, $function_html: ident, $function_json: ident) => {
-        #[allow(missing_docs)]
-        #[get($route, format = "text/html", rank = 1)]
-        pub fn $function_html<'a>(
-            config: State<Config>,
-            $db: Database,
-            $user: Option<User>,
-        ) -> Result<Response<'a>> {
-            Ok(helper_html(&config, $function))
-        }
-
-        #[allow(missing_docs)]
-        #[get($route, format = "application/json", rank = 2)]
-        pub fn $function_json<'a>(
-            config: State<Config>,
-            $db: Database,
-            $user: Option<User>,
-        ) -> Result<JsonValue> {
-            Ok(helper_json(&config, $function))
-        }
-    };
-
-    ($route: expr, $db: ident, $user: ident, $param: expr, $ty: ty, $function: expr, $function_html: ident, $function_json: ident) => {
-        #[allow(missing_docs)]
-        #[get($route, format = "text/html", rank = 1)]
-        pub fn $function_html<'a>(
-            config: State<Config>,
-            $db: Database,
-            $user: Option<User>,
-            $param: $ty,
-        ) -> Result<Response<'a>> {
-            Ok(helper_html(&config, $function))
-        }
-
-        #[allow(missing_docs)]
-        #[get($route, format = "application/json", rank = 2)]
-        pub fn $function_json<'a>(
-            config: State<Config>,
-            $db: Database,
-            $user: Option<User>,
-            $param: $ty,
-        ) -> Result<JsonValue> {
-            Ok(helper_json(&config, $function))
-        }
-    };
-}
-
-/// The json for the index page.
-fn index(db: Database, user: Option<User>) -> Result<JsonValue> {
-    let user_and_projects = if let Some(user) = user.as_ref() {
-        Some((user, user.projects(&db)?))
-    } else {
-        None
-    };
-
-    Ok(user_and_projects
-        .map(|(user, projects)| {
-            let edition_options = user.get_edition_options().unwrap();
-            let session = user.session(&db).unwrap();
-            let notifications = user.notifications(&db).unwrap();
-            json!({
-                "page": "index",
-                "username": user.username,
-                "projects": projects,
-                "active_project":"",
-                "with_video": edition_options.with_video,
-                "webcam_size": webcam_size_to_str(edition_options.webcam_size),
-                "webcam_position": webcam_position_to_str(edition_options.webcam_position),
-                "cookie": session.secret,
-                "notifications": notifications,
-            })
-        })
-        .unwrap_or_else(|| json!(null)))
 }
 
 /// Route to allow CORS request from home page.
 #[options("/")]
-pub fn index_cors<'a>(config: State<Config>) -> Response<'a> {
-    Response::build()
-        .raw_header("Access-Control-Allow-Origin", config.home.clone())
-        .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
-        .raw_header("Access-Control-Allow-Headers", "Content-Type")
-        .finalize()
+pub fn index_cors(config: &S<Config>) -> Cors<()> {
+    Cors::new(&config.home, ())
 }
 
-/// Route that returns the index as HTML format.
-#[get("/", format = "text/html", rank = 1)]
-pub fn index_html(config: State<Config>, db: Database, user: Option<User>) -> Response {
-    match index(db, user) {
-        Ok(flags) => Response::build()
-            .header(ContentType::HTML)
-            .raw_header("Access-Control-Allow-Origin", config.home.clone())
-            .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
-            .raw_header("Access-Control-Allow-Headers", "Content-Type")
-            .sized_body(Cursor::new(templates::index_html(helper_json(
-                &config, flags,
-            ))))
-            .finalize(),
-        _ => Response::build()
-            .header(ContentType::HTML)
-            .raw_header("Access-Control-Allow-Origin", config.home.clone())
-            .raw_header("Access-Control-Allow-Methods", "OPTIONS,POST")
-            .raw_header("Access-Control-Allow-Headers", "Content-Type")
-            .sized_body(Cursor::new(templates::index_html(helper_json(
-                &config,
-                json!({}),
-            ))))
-            .finalize(),
-    }
-}
-
-/// Route that returns the index as JSON format.
-#[get("/", format = "application/json", rank = 2)]
-pub fn index_json(config: State<Config>, db: Database, user: Option<User>) -> Result<JsonValue> {
-    Ok(helper_json(&config, index(db, user)?))
-}
-
-make_route!(
-    "/capsule/<id>/preparation",
-    db,
-    user,
-    id,
-    i32,
-    capsule_flags(&db, &user, id, "preparation/capsule")?,
-    capsule_preparation_html,
-    capsule_preparation_json
-);
-
-make_route!(
-    "/capsule/<id>/acquisition",
-    db,
-    user,
-    id,
-    i32,
-    capsule_flags(&db, &user, id, "acquisition/capsule")?,
-    capsule_acquisition_html,
-    capsule_acquisition_json
-);
-
-make_route!(
-    "/capsule/<id>/edition",
-    db,
-    user,
-    id,
-    i32,
-    capsule_flags(&db, &user, id, "edition/capsule")?,
-    capsule_edition_html,
-    capsule_edition_json
-);
-
-make_route!(
-    "/project/<id>",
-    db,
-    user,
-    id,
-    i32,
-    project_flags(&db, &user, id, "project")?,
-    project_html,
-    project_json
-);
-
-make_route!(
-    "/settings",
-    db,
-    user,
-    settings_flags(&db, &user, "settings")?,
-    settings_html,
-    settings_json
-);
-
-/// The route for the setup page, available only when Rocket.toml does not exist yet.
+/// Route to the index.
 #[get("/")]
-pub fn setup<'a>() -> Response<'a> {
-    Response::build()
-        .header(ContentType::HTML)
-        .sized_body(Cursor::new(templates::setup_html()))
-        .finalize()
+pub async fn index<'a>(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    lang: Lang,
+) -> Cors<Html<String>> {
+    let json = match user {
+        Some(user) => Some(user.to_json(&db).await),
+        None => None,
+    };
+
+    let body = match json {
+        Some(Ok(json)) => {
+            index_html(json!({ "user": json, "global": global_flags(&config, &lang) }))
+        }
+        _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
+    };
+
+    Cors::new(&config.home, Html(body))
+}
+
+/// Returns the same content as the async page, but without cors headers.
+pub async fn index_without_cors(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    lang: Lang,
+) -> Html<String> {
+    let json = match user {
+        Some(user) => Some(user.to_json(&db).await),
+        None => None,
+    };
+
+    let body = match json {
+        Some(Ok(json)) => {
+            index_html(json!({ "user": json, "global": global_flags(&config, &lang) }))
+        }
+        _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
+    };
+
+    Html(body)
+}
+
+/// The route to the preparation of a capsule.
+#[get("/capsule/preparation/<_id>")]
+pub async fn preparation(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the acquisition of a capsule.
+#[get("/capsule/acquisition/<_id>/<_gos_id>")]
+pub async fn acquisition(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    _gos_id: u64,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the production of a capsule.
+#[get("/capsule/production/<_id>/<_gos_id>")]
+pub async fn production(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    _gos_id: u64,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the publication of a capsule.
+#[get("/capsule/publication/<_id>")]
+pub async fn publication(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the settings page.
+#[get("/settings")]
+pub async fn settings(config: &S<Config>, db: Db, user: Option<User>, lang: Lang) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the admin dashboard page.
+#[get("/admin")]
+pub async fn admin_dashboard(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the admin users page.
+#[get("/admin/users/<_page>")]
+pub async fn admin_users(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _page: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the admin user page.
+#[get("/admin/user/<_id>")]
+pub async fn admin_user(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the admin capsules page.
+#[get("/admin/capsules/<_page>")]
+pub async fn admin_capsules(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _page: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The route to the settings of a capsule.
+#[get("/capsule/settings/<_id>")]
+pub async fn capsule_settings(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Html<String> {
+    index_without_cors(config, db, user, lang).await
+}
+
+/// The 404 catcher.
+#[catch(404)]
+pub async fn not_found<'a>(request: &'_ Request<'a>) -> Html<String> {
+    let db = Db::from_request(request).await.unwrap();
+    let config = request.guard::<&S<Config>>().await.unwrap();
+    let user = Option::<User>::from_request(request).await.unwrap();
+    let lang = Lang::from_request(request).await.unwrap();
+    index_without_cors(config, db, user, lang).await
 }
 
 /// The route for static files that require authorization.
+#[get("/<capsule_id>/<path..>")]
+pub async fn data<'a>(
+    capsule_id: HashId,
+    path: PathBuf,
+    user: User,
+    config: &S<Config>,
+    db: Db,
+) -> Result<NamedFile> {
+    let (_, _) = user
+        .get_capsule_with_permission(*capsule_id, Role::Read, &db)
+        .await?;
+
+    NamedFile::open(config.data_path.join(format!("{}", *capsule_id)).join(path))
+        .await
+        .map_err(|_| Error(Status::NotFound))
+}
+
+/// The route for static files.
 #[get("/<path..>")]
-pub fn data<'a>(path: PathBuf, user: User, config: State<Config>) -> Result<Stream<File>> {
-    if path.starts_with(user.username) {
-        let data_path = config.data_path.join(path);
-        // 4MB chunks
-        Ok(Stream::chunked(File::open(data_path)?, 4194304))
-    } else {
-        Err(Error::NotFound)
-    }
+pub async fn dist(path: PathBuf) -> Result<NamedFile> {
+    NamedFile::open(PathBuf::from("dist").join(path))
+        .await
+        .map_err(|_| Error(Status::NotFound))
 }

@@ -1,11 +1,40 @@
-//! This module contains the routes that changes notifcations.
+//! This module contains the routes for notification management.
 
+use rocket::http::Status;
+
+use crate::db::notification::Notification;
 use crate::db::user::User;
-use crate::{Database, Result};
+use crate::{Db, Error, Result};
 
-/// Mark a notifcation as read.
+/// Route that marks a notification as read.
 #[post("/mark-as-read/<id>")]
-pub fn mark_as_read(db: Database, id: i32, user: User) -> Result<()> {
-    user.mark_notification_as_read(id, &db)?;
+pub async fn mark_as_read(user: User, db: Db, id: i32) -> Result<()> {
+    let mut notification = Notification::get_by_id(id, &db)
+        .await?
+        .ok_or(Error(Status::BadRequest))?;
+
+    if notification.owner(&db).await?.id != user.id {
+        return Err(Error(Status::Forbidden));
+    }
+
+    notification.read = true;
+    notification.save(&db).await?;
+
+    Ok(())
+}
+
+/// Route that deletes a notifcation.
+#[delete("/notification/<id>")]
+pub async fn delete(user: User, db: Db, id: i32) -> Result<()> {
+    let notification = Notification::get_by_id(id, &db)
+        .await?
+        .ok_or(Error(Status::BadRequest))?;
+
+    if notification.owner(&db).await?.id != user.id {
+        return Err(Error(Status::Forbidden));
+    }
+
+    notification.delete(&db).await?;
+
     Ok(())
 }
