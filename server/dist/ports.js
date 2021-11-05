@@ -542,6 +542,18 @@ function setupPorts(app) {
         input.click();
     }
 
+    function setPointerCapture(args) {
+        let id = args[0];
+        let pointerId = args[1];
+        let element = document.getElementById(id);
+        if (element === null) {
+            console.error("Cannot set pointer capture of null element");
+            return;
+        }
+
+        element.setPointerCapture(pointerId);
+    }
+
     subscribe(app.ports.setLanguage, setLanguage);
     subscribe(app.ports.setZoomLevel, setZoomLevel);
     subscribe(app.ports.setAcquisitionInverted, setAcquisitionInverted);
@@ -563,6 +575,7 @@ function setupPorts(app) {
     subscribe(app.ports.exportCapsule, exportCapsule);
     subscribe(app.ports.importCapsule, importCapsule);
     subscribe(app.ports.select, select);
+    subscribe(app.ports.setPointerCapture, setPointerCapture);
 
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },

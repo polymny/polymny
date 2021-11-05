@@ -40,3 +40,6 @@ port select : ( Maybe String, List String ) -> Cmd msg
 
 
 port selected : (( Maybe String, Decode.Value ) -> msg) -> Sub msg
+
+
+port setPointerCapture : ( String, Int ) -> Cmd msg

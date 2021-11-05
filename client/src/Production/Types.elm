@@ -6,12 +6,28 @@ import Capsule exposing (Capsule)
 type alias Model =
     { capsule : Capsule
     , gos : Int
+    , webcamPosition : ( Float, Float )
+    , holdingImage : Maybe ( Int, Float, Float )
     }
 
 
 init : Capsule -> Int -> Model
-init capsule gos =
-    { capsule = capsule, gos = gos }
+init capsule gosNumber =
+    let
+        gos : Maybe Capsule.Gos
+        gos =
+            List.head (List.drop gosNumber capsule.structure)
+
+        webcamPosition : ( Float, Float )
+        webcamPosition =
+            case Maybe.map .webcamSettings gos of
+                Just (Capsule.Pip { position }) ->
+                    ( toFloat (Tuple.first position), toFloat (Tuple.second position) )
+
+                _ ->
+                    ( 0, 0 )
+    in
+    { capsule = capsule, gos = gosNumber, webcamPosition = webcamPosition, holdingImage = Nothing }
 
 
 type WebcamSize
@@ -74,6 +90,8 @@ type Msg
     | WebcamAnchorChanged Capsule.Anchor
     | WebcamOpacityChanged Float
     | WebcamKeyColorChanged (Maybe String)
+    | HoldingImageChanged (Maybe ( Int, Float, Float ))
+    | ImageMoved Float Float Float Float
     | ProduceVideo
     | VideoProduced
     | CancelProduction

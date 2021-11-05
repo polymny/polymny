@@ -5,10 +5,12 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Input as Input
 import Html
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import Lang
 import Production.Types as Production
 import Route
@@ -294,29 +296,60 @@ mainView global user model gos slide =
             case ( gos.webcamSettings, gos.record ) of
                 ( Capsule.Pip s, Just r ) ->
                     let
-                        align =
+                        ( ( marginX, marginY ), ( w, h ) ) =
+                            ( model.webcamPosition, ( toFloat (Tuple.first s.size), toFloat (Tuple.second s.size) ) )
+
+                        ( x, y ) =
                             case s.anchor of
                                 Capsule.TopLeft ->
-                                    [ Element.alignTop, Element.alignLeft ]
+                                    ( marginX, marginY )
 
                                 Capsule.TopRight ->
-                                    [ Element.alignTop, Element.alignRight ]
+                                    ( 1920 - w - marginX, marginY )
 
                                 Capsule.BottomLeft ->
-                                    [ Element.alignBottom, Element.alignLeft ]
+                                    ( marginX, 1080 - h - marginY )
 
                                 Capsule.BottomRight ->
-                                    [ Element.alignBottom, Element.alignRight ]
-
-                        percentage =
-                            (Tuple.first s.size * 100 // 1920 |> String.fromInt) ++ "%"
+                                    ( 1920 - w - marginX, 1080 - h - marginY )
                     in
-                    Element.el (Element.htmlAttribute (Html.Attributes.style "width" percentage) :: align)
-                        (Element.image [ Element.alpha s.opacity, Ui.wf, Ui.hf ]
-                            { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
-                            , description = ""
-                            }
-                        )
+                    Element.column [ Ui.wf, Ui.hf ]
+                        [ Element.el [ Ui.hfp (round y) ] Element.none
+                        , Element.row [ Ui.wf, Ui.hfp (round h) ]
+                            [ Element.el [ Ui.wfp (round x) ] Element.none
+                            , Element.el [ Ui.wfp (round w), Ui.hf ]
+                                (Element.image
+                                    [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                                    , Element.alpha s.opacity
+                                    , Ui.wf
+                                    , Ui.hf
+                                    , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                                        (Decode.field "pointerId" Decode.int)
+                                        (Decode.field "pageX" Decode.float)
+                                        (Decode.field "pageY" Decode.float)
+                                        |> Html.Events.on "pointerdown"
+                                        |> Element.htmlAttribute
+                                    , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
+                                        |> Html.Events.on "pointerup"
+                                        |> Element.htmlAttribute
+                                    , Element.htmlAttribute
+                                        (Html.Events.custom "dragstart"
+                                            (Decode.succeed
+                                                { message = Core.Noop
+                                                , preventDefault = True
+                                                , stopPropagation = True
+                                                }
+                                            )
+                                        )
+                                    ]
+                                    { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
+                                    , description = ""
+                                    }
+                                )
+                            , Element.el [ Ui.wfp (round (1920 - w - x)) ] Element.none
+                            ]
+                        , Element.el [ Ui.hfp (round (1080 - h - y)) ] Element.none
+                        ]
 
                 ( Capsule.Fullscreen { opacity }, Just r ) ->
                     Element.el

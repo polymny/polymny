@@ -2,6 +2,7 @@ module Production.Updates exposing (..)
 
 import Api
 import Capsule exposing (Capsule)
+import Core.Ports as Ports
 import Core.Types as Core
 import Production.Types as Production
 import User
@@ -123,6 +124,31 @@ update msg model =
                                             x
                             in
                             updateModel { gos | webcamSettings = newSettings } model m
+
+                        Production.HoldingImageChanged b ->
+                            ( mkModel model (Core.Production { m | holdingImage = b })
+                            , case b of
+                                Nothing ->
+                                    Cmd.none
+
+                                Just ( id, _, _ ) ->
+                                    Ports.setPointerCapture ( "webcam-miniature", id )
+                            )
+
+                        Production.ImageMoved x y newPageX newPageY ->
+                            let
+                                newModel =
+                                    case m.holdingImage of
+                                        Just ( id, _, _ ) ->
+                                            { m
+                                                | webcamPosition = ( Tuple.first m.webcamPosition + x, Tuple.second m.webcamPosition + y )
+                                                , holdingImage = Just ( id, newPageX, newPageY )
+                                            }
+
+                                        _ ->
+                                            m
+                            in
+                            ( mkModel model (Core.Production newModel), Cmd.none )
 
                         Production.ProduceVideo ->
                             let

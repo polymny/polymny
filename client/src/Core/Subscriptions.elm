@@ -10,6 +10,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Log
 import Preparation.Subscriptions as Preparation
 import Preparation.Types as Preparation
+import Production.Subscriptions as Production
 import User
 
 
@@ -83,6 +84,9 @@ subscriptions model =
 
                     Core.Acquisition p ->
                         Acquisition.subscriptions p
+
+                    Core.Production p ->
+                        Production.subscriptions p
 
                     _ ->
                         Sub.none
