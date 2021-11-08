@@ -312,44 +312,41 @@ mainView global user model gos slide =
 
                                 Capsule.BottomRight ->
                                     ( 1920 - w - marginX, 1080 - h - marginY )
+
+                        tp =
+                            100 * marginY / 1080
+
+                        lp =
+                            100 * marginX / 1920
                     in
-                    Element.column [ Ui.wf, Ui.hf ]
-                        [ Element.el [ Ui.hfp (round y) ] Element.none
-                        , Element.row [ Ui.wf, Ui.hfp (round h) ]
-                            [ Element.el [ Ui.wfp (round x) ] Element.none
-                            , Element.el [ Ui.wfp (round w), Ui.hf ]
-                                (Element.image
-                                    [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
-                                    , Element.alpha s.opacity
-                                    , Ui.wf
-                                    , Ui.hf
-                                    , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
-                                        (Decode.field "pointerId" Decode.int)
-                                        (Decode.field "pageX" Decode.float)
-                                        (Decode.field "pageY" Decode.float)
-                                        |> Html.Events.on "pointerdown"
-                                        |> Element.htmlAttribute
-                                    , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
-                                        |> Html.Events.on "pointerup"
-                                        |> Element.htmlAttribute
-                                    , Element.htmlAttribute
-                                        (Html.Events.custom "dragstart"
-                                            (Decode.succeed
-                                                { message = Core.Noop
-                                                , preventDefault = True
-                                                , stopPropagation = True
-                                                }
-                                            )
-                                        )
-                                    ]
-                                    { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
-                                    , description = ""
+                    Element.image
+                        [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                        , Element.alpha s.opacity
+                        , Element.htmlAttribute (Html.Attributes.style "position" "absolute")
+                        , Element.htmlAttribute (Html.Attributes.style "top" (String.fromFloat tp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "left" (String.fromFloat lp ++ "%"))
+                        , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                            (Decode.field "pointerId" Decode.int)
+                            (Decode.field "pageX" Decode.float)
+                            (Decode.field "pageY" Decode.float)
+                            |> Html.Events.on "pointerdown"
+                            |> Element.htmlAttribute
+                        , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
+                            |> Html.Events.on "pointerup"
+                            |> Element.htmlAttribute
+                        , Element.htmlAttribute
+                            (Html.Events.custom "dragstart"
+                                (Decode.succeed
+                                    { message = Core.Noop
+                                    , preventDefault = True
+                                    , stopPropagation = True
                                     }
                                 )
-                            , Element.el [ Ui.wfp (round (1920 - w - x)) ] Element.none
-                            ]
-                        , Element.el [ Ui.hfp (round (1080 - h - y)) ] Element.none
+                            )
                         ]
+                        { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
+                        , description = ""
+                        }
 
                 ( Capsule.Fullscreen { opacity }, Just r ) ->
                     Element.el
@@ -368,7 +365,7 @@ mainView global user model gos slide =
                 _ ->
                     Element.none
     in
-    Element.el [ Ui.wf, Element.centerY, Element.inFront overlay ] image
+    Element.el [ Ui.wf, Element.centerY, Element.inFront overlay, Element.clip ] image
 
 
 bottomBar : Core.Global -> User -> Production.Model -> Element Core.Msg
