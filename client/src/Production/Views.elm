@@ -145,6 +145,17 @@ leftColumn global _ _ gos =
 
                 _ ->
                     Nothing
+
+        width =
+            case gos.webcamSettings of
+                Capsule.Disabled ->
+                    Nothing
+
+                Capsule.Pip { size } ->
+                    Just (Tuple.first size)
+
+                Capsule.Fullscreen _ ->
+                    Nothing
     in
     Element.column [ Ui.wf, Element.centerY, Element.spacing 30 ]
         [ Input.checkbox []
@@ -157,22 +168,38 @@ leftColumn global _ _ gos =
         , Input.radio (Element.spacing 10 :: disabledAttr)
             { onChange = \s -> Core.ProductionMsg (Production.WebcamSizeChanged s) |> disableMsg
             , selected =
-                (case gos.webcamSettings of
+                case gos.webcamSettings of
                     Capsule.Fullscreen { opacity } ->
                         Just Production.Fullscreen
 
                     _ ->
-                        Production.intToSize webcamSettings.size
-                )
-                    |> disableSelected
+                        Just (Production.intToSize webcamSettings.size)
             , label =
                 Input.labelAbove
-                    (Element.paddingXY 0 10 :: disabledAttr ++ Ui.formTitle)
-                    (Element.text (Lang.webcamSize global.lang))
+                    (Element.paddingXY 0 10 :: disabledAttr)
+                    (Element.column [ Element.spacing 10 ]
+                        [ Element.el Ui.formTitle (Element.text (Lang.webcamSize global.lang))
+                        , Input.text
+                            [ Element.htmlAttribute (Html.Attributes.type_ "number") ]
+                            { label = Input.labelHidden (Lang.custom global.lang)
+                            , onChange =
+                                \v ->
+                                    case String.toInt v of
+                                        Just val ->
+                                            Core.ProductionMsg (Production.WebcamSizeChanged (Production.Custom val))
+
+                                        _ ->
+                                            Core.Noop
+                            , placeholder = Nothing
+                            , text = String.fromInt (Maybe.withDefault 0 width)
+                            }
+                        ]
+                    )
             , options =
                 [ Input.option Production.Small (Element.text (Lang.small global.lang))
                 , Input.option Production.Medium (Element.text (Lang.medium global.lang))
                 , Input.option Production.Large (Element.text (Lang.large global.lang))
+                , Input.option (Production.Custom (Maybe.withDefault 300 width)) (Element.text (Lang.custom global.lang))
                 , Input.option Production.Fullscreen (Element.text (Lang.fullscreen global.lang))
                 ]
             }

@@ -1856,3 +1856,13 @@ grain lang =
 
         _ ->
             "Grain"
+
+
+custom : Lang -> String
+custom lang =
+    case lang of
+        FrFr ->
+            "Personnalisé"
+
+        _ ->
+            "Custom"

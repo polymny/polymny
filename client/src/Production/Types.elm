@@ -34,6 +34,7 @@ type WebcamSize
     = Small
     | Medium
     | Large
+    | Custom Int
     | Fullscreen
 
 
@@ -59,29 +60,32 @@ sizeToInt record webcamSize =
                 Large ->
                     800
 
+                Custom x ->
+                    x
+
                 Fullscreen ->
                     1920
     in
     ( w, w * rHeight // rWidth )
 
 
-intToSize : ( Int, Int ) -> Maybe WebcamSize
+intToSize : ( Int, Int ) -> WebcamSize
 intToSize pair =
     case Tuple.first pair of
         200 ->
-            Just Small
+            Small
 
         400 ->
-            Just Medium
+            Medium
 
         800 ->
-            Just Large
+            Large
 
         1920 ->
-            Just Fullscreen
+            Fullscreen
 
-        _ ->
-            Nothing
+        x ->
+            Custom x
 
 
 type Msg
