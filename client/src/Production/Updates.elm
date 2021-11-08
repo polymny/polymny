@@ -126,14 +126,30 @@ update msg model =
                             updateModel { gos | webcamSettings = newSettings } model m
 
                         Production.HoldingImageChanged b ->
-                            ( mkModel model (Core.Production { m | holdingImage = b })
-                            , case b of
+                            case b of
                                 Nothing ->
-                                    Cmd.none
+                                    -- User released mouse, update capsule
+                                    let
+                                        newSettings =
+                                            case gos.webcamSettings of
+                                                Capsule.Pip { anchor, position, size, opacity, keycolor } ->
+                                                    Capsule.Pip
+                                                        { anchor = anchor
+                                                        , position = Tuple.mapBoth round round m.webcamPosition
+                                                        , size = size
+                                                        , opacity = opacity
+                                                        , keycolor = keycolor
+                                                        }
+
+                                                x ->
+                                                    x
+                                    in
+                                    updateModel { gos | webcamSettings = newSettings } model m
 
                                 Just ( id, _, _ ) ->
-                                    Ports.setPointerCapture ( "webcam-miniature", id )
-                            )
+                                    ( mkModel model (Core.Production { m | holdingImage = b })
+                                    , Ports.setPointerCapture ( "webcam-miniature", id )
+                                    )
 
                         Production.ImageMoved x y newPageX newPageY ->
                             let
