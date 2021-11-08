@@ -318,35 +318,48 @@ mainView global user model gos slide =
 
                         lp =
                             100 * marginX / 1920
+
+                        bp =
+                            100 * (1080 - marginY - h) / 1080
+
+                        rp =
+                            100 * (1920 - marginX - w) / 1920
                     in
-                    Element.image
-                        [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
-                        , Element.alpha s.opacity
-                        , Element.htmlAttribute (Html.Attributes.style "position" "absolute")
+                    Element.el
+                        [ Element.htmlAttribute (Html.Attributes.style "position" "absolute")
                         , Element.htmlAttribute (Html.Attributes.style "top" (String.fromFloat tp ++ "%"))
                         , Element.htmlAttribute (Html.Attributes.style "left" (String.fromFloat lp ++ "%"))
-                        , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
-                            (Decode.field "pointerId" Decode.int)
-                            (Decode.field "pageX" Decode.float)
-                            (Decode.field "pageY" Decode.float)
-                            |> Html.Events.on "pointerdown"
-                            |> Element.htmlAttribute
-                        , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
-                            |> Html.Events.on "pointerup"
-                            |> Element.htmlAttribute
-                        , Element.htmlAttribute
-                            (Html.Events.custom "dragstart"
-                                (Decode.succeed
-                                    { message = Core.Noop
-                                    , preventDefault = True
-                                    , stopPropagation = True
-                                    }
-                                )
-                            )
+                        , Element.htmlAttribute (Html.Attributes.style "right" (String.fromFloat rp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "bottom" (String.fromFloat bp ++ "%"))
                         ]
-                        { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
-                        , description = ""
-                        }
+                        (Element.image
+                            [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                            , Element.alpha s.opacity
+                            , Ui.wf
+                            , Ui.hf
+                            , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                                (Decode.field "pointerId" Decode.int)
+                                (Decode.field "pageX" Decode.float)
+                                (Decode.field "pageY" Decode.float)
+                                |> Html.Events.on "pointerdown"
+                                |> Element.htmlAttribute
+                            , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
+                                |> Html.Events.on "pointerup"
+                                |> Element.htmlAttribute
+                            , Element.htmlAttribute
+                                (Html.Events.custom "dragstart"
+                                    (Decode.succeed
+                                        { message = Core.Noop
+                                        , preventDefault = True
+                                        , stopPropagation = True
+                                        }
+                                    )
+                                )
+                            ]
+                            { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
+                            , description = ""
+                            }
+                        )
 
                 ( Capsule.Fullscreen { opacity }, Just r ) ->
                     Element.el
