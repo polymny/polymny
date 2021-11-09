@@ -88,8 +88,37 @@ get_overlay()
 {
     webcam_settings=$1
     shift
+
     position=( $(echo $webcam_settings | jq -cr ".position[]") )
-    case $(echo $webcam_settings | jq -cr ".anchor") in
+    size=( $(echo $webcam_settings | jq -cr ".size[]") )
+    anchor=$(echo $webcam_settings | jq -cr ".anchor")
+    topbottom=$(echo $anchor | cut -d '_' -f 1)
+    leftright=$(echo $anchor | cut -d '_' -f 2)
+
+    # change overlay if negative coordinates
+    if [ ${position[0]} -lt 0 ]; then
+        position[0]=$((1920-${size[0]}-${position[0]}))
+
+        if [[ "$leftright" == "left" ]]; then
+            leftright=right
+        else
+            leftright=left
+        fi
+    fi
+
+    if [ ${position[1]} -lt 0 ]; then
+        position[1]=$((1080-${size[1]}-${position[1]}))
+
+        if [[ "$topbottom" == "top" ]]; then
+            topbottom=bottom
+        else
+            topbottom=top
+        fi
+    fi
+
+    anchor="${topbottom}_${leftright}"
+
+    case "$anchor" in
         "top_left" )
             overlay=$(printf "%s:%s" "${position[0]}" "${position[1]}")
             ;;
