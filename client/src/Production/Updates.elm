@@ -69,10 +69,10 @@ update msg model =
                             let
                                 newSettings =
                                     case gos.webcamSettings of
-                                        Capsule.Pip { anchor, position, size, opacity, keycolor } ->
+                                        Capsule.Pip { size, opacity, keycolor } ->
                                             Capsule.Pip
                                                 { anchor = a
-                                                , position = position
+                                                , position = ( 4, 4 )
                                                 , size = size
                                                 , opacity = opacity
                                                 , keycolor = keycolor
@@ -87,7 +87,7 @@ update msg model =
                             let
                                 newSettings =
                                     case gos.webcamSettings of
-                                        Capsule.Pip { anchor, position, size, opacity, keycolor } ->
+                                        Capsule.Pip { anchor, position, size, keycolor } ->
                                             Capsule.Pip
                                                 { anchor = anchor
                                                 , position = position
@@ -96,7 +96,7 @@ update msg model =
                                                 , keycolor = keycolor
                                                 }
 
-                                        Capsule.Fullscreen { opacity, keycolor } ->
+                                        Capsule.Fullscreen { keycolor } ->
                                             Capsule.Fullscreen { opacity = a, keycolor = keycolor }
 
                                         x ->
@@ -108,7 +108,7 @@ update msg model =
                             let
                                 newSettings =
                                     case gos.webcamSettings of
-                                        Capsule.Pip { anchor, position, size, opacity, keycolor } ->
+                                        Capsule.Pip { anchor, position, size, opacity } ->
                                             Capsule.Pip
                                                 { anchor = anchor
                                                 , position = position
@@ -117,7 +117,7 @@ update msg model =
                                                 , keycolor = a
                                                 }
 
-                                        Capsule.Fullscreen { opacity, keycolor } ->
+                                        Capsule.Fullscreen { opacity } ->
                                             Capsule.Fullscreen { opacity = opacity, keycolor = a }
 
                                         x ->
@@ -132,7 +132,7 @@ update msg model =
                                     let
                                         newSettings =
                                             case gos.webcamSettings of
-                                                Capsule.Pip { anchor, position, size, opacity, keycolor } ->
+                                                Capsule.Pip { anchor, size, opacity, keycolor } ->
                                                     Capsule.Pip
                                                         { anchor = anchor
                                                         , position = Tuple.mapBoth round round m.webcamPosition
@@ -154,12 +154,29 @@ update msg model =
                         Production.ImageMoved x y newPageX newPageY ->
                             let
                                 newModel =
-                                    case m.holdingImage of
-                                        Just ( id, _, _ ) ->
-                                            { m
-                                                | webcamPosition = ( Tuple.first m.webcamPosition + x, Tuple.second m.webcamPosition + y )
-                                                , holdingImage = Just ( id, newPageX, newPageY )
-                                            }
+                                    case ( gos.webcamSettings, m.holdingImage ) of
+                                        ( Capsule.Pip { anchor }, Just ( id, _, _ ) ) ->
+                                            let
+                                                motion =
+                                                    case anchor of
+                                                        Capsule.TopLeft ->
+                                                            ( x, y )
+
+                                                        Capsule.TopRight ->
+                                                            ( -x, y )
+
+                                                        Capsule.BottomLeft ->
+                                                            ( x, -y )
+
+                                                        Capsule.BottomRight ->
+                                                            ( -x, -y )
+
+                                                newPosition =
+                                                    ( Tuple.first m.webcamPosition + Tuple.first motion
+                                                    , Tuple.second m.webcamPosition + Tuple.second motion
+                                                    )
+                                            in
+                                            { m | webcamPosition = newPosition, holdingImage = Just ( id, newPageX, newPageY ) }
 
                                         _ ->
                                             m

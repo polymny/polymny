@@ -341,16 +341,16 @@ mainView global user model gos slide =
                                     ( 1920 - w - marginX, 1080 - h - marginY )
 
                         tp =
-                            100 * marginY / 1080
+                            100 * y / 1080
 
                         lp =
-                            100 * marginX / 1920
+                            100 * x / 1920
 
                         bp =
-                            100 * (1080 - marginY - h) / 1080
+                            100 * (1080 - y - h) / 1080
 
                         rp =
-                            100 * (1920 - marginX - w) / 1920
+                            100 * (1920 - x - w) / 1920
                     in
                     Element.el
                         [ Element.htmlAttribute (Html.Attributes.style "position" "absolute")
