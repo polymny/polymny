@@ -434,7 +434,15 @@ function setupPorts(app) {
 
         zip.file("structure.json", JSON.stringify(capsule, null, 4));
 
-        let content = await zip.generateAsync({type: "blob"});
+        let content = await zip.generateAsync({type: "blob"},
+            function updateCallback(metadata) {
+                console.log("progression: " + metadata.percent.toFixed(2) + " %");
+                if(metadata.currentFile) {
+                    console.log("current file = " + metadata.currentFile);
+                }
+            }
+        );
+
         saveAs(content, capsule.id + ".zip");
     }
 
