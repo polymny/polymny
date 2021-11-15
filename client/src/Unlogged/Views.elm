@@ -35,7 +35,7 @@ viewContent model =
                 ]
                 [ Ui.navbar m.global Nothing Nothing |> Element.map (\_ -> Unlogged.Noop)
                 , Element.el [ Ui.hf, Ui.wf ] (content m)
-                , Ui.bottomBar Unlogged.LangChanged m.global
+                , Ui.bottomBar Unlogged.LangChanged m.global Nothing
                 ]
 
         Nothing ->

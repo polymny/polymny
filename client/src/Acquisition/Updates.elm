@@ -210,6 +210,12 @@ update msg model =
                                     0
                     in
                     case ( p.currentLine + 1 < lineNumber, nextSlide, p.recording ) of
+                        ( _, _, False ) ->
+                            -- If not recording, start recording (useful for remotes)
+                            ( mkModel model (Core.Acquisition { p | recording = True, currentSlide = 0, currentLine = 0 })
+                            , Ports.startRecording ()
+                            )
+
                         ( True, _, True ) ->
                             -- If there is another line, go to the next line
                             ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
@@ -222,25 +228,11 @@ update msg model =
                             , Ports.askNextSlide ()
                             )
 
-                        ( True, _, False ) ->
-                            ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
-                            , Cmd.none
-                            )
-
-                        ( _, Just _, False ) ->
-                            ( mkModel model (Core.Acquisition { p | currentSlide = p.currentSlide + 1, currentLine = 0 })
-                            , Cmd.none
-                            )
-
                         ( _, _, True ) ->
                             -- If recording and end reach, stop recording
                             ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0, recording = False })
                             , Ports.stopRecording ()
                             )
-
-                        ( _, _, _ ) ->
-                            -- Otherwise, go back to begining
-                            ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0 }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )

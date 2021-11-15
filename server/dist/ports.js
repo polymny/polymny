@@ -6,23 +6,29 @@ function setupPorts(app) {
         recorder,
         recording,
         currentEvents,
-        nextSlideCallbacks = [],
+        nextSlideCallbacks = [];
+
+    var socket;
+    if (flags.user) {
+        initWebsocket();
+    }
+
+    function initWebsocket() {
         socket = new WebSocket(flags.global.socket_root);
 
-    socket.onmessage = function(event) {
-        console.log(event.data);
-        app.ports.websocketMsg.send(JSON.parse(event.data));
-    }
+        socket.onmessage = function(event) {
+            console.log(event.data);
+            app.ports.websocketMsg.send(JSON.parse(event.data));
+        }
 
-    socket.onopen = function() {
-        socket.send(flags.user.cookie);
-    }
+        socket.onopen = function() {
+            socket.send(flags.user.cookie);
+        }
 
-    socket.onclose = function(event) {
-        // Reconnect if connection is lost
-        setTimeout(() => {
-            socket = new WebSocket(flags.global.socket_root);
-        }, 1000);
+        socket.onclose = function() {
+            // Reconnect if connection is lost
+            setTimeout(initWebsocket, 1000);
+        }
     }
 
     function subscribe(object, fun) {
@@ -53,6 +59,10 @@ function setupPorts(app) {
 
     function setAudioDeviceId(arg) {
         localStorage.setItem('audioDeviceId', arg);
+    }
+
+    function setSortBy(arg) {
+        localStorage.setItem('sortBy', JSON.stringify(arg));
     }
 
     async function findDevices(force) {
@@ -434,6 +444,7 @@ function setupPorts(app) {
 
         let zip = new JSZip();
         let content = await zip.loadAsync(capsule);
+        console.log(content);
         let structure = JSON.parse(await content.file("structure.json").async("string"));
 
         // Creates the empty capsule.
@@ -560,6 +571,7 @@ function setupPorts(app) {
     subscribe(app.ports.setVideoDeviceId, setVideoDeviceId);
     subscribe(app.ports.setResolution, setResolution);
     subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
+    subscribe(app.ports.setSortBy, setSortBy);
     subscribe(app.ports.findDevices, findDevices);
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);

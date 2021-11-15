@@ -7,6 +7,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import FontAwesome as Fa
+import Html
+import Html.Attributes
 import Lang
 import Route
 import Ui.Colors as Colors
@@ -91,21 +93,45 @@ gosView model capsule selected id gos =
                         ]
                         (Element.text (Lang.grain model.global.lang ++ " " ++ String.fromInt (id + 1)))
             in
-            Element.image
-                (Ui.wf
-                    :: Element.inFront inFront
-                    :: Element.inFront info
-                    :: Border.width 1
-                    :: Border.color Colors.greyLighter
-                    :: Border.width 5
-                    :: (if selected == Just id then
-                            [ Border.color Colors.navbar ]
+            case List.map .extra gos.slides of
+                (Just path) :: [] ->
+                    Element.el
+                        (Ui.wf
+                            :: Element.inFront inFront
+                            :: Element.inFront info
+                            :: Border.width 1
+                            :: Border.color Colors.greyLighter
+                            :: Border.width 5
+                            :: (if selected == Just id then
+                                    [ Border.color Colors.navbar ]
 
-                        else
-                            []
-                       )
-                )
-                { src = Capsule.slidePath capsule h, description = "" }
+                                else
+                                    []
+                               )
+                        )
+                        (Element.html
+                            (Html.video
+                                [ Html.Attributes.controls False, Html.Attributes.class "wf" ]
+                                [ Html.source [ Html.Attributes.src (Capsule.assetPath capsule (path ++ ".mp4")) ] [] ]
+                            )
+                        )
+
+                _ ->
+                    Element.image
+                        (Ui.wf
+                            :: Element.inFront inFront
+                            :: Element.inFront info
+                            :: Border.width 1
+                            :: Border.color Colors.greyLighter
+                            :: Border.width 5
+                            :: (if selected == Just id then
+                                    [ Border.color Colors.navbar ]
+
+                                else
+                                    []
+                               )
+                        )
+                        { src = Capsule.slidePath capsule h, description = "" }
 
         _ ->
             Element.text "oops"

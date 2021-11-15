@@ -27,17 +27,20 @@ import Utils exposing (andMap)
 init : Decode.Value -> Url.Url -> Browser.Navigation.Key -> ( Maybe Core.Model, Cmd Core.Msg )
 init flags url key =
     let
-        user =
-            Decode.decodeValue (Decode.field "user" User.decode) flags
-
         global =
             Decode.decodeValue (Decode.field "global" (decodeGlobal key)) flags
+
+        sortBy =
+            global |> Result.map .sortBy |> Result.withDefault ( User.LastModified, False )
+
+        user =
+            Decode.decodeValue (Decode.field "user" (User.decode sortBy)) flags
     in
     case ( user, global ) of
         ( Ok u, Ok g ) ->
             let
                 ( page, cmd ) =
-                    pageFromRoute g u Core.Home (Route.fromUrl url) Nothing
+                    pageFromRoute g u (Core.Home Core.newHomeModel) (Route.fromUrl url) Nothing
             in
             ( Just { user = u, global = g, page = page, popup = Nothing }
             , Cmd.batch [ Task.perform Core.TimeZoneChanged Time.here, cmd ]
@@ -71,6 +74,7 @@ decodeGlobal key =
         |> andMap (Decode.maybe (Decode.field "videoDeviceId" Decode.string))
         |> andMap (Decode.maybe (Decode.field "resolution" Decode.string))
         |> andMap (Decode.maybe (Decode.field "audioDeviceId" Decode.string))
+        |> andMap (Decode.field "sortBy" User.decodeSortBy)
         |> Decode.map (Core.flagsToGlobal key)
 
 
@@ -105,7 +109,7 @@ pageFromRoute global user currentPage route extraCapsule =
     in
     case route of
         Route.Home ->
-            ( Core.Home, Cmd.none )
+            ( Core.Home Core.newHomeModel, Cmd.none )
 
         Route.Preparation c _ ->
             let
@@ -114,7 +118,7 @@ pageFromRoute global user currentPage route extraCapsule =
             in
             capsule
                 |> Maybe.map (\x -> ( Core.Preparation (Preparation.init x), Cmd.none ))
-                |> Maybe.withDefault ( Core.Home, cmd )
+                |> Maybe.withDefault ( Core.Home Core.newHomeModel, cmd )
 
         Route.Acquisition c id ->
             let
@@ -131,7 +135,7 @@ pageFromRoute global user currentPage route extraCapsule =
                 |> Maybe.map (\x -> Acquisition.init devices chosenDevice x id)
                 |> Maybe.map (Tuple.mapFirst Core.Acquisition)
                 |> Maybe.map (Tuple.mapSecond (\x -> Cmd.map Core.AcquisitionMsg x))
-                |> Maybe.withDefault ( Core.Home, cmd )
+                |> Maybe.withDefault ( Core.Home Core.newHomeModel, cmd )
 
         Route.Production c id ->
             let
@@ -140,7 +144,7 @@ pageFromRoute global user currentPage route extraCapsule =
             in
             capsule
                 |> Maybe.map (\x -> ( Core.Production (Production.init x id), Cmd.none ))
-                |> Maybe.withDefault ( Core.Home, cmd )
+                |> Maybe.withDefault ( Core.Home Core.newHomeModel, cmd )
 
         Route.Publication c ->
             let
@@ -149,7 +153,7 @@ pageFromRoute global user currentPage route extraCapsule =
             in
             capsule
                 |> Maybe.map (\x -> ( Core.Publication (Publication.init x), Cmd.none ))
-                |> Maybe.withDefault ( Core.Home, cmd )
+                |> Maybe.withDefault ( Core.Home Core.newHomeModel, cmd )
 
         Route.CapsuleSettings c ->
             let
@@ -158,7 +162,7 @@ pageFromRoute global user currentPage route extraCapsule =
             in
             capsule
                 |> Maybe.map (\x -> ( Core.CapsuleSettings (CapsuleSettings.init x), Cmd.none ))
-                |> Maybe.withDefault ( Core.Home, cmd )
+                |> Maybe.withDefault ( Core.Home Core.newHomeModel, cmd )
 
         Route.Settings ->
             ( Core.Settings (Settings.init user), Cmd.none )
@@ -174,7 +178,7 @@ pageFromRoute global user currentPage route extraCapsule =
                         _ ->
                             Core.Noop
             in
-            ( Core.Home, Api.dashboard resultToMsg2 )
+            ( Core.Home Core.newHomeModel, Api.dashboard resultToMsg2 )
 
         Route.Admin (Route.User i) ->
             case currentPage of
@@ -198,7 +202,7 @@ pageFromRoute global user currentPage route extraCapsule =
                                 _ ->
                                     Core.Noop
                     in
-                    ( Core.Home, Api.adminUser resultToMsg3 i )
+                    ( Core.Home Core.newHomeModel, Api.adminUser resultToMsg3 i )
 
         Route.Admin (Route.Users offset) ->
             let
@@ -211,7 +215,7 @@ pageFromRoute global user currentPage route extraCapsule =
                         _ ->
                             Core.Noop
             in
-            ( Core.Home, Api.adminUsers resultToMsg3 offset )
+            ( Core.Home Core.newHomeModel, Api.adminUsers resultToMsg3 offset )
 
         Route.Admin (Route.Capsules pagination) ->
             let
@@ -224,7 +228,7 @@ pageFromRoute global user currentPage route extraCapsule =
                         _ ->
                             Core.Noop
             in
-            ( Core.Home, Api.adminCapsules resultToMsg4 pagination )
+            ( Core.Home Core.newHomeModel, Api.adminCapsules resultToMsg4 pagination )
 
         Route.Custom _ ->
             ( Core.NotFound, Cmd.none )

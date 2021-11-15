@@ -17,7 +17,7 @@ decode =
 
 default : Lang
 default =
-    EnUs
+    FrFr
 
 
 toString : Lang -> String
@@ -1866,3 +1866,33 @@ custom lang =
 
         _ ->
             "Custom"
+
+
+enterNewNameForCapsule : Lang -> String
+enterNewNameForCapsule lang =
+    case lang of
+        FrFr ->
+            "Entrez le nouveau nom de la capsule"
+
+        _ ->
+            "Enter the new name for the capsule"
+
+
+createNewProject : Lang -> String
+createNewProject lang =
+    case lang of
+        FrFr ->
+            "Créer un nouveau projet"
+
+        _ ->
+            "Create new project"
+
+
+chooseProject : Lang -> String
+chooseProject lang =
+    case lang of
+        FrFr ->
+            "Choisir le project"
+
+        _ ->
+            "Choose project"

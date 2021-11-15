@@ -591,6 +591,7 @@ encodeAll capsule =
         , ( "project", Encode.string capsule.project )
         , ( "name", Encode.string capsule.name )
         , ( "privacy", encodePrivacy capsule.privacy )
+        , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
         , ( "structure", encodeStructure capsule.structure )
         , ( "produced", Encode.bool (capsule.produced == Done) )
         ]

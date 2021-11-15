@@ -115,7 +115,11 @@ navbar global user page =
                         , makeLink { route = Route.Acquisition c.id gosId, label = Element.text (Lang.record lang) }
                         , makeLink { route = Route.Production c.id 0, label = Element.text (Lang.produce lang) }
                         , makeLink { route = Route.Publication c.id, label = Element.text (Lang.publish lang) }
-                        , makeLink { route = Route.CapsuleSettings c.id, label = Element.text (Lang.settings lang) }
+                        , if Maybe.withDefault False (Maybe.map User.isPremium user) then
+                            makeLink { route = Route.CapsuleSettings c.id, label = Element.text (Lang.settings lang) }
+
+                          else
+                            Element.none
                         ]
 
                 _ ->

@@ -21,6 +21,9 @@ port setResolution : String -> Cmd msg
 port setAudioDeviceId : String -> Cmd msg
 
 
+port setSortBy : ( String, Bool ) -> Cmd msg
+
+
 port copyString : String -> Cmd msg
 
 

@@ -17,7 +17,7 @@ import User exposing (User)
 
 
 view : Core.Global -> User -> Publication.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-view global _ model =
+view global user model =
     let
         video =
             Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ] <|
@@ -90,7 +90,7 @@ view global _ model =
             Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ]
                 [ Element.el Ui.formTitle (Element.text (Lang.videoSettings global.lang))
                 , Element.el Ui.labelAttr (Element.text (Lang.privacySettings global.lang))
-                , [ Capsule.Private, Capsule.Unlisted, Capsule.Public ]
+                , [ Capsule.Unlisted, Capsule.Public ]
                     |> List.map privacyOption
                     |> Html.select [ onPrivacyChange ]
                     |> Element.html

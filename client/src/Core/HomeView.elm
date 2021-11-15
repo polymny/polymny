@@ -7,7 +7,11 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import FontAwesome as Fa
+import Html
+import Html.Attributes
+import Html.Events
 import Lang
 import Route
 import TimeUtils
@@ -22,8 +26,8 @@ type ProjectOrCapsule
     | Capsule Capsule.Capsule
 
 
-view : Core.Global -> User -> (String -> Core.Msg) -> ( Element Core.Msg, Maybe (Element Core.Msg) )
-view global user mkToggleFold =
+view : Core.Global -> User -> Core.HomeModel -> (String -> Core.Msg) -> ( Element Core.Msg, Maybe (Element Core.Msg) )
+view global user model mkToggleFold =
     if List.isEmpty user.projects then
         ( Element.row [ Ui.wf, Ui.hf, Element.padding 10 ]
             [ Element.el [ Ui.wf ] Element.none
@@ -104,8 +108,99 @@ view global user mkToggleFold =
                         ]
                     , Element.el [ Ui.wfp 1 ] Element.none
                     ]
+
+            popup =
+                case model.renameCapsule of
+                    Just capsule ->
+                        let
+                            validate =
+                                Ui.primaryButton
+                                    { onPress = Just (Core.ValidateRenameCapsule capsule)
+                                    , label = Element.text (Lang.confirm global.lang)
+                                    }
+
+                            cancel =
+                                Ui.simpleButton
+                                    { onPress = Just (Core.RenameCapsule Nothing)
+                                    , label = Element.text (Lang.cancel global.lang)
+                                    }
+
+                            onProjectChange =
+                                Html.Events.onInput
+                                    (\x ->
+                                        Core.RenameCapsule
+                                            (Just
+                                                { capsule
+                                                    | project =
+                                                        if x == "__empty" then
+                                                            ""
+
+                                                        else
+                                                            x
+                                                }
+                                            )
+                                    )
+
+                            projects =
+                                (user.projects |> List.map Just) ++ [ Nothing ]
+
+                            projectOption : Maybe User.Project -> Html.Html Core.Msg
+                            projectOption project =
+                                case project of
+                                    Just p ->
+                                        Html.option
+                                            [ Html.Attributes.selected (capsule.project == p.name)
+                                            , Html.Attributes.value p.name
+                                            ]
+                                            [ Html.text p.name ]
+
+                                    Nothing ->
+                                        Html.option
+                                            [ Html.Attributes.value "__empty" ]
+                                            [ Html.text (Lang.createNewProject global.lang) ]
+
+                            showTextInput =
+                                List.all (\x -> capsule.project /= x) (List.map .name user.projects)
+                        in
+                        Just
+                            (Ui.customSizedPopup 1
+                                (Lang.renameCapsule global.lang)
+                                (Element.column
+                                    [ Element.padding 10
+                                    , Ui.wf
+                                    , Ui.hf
+                                    , Element.spacing 20
+                                    , Background.color Colors.whiteBis
+                                    ]
+                                    [ Element.el [ Element.centerY ] (Element.text (Lang.chooseProject global.lang))
+                                    , Html.select [ onProjectChange ] (List.map projectOption projects)
+                                        |> Element.html
+                                        |> Element.el [ Element.centerY ]
+                                    , if showTextInput then
+                                        Input.text [ Element.centerY ]
+                                            { label = Input.labelHidden ""
+                                            , onChange = \x -> Core.RenameCapsule (Just { capsule | project = x })
+                                            , placeholder = Nothing
+                                            , text = capsule.project
+                                            }
+
+                                      else
+                                        Element.none
+                                    , Input.text [ Element.centerY ]
+                                        { label = Input.labelAbove [] (Element.text (Lang.enterNewNameForCapsule global.lang))
+                                        , onChange = \x -> Core.RenameCapsule (Just { capsule | name = x })
+                                        , placeholder = Nothing
+                                        , text = capsule.name
+                                        }
+                                    , Element.row [ Element.alignRight, Element.spacing 10 ] [ cancel, validate ]
+                                    ]
+                                )
+                            )
+
+                    _ ->
+                        Nothing
         in
-        ( element, Nothing )
+        ( element, popup )
 
 
 titleView : Core.Global -> (String -> Core.Msg) -> ProjectOrCapsule -> Element Core.Msg
@@ -300,13 +395,16 @@ actionsView global projectOrCapsule =
                     Core.RequestDeleteProject project.name |> Just
             in
             Element.row [ Element.spacing 10, Element.centerY ]
-                [ iconButton Nothing Fa.pen Nothing (Lang.renameProject global.lang)
-                , iconButton deleteProjectMsg Fa.trash Nothing (Lang.deleteProject global.lang)
+                [ -- iconButton Nothing Fa.pen Nothing (Lang.renameProject global.lang)
+                  iconButton deleteProjectMsg Fa.trash Nothing (Lang.deleteProject global.lang)
                 , iconButton newCapsuleMsg Fa.plus Nothing (Lang.newCapsule global.lang)
                 ]
 
         Capsule capsule ->
             let
+                renameCapsuleMsg =
+                    Core.RenameCapsule (Just capsule) |> Just
+
                 deleteCapsuleMsg =
                     Core.RequestDeleteCapsule capsule.id |> Just
 
@@ -314,7 +412,7 @@ actionsView global projectOrCapsule =
                     Core.ExportCapsule capsule |> Just
             in
             Element.row [ Element.spacing 10, Element.centerY ]
-                [ iconButton Nothing Fa.pen Nothing (Lang.renameCapsule global.lang)
+                [ iconButton renameCapsuleMsg Fa.pen Nothing (Lang.renameCapsule global.lang)
                 , iconButton exportMsg Fa.fileExport Nothing (Lang.exportCapsule global.lang)
                 , iconButton deleteCapsuleMsg Fa.trash Nothing (Lang.deleteCapsule global.lang)
                 ]

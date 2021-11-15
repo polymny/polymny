@@ -43,12 +43,28 @@ update msg model =
                             ( model, Cmd.none )
 
                 Admin.UsernameSearchChanged s ->
-                    ( mkModel model (Core.Admin { m | usernameSearch = Just s })
+                    let
+                        newValue =
+                            if s == "" then
+                                Nothing
+
+                            else
+                                Just s
+                    in
+                    ( mkModel model (Core.Admin { m | usernameSearch = newValue })
                     , Cmd.none
                     )
 
                 Admin.EmailSearchChanged s ->
-                    ( mkModel model (Core.Admin { m | emailSearch = Just s })
+                    let
+                        newValue =
+                            if s == "" then
+                                Nothing
+
+                            else
+                                Just s
+                    in
+                    ( mkModel model (Core.Admin { m | emailSearch = newValue })
                     , Cmd.none
                     )
 

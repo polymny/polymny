@@ -95,7 +95,7 @@ viewContent model =
                         ]
                         [ Ui.navbar m.global (Just m.user) (Just m.page)
                         , insideContent
-                        , Ui.bottomBar Core.LangChanged m.global
+                        , Ui.bottomBar Core.LangChanged m.global (Just m.user)
                         ]
                     , m.global.lang
                     , p
@@ -136,8 +136,8 @@ viewContent model =
 content : Core.Model -> ( Element Core.Msg, Maybe (Element Core.Msg) )
 content model =
     case model.page of
-        Core.Home ->
-            HomeView.view model.global model.user Core.ToggleFold
+        Core.Home homeModel ->
+            HomeView.view model.global model.user homeModel Core.ToggleFold
 
         Core.Preparation c ->
             let

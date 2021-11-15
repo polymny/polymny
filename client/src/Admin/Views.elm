@@ -320,7 +320,8 @@ userView global u =
     let
         ( element, message ) =
             if not (List.isEmpty u.inner.projects) then
-                Home.view global u.inner (\x -> Core.AdminMsg (Admin.ToggleFold x))
+                -- TODO this wont allow admin to change capsule names
+                Home.view global u.inner Core.newHomeModel (\x -> Core.AdminMsg (Admin.ToggleFold x))
 
             else
                 ( Element.none, Nothing )

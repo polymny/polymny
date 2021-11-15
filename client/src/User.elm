@@ -2,6 +2,7 @@ module User exposing
     ( Notification
     , Plan(..)
     , Project
+    , SortBy(..)
     , User
     , addCapsule
     , changeCapsule
@@ -9,6 +10,8 @@ module User exposing
     , decode
     , decodeNotification
     , decodePlan
+    , decodeSortBy
+    , isPremium
     , makeProject
     , printPlan
     , removeCapsule
@@ -18,6 +21,33 @@ module User exposing
 import Capsule exposing (Capsule)
 import Json.Decode as Decode exposing (Decoder)
 import List.Extra
+
+
+type SortBy
+    = Name
+    | LastModified
+
+
+decodeSortBy : Decoder ( SortBy, Bool )
+decodeSortBy =
+    Decode.map2 Tuple.pair
+        (Decode.index 0
+            (Decode.string
+                |> Decode.andThen
+                    (\str ->
+                        case str of
+                            "name" ->
+                                Decode.succeed Name
+
+                            "lastModified" ->
+                                Decode.succeed LastModified
+
+                            _ ->
+                                Decode.fail <| "Unknown sort by " ++ str
+                    )
+            )
+        )
+        (Decode.index 1 Decode.bool)
 
 
 type Plan
@@ -35,12 +65,20 @@ decodePlan =
                     "free" ->
                         Decode.succeed Free
 
+                    "premium_lvl1" ->
+                        Decode.succeed PremiumLvl1
+
                     "admin" ->
                         Decode.succeed Admin
 
                     _ ->
                         Decode.fail <| "Unkown plan: " ++ str
             )
+
+
+isPremium : User -> Bool
+isPremium user =
+    user.plan == PremiumLvl1 || user.plan == Admin
 
 
 type alias Notification =
@@ -88,24 +126,62 @@ type alias Project =
     }
 
 
-projects : PrivateUser -> List Project
-projects user =
+projects : ( SortBy, Bool ) -> PrivateUser -> List Project
+projects ( sort, ascend ) user =
     let
         grouped =
             List.Extra.gatherWith
                 (\x y -> x.project == y.project)
                 user.capsules
     in
-    List.map makeProject grouped
-        |> List.sortBy (\x -> List.head x.capsules |> Maybe.map (\y -> -y.lastModified) |> Maybe.withDefault 0)
+    List.map (makeProject ( sort, ascend )) grouped
+        |> List.sortWith (compareProject ( sort, ascend ))
 
 
-makeProject : ( Capsule, List Capsule ) -> Project
-makeProject ( head, tail ) =
+makeProject : ( SortBy, Bool ) -> ( Capsule, List Capsule ) -> Project
+makeProject ( sort, ascend ) ( head, tail ) =
     { name = head.project
-    , capsules = List.sortBy (\x -> -x.lastModified) (head :: tail)
+    , capsules = List.sortWith (compareCapsule ( sort, ascend )) (head :: tail)
     , folded = True
     }
+
+
+compareCapsule : ( SortBy, Bool ) -> Capsule -> Capsule -> Order
+compareCapsule ( sort, ascend ) aInput bInput =
+    let
+        ( a, b ) =
+            if ascend then
+                ( aInput, bInput )
+
+            else
+                ( bInput, aInput )
+    in
+    case sort of
+        Name ->
+            compare a.name b.name
+
+        LastModified ->
+            compare a.lastModified b.lastModified
+
+
+compareProject : ( SortBy, Bool ) -> Project -> Project -> Order
+compareProject ( sort, ascend ) aInput bInput =
+    let
+        ( a, b ) =
+            if ascend then
+                ( aInput, bInput )
+
+            else
+                ( bInput, aInput )
+    in
+    case sort of
+        Name ->
+            compare a.name b.name
+
+        LastModified ->
+            compare
+                (a.capsules |> List.head |> Maybe.map .lastModified |> Maybe.withDefault 0)
+                (b.capsules |> List.head |> Maybe.map .lastModified |> Maybe.withDefault 0)
 
 
 type alias User =
@@ -118,15 +194,15 @@ type alias User =
     }
 
 
-decode : Decoder User
-decode =
-    Decode.map toUser decodePrivate
+decode : ( SortBy, Bool ) -> Decoder User
+decode sort =
+    Decode.map (toUser sort) decodePrivate
 
 
-toUser : PrivateUser -> User
-toUser private =
+toUser : ( SortBy, Bool ) -> PrivateUser -> User
+toUser sort private =
     { username = private.username
-    , projects = projects private
+    , projects = projects sort private
     , email = private.email
     , notifications = private.notifications
     , plan = private.plan

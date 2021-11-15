@@ -79,8 +79,29 @@ updateModel msg model =
                     in
                     ( { model | user = { user | projects = List.map replaceProject user.projects } }, Cmd.none )
 
+                Core.RenameCapsule capsule ->
+                    ( { model | page = Core.Home { renameCapsule = capsule } }, Cmd.none )
+
+                Core.ValidateRenameCapsule capsule ->
+                    let
+                        changedModel =
+                            Core.changeCapsule capsule model
+                    in
+                    ( { changedModel | page = Core.Home { renameCapsule = Nothing } }
+                    , Api.updateCapsule Core.Noop capsule
+                    )
+
                 Core.SlideUploadRequested project ->
-                    ( model, Ports.select ( project, [ "application/pdf", "application/zip" ] ) )
+                    ( model
+                    , Ports.select
+                        ( project
+                        , if User.isPremium user then
+                            [ "application/pdf", "application/zip" ]
+
+                          else
+                            [ "application/pdf" ]
+                        )
+                    )
 
                 -- Select.file [ "application/pdf", "application/zip" ] (Core.SlideUploaded project) )
                 Core.SlideUploaded project file ->
@@ -103,7 +124,13 @@ updateModel msg model =
                             )
 
                         "application/zip" ->
-                            ( model, Ports.importCapsule ( project, file.value ) )
+                            ( model
+                            , if User.isPremium user then
+                                Ports.importCapsule ( project, file.value )
+
+                              else
+                                Cmd.none
+                            )
 
                         _ ->
                             ( model, Cmd.none )
