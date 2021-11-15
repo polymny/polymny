@@ -20,9 +20,6 @@ type alias Event =
 toMsg : ( Float, Float ) -> Event -> Core.Msg
 toMsg ( w, h ) event =
     let
-        _ =
-            Debug.log "event" ( ( w, h ), event, ( x, y ) )
-
         x =
             (event.newPageX - event.oldPageX) / event.clientWidth * w
 
