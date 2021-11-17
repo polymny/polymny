@@ -75,6 +75,7 @@ decodeGlobal key =
         |> andMap (Decode.maybe (Decode.field "resolution" Decode.string))
         |> andMap (Decode.maybe (Decode.field "audioDeviceId" Decode.string))
         |> andMap (Decode.field "sortBy" User.decodeSortBy)
+        |> andMap (Decode.field "promptSize" Decode.int)
         |> Decode.map (Core.flagsToGlobal key)
 
 

@@ -352,6 +352,20 @@ update msg model =
         Acquisition.RefreshDevices ->
             ( { model | global = { global | devices = Nothing } }, Ports.findDevices True )
 
+        Acquisition.IncreasePromptSize ->
+            let
+                newSize =
+                    global.promptSize + 5
+            in
+            ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
+
+        Acquisition.DecreasePromptSize ->
+            let
+                newSize =
+                    global.promptSize - 5 |> max 10
+            in
+            ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
+
 
 mkModel : Core.Model -> Core.Page -> Core.Model
 mkModel input newPage =
