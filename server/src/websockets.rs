@@ -91,9 +91,7 @@ async fn accept_connection(
 
     let db = Db::from_pool(pool).await?;
 
-    let mut stream = tokio_tungstenite::accept_async(stream)
-        .await
-        .expect("Error during the websocket handshake occurred");
+    let mut stream = tokio_tungstenite::accept_async(stream).await?;
 
     let msg = stream
         .next()

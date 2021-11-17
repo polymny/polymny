@@ -429,7 +429,7 @@ promptElement global user model =
             case currentSentence of
                 Just h ->
                     Element.el
-                        (Font.size 35 :: Font.color Colors.white :: promptAttributes)
+                        (Font.size (global.promptSize + 10) :: Font.color Colors.white :: promptAttributes)
                         (Element.paragraph [] [ Element.text h ])
 
                 _ ->
@@ -439,7 +439,7 @@ promptElement global user model =
             case nextSentence of
                 Just h ->
                     Element.row
-                        (Font.size 25 :: Font.color Colors.grey :: promptAttributes)
+                        (Font.size global.promptSize :: Font.color Colors.grey :: promptAttributes)
                         [ Element.paragraph [] [ nextSlideIcon, Element.text h ] ]
 
                 _ ->
@@ -509,6 +509,18 @@ promptElement global user model =
                 , Element.el [ Element.width Element.fill ] (Element.el [ Element.centerX ] invertButton)
                 , Element.text (Lang.slide global.lang ++ " " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
                 , Element.text (Lang.line global.lang ++ " " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg Acquisition.DecreasePromptSize)
+                    , text = Nothing
+                    , tooltip = Just (Lang.zoomOut global.lang)
+                    , icon = Fa.searchMinus
+                    }
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg Acquisition.IncreasePromptSize)
+                    , text = Nothing
+                    , tooltip = Just (Lang.zoomIn global.lang)
+                    , icon = Fa.searchPlus
+                    }
                 ]
 
         fullPrompt =

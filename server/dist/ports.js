@@ -65,6 +65,10 @@ function setupPorts(app) {
         localStorage.setItem('sortBy', JSON.stringify(arg));
     }
 
+    function setPromptSize(arg) {
+        localStorage.setItem('promptSize', arg);
+    }
+
     async function findDevices(force) {
 
         let inputs = localStorage.getItem('devices');
@@ -568,6 +572,7 @@ function setupPorts(app) {
     subscribe(app.ports.setResolution, setResolution);
     subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
     subscribe(app.ports.setSortBy, setSortBy);
+    subscribe(app.ports.setPromptSize, setPromptSize);
     subscribe(app.ports.findDevices, findDevices);
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);

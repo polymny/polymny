@@ -38,6 +38,7 @@ type alias Flags =
     , resolution : Maybe String
     , audioDeviceId : Maybe String
     , sortBy : ( User.SortBy, Bool )
+    , promptSize : Int
     }
 
 
@@ -60,6 +61,7 @@ type alias Global =
     , resolution : Maybe String
     , audioDeviceId : Maybe String
     , sortBy : ( User.SortBy, Bool )
+    , promptSize : Int
     }
 
 
@@ -95,6 +97,7 @@ flagsToGlobal key flags =
     , resolution = flags.resolution
     , audioDeviceId = flags.audioDeviceId
     , sortBy = flags.sortBy
+    , promptSize = flags.promptSize
     }
 
 

@@ -61,3 +61,6 @@ port bindingWebcamFailed : (() -> msg) -> Sub msg
 
 
 port uploadRecordFailed : (() -> msg) -> Sub msg
+
+
+port setPromptSize : Int -> Cmd msg

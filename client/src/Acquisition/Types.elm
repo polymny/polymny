@@ -223,6 +223,8 @@ type Msg
     | WebcamBindingFailed
     | UploadRecordFailed
     | UploadRecordFailedAck
+    | IncreasePromptSize
+    | DecreasePromptSize
 
 
 defaultDevice : Devices -> Device
