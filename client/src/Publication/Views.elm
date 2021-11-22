@@ -4,7 +4,9 @@ import Capsule
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
+import FontAwesome as Fa
 import Html
 import Html.Attributes
 import Html.Events
@@ -26,10 +28,18 @@ view global user model =
                         [ Element.el Ui.formTitle (Element.text (Lang.currentProducedVideo global.lang))
                         , videoElement p
                         , if model.capsule.published == Capsule.Done then
-                            Ui.newTabLink []
-                                { label = Element.text (Lang.watchVideo global.lang)
-                                , route = Route.Custom (global.videoRoot ++ "/" ++ model.capsule.id ++ "/")
-                                }
+                            Element.row [ Ui.wf, Ui.hf, Element.spacing 10 ]
+                                [ Ui.newTabLink []
+                                    { label = Element.text (Lang.watchVideo global.lang)
+                                    , route = Route.Custom (global.videoRoot ++ "/" ++ model.capsule.id ++ "/")
+                                    }
+                                , Ui.iconButton [ Font.color Colors.navbar ]
+                                    { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just
+                                    , icon = Fa.link
+                                    , text = Nothing
+                                    , tooltip = Just (Lang.copyVideoUrl global.lang)
+                                    }
+                                ]
 
                           else
                             Element.none
