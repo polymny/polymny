@@ -59,6 +59,26 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
+        showWarning =
+            case page of
+                Core.Acquisition m ->
+                    Core.routeFromPage page /= Core.routeFromPage newModel.page && not (List.filter (\x -> not x.old) m.records |> List.isEmpty)
+
+                _ ->
+                    False
+
+        showWarningCmd =
+            case newModel.page of
+                Core.Acquisition m ->
+                    if not (List.filter (\x -> not x.old) m.records |> List.isEmpty) then
+                        Ports.setOnBeforeUnloadValue True
+
+                    else
+                        Ports.setOnBeforeUnloadValue False
+
+                _ ->
+                    Ports.setOnBeforeUnloadValue False
+
         ( newModel, newCmd ) =
             case msg of
                 Core.TimeZoneChanged newTimeZone ->
@@ -224,7 +244,11 @@ updateModel msg model =
                         ( p, cmd ) =
                             Core.pageFromRoute global user page (Route.fromUrl url) Nothing
                     in
-                    ( { model | page = p }, cmd )
+                    if Core.routeFromPage model.page == Core.routeFromPage p then
+                        ( model, cmd )
+
+                    else
+                        ( { model | page = p }, cmd )
 
                 Core.InternalUrl url ->
                     if String.startsWith "/data/" url.path then
@@ -392,5 +416,26 @@ updateModel msg model =
 
                 Core.Noop ->
                     ( model, Cmd.none )
+
+                Core.Update n c ->
+                    ( n, c )
     in
-    ( newModel, Cmd.batch [ newCmd, unbindWebcam ] )
+    case ( showWarning, msg ) of
+        ( _, Core.Update _ _ ) ->
+            ( newModel, Cmd.batch [ newCmd, unbindWebcam, showWarningCmd ] )
+
+        ( True, _ ) ->
+            ( { model
+                | popup =
+                    Just
+                        { title = Lang.warning global.lang
+                        , message = Lang.recordsWillBeLost global.lang
+                        , onCancel = Core.Update model (Cmd.batch [ Nav.back global.key 1, Ports.playWebcam () ])
+                        , onConfirm = Core.Update newModel (Cmd.batch [ newCmd, unbindWebcam ])
+                        }
+              }
+            , Cmd.none
+            )
+
+        _ ->
+            ( { newModel | popup = Nothing }, Cmd.batch [ newCmd, unbindWebcam, showWarningCmd ] )

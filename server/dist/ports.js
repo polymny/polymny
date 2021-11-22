@@ -6,7 +6,17 @@ function setupPorts(app) {
         recorder,
         recording,
         currentEvents,
-        nextSlideCallbacks = [];
+        nextSlideCallbacks = [],
+        onbeforeunloadvalue = false;
+
+    window.addEventListener('beforeunload', function(event) {
+        if (onbeforeunloadvalue) {
+            event.preventDefault();
+            event.returnValue = '';
+        } else {
+            delete event["returnValue"];
+        }
+    });
 
     var socket;
     if (flags.user) {
@@ -67,6 +77,11 @@ function setupPorts(app) {
 
     function setPromptSize(arg) {
         localStorage.setItem('promptSize', arg);
+    }
+
+    function setOnBeforeUnloadValue(arg) {
+        console.log(arg);
+        onbeforeunloadvalue = arg;
     }
 
     async function findDevices(force) {
@@ -573,6 +588,7 @@ function setupPorts(app) {
     subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
     subscribe(app.ports.setSortBy, setSortBy);
     subscribe(app.ports.setPromptSize, setPromptSize);
+    subscribe(app.ports.setOnBeforeUnloadValue, setOnBeforeUnloadValue);
     subscribe(app.ports.findDevices, findDevices);
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);
