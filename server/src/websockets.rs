@@ -73,6 +73,9 @@ impl WebSockets {
         }
 
         for i in to_remove.into_iter().rev() {
+            if entry[i].close(None).await.is_err() {
+                info!("cannot close websocket");
+            }
             entry.remove(i);
         }
 
