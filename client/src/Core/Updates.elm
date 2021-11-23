@@ -62,7 +62,7 @@ updateModel msg model =
         showWarning =
             case page of
                 Core.Acquisition m ->
-                    Core.routeFromPage page /= Core.routeFromPage newModel.page && not (List.filter (\x -> not x.old) m.records |> List.isEmpty)
+                    Core.routeFromPage page /= Core.routeFromPage newModel.page && not (List.filter (\x -> not x.old) m.records |> List.isEmpty) && m.uploading == Nothing
 
                 _ ->
                     False
