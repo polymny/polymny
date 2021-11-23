@@ -848,12 +848,12 @@ pdf-to-png() {
     cmd=$(
         echo "convert \
         -density $density \
-        $input \
         -colorspace $colorspace \
         -resize $size \
         -background white \
         -gravity center \
         -extent $size \
+        $input \
         $output"
     )
     echo $cmd >&2

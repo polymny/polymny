@@ -47,14 +47,16 @@ type alias Model =
 type alias Record =
     { events : List Capsule.Event
     , blob : Encode.Value
+    , old : Bool
     }
 
 
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map2 Record
+    Decode.map3 Record
         (Decode.field "events" (Decode.list Capsule.decodeEvent))
         (Decode.field "blob" Decode.value)
+        (Decode.succeed False)
 
 
 encodeRecord : Record -> Encode.Value
@@ -117,6 +119,7 @@ init devices chosenDeviceIds capsule id =
                     ( Just (Just r), Just g ) ->
                         [ { blob = Encode.string (Capsule.assetPath capsule (r.uuid ++ ".webm"))
                           , events = g.events
+                          , old = True
                           }
                         ]
 

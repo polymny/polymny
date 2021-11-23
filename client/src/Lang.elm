@@ -1896,3 +1896,13 @@ chooseProject lang =
 
         _ ->
             "Choose project"
+
+
+recordsWillBeLost : Lang -> String
+recordsWillBeLost lang =
+    case lang of
+        FrFr ->
+            "Les enregistrements non validés seront perdus."
+
+        _ ->
+            "Non validated records will be lost."

@@ -273,3 +273,4 @@ type Msg
     | AdminUsers (List Admin.User) Int
     | AdminUser Admin.User
     | AdminCapsules (List Capsule) Int
+    | Update Model (Cmd Msg)
