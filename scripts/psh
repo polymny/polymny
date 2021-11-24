@@ -88,37 +88,8 @@ get_overlay()
 {
     webcam_settings=$1
     shift
-
     position=( $(echo $webcam_settings | jq -cr ".position[]") )
-    size=( $(echo $webcam_settings | jq -cr ".size[]") )
-    anchor=$(echo $webcam_settings | jq -cr ".anchor")
-    topbottom=$(echo $anchor | cut -d '_' -f 1)
-    leftright=$(echo $anchor | cut -d '_' -f 2)
-
-    # change overlay if negative coordinates
-    if [ ${position[0]} -lt 0 ]; then
-        position[0]=$((1920-${size[0]}-${position[0]}))
-
-        if [[ "$leftright" == "left" ]]; then
-            leftright=right
-        else
-            leftright=left
-        fi
-    fi
-
-    if [ ${position[1]} -lt 0 ]; then
-        position[1]=$((1080-${size[1]}-${position[1]}))
-
-        if [[ "$topbottom" == "top" ]]; then
-            topbottom=bottom
-        else
-            topbottom=top
-        fi
-    fi
-
-    anchor="${topbottom}_${leftright}"
-
-    case "$anchor" in
+    case $(echo $webcam_settings | jq -cr ".anchor") in
         "top_left" )
             overlay=$(printf "%s:%s" "${position[0]}" "${position[1]}")
             ;;
@@ -557,16 +528,101 @@ run_ffmpeg_command(){
 
 }
 
-# combine slide and records
-# USAGE:
-#   compose_goss <capsule id>
-# EXAMPLE:
-#   compose_goss 42
-compose_goss(){
-    cid=$1
+compose_gos(){
+    local cid=$1
+    local gos_i=$2
+    local seq_file=$3
     SLIDE_DEFAULT_DURATION="3"
+
     capsule_path=$(get_config "data_path")"/$cid"
     assets_path="${capsule_path}/assets"
+    tmp_path="${capsule_path}/tmp"
+
+    gos=$(echo "$capsule_structure" | jq .[$gos_i])
+    record=$(echo "$gos" | jq -cr ".record.uuid")
+
+     if [[ $record = "null" ]] ; then
+        webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
+        transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
+        input_record="${assets_path}/null.webm"
+    else
+        transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
+        webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
+        input_record="${assets_path}/$record.webm"
+    fi
+
+
+   len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
+   for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
+   do
+        slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
+        uuid=$(echo $slide |  jq  -rc ".uuid")
+        input_slide="${assets_path}/${uuid}.png"
+
+        extra=$(echo "$slide" |  jq  -rc ".extra")
+        echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+        echo $echo_header >&2
+
+
+        if [ $extra = "null" ] ; then
+            # No extra resource : compose slide with record
+            input_slide="${assets_path}/${uuid}.png"
+
+            if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                # the slide have a transition and a record
+                slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+
+                slide_offset=${transitions[$slide_i]}
+            else
+                # manage case of all slides transitions not done in GOS record
+                # add empty slides
+                slide_offset=0
+                slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+            fi
+
+            output="slide_${gos_i}_${slide_i}.mp4"
+
+            cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
+
+            total_frames=$(echo "($slide_duration*25)/1000" | bc)
+
+            run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
+        else
+
+            if [[ $record = "null" ]] ; then
+                 # if no record , add extra resource instead of slide
+
+                printf '\n%s %3s %%' "$echo_header" "100"
+                output="../assets/${extra}.mp4"
+            else
+                # FIXME: mix video resource with record
+                # no slide is dislpayed.
+                # until fix only extra is displayed
+                printf '\n%s %3s %%' "$echo_header" "100"
+                output="../assets/${extra}.mp4"
+            fi
+
+        fi
+
+        echo "file '$output'" >> $seq_file
+    done
+
+
+}
+
+
+
+# combine slide and records
+# USAGE:
+#   compose_goss <capsule id> <gos id>
+# EXAMPLE:
+#   compose_goss 42 -1 for all gos
+#   compose_goss 42 2 for gos 2 only
+
+compose_goss(){
+    local cid=$1
+    local gosid=$2
+    capsule_path=$(get_config "data_path")"/$cid"
     tmp_path="${capsule_path}/tmp"
     fps="25"
     if [ ! -d $tmp_path ]; then
@@ -582,79 +638,18 @@ compose_goss(){
     # GOS loop
 
     len=$(echo $capsule_structure | jq  '.|length')
-    for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
-    do
-        gos=$(echo "$capsule_structure" | jq .[$gos_i])
-        record=$(echo "$gos" | jq -cr ".record.uuid")
 
-         if [[ $record = "null" ]] ; then
-            webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
-            transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
-            input_record="${assets_path}/null.webm"
-        else
-            transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
-            webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
-            input_record="${assets_path}/$record.webm"
-        fi
-
-
-       len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
-       for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
-       do
-            slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
-            uuid=$(echo $slide |  jq  -rc ".uuid")
-            input_slide="${assets_path}/${uuid}.png"
-
-            extra=$(echo "$slide" |  jq  -rc ".extra")
-            echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
-            echo $echo_header >&2
-
-
-            if [ $extra = "null" ] ; then
-                # No extra resource : compose slide with record
-                input_slide="${assets_path}/${uuid}.png"
-
-                if (( $slide_i +1 < ${#transitions[@]} )) ; then
-                    # the slide have a transition and a record
-                    slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
-
-                    slide_offset=${transitions[$slide_i]}
-                else
-                    # manage case of all slides transitions not done in GOS record
-                    # add empty slides
-                    slide_offset=0
-                    slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
-                fi
-
-                output="slide_${gos_i}_${slide_i}.mp4"
-
-                cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
-
-                total_frames=$(echo "($slide_duration*25)/1000" | bc)
-
-                run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
-            else
-
-                if [[ $record = "null" ]] ; then
-                     # if no record , add extra resource instead of slide
-
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                else
-                    # FIXME: mix video resource with record
-                    # no slide is dislpayed.
-                    # until fix only extra is displayed
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                fi
-
-            fi
-
-            echo "file '$output'" >> $seq_file
+    if (( $gosid == -1 )) ; then
+        for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
+        do
+            compose_gos $cid $gos_i $seq_file
         done
+        output="$capsule_path/output.mp4"
+    else
+        compose_gos $cid $gosid $seq_file
+        output="$tmp_path/gos_${gosid}.mp4"
+    fi
 
-    done
-    output="$capsule_path/output.mp4"
     command=$(header && concat_records $seq_file $output)
     $command
     if (( $? != 0 )); then
@@ -715,11 +710,12 @@ on-record() {
 #
 on-produce() {
     local cid=$1
+    local gosid=$2
 
     #transcode_records $cid
-    echo "Composition start for capsule $cid" >&2
-    compose_goss $cid
-    echo "Composition end for capsule $cid" >&2
+    echo "Composition start for capsule $cid and gos $gosid" >&2
+    compose_goss $cid $gosid
+    echo "Composition end for capsule $cid and gos $gosid" >&2
 }
 
 # USAGE:

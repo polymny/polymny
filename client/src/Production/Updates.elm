@@ -197,6 +197,20 @@ update msg model =
                             , Api.produceVideo (Core.ProductionMsg Production.VideoProduced) m.capsule
                             )
 
+                        Production.ProduceGos gosId ->
+                            let
+                                oldCapsule =
+                                    m.capsule
+
+                                newCapsule =
+                                    { oldCapsule | produced = Capsule.Running Nothing, published = Capsule.Idle }
+                            in
+                            ( mkModel
+                                { model | user = User.changeCapsule newCapsule model.user }
+                                (Core.Production { m | capsule = newCapsule })
+                            , Api.produceGos (Core.ProductionMsg Production.VideoProduced) m.capsule gosId
+                            )
+
                         Production.CancelProduction ->
                             let
                                 oldCapsule =

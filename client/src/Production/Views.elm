@@ -432,8 +432,58 @@ mainView global user model gos slide =
 
                 _ ->
                     Element.none
+
+        gosIdString =
+            String.fromInt <| model.gos + 1
+
+        produceInfo =
+            case ( model.capsule.published, Capsule.videoGosPath model.capsule model.gos ) of
+                ( _, Just path ) ->
+                    Ui.newTabLink []
+                        { label = Element.text (Lang.watchGosVideo global.lang gosIdString)
+                        , route = Route.Custom path
+                        }
+
+                _ ->
+                    Element.none
+
+        produceButton =
+            case model.capsule.produced of
+                Capsule.Running msg ->
+                    Element.row []
+                        [ Element.row [ Element.spacing 10 ]
+                            [ Ui.primaryButton
+                                { label =
+                                    Element.row []
+                                        [ Element.text (Lang.producing global.lang)
+                                        , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
+                                            Ui.spinner
+                                        ]
+                                , onPress = Nothing
+                                }
+                            , Ui.primaryButton
+                                { label = Element.text (Lang.cancelProduction global.lang)
+                                , onPress = Just (Core.ProductionMsg Production.CancelProduction)
+                                }
+                            ]
+                        , case msg of
+                            Just m ->
+                                Element.el [] <| Element.text m
+
+                            Nothing ->
+                                Element.none
+                        ]
+
+                _ ->
+                    Ui.primaryButton
+                        { label = Element.text (Lang.produceGosVideo global.lang gosIdString)
+                        , onPress = Just (Core.ProductionMsg <| Production.ProduceGos model.gos)
+                        }
     in
-    Element.el [ Ui.wf, Element.centerY, Element.inFront overlay, Element.clip ] image
+    Element.column []
+        [ Element.el [ Ui.wf, Element.centerY, Element.inFront overlay, Element.clip ] image
+        , Element.row [ Element.alignRight, Element.spacing 10, Element.padding 10 ] [ produceInfo, produceButton ]
+        ]
 
 
 bottomBar : Core.Global -> User -> Production.Model -> Element Core.Msg

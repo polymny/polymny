@@ -666,6 +666,116 @@ pub async fn produce(
     Ok(())
 }
 
+/// The route that triggers the production of one gos.
+#[post("/produce-gos/<id>/<gos>")]
+pub async fn produce_gos(
+    user: User,
+    id: HashId,
+    gos: i32,
+    socks: &S<WebSockets>,
+    sem: &S<Arc<Semaphore>>,
+    db: Db,
+) -> Result<()> {
+    let (mut capsule, _) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    if capsule.produced == TaskStatus::Running {
+        return Err(Error(Status::Conflict));
+    }
+
+    let socks = socks.inner().clone();
+    let sem = sem.inner().clone();
+
+    tokio::spawn(async move {
+        let child = Command::new("../scripts/psh")
+            .arg("on-produce")
+            .arg(format!("{}", capsule.id))
+            .arg(format!("{}", gos))
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn();
+
+        let succeed = if let Ok(mut child) = child {
+            capsule.produced = TaskStatus::Running;
+            capsule.published = TaskStatus::Idle;
+            capsule.production_pid = child.id().map(|x| x as i32);
+            capsule.save(&db).await.ok();
+
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin
+                    .write_all(json!(capsule.structure.0).to_string().as_bytes())
+                    .await
+                    .unwrap();
+
+                if let Ok(_) = sem.acquire().await {
+                    child.stdin.unwrap();
+                    let stdout = child.stdout.take().unwrap();
+                    let reader = BufReader::new(stdout);
+
+                    let mut lines = reader.lines();
+                    while let Some(line) = lines.next_line().await.unwrap() {
+                        capsule
+                            .notify_production_progress(
+                                &id.hash(),
+                                &format!("{}", line),
+                                &db,
+                                &socks,
+                            )
+                            .await
+                            .ok();
+                    }
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        capsule.produced = if succeed {
+            TaskStatus::Done
+        } else {
+            TaskStatus::Idle
+        };
+
+        capsule.production_pid = None;
+        capsule.save(&db).await.ok();
+
+        if succeed {
+            capsule
+                .notify_production(&id.hash(), &db, &socks)
+                .await
+                .ok();
+
+            user.notify(
+                &socks,
+                "Production terminée",
+                &format!(
+                    "La capsule \"{}\" a été correctement produite.",
+                    capsule.name
+                ),
+                &db,
+            )
+            .await
+            .ok();
+        } else {
+            user.notify(
+                &socks,
+                "Production terminée",
+                &format!("La production de la capsule \"{}\" a échoué.", capsule.name),
+                &db,
+            )
+            .await
+            .ok();
+        };
+    });
+
+    Ok(())
+}
 /// The route that cancels the production of a capsule.
 #[post("/cancel-production/<id>")]
 pub async fn cancel_production(user: User, id: HashId, db: Db) -> Result<()> {

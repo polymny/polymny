@@ -429,6 +429,7 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
                 routes::capsule::replace_slide,
                 routes::capsule::add_slide,
                 routes::capsule::produce,
+                routes::capsule::produce_gos,
                 routes::capsule::cancel_production,
                 routes::capsule::publish,
                 routes::capsule::cancel_publication,

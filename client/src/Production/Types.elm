@@ -97,5 +97,6 @@ type Msg
     | HoldingImageChanged (Maybe ( Int, Float, Float ))
     | ImageMoved Float Float Float Float
     | ProduceVideo
+    | ProduceGos Int
     | VideoProduced
     | CancelProduction

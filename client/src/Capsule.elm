@@ -214,6 +214,15 @@ videoPath capsule =
         Nothing
 
 
+videoGosPath : Capsule -> Int -> Maybe String
+videoGosPath capsule gosId =
+    if capsule.produced == Done then
+        Just ("/data/" ++ capsule.id ++ "/tmp/gos_" ++ String.fromInt gosId ++ ".mp4")
+
+    else
+        Nothing
+
+
 type alias Record =
     { uuid : String
     , size : Maybe ( Int, Int )
