@@ -45,6 +45,7 @@ dashboardView : Core.Global -> List Admin.User -> List Capsule -> Element Core.M
 dashboardView _ _ _ =
     Element.column [ Element.spacing 30, Ui.wf, Ui.hf ]
         [ Element.el [ Font.bold, Font.size 24, Element.centerX, Element.padding 50 ] <| Element.text "Ici on affichera des stats"
+        , Element.el [ Element.centerX ] (Ui.primaryButton { onPress = Just (Core.AdminMsg Admin.ClearWebockets), label = Element.text "Clear websockets" })
         ]
 
 
