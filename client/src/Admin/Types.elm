@@ -106,3 +106,4 @@ type Msg
     | InviteUserFailed
     | RequestDeleteUser User
     | DeleteUser User
+    | ClearWebockets

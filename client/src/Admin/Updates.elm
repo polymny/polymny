@@ -171,6 +171,9 @@ update msg model =
                 Admin.DeleteUser u ->
                     ( mkModel { model | popup = Nothing } (Core.Admin m), Api.adminDeleteUser (\_ -> Core.Noop) u.id )
 
+                Admin.ClearWebockets ->
+                    ( model, Api.adminClearWebsockets )
+
         _ ->
             ( model, Cmd.none )
 
