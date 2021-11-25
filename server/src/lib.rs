@@ -447,6 +447,7 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
                 routes::admin::get_search_capsules,
                 routes::admin::request_invite_user,
                 routes::admin::delete_user,
+                routes::admin::clear_websockets,
             ],
         )
         .register("/", catchers![routes::not_found])

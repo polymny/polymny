@@ -2,6 +2,10 @@
 
 use tokio::fs::remove_dir_all;
 
+use futures::{poll, task::Poll, StreamExt};
+
+use tungstenite::{Error as TError, Message};
+
 use rocket::http::Status;
 use rocket::serde::json::{json, Json, Value};
 use rocket::State as S;
@@ -11,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::Config;
 use crate::db::capsule::Role;
 use crate::db::user::{Admin, User};
+use crate::websockets::WebSockets;
 use crate::{Db, Error, Result};
 
 /// Admin get dashboard
@@ -115,4 +120,47 @@ pub async fn delete_user(_admin: Admin, db: Db, id: i32, config: &S<Config>) -> 
     }
 
     Ok(user.delete(&db).await?)
+}
+
+/// A routes that clears unused websockets.
+#[get("/admin/clear-websockets")]
+pub async fn clear_websockets(_admin: Admin, socks: &S<WebSockets>) -> Result<()> {
+    let mut map = socks.lock().await;
+
+    for (_key, val) in &mut *map {
+        let mut to_remove = vec![];
+
+        for (i, s) in val.iter_mut().enumerate() {
+            let mut count: u32 = 0;
+            loop {
+                count += 1;
+
+                if count > 50 {
+                    // Infinite loop detection
+                    to_remove.push(i);
+                    info!("INFINITE LOOP DETECTED");
+                    break;
+                }
+
+                match poll!(s.next()) {
+                    Poll::Ready(Some(Err(TError::ConnectionClosed)))
+                    | Poll::Ready(Some(Err(TError::AlreadyClosed)))
+                    | Poll::Ready(Some(Ok(Message::Close(_)))) => {
+                        to_remove.push(i);
+                        break;
+                    }
+                    Poll::Ready(None) | Poll::Pending => break,
+                    _ => continue,
+                }
+            }
+        }
+
+        for i in to_remove.iter().rev() {
+            if val[*i].close(None).await.is_err() {
+                info!("cannot close websocket");
+            }
+            val.remove(*i);
+        }
+    }
+    Ok(())
 }
