@@ -524,6 +524,15 @@ adminInvite resultToMsg { inviteUsername, inviteEmail } =
         }
 
 
+adminClearWebsockets : Cmd Core.Msg
+adminClearWebsockets =
+    get
+        { url = "/api/admin/clear-websockets"
+        , expect = Http.expectWhatever (\_ -> Core.Noop)
+        , body = Http.emptyBody
+        }
+
+
 validateInvitation : (Result Http.Error () -> msg) -> { a | password : String, key : String } -> Cmd msg
 validateInvitation resultToMsg { password, key } =
     post
