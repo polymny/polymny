@@ -80,7 +80,6 @@ function setupPorts(app) {
     }
 
     function setOnBeforeUnloadValue(arg) {
-        console.log(arg);
         onbeforeunloadvalue = arg;
     }
 

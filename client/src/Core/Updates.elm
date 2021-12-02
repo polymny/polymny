@@ -245,7 +245,7 @@ updateModel msg model =
                             Core.pageFromRoute global user page (Route.fromUrl url) Nothing
                     in
                     if Core.routeFromPage model.page == Core.routeFromPage p then
-                        ( model, cmd )
+                        ( { model | popup = Nothing }, cmd )
 
                     else
                         ( { model | page = p }, cmd )
@@ -438,4 +438,4 @@ updateModel msg model =
             )
 
         _ ->
-            ( { newModel | popup = Nothing }, Cmd.batch [ newCmd, unbindWebcam, showWarningCmd ] )
+            ( newModel, Cmd.batch [ newCmd, unbindWebcam, showWarningCmd ] )
