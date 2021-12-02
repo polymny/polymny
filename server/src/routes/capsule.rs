@@ -581,6 +581,7 @@ pub async fn produce(
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
+            .arg("-1")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn();

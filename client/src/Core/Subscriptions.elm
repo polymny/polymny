@@ -32,7 +32,7 @@ decodeWebsocketMsg =
                     "capsule_production_progress" ->
                         Decode.map2 Core.ProductionProgress
                             (Decode.field "id" Decode.string)
-                            (Decode.field "msg" Decode.string)
+                            (Decode.field "msg" Decode.float)
 
                     "video_upload_progress" ->
                         Decode.map2 Core.VideoUploadProgress

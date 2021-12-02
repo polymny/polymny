@@ -263,7 +263,7 @@ type Msg
     | NotificationReceived User.Notification
     | VideoUploadProgress String Float
     | VideoUploadFinished String
-    | ProductionProgress String String
+    | ProductionProgress String Float
     | ProductionFinished String
     | PublicationFinished String
     | ExportCapsule Capsule

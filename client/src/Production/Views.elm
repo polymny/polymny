@@ -466,12 +466,7 @@ mainView global user model gos slide =
                                 , onPress = Just (Core.ProductionMsg Production.CancelProduction)
                                 }
                             ]
-                        , case msg of
-                            Just m ->
-                                Element.el [] <| Element.text m
-
-                            Nothing ->
-                                Element.none
+                        , Element.none
                         ]
 
                 _ ->
@@ -509,7 +504,7 @@ bottomBar global user model =
         produceButton =
             case model.capsule.produced of
                 Capsule.Running msg ->
-                    Element.row []
+                    Element.column []
                         [ Element.row [ Element.spacing 10 ]
                             [ Ui.primaryButton
                                 { label =
@@ -527,7 +522,7 @@ bottomBar global user model =
                             ]
                         , case msg of
                             Just m ->
-                                Element.el [] <| Element.text m
+                                Element.el [ Element.padding 10, Element.width Element.fill, Ui.hf ] (Ui.progressBar m)
 
                             Nothing ->
                                 Element.none

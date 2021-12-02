@@ -339,7 +339,7 @@ updateModel msg model =
 
                         tmpModel =
                             Core.changeCapsuleById
-                                (\x -> { x | videoUploaded = Capsule.Running (Just "") })
+                                (\x -> { x | videoUploaded = Capsule.Running (Just notif) })
                                 id
                                 model
                     in

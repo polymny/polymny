@@ -57,7 +57,7 @@ decodeRole =
 
 type TaskStatus
     = Idle
-    | Running (Maybe String)
+    | Running (Maybe Float)
     | Done
 
 

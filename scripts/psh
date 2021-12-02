@@ -487,38 +487,45 @@ transcode_records(){
 }
 
 
-run_ffmpeg_command(){
-    cmd=$1
-    duration_ms=$(echo "$2*1000000" | bc -l )
-    echo $duration_us>&2
+
+show_ffmpeg_progression(){
+    local line=$1
+    local duration_ms=$2
+    IFS='=' read -ra progress <<< $line
+    case "${progress[0]}" in
+        "out_time_us" )
+            ts="${progress[1]}"
+            percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
+            is_great=$(echo "$percent_progress > 1" | bc)
+            if [ $is_great -eq 1 ]; then
+                percent_progress="1"
+            fi
+            ;;
+        "progress" )
+            if [[ "${progress[1]}" == "end" ]] ; then
+                percent_progress="1"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+    echo $percent_progress
+}
+
+
+
+run_ffmpeg_slide(){
+    local cmd=$1
+    local duration_ms=$2
+    local gos_i=$3
+    local nb_gos=$4
+    local percent_progress="0"
     echo "$cmd">&2
 
-    percent_progress="0"
     $cmd | while read line; do
-        IFS='=' read -ra progress <<< $line
-        case "${progress[0]}" in
-            "out_time_us" )
-                ts="${progress[1]}"
-                percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
-                is_great=$(echo "$percent_progress > 1" | bc)
-                if [ $is_great -eq 1 ]; then
-                    percent_progress="1"
-                fi
-                ;;
-            "progress" )
-                if [[ "${progress[1]}" == "end" ]] ; then
-                    percent_progress="1"
-                fi
-                ;;
-            *)
-                ;;
-        esac
-
-        if [ -z "$3" ]; then
-            echo -en "\n$percent_progress"
-        else
-            echo -en "\n$3;$percent_progress"
-        fi
+        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
+        progress=$(echo "scale=3; $gos_i/$nb_gos + (1/$nb_gos)*$percent_progress " |bc -l)
+        echo -en "\n$progress"
     done
 
     if (( $? != 0 )); then
@@ -531,7 +538,8 @@ run_ffmpeg_command(){
 compose_gos(){
     local cid=$1
     local gos_i=$2
-    local seq_file=$3
+    local nb_gos=$3
+    local seq_file=$4
     SLIDE_DEFAULT_DURATION="3"
 
     capsule_path=$(get_config "data_path")"/$cid"
@@ -584,9 +592,8 @@ compose_gos(){
 
             cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
 
-            total_frames=$(echo "($slide_duration*25)/1000" | bc)
-
-            run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
+            duration_ms=$(echo "$slide_duration*1000" | bc)
+            run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos
         else
 
             if [[ $record = "null" ]] ; then
@@ -642,11 +649,11 @@ compose_goss(){
     if (( $gosid == -1 )) ; then
         for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
         do
-            compose_gos $cid $gos_i $seq_file
+            compose_gos $cid $gos_i $len $seq_file
         done
         output="$capsule_path/output.mp4"
     else
-        compose_gos $cid $gosid $seq_file
+        compose_gos $cid $gosid 1 $seq_file
         output="$tmp_path/gos_${gosid}.mp4"
     fi
 
@@ -737,8 +744,21 @@ on-video-upload() {
             ;;
     esac
 
-    duration_s=$(get_duration $input)
-    run_ffmpeg_command "$cmd" "$duration_s" ""
+    duration_ms=$(echo "$(get_duration $input)*1000000" | bc -l )
+
+    local percent_progress="0"
+
+    echo "$cmd">&2
+    $cmd | while read line; do
+        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
+        echo -en "\n$percent_progress"
+    done
+
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return 1
+    fi
+
 
 }
 
@@ -852,7 +872,7 @@ pdf-to-png() {
         $input \
         $output"
     )
-    echo $cmd >&2
+    #DEBUG: echo $cmd >&2
     $cmd
     if (( $? != 0 )); then
        echo "error with $1" >&2
@@ -896,7 +916,7 @@ main() {
             ;;
         "on-produce")
             read -r capsule_structure
-            echo "$capsule_structure" | jq . >&2
+            #DEBUG: echo "$capsule_structure" | jq . >&2
             on-produce "$@"
             ;;
         "on-publish")
