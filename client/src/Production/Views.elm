@@ -448,32 +448,10 @@ mainView global user model gos slide =
                     Element.none
 
         produceButton =
-            case model.capsule.produced of
-                Capsule.Running msg ->
-                    Element.row []
-                        [ Element.row [ Element.spacing 10 ]
-                            [ Ui.primaryButton
-                                { label =
-                                    Element.row []
-                                        [ Element.text (Lang.producing global.lang)
-                                        , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
-                                            Ui.spinner
-                                        ]
-                                , onPress = Nothing
-                                }
-                            , Ui.primaryButton
-                                { label = Element.text (Lang.cancelProduction global.lang)
-                                , onPress = Just (Core.ProductionMsg Production.CancelProduction)
-                                }
-                            ]
-                        , Element.none
-                        ]
-
-                _ ->
-                    Ui.primaryButton
-                        { label = Element.text (Lang.produceGosVideo global.lang gosIdString)
-                        , onPress = Just (Core.ProductionMsg <| Production.ProduceGos model.gos)
-                        }
+            Ui.primaryButton
+                { label = Element.text (Lang.produceGosVideo global.lang gosIdString)
+                , onPress = Just (Core.ProductionMsg <| Production.ProduceGos model.gos)
+                }
     in
     Element.column []
         [ Element.el [ Ui.wf, Element.centerY, Element.inFront overlay, Element.clip ] image
