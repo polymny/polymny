@@ -554,12 +554,17 @@ compose_gos(){
     local cid=$1
     local gos_i=$2
     local nb_gos=$3
-    local seq_file=$4
+    local seq_file_gos=$4
     SLIDE_DEFAULT_DURATION="3"
 
     capsule_path=$(get_config "data_path")"/$cid"
     assets_path="${capsule_path}/assets"
     tmp_path="${capsule_path}/tmp"
+    seq_file_slide="$tmp_path/seq_file_slide_g${gos_i}.txt"
+    if [ -f $seq_file ]; then
+        rm $seq_file_slide
+    fi
+    touch $seq_file_slide
 
     gos=$(echo "$capsule_structure" | jq .[$gos_i])
     record=$(echo "$gos" | jq -cr ".record.uuid")
@@ -627,8 +632,22 @@ compose_gos(){
 
         fi
 
-        echo "file '$output'" >> $seq_file
+        echo "file '$output'" >> $seq_file_slide
     done
+
+    # concat each per slide video in one GoS
+    output_gos="gos_${gos_i}.mp4"
+    output_gos_path="$tmp_path/$output_gos"
+    command=$(header && concat_records $seq_file_slide $output_gos_path)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        echo $command >&2
+        return 1
+    else
+        echo "file '$output_gos'" >> $seq_file_gos
+    fi
+
 
 
 }
@@ -668,20 +687,20 @@ compose_goss(){
             compose_gos $cid $gos_i $len $seq_file
         done
         output="$capsule_path/output.mp4"
+        command=$(header && concat_records $seq_file $output)
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            echo $command >&2
+
+            return 1
+        fi
+
     else
         compose_gos $cid $gosid -1 $seq_file
-        output="$tmp_path/gos_${gosid}.mp4"
     fi
 
-    command=$(header && concat_records $seq_file $output)
-    $command
-    if (( $? != 0 )); then
-        echo "error with $1" >&2
-        echo $command
-        return 1
-    else
-        echo "Composition done"
-    fi
+
 
 
 }
