@@ -225,6 +225,61 @@ titleView _ mkToggleFold projectOrCapsule =
     Element.el [ Element.padding 10, Element.centerY ] text
 
 
+capsuleProgressView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
+capsuleProgressView global capsule =
+    let
+        computeColor : Capsule.TaskStatus -> Element.Attribute msg
+        computeColor status =
+            Background.color <|
+                case status of
+                    Capsule.Idle ->
+                        Colors.light
+
+                    _ ->
+                        Colors.navbar
+
+        acquired =
+            capsule.structure
+                |> List.filterMap .record
+                |> List.isEmpty
+                |> not
+                |> (||) (capsule.produced /= Capsule.Idle)
+
+        acquisition =
+            Element.el
+                [ Element.width Element.fill
+                , computeColor (tern acquired Capsule.Done Capsule.Idle)
+                , Element.padding 10
+                , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.acquisition global.lang)))
+
+        edition =
+            Element.el
+                [ Element.width Element.fill
+                , computeColor capsule.produced
+                , Element.padding 10
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.production global.lang)))
+
+        publication =
+            Element.el
+                [ Element.width Element.fill
+                , computeColor capsule.published
+                , Element.padding 10
+                , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
+                , Border.color Colors.black
+                , Border.width 1
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
+    in
+    ( acquisition, edition, publication )
+
+
 progressView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
 progressView global projectOrCapsule =
     case projectOrCapsule of
@@ -258,54 +313,8 @@ progressView global projectOrCapsule =
 
         Capsule capsule ->
             let
-                computeColor : Capsule.TaskStatus -> Element.Attribute msg
-                computeColor status =
-                    Background.color <|
-                        case status of
-                            Capsule.Idle ->
-                                Colors.light
-
-                            _ ->
-                                Colors.navbar
-
-                acquired =
-                    capsule.structure
-                        |> List.filterMap .record
-                        |> List.isEmpty
-                        |> not
-                        |> (||) (capsule.produced /= Capsule.Idle)
-
-                acquisition =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor (tern acquired Capsule.Done Capsule.Idle)
-                        , Element.padding 10
-                        , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
-                        , Border.color Colors.black
-                        , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.acquisition global.lang)))
-
-                edition =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor capsule.produced
-                        , Element.padding 10
-                        , Border.color Colors.black
-                        , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.production global.lang)))
-
-                publication =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor capsule.published
-                        , Element.padding 10
-                        , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
-                        , Border.color Colors.black
-                        , Border.width 1
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
+                ( acquisition, edition, publication ) =
+                    capsuleProgressView global capsule
             in
             Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
                 [ acquisition, edition, publication ]
