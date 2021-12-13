@@ -225,8 +225,8 @@ titleView _ mkToggleFold projectOrCapsule =
     Element.el [ Element.padding 10, Element.centerY ] text
 
 
-capsuleProgressView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
-capsuleProgressView global capsule =
+progressCapsuleView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
+progressCapsuleView global capsule =
     let
         computeColor : Capsule.TaskStatus -> Element.Attribute msg
         computeColor status =
@@ -314,10 +314,66 @@ progressView global projectOrCapsule =
         Capsule capsule ->
             let
                 ( acquisition, edition, publication ) =
-                    capsuleProgressView global capsule
+                    progressCapsuleView global capsule
             in
             Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
                 [ acquisition, edition, publication ]
+
+
+progressCapsuleIconsView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
+progressCapsuleIconsView global c =
+    let
+        attr =
+            [ Font.color Colors.navbar ]
+
+        watchButton =
+            case ( c.published, Capsule.videoPath c ) of
+                ( Capsule.Done, _ ) ->
+                    Ui.newTabIconLink attr
+                        { route = Route.Custom (global.videoRoot ++ "/" ++ c.id ++ "/")
+                        , icon = Fa.film
+                        , text = Nothing
+                        , tooltip = Just (Lang.watchVideo global.lang)
+                        }
+
+                ( _, Just url ) ->
+                    Ui.newTabIconLink attr
+                        { route = Route.Custom url
+                        , icon = Fa.film
+                        , text = Nothing
+                        , tooltip = Just (Lang.watchVideo global.lang)
+                        }
+
+                _ ->
+                    Element.none
+
+        downloadButton =
+            case Capsule.videoPath c of
+                Just url ->
+                    Ui.downloadIconLink attr
+                        { route = Route.Custom url
+                        , icon = Fa.download
+                        , text = Nothing
+                        , tooltip = Just (Lang.downloadVideo global.lang)
+                        }
+
+                _ ->
+                    Element.none
+
+        copyUrlButton =
+            case c.published of
+                Capsule.Done ->
+                    Ui.iconButton attr
+                        { onPress = Core.Copy (global.videoRoot ++ "/" ++ c.id ++ "/") |> Just
+                        , icon = Fa.link
+                        , text = Nothing
+                        , tooltip = Just (Lang.copyVideoUrl global.lang)
+                        }
+
+                _ ->
+                    Element.none
+    in
+    ( watchButton, downloadButton, copyUrlButton )
 
 
 progressIconsView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
@@ -325,55 +381,8 @@ progressIconsView global projectOrCapsule =
     case projectOrCapsule of
         Capsule c ->
             let
-                attr =
-                    [ Font.color Colors.navbar ]
-
-                watchButton =
-                    case ( c.published, Capsule.videoPath c ) of
-                        ( Capsule.Done, _ ) ->
-                            Ui.newTabIconLink attr
-                                { route = Route.Custom (global.videoRoot ++ "/" ++ c.id ++ "/")
-                                , icon = Fa.film
-                                , text = Nothing
-                                , tooltip = Just (Lang.watchVideo global.lang)
-                                }
-
-                        ( _, Just url ) ->
-                            Ui.newTabIconLink attr
-                                { route = Route.Custom url
-                                , icon = Fa.film
-                                , text = Nothing
-                                , tooltip = Just (Lang.watchVideo global.lang)
-                                }
-
-                        _ ->
-                            Element.none
-
-                downloadButton =
-                    case Capsule.videoPath c of
-                        Just url ->
-                            Ui.downloadIconLink attr
-                                { route = Route.Custom url
-                                , icon = Fa.download
-                                , text = Nothing
-                                , tooltip = Just (Lang.downloadVideo global.lang)
-                                }
-
-                        _ ->
-                            Element.none
-
-                copyUrlButton =
-                    case c.published of
-                        Capsule.Done ->
-                            Ui.iconButton attr
-                                { onPress = Core.Copy (global.videoRoot ++ "/" ++ c.id ++ "/") |> Just
-                                , icon = Fa.link
-                                , text = Nothing
-                                , tooltip = Just (Lang.copyVideoUrl global.lang)
-                                }
-
-                        _ ->
-                            Element.none
+                ( watchButton, downloadButton, copyUrlButton ) =
+                    progressCapsuleIconsView global c
             in
             Element.row [ Element.spacing 10, Element.centerY ]
                 [ watchButton, downloadButton, copyUrlButton ]

@@ -54,6 +54,11 @@ dashboardView _ _ _ =
 shortUsersView : Core.Global -> List Capsule.User -> Element Core.Msg
 shortUsersView global users =
     let
+        link u =
+            Ui.link
+                (Element.mouseOver [ Background.color Colors.navbarOver ] :: Font.color Colors.black :: Element.padding 13 :: Ui.hf :: Element.padding 5 :: borderAttributes)
+                { route = Route.Admin (Route.User u.id), label = Element.text u.username }
+
         uView u =
             Element.paragraph borderAttributes
                 [ Element.el [] <| Element.text u.username
@@ -66,7 +71,7 @@ shortUsersView global users =
 
 borderAttributes : List (Element.Attribute Core.Msg)
 borderAttributes =
-    [ Ui.hf, Element.padding 10, Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }, Border.color Colors.greyLighter ]
+    [ Ui.hf, Element.padding 10, Border.widthEach { bottom = 2, left = 0, right = 0, top = 0 }, Border.color Colors.greyLighter ]
 
 
 usersView : Core.Global -> Admin.Model -> Int -> Element Core.Msg
@@ -218,9 +223,7 @@ capsulesView global { capsules, capsuleSearch, projectSearch, capsuleSearchStatu
                       }
                     , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.capsuleName global.lang))
                       , width = Element.fill
-                      , view =
-                            \c ->
-                                Element.el borderAttributes <| Element.text <| String.left 30 c.name
+                      , view = capsuleNameView global
                       }
                     , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.projectName global.lang))
                       , width = Element.fill
@@ -256,7 +259,7 @@ capsulesView global { capsules, capsuleSearch, projectSearch, capsuleSearchStatu
                       , width = Element.fill
                       , view =
                             \c ->
-                                Home.progressIconsView global (Home.Capsule c)
+                                progressIconsView global c
                       }
                     , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.actions global.lang))
                       , width = Element.shrink
@@ -415,6 +418,15 @@ usernameView global u =
         { route = Route.Admin (Route.User u.id), label = Element.text u.inner.username }
 
 
+capsuleNameView : Core.Global -> Capsule -> Element Core.Msg
+capsuleNameView global c =
+    Ui.link
+        (Element.mouseOver [ Background.color Colors.navbarOver ] :: Font.color Colors.black :: Element.padding 13 :: Ui.hf :: Element.padding 5 :: borderAttributes)
+        { route = Route.Preparation c.id Nothing
+        , label = Element.text <| Ui.shrink 50 c.name
+        }
+
+
 actionsView : Core.Global -> Admin.User -> Element Core.Msg
 actionsView global user =
     let
@@ -432,12 +444,22 @@ progressView : Core.Global -> Capsule -> Element Core.Msg
 progressView global capsule =
     let
         ( acquisition, edition, publication ) =
-            Home.capsuleProgressView global capsule
+            Home.progressCapsuleView global capsule
     in
     Element.row (Element.spacing 10 :: borderAttributes)
         [ Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
             [ acquisition, edition, publication ]
         ]
+
+
+progressIconsView : Core.Global -> Capsule -> Element Core.Msg
+progressIconsView global capsule =
+    let
+        ( acquisition, edition, publication ) =
+            Home.progressCapsuleIconsView global capsule
+    in
+    Element.row (Element.spacing 10 :: borderAttributes)
+        [ acquisition, edition, publication ]
 
 
 capsuleActionsView : Core.Global -> Capsule -> Element Core.Msg
