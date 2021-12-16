@@ -294,12 +294,14 @@ pub fn video_html(url: &str) -> String {
     </head>
     <body>
         <div id="container"></div>
-        <script src="https://polymny.github.io/elm-video/dist/polymny-video-full.min.js"></script>
+        <script src="/v/polymny-video-full.min.js"></script>
         <script>
             PolymnyVideo.fullpage({{
                 node: document.getElementById("container"),
                 url: "{}",
-                autoplay: true
+                autoplay: true,
+                enableMiniatures: true,
+                startTime: PolymnyVideo.getArgumentFromUrl("t"),
             }});
         </script>
     </body>
