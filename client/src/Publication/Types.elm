@@ -4,12 +4,14 @@ import Capsule exposing (Capsule)
 
 
 type alias Model =
-    { capsule : Capsule }
+    { capsule : Capsule
+    , showPrivacyPopup : Bool
+    }
 
 
 init : Capsule -> Model
 init capsule =
-    { capsule = capsule }
+    { capsule = capsule, showPrivacyPopup = False }
 
 
 type Msg
@@ -19,3 +21,4 @@ type Msg
     | Cancel
     | PrivacyChanged Capsule.Privacy
     | PromptSubtitlesChanged Bool
+    | TogglePrivacyPopup

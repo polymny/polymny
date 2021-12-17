@@ -1886,3 +1886,43 @@ chooseProject lang =
 
         _ ->
             "Choose project"
+
+
+explainPrivate : Lang -> String
+explainPrivate lang =
+    case lang of
+        FrFr ->
+            "la vidéo ne sera visible que par les utilisateurs y en été explicitement autorisées"
+
+        _ ->
+            "the video will be visible only by explicitly authorized users"
+
+
+explainUnlisted : Lang -> String
+explainUnlisted lang =
+    case lang of
+        FrFr ->
+            "la vidéo ne sera visible que par les personnes connaissant l'URL, Polymny Studio ne partagera pas l'URL de la vidéo"
+
+        _ ->
+            "the video will be visible by anyone who knows the URL, Polymny Studio will not share the video's URL"
+
+
+explainPublic : Lang -> String
+explainPublic lang =
+    case lang of
+        FrFr ->
+            "la vidéo sera visible par les personnes connaissant l'URL, Polymny Studio pourrait, dans le futur, partager l'URL de la vidéo via un moteur de recherche, un système de recommandations, etc."
+
+        _ ->
+            "the video will be visible by anyone who knows the URL, Polymny Studio may, in the future, share the video's URL via a search engine, a recommendation system, etc."
+
+
+close : Lang -> String
+close lang =
+    case lang of
+        FrFr ->
+            "Fermer"
+
+        _ ->
+            "Close"

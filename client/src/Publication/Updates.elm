@@ -85,6 +85,9 @@ update msg model =
                     , Api.updateCapsule Core.Noop newCapsule
                     )
 
+                Publication.TogglePrivacyPopup ->
+                    ( mkModel model (Core.Publication { m | showPrivacyPopup = not m.showPrivacyPopup }), Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
