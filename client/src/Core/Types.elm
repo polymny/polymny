@@ -152,7 +152,7 @@ changeCapsuleById updater id model =
                     Production (tern (c.capsule.id == id) (Production.init (updater c.capsule) c.gos) c)
 
                 Publication c ->
-                    Publication (tern (c.capsule.id == id) (Publication.init (updater c.capsule)) c)
+                    Publication (tern (c.capsule.id == id) { c | capsule = updater c.capsule } c)
 
                 x ->
                     x

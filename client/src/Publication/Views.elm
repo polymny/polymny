@@ -143,6 +143,14 @@ privacyPopup global model =
             [ Ui.hf, Ui.wf, Element.padding 10, Element.spacing 10, Background.color Colors.whiteTer ]
             [ mkButton Capsule.Private
             , Element.paragraph Ui.labelAttr [ Element.text (Lang.explainPrivate global.lang) ]
+            , Element.el
+                [ Background.color Colors.warningLight
+                , Border.width 1
+                , Border.color Colors.warning
+                , Border.rounded 10
+                , Element.padding 10
+                ]
+                (Element.paragraph Ui.labelAttr [ Element.text (Lang.explainPrivateWarning global.lang) ])
             , mkButton Capsule.Unlisted
             , Element.paragraph Ui.labelAttr [ Element.text (Lang.explainUnlisted global.lang) ]
             , mkButton Capsule.Public

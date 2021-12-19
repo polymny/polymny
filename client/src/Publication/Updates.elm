@@ -19,10 +19,13 @@ update msg model =
 
                         newCapsule =
                             { oldCapsule | published = Capsule.Running Nothing }
+
+                        newShowPrivacyPopup =
+                            m.capsule.privacy == Capsule.Private
                     in
                     ( mkModel
                         { model | user = User.changeCapsule newCapsule model.user }
-                        (Core.Publication { m | capsule = newCapsule })
+                        (Core.Publication { m | capsule = newCapsule, showPrivacyPopup = newShowPrivacyPopup })
                     , Api.publishVideo (Core.PublicationMsg Publication.Published) m.capsule
                     )
 

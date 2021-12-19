@@ -1892,10 +1892,20 @@ explainPrivate : Lang -> String
 explainPrivate lang =
     case lang of
         FrFr ->
-            "la vidéo ne sera visible que par les utilisateurs y en été explicitement autorisées"
+            "la vidéo ne sera visible que par les utilisateurs explicitement autorisées"
 
         _ ->
             "the video will be visible only by explicitly authorized users"
+
+
+explainPrivateWarning : Lang -> String
+explainPrivateWarning lang =
+    case lang of
+        FrFr ->
+            "cette fonctionnalité n'est pas encore prête : aucun utilisateur ne pourra voir la vidéo à part vous-même"
+
+        _ ->
+            "this feature is not ready yet: no users except you will be able to watch the video"
 
 
 explainUnlisted : Lang -> String
