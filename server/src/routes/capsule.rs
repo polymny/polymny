@@ -710,6 +710,7 @@ pub async fn produce(
     id: HashId,
     socks: &S<WebSockets>,
     sem: &S<Arc<Semaphore>>,
+    config: &S<Config>,
     db: Db,
 ) -> Result<()> {
     let (mut capsule, _) = user
@@ -722,6 +723,8 @@ pub async fn produce(
 
     let socks = socks.inner().clone();
     let sem = sem.inner().clone();
+
+    let output_path = config.data_path.join(format!("{}", *id)).join("output.mp4");
 
     tokio::spawn(async move {
         let child = Command::new("../scripts/psh")
@@ -776,6 +779,26 @@ pub async fn produce(
             TaskStatus::Done
         } else {
             TaskStatus::Idle
+        };
+
+        let output = run_command(&vec![
+            "../scripts/psh",
+            "duration",
+            output_path.to_str().unwrap(),
+        ]);
+        match &output {
+            Ok(o) => {
+                for line in std::str::from_utf8(&o.stdout)
+                    .map_err(|_| Error(Status::InternalServerError))
+                    .unwrap()
+                    .lines()
+                {
+                    let duration = (line.parse::<f32>().unwrap()) * 1000.0;
+                    capsule.duration_ms = duration as i32;
+                    capsule.save(&db).await.ok();
+                }
+            }
+            Err(_) => println!("error"),
         };
 
         capsule.production_pid = None;

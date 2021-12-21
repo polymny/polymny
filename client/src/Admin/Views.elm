@@ -443,12 +443,12 @@ actionsView global user =
 progressView : Core.Global -> Capsule -> Element Core.Msg
 progressView global capsule =
     let
-        ( acquisition, edition, publication ) =
+        progress =
             Home.progressCapsuleView global capsule
     in
     Element.row (Element.spacing 10 :: borderAttributes)
         [ Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
-            [ acquisition, edition, publication ]
+            [ progress.acquisition, progress.edition, progress.publication, progress.duration ]
         ]
 
 

@@ -18,7 +18,7 @@ import Status
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 import User exposing (User)
-import Utils exposing (tern)
+import Utils exposing (formatTime, tern)
 
 
 shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
@@ -630,32 +630,3 @@ videoElement attr =
 paragraph : Element Core.Msg -> Element Core.Msg
 paragraph x =
     Element.paragraph [] [ x ]
-
-
-formatTime : Int -> String
-formatTime milliseconds =
-    let
-        seconds =
-            milliseconds // 1000
-
-        minutes =
-            seconds // 60
-
-        secs =
-            modBy 60 seconds
-
-        secsString =
-            if secs < 10 then
-                "0" ++ String.fromInt secs
-
-            else
-                String.fromInt secs
-
-        minutesString =
-            if minutes < 10 then
-                "0" ++ String.fromInt minutes
-
-            else
-                String.fromInt minutes
-    in
-    minutesString ++ ":" ++ secsString

@@ -548,6 +548,7 @@ type alias Capsule =
     , users : List User
     , promptSubtitles : Bool
     , diskUsage : Int
+    , durationMs : Int
     }
 
 
@@ -567,6 +568,7 @@ decode =
         |> andMap (Decode.field "users" (Decode.list decodeUser))
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
         |> andMap (Decode.field "disk_usage" Decode.int)
+        |> andMap (Decode.field "duration_ms" Decode.int)
 
 
 encodeGos : Gos -> Encode.Value

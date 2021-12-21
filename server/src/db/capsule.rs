@@ -273,6 +273,9 @@ pub struct Capsule {
     /// Capsule disk usage (in MB)
     pub disk_usage: i32,
 
+    /// duration of produced video in ms
+    pub duration_ms: i32,
+
     /// The user that has rights on the capsule.
     #[many_to_many(capsules, Role)]
     pub users: User,
@@ -302,6 +305,7 @@ impl Capsule {
             true,
             Json(vec![]),
             Utc::now().naive_utc(),
+            0,
             0,
         )
         .save(&db)
@@ -345,6 +349,7 @@ impl Capsule {
             "users": users,
             "prompt_subtitles": self.prompt_subtitles,
             "disk_usage":self.disk_usage,
+            "duration_ms":self.duration_ms
         }))
     }
 

@@ -376,6 +376,27 @@ concat_records() {
 }
 
 # USAGE:
+#   TODO: not used
+#     check if it works with  merge of slides/webcam/pointer
+#   concat_records_with_fade <path to list of file to conat> <output>
+#
+# EXAMPLE:
+#   concat_records_with_fade  tmp/seq_file.txt  tmp/capsule.mp4
+concat_records_with_fade() {
+    input=$1
+    output=$2
+
+    filter="fade=t=in:st=0:d=3;afade=t=in:st=0:d=2"
+    echo -f concat \
+         -safe 0 \
+         -i $input \
+         -filter_complex "$filter" \
+         -movflags \
+         +faststart \
+         $output
+}
+
+# USAGE:
 #   miniatures <input> <miniature> <output>
 # EXAMPLE:
 #   miniatures video.mkv 12233 video
@@ -597,7 +618,6 @@ run_ffmpeg_slide(){
     $cmd | while read line; do
         local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
         slide_progress=$(echo "scale=3; $sli_i/$nb_sli + (1/$nb_sli)*$percent_progress " |bc -l)
-        echo "slide progress =$slide_progress">&2
         if (( $nb_gos == -1 )) ; then
             # case of one GoS production
             progress=$slide_progress
@@ -605,7 +625,6 @@ run_ffmpeg_slide(){
             # case of complete productuin (GoS by GoS)
             progress=$(echo "scale=3; $gos_i/$nb_gos +  (1/$nb_gos)*($slide_progress) " |bc -l)
         fi
-        echo "progress =$progress">&2
         echo -en "\n$progress"
     done
 
@@ -624,6 +643,7 @@ compose_gos(){
     local nb_gos=$3
     local seq_file_gos=$4
     SLIDE_DEFAULT_DURATION="3"
+
 
     capsule_path=$(get_config "data_path")"/$cid"
     assets_path="${capsule_path}/assets"
@@ -695,11 +715,11 @@ compose_gos(){
         echo $echo_header >&2
 
     done
-
     # repeat last entry (FFMPEG required kinda end of file)
     echo $line_in_concat_file  >> $concat_file
 
-    # concat slides
+
+   # concat slides
     video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
     command=$(header && concat_slides $concat_file $video_slides)
     $command
@@ -719,54 +739,7 @@ compose_gos(){
     total_frames=$(echo "($slide_duration*25)/1000" | bc)
     run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos
     echo "file '$output_gos'" >> $seq_file
-
 }
-
-# combine slide and records
-# USAGE:
-#   compose_goss <capsule id>
-# EXAMPLE:
-#   compose_goss 42
-compose_goss(){
-    local cid=$1
-    local gosid=$2
-    capsule_path=$(get_config "data_path")"/$cid"
-    tmp_path="${capsule_path}/tmp"
-    fps="25"
-    if [ ! -d $tmp_path ]; then
-        mkdir $tmp_path
-    fi
-
-    seq_file="$tmp_path/seq_file.txt"
-    echo "ffconcat version 1.0" > $seq_file
-
-    len=$(echo $capsule_structure | jq  '.|length')
-
-
-    if (( $gosid == -1 )) ; then
-        for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
-        do
-            compose_gos $cid $gos_i $len $seq_file
-        done
-        output="$capsule_path/output.mp4"
-        command=$(header && concat_records $seq_file $output)
-        $command
-        if (( $? != 0 )); then
-            echo "error with $1" >&2
-            echo $command >&2
-
-
-            return 1
-        fi
-
-
-    else
-        compose_gos $cid $gosid -1 $seq_file
-    fi
-
-}
-
-
 
 # combine slide and records
 # USAGE:
@@ -778,6 +751,8 @@ compose_goss(){
 compose_goss(){
     local cid=$1
     local gosid=$2
+
+    local start=`date +%s`
     capsule_path=$(get_config "data_path")"/$cid"
     tmp_path="${capsule_path}/tmp"
     fps="25"
@@ -808,6 +783,10 @@ compose_goss(){
     else
         compose_gos $cid $gosid -1 $seq_file
     fi
+    local end=`date +%s`
+    runtime=$( echo "$end - $start" | bc -l )
+
+    echo "runtime $runtime s " >&2
 
 
 }

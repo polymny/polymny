@@ -18,7 +18,7 @@ import TimeUtils
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 import User exposing (User)
-import Utils exposing (tern)
+import Utils exposing (formatTime, tern)
 
 
 type ProjectOrCapsule
@@ -82,6 +82,10 @@ view global user model mkToggleFold =
                         , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.lastModified global.lang))
                           , width = Element.shrink
                           , view = lastModifiedView global
+                          }
+                        , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.diskUsage global.lang))
+                          , width = Element.shrink
+                          , view = diskUsageView global
                           }
                         , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.actions global.lang))
                           , width = Element.shrink
@@ -225,7 +229,15 @@ titleView _ mkToggleFold projectOrCapsule =
     Element.el [ Element.padding 10, Element.centerY ] text
 
 
-progressCapsuleView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
+progressCapsuleView :
+    Core.Global
+    -> Capsule
+    ->
+        { acquisition : Element Core.Msg
+        , edition : Element Core.Msg
+        , publication : Element Core.Msg
+        , duration : Element Core.Msg
+        }
 progressCapsuleView global capsule =
     let
         computeColor : Capsule.TaskStatus -> Element.Attribute msg
@@ -276,8 +288,11 @@ progressCapsuleView global capsule =
                 , Border.width 1
                 ]
                 (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
+
+        duration =
+            Element.el [ Element.padding 10 ] <| Element.text <| formatTime capsule.durationMs
     in
-    ( acquisition, edition, publication )
+    { acquisition = acquisition, edition = edition, publication = publication, duration = duration }
 
 
 progressView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
@@ -313,11 +328,11 @@ progressView global projectOrCapsule =
 
         Capsule capsule ->
             let
-                ( acquisition, edition, publication ) =
+                progress =
                     progressCapsuleView global capsule
             in
             Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
-                [ acquisition, edition, publication ]
+                [ progress.acquisition, progress.edition, progress.publication, progress.duration ]
 
 
 progressCapsuleIconsView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
