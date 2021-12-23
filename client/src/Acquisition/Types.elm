@@ -389,7 +389,7 @@ encodeRecordingOptions device =
         ( Just _, Nothing ) ->
             Encode.object
                 [ ( "videoBitsPerSecond", Encode.int 2500000 )
-                , ( "mimeType", Encode.string "video/webm;codecs=vp8" )
+                , ( "mimeType", Encode.string "video/webm;codecs=vp9" )
                 ]
 
         _ ->

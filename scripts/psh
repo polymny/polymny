@@ -19,6 +19,45 @@ header_progress() {
     echo ffmpeg -nostdin -nostats -progress pipe:1 -loglevel error -hide_banner -y
 }
 
+params_black_video(){
+    duration=$1
+    output=$2
+
+    vcodec=$vcodec264
+    vcodec_opts="-crf 15"
+    fps="25"
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+    echo -n \
+        -f lavfi -i color=c=black:s=1920x1080:rate=25 \
+        -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=$arate \
+        -t $duration \
+        -vsync cfr \
+        -pix_fmt yuv420p \
+        -vcodec $vcodec $vcodec_opts\
+        -tune stillimage \
+        -acodec $acodec \
+        -ar $arate \
+        -ac 2 \
+        -b:a $abitrate \
+        -s hd1080 \
+        $output
+
+}
+
+generate_black_video(){
+    duration=$1
+    output=$2
+    command=$(header && params_black_video $duration $output)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return $1
+    fi
+
+}
 
 # USAGE:
 #   transocode_video  <input_path> <output_path>
@@ -385,8 +424,16 @@ concat_records() {
 concat_records_with_fade() {
     input=$1
     output=$2
+    duration=$(echo "scale=3; $3/1000" |bc)
+    echo "duration = $duration" >&2
+    fade_duration="2"
+    afade_duration="2"
+    start_fade_out=$(echo "$duration -$fade_duration" |bc)
+    start_afade_out=$(echo "$duration -$afade_duration" |bc)
 
-    filter="fade=t=in:st=0:d=3;afade=t=in:st=0:d=2"
+    fade_filter="fade=t=in:st=0:d=$fade_duration:c=black,fade=t=out:st=$start_fade_out:d=$fade_duration:c=black"
+    afade_filter="afade=t=in:st=0:d=$afade_duration,afade=t=out:st=$start_afade_out:d=$afade_duration"
+    filter="$fade_filter;$afade_filter"
     echo -f concat \
          -safe 0 \
          -i $input \
@@ -661,7 +708,7 @@ compose_gos(){
         transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
         webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
         input_record="${assets_path}/$record.webm"
-    fi
+     fi
 
     pointer=$(echo "$gos" | jq -cr ".record.pointer_uuid")
     if [[ $pointer = "null" ]] ; then
@@ -718,7 +765,6 @@ compose_gos(){
     # repeat last entry (FFMPEG required kinda end of file)
     echo $line_in_concat_file  >> $concat_file
 
-
    # concat slides
     video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
     command=$(header && concat_slides $concat_file $video_slides)
@@ -762,7 +808,6 @@ compose_goss(){
 
     seq_file="$tmp_path/seq_file.txt"
     echo "ffconcat version 1.0" > $seq_file
-
     len=$(echo $capsule_structure | jq  '.|length')
     if (( $gosid == -1 )) ; then
         # GOS loop
@@ -771,6 +816,8 @@ compose_goss(){
             compose_gos $cid $gos_i $len $seq_file
         done
         output="$capsule_path/output.mp4"
+        # finish with black video
+        echo "file '$black_video'">>$seq_file
         command=$(header && concat_records $seq_file $output)
         $command
         if (( $? != 0 )); then
@@ -1059,6 +1106,10 @@ main() {
 
         "du")
             disk-usage "$@"
+            ;;
+
+        "black")
+            generate_black_video "$@"
             ;;
 
 

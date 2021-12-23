@@ -786,19 +786,21 @@ pub async fn produce(
             "duration",
             output_path.to_str().unwrap(),
         ]);
+
         match &output {
             Ok(o) => {
-                for line in std::str::from_utf8(&o.stdout)
+                let line = ((std::str::from_utf8(&o.stdout)
                     .map_err(|_| Error(Status::InternalServerError))
                     .unwrap()
-                    .lines()
-                {
-                    let duration = (line.parse::<f32>().unwrap()) * 1000.0;
-                    capsule.duration_ms = duration as i32;
-                    capsule.save(&db).await.ok();
-                }
+                    .trim()
+                    .parse::<f32>()
+                    .unwrap())
+                    * 1000.) as i32;
+
+                capsule.duration_ms = line;
+                capsule.save(&db).await.ok();
             }
-            Err(_) => println!("error"),
+            Err(_) => error!("Impossible to get duration"),
         };
 
         capsule.production_pid = None;

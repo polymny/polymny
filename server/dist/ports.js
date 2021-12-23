@@ -264,6 +264,7 @@ function setupPorts(app) {
         }
 
         console.log("Binding webcam");
+        console.log( recorderOptions);
         bindingWebcam = true;
         try {
             stream = await navigator.mediaDevices.getUserMedia(cameraOptions);
