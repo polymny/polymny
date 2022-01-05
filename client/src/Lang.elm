@@ -1328,7 +1328,7 @@ videoNotProduced : Lang -> String
 videoNotProduced lang =
     case lang of
         FrFr ->
-            "La vidéo n'a pas encore est produite"
+            "La vidéo n'a pas encore été produite"
 
         _ ->
             "Video has not been produced yet"
