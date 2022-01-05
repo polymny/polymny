@@ -267,9 +267,9 @@ pub async fn not_found<'a>(request: &'_ Request<'a>) -> Html<String> {
     index_without_cors(config, db, user, lang).await
 }
 
-/// The route for static files that require authorization.
-#[get("/<capsule_id>/<path..>")]
-pub async fn data<'a>(
+/// The route for asset static files that require authorization.
+#[get("/<capsule_id>/assets/<path..>")]
+pub async fn assets<'a>(
     capsule_id: HashId,
     path: PathBuf,
     user: User,
@@ -280,9 +280,37 @@ pub async fn data<'a>(
         .get_capsule_with_permission(*capsule_id, Role::Read, &db)
         .await?;
 
-    NamedFile::open(config.data_path.join(format!("{}", *capsule_id)).join(path))
-        .await
-        .map_err(|_| Error(Status::NotFound))
+    NamedFile::open(
+        config
+            .data_path
+            .join(format!("{}", *capsule_id))
+            .join("assets")
+            .join(path),
+    )
+    .await
+    .map_err(|_| Error(Status::NotFound))
+}
+
+/// The route for the output video of a capsule that requires authorization.
+#[get("/<capsule_id>/output.mp4")]
+pub async fn produced_video<'a>(
+    capsule_id: HashId,
+    user: User,
+    config: &S<Config>,
+    db: Db,
+) -> Result<NamedFile> {
+    let (_, _) = user
+        .get_capsule_with_permission(*capsule_id, Role::Read, &db)
+        .await?;
+
+    NamedFile::open(
+        config
+            .data_path
+            .join(format!("{}", *capsule_id))
+            .join("output.mp4"),
+    )
+    .await
+    .map_err(|_| Error(Status::NotFound))
 }
 
 /// The route for static files.
