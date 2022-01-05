@@ -3,6 +3,7 @@ module Publication.Views exposing (..)
 import Capsule
 import Core.Types as Core
 import Element exposing (Element)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
@@ -26,52 +27,7 @@ view global user model =
                 case Capsule.videoPath model.capsule of
                     Just p ->
                         [ Element.el Ui.formTitle (Element.text (Lang.currentProducedVideo global.lang))
-                        , videoElement p
-                        , if model.capsule.published == Capsule.Done then
-                            Element.row [ Ui.wf, Ui.hf, Element.spacing 10 ]
-                                [ Ui.newTabLink []
-                                    { label = Element.text (Lang.watchVideo global.lang)
-                                    , route = Route.Custom (global.videoRoot ++ "/" ++ model.capsule.id ++ "/")
-                                    }
-                                , Ui.iconButton [ Font.color Colors.navbar ]
-                                    { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just
-                                    , icon = Fa.link
-                                    , text = Nothing
-                                    , tooltip = Just (Lang.copyVideoUrl global.lang)
-                                    }
-                                ]
-
-                          else
-                            Element.none
-                        , case model.capsule.published of
-                            Capsule.Idle ->
-                                Ui.primaryButton
-                                    { onPress = Just (Core.PublicationMsg Publication.Publish)
-                                    , label = Element.text (Lang.publishVideo global.lang)
-                                    }
-
-                            Capsule.Done ->
-                                Ui.simpleButton
-                                    { onPress = Just (Core.PublicationMsg Publication.Unpublish)
-                                    , label = Element.text (Lang.unpublishVideo global.lang)
-                                    }
-
-                            _ ->
-                                Element.row [ Element.spacing 10 ]
-                                    [ Ui.primaryButton
-                                        { onPress = Nothing
-                                        , label =
-                                            Element.row []
-                                                [ Element.text (Lang.publishing global.lang)
-                                                , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
-                                                    Ui.spinner
-                                                ]
-                                        }
-                                    , Ui.primaryButton
-                                        { onPress = Just (Core.PublicationMsg Publication.Cancel)
-                                        , label = Element.text (Lang.cancelPublication global.lang)
-                                        }
-                                    ]
+                        , Element.row [ Ui.wf ] [ videoElement p, Element.el [ Ui.wf ] Element.none ]
                         ]
 
                     Nothing ->
@@ -98,13 +54,13 @@ view global user model =
 
         settings =
             Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ]
-                [ Element.el Ui.formTitle (Element.text (Lang.videoSettings global.lang))
-                , Element.el Ui.labelAttr (Element.text (Lang.privacySettings global.lang))
-                , [ Capsule.Unlisted, Capsule.Public ]
-                    |> List.map privacyOption
-                    |> Html.select [ onPrivacyChange ]
-                    |> Element.html
-                    |> Element.el [ Element.paddingXY 0 2 ]
+                [ Element.row [ Ui.wf, Element.spacing 10 ]
+                    [ Element.el Ui.formTitle (Element.text (Lang.privacySettings global.lang))
+                    , Ui.simpleButton
+                        { label = Element.text (Lang.privacy global.lang model.capsule.privacy)
+                        , onPress = Just (Core.PublicationMsg Publication.TogglePrivacyPopup)
+                        }
+                    ]
                 , Input.checkbox []
                     { onChange = \x -> Core.PublicationMsg (Publication.PromptSubtitlesChanged x)
                     , icon = Input.defaultCheckbox
@@ -113,10 +69,98 @@ view global user model =
                     }
                 ]
 
+        endSettings =
+            Element.row [ Ui.wf, Element.spacing 10 ]
+                [ if model.capsule.published == Capsule.Done then
+                    Ui.newTabLink []
+                        { label = Element.text (Lang.watchVideo global.lang)
+                        , route = Route.Custom (global.videoRoot ++ "/" ++ model.capsule.id ++ "/")
+                        }
+
+                  else
+                    Element.none
+                , case model.capsule.published of
+                    Capsule.Idle ->
+                        Ui.primaryButton
+                            { onPress = Just (Core.PublicationMsg Publication.Publish)
+                            , label = Element.text (Lang.publishVideo global.lang)
+                            }
+
+                    Capsule.Done ->
+                        Ui.simpleButton
+                            { onPress = Just (Core.PublicationMsg Publication.Unpublish)
+                            , label = Element.text (Lang.unpublishVideo global.lang)
+                            }
+
+                    _ ->
+                        Element.row [ Element.spacing 10 ]
+                            [ Ui.primaryButton
+                                { onPress = Nothing
+                                , label =
+                                    Element.row []
+                                        [ Element.text (Lang.publishing global.lang)
+                                        , Element.el [ Element.paddingEach { left = 10, right = 0, top = 0, bottom = 0 } ]
+                                            Ui.spinner
+                                        ]
+                                }
+                            , Ui.primaryButton
+                                { onPress = Just (Core.PublicationMsg Publication.Cancel)
+                                , label = Element.text (Lang.cancelPublication global.lang)
+                                }
+                            ]
+                ]
+
         element =
-            Element.row [ Element.padding 10, Element.spacing 10, Ui.wf ] [ video, settings ]
+            Element.column [ Element.padding 10, Element.spacing 10, Ui.wf ] [ video, settings, endSettings ]
     in
-    ( element, Nothing )
+    ( element
+    , if model.showPrivacyPopup then
+        Just (privacyPopup global model)
+
+      else
+        Nothing
+    )
+
+
+privacyPopup : Core.Global -> Publication.Model -> Element Core.Msg
+privacyPopup global model =
+    let
+        mkButton : Capsule.Privacy -> Element Core.Msg
+        mkButton privacy =
+            if model.capsule.privacy == privacy then
+                Ui.primaryButton
+                    { label = Element.text (Lang.privacy global.lang privacy)
+                    , onPress = Just (Core.PublicationMsg (Publication.PrivacyChanged privacy))
+                    }
+
+            else
+                Ui.simpleButton
+                    { label = Element.text (Lang.privacy global.lang privacy)
+                    , onPress = Just (Core.PublicationMsg (Publication.PrivacyChanged privacy))
+                    }
+    in
+    Ui.customSizedPopup 1
+        (Lang.privacySettings global.lang)
+        (Element.column
+            [ Ui.hf, Ui.wf, Element.padding 10, Element.spacing 10, Background.color Colors.whiteTer ]
+            [ mkButton Capsule.Private
+            , Element.paragraph Ui.labelAttr [ Element.text (Lang.explainPrivate global.lang) ]
+            , Element.el
+                [ Background.color Colors.warningLight
+                , Border.width 1
+                , Border.color Colors.warning
+                , Border.rounded 10
+                , Element.padding 10
+                ]
+                (Element.paragraph Ui.labelAttr [ Element.text (Lang.explainPrivateWarning global.lang) ])
+            , mkButton Capsule.Unlisted
+            , Element.paragraph Ui.labelAttr [ Element.text (Lang.explainUnlisted global.lang) ]
+            , mkButton Capsule.Public
+            , Element.paragraph Ui.labelAttr [ Element.text (Lang.explainPublic global.lang) ]
+            , Element.el [ Element.padding 10, Element.alignBottom, Element.alignRight ]
+                (Ui.primaryButton { label = Element.text (Lang.close global.lang), onPress = Just (Core.PublicationMsg Publication.TogglePrivacyPopup) })
+            ]
+        )
 
 
 videoElement : String -> Element Core.Msg
