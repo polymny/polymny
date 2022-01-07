@@ -1,0 +1,11 @@
+[
+  {
+    "type": "Enum",
+    "name": "privacy",
+    "variants": [
+      "public",
+      "unlisted",
+      "private"
+    ]
+  }
+]

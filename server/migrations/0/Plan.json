@@ -1,0 +1,11 @@
+[
+  {
+    "type": "Enum",
+    "name": "plan",
+    "variants": [
+      "free",
+      "premium_lvl1",
+      "admin"
+    ]
+  }
+]
