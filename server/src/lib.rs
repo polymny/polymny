@@ -396,10 +396,11 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
                 routes::user::validate_invitation,
                 routes::watch::watch,
                 routes::watch::watch_asset,
+                routes::watch::polymny_video,
             ],
         )
         .mount("/dist", routes![routes::dist])
-        .mount("/data", routes![routes::data])
+        .mount("/data", routes![routes::assets, routes::produced_video])
         .mount(
             "/api",
             if config.registration_disabled {

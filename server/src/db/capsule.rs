@@ -295,7 +295,7 @@ impl Capsule {
             None,
             TaskStatus::Idle,
             None,
-            Privacy::Private,
+            Privacy::Public,
             true,
             Json(vec![]),
             Utc::now().naive_utc(),

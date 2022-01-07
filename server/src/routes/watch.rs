@@ -80,3 +80,11 @@ pub async fn watch_asset(
     .await
     .map_err(|_| Error(Status::NotFound))
 }
+
+/// The route for the js file that contains elm-video.
+#[get("/v/polymny-video-full.min.js")]
+pub async fn polymny_video() -> Result<NamedFile> {
+    NamedFile::open(PathBuf::from("dist").join("polymny-video-full.min.js"))
+        .await
+        .map_err(|_| Error(Status::NotFound))
+}
