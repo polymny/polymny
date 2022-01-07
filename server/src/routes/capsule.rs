@@ -557,6 +557,105 @@ pub async fn add_slide(
     Ok(capsule.to_json(role, &db).await?)
 }
 
+/// Route to create a gos at a specific place in the capsule.
+#[post("/add-gos/<id>/<gos>/<page>", data = "<data>")]
+pub async fn add_gos(
+    user: User,
+    id: HashId,
+    gos: i32,
+    page: i32,
+    db: Db,
+    data: Data<'_>,
+    config: &S<Config>,
+    content_type: &ContentType,
+) -> Result<Value> {
+    let (mut capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    if gos < 0 || gos as usize > capsule.structure.0.len() {
+        return Err(Error(Status::BadRequest));
+    }
+
+    capsule.structure.0.insert(gos as usize, Gos::new());
+    let gos = capsule
+        .structure
+        .0
+        .get_mut(gos as usize)
+        .ok_or(Error(Status::BadRequest))?;
+
+    let path = config
+        .data_path
+        .join(format!("{}", capsule.id))
+        .join("assets")
+        .join(format!("{}", Uuid::new_v4()));
+
+    data.open(1_i32.gibibytes()).into_file(&path).await?;
+
+    let path = path.to_str().ok_or(Error(Status::InternalServerError))?;
+
+    let output_uuid = Uuid::new_v4();
+    let output = config
+        .data_path
+        .join(format!("{}", *id))
+        .join("assets")
+        .join(format!("{}", output_uuid));
+
+    let output = output.to_str().ok_or(Error(Status::InternalServerError))?;
+
+    let _extra = if content_type.media_type().top() == "image" {
+        // Not very clean but working
+
+        run_command(&vec![
+            "../scripts/psh",
+            "pdf-to-png",
+            &path,
+            &format!("{}.png", output),
+            &config.pdf_target_density,
+            &config.pdf_target_size,
+        ])?;
+
+        false
+    } else if *content_type == ContentType::PDF {
+        // Not very clean either, but should work too
+
+        run_command(&vec![
+            "../scripts/psh",
+            "pdf-to-png",
+            &format!("{}[{}]", path, page),
+            &format!("{}.png", output),
+            &config.pdf_target_density,
+            &config.pdf_target_size,
+        ])?;
+
+        false
+    } else if content_type.media_type().top() == "video" {
+        return Err(Error(Status::UnsupportedMediaType));
+
+        // run_command_with_output(&vec![
+        //     "../scripts/psh",
+        //     "on-video-upload",
+        //     &path,
+        //     &format!("{}.mp4", output),
+        // ])?;
+
+        // true
+    } else {
+        return Err(Error(Status::UnsupportedMediaType));
+    };
+
+    gos.slides.push(Slide {
+        uuid: output_uuid,
+        extra: None,
+        prompt: String::new(),
+    });
+
+    capsule.set_changed();
+    capsule.save(&db).await?;
+
+    Ok(capsule.to_json(role, &db).await?)
+}
+
 /// The route that triggers the production of a capsule.
 #[post("/produce/<id>")]
 pub async fn produce(

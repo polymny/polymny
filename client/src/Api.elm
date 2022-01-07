@@ -265,6 +265,31 @@ addSlide resultToMsg errorMsg capsuleId gosId page file =
     )
 
 
+addGos : (Capsule -> Core.Msg) -> Core.Msg -> String -> Int -> Int -> File -> ( String, Cmd Core.Msg )
+addGos resultToMsg errorMsg capsuleId gosId page file =
+    let
+        tracker =
+            "toto"
+    in
+    ( tracker
+    , postWithTracker tracker
+        { url = "/api/add-gos/" ++ capsuleId ++ "/" ++ String.fromInt gosId ++ "/" ++ String.fromInt (page - 1)
+        , expect =
+            Http.expectJson
+                (\x ->
+                    case x of
+                        Ok o ->
+                            resultToMsg o
+
+                        _ ->
+                            errorMsg
+                )
+                Capsule.decode
+        , body = Http.fileBody file
+        }
+    )
+
+
 produceVideo : Core.Msg -> Capsule -> Cmd Core.Msg
 produceVideo resultToMsg { id } =
     post

@@ -29,6 +29,10 @@ view global user model =
                         [ Element.el Ui.formTitle (Element.text (Lang.currentProducedVideo global.lang))
                         , Element.row [ Ui.wf ]
                             [ videoElement p
+                            , Element.el [ Ui.wf ] Element.none
+                            ]
+                        , Element.row [ Ui.wf ]
+                            [ videoElement p
                             , if model.capsule.published == Capsule.Done then
                                 Element.row [ Ui.wf, Ui.hf, Element.spacing 10 ]
                                     [ Ui.newTabLink []
@@ -51,25 +55,6 @@ view global user model =
 
                     Nothing ->
                         [ Element.text (Lang.videoNotProduced global.lang) ]
-
-        privacyOption : Capsule.Privacy -> Html.Html Core.Msg
-        privacyOption privacy =
-            Html.option
-                [ Html.Attributes.value (Capsule.privacyToString privacy)
-                , Html.Attributes.selected (privacy == model.capsule.privacy)
-                ]
-                [ Html.text (Lang.privacy global.lang privacy) ]
-
-        onPrivacyChange =
-            Html.Events.onInput
-                (\x ->
-                    case Capsule.stringToPrivacy x of
-                        Just p ->
-                            Core.PublicationMsg (Publication.PrivacyChanged p)
-
-                        _ ->
-                            Core.Noop
-                )
 
         settings =
             Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ]

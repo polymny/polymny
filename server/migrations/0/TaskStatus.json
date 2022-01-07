@@ -1,0 +1,11 @@
+[
+  {
+    "type": "Enum",
+    "name": "task_status",
+    "variants": [
+      "idle",
+      "running",
+      "done"
+    ]
+  }
+]

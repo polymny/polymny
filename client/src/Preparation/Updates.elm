@@ -97,7 +97,13 @@ update msg model =
                 Preparation.ExtraResourceSelect slide ->
                     ( model
                     , Select.file
-                        [ "application/pdf", "image/*", "video/*" ]
+                        (case slide of
+                            Preparation.AddGos _ ->
+                                [ "application/pdf", "image/*" ]
+
+                            _ ->
+                                [ "application/pdf", "image/*", "video/*" ]
+                        )
                         (\x -> Core.PreparationMsg (Preparation.ExtraResourceSelected slide x))
                     )
 
@@ -138,6 +144,15 @@ update msg model =
 
                                     Preparation.AddSlide gos ->
                                         Api.addSlide
+                                            mkMsg
+                                            Core.Noop
+                                            m.capsule.id
+                                            gos
+                                            0
+                                            form.file
+
+                                    Preparation.AddGos gos ->
+                                        Api.addGos
                                             mkMsg
                                             Core.Noop
                                             m.capsule.id
@@ -195,6 +210,9 @@ update msg model =
 
                                                 Preparation.AddSlide s ->
                                                     Api.addSlide ms errMsg m.capsule.id s p file
+
+                                                Preparation.AddGos s ->
+                                                    Api.addGos ms errMsg m.capsule.id s p file
                                     in
                                     ( mkModel model
                                         (Core.Preparation

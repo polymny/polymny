@@ -1976,3 +1976,13 @@ close lang =
 
         _ ->
             "Close"
+
+
+createGrain : Lang -> String
+createGrain lang =
+    case lang of
+        FrFr ->
+            "Créer un grain"
+
+        _ ->
+            "Create grain"
