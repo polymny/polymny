@@ -354,6 +354,7 @@ type alias Gos =
     , slides : List Slide
     , events : List Event
     , webcamSettings : WebcamSettings
+    , fade : Maybe Fade
     }
 
 
@@ -514,13 +515,46 @@ encodeWebcamSettings settings =
                 ]
 
 
+type alias Fade =
+    { vfadein : Maybe Int
+    , vfadeout : Maybe Int
+    , afadein : Maybe Int
+    , afadeout : Maybe Int
+    }
+
+
+decodeFade : Decoder Fade
+decodeFade =
+    Decode.map4 Fade
+        (Decode.maybe (Decode.field "vfadein" Decode.int))
+        (Decode.maybe (Decode.field "vfadeout" Decode.int))
+        (Decode.maybe (Decode.field "afadein" Decode.int))
+        (Decode.maybe (Decode.field "afadeout" Decode.int))
+
+
+encodeFade : Maybe Fade -> Encode.Value
+encodeFade fade =
+    case fade of
+        Just f ->
+            Encode.object
+                [ ( "vfadein", Maybe.withDefault Encode.null (Maybe.map Encode.int f.vfadein) )
+                , ( "vfadeout", Maybe.withDefault Encode.null (Maybe.map Encode.int f.vfadeout) )
+                , ( "afadein", Maybe.withDefault Encode.null (Maybe.map Encode.int f.afadein) )
+                , ( "afadeout", Maybe.withDefault Encode.null (Maybe.map Encode.int f.afadeout) )
+                ]
+
+        Nothing ->
+            Encode.null
+
+
 decodeGos : Decoder Gos
 decodeGos =
-    Decode.map4 Gos
+    Decode.map5 Gos
         (Decode.maybe (Decode.field "record" decodeRecord))
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "events" (Decode.list decodeEvent))
         (Decode.field "webcam_settings" decodeWebcamSettings)
+        (Decode.maybe (Decode.field "fade" decodeFade))
 
 
 type alias User =
@@ -578,6 +612,7 @@ encodeGos gos =
         , ( "slides", Encode.list encodeSlide gos.slides )
         , ( "events", Encode.list encodeEvent gos.events )
         , ( "webcam_settings", encodeWebcamSettings gos.webcamSettings )
+        , ( "fade", encodeFade gos.fade )
         ]
 
 

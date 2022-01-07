@@ -307,6 +307,18 @@ leftColumn global user _ gos =
 
           else
             Element.none
+        , Input.radio (Element.spacing 10 :: disabledAttr)
+            { onChange = \s -> Core.ProductionMsg (Production.FadeChanged s) |> disableMsg
+            , selected = Just gos.fade |> disableSelected
+            , label =
+                Input.labelAbove
+                    (Element.paddingXY 0 10 :: disabledAttr ++ Ui.formTitle)
+                    (Element.text (Lang.webcamAnchor global.lang))
+            , options =
+                [ Input.option (Just { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }) (Element.text "Activate Fade")
+                , Input.option Nothing (Element.text "Deactivate Fade")
+                ]
+            }
 
         --Input.text []
         --  { label = Input.labelHidden ""

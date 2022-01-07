@@ -185,6 +185,22 @@ pub struct Event {
     pub time: i32,
 }
 
+/// Options for audio/video fade in and fade out
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Fade {
+    /// duration of video fade in
+    vfadein: Option<i32>,
+
+    /// duration of video fade out
+    vfadeout: Option<i32>,
+
+    /// duration of audio fade in
+    afadein: Option<i32>,
+
+    /// duration of audio fade out
+    afadeout: Option<i32>,
+}
+
 /// The different pieces of information that we collect about a gos.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gos {
@@ -199,6 +215,9 @@ pub struct Gos {
 
     /// The webcam settings of the gos.
     pub webcam_settings: WebcamSettings,
+
+    /// Video/audio fade options
+    pub fade: Option<Fade>,
 }
 
 impl Gos {
@@ -209,6 +228,7 @@ impl Gos {
             slides: vec![],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
+            fade: None,
         }
     }
 }

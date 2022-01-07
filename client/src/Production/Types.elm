@@ -94,6 +94,7 @@ type Msg
     | WebcamAnchorChanged Capsule.Anchor
     | WebcamOpacityChanged Float
     | WebcamKeyColorChanged (Maybe String)
+    | FadeChanged (Maybe Capsule.Fade)
     | HoldingImageChanged (Maybe ( Int, Float, Float ))
     | ImageMoved Float Float Float Float
     | ProduceVideo

@@ -92,6 +92,7 @@ pub async fn new_capsule(
             }],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
+            fade: None,
         })
         .collect::<Vec<_>>();
 

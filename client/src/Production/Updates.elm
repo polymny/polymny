@@ -125,6 +125,9 @@ update msg model =
                             in
                             updateModel { gos | webcamSettings = newSettings } model m
 
+                        Production.FadeChanged f ->
+                            updateModel { gos | fade = f } model m
+
                         Production.HoldingImageChanged b ->
                             case b of
                                 Nothing ->

@@ -418,6 +418,7 @@ extractStructureAux slides current currentGos =
                             , slides = [ s ]
                             , events = []
                             , webcamSettings = Capsule.defaultWebcamSettings
+                            , fade = Nothing
                             }
 
                         ( Preparation.Slide _ s, Just gos ) ->
@@ -432,6 +433,7 @@ extractStructureAux slides current currentGos =
                             , slides = []
                             , events = []
                             , webcamSettings = Capsule.defaultWebcamSettings
+                            , fade = Nothing
                             }
             in
             extractStructureAux t newCurrent (Just newGos)
