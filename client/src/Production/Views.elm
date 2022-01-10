@@ -12,6 +12,7 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Lang
+import Log exposing (debug)
 import Production.Types as Production
 import Route
 import Ui.Colors as Colors
@@ -307,18 +308,28 @@ leftColumn global user _ gos =
 
           else
             Element.none
-        , Input.radio (Element.spacing 10 :: disabledAttr)
-            { onChange = \s -> Core.ProductionMsg (Production.FadeChanged s) |> disableMsg
-            , selected = Just gos.fade |> disableSelected
-            , label =
-                Input.labelAbove
-                    (Element.paddingXY 0 10 :: disabledAttr ++ Ui.formTitle)
-                    (Element.text (Lang.webcamAnchor global.lang))
-            , options =
-                [ Input.option (Just { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }) (Element.text "Activate Fade")
-                , Input.option Nothing (Element.text "Deactivate Fade")
-                ]
-            }
+        , if User.isPremium user then
+            Input.checkbox
+                disabledAttr
+                { checked = debug "checked " <| isJust gos.fade
+                , icon = Input.defaultCheckbox
+                , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateFade global.lang))
+                , onChange =
+                    \x ->
+                        Core.ProductionMsg
+                            (Production.FadeChanged
+                                (case gos.fade of
+                                    Just _ ->
+                                        Nothing
+
+                                    Nothing ->
+                                        Just { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+                                )
+                            )
+                }
+
+          else
+            Element.none
 
         --Input.text []
         --  { label = Input.labelHidden ""

@@ -1858,6 +1858,16 @@ activateKeying lang =
             "Activate keying"
 
 
+activateFade : Lang -> String
+activateFade lang =
+    case lang of
+        FrFr ->
+            "Activer le fading²"
+
+        _ ->
+            "Activate fading"
+
+
 errorUploadingPdf : Lang -> String
 errorUploadingPdf lang =
     case lang of

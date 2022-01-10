@@ -808,9 +808,9 @@ compose_goss(){
 
     seq_file="$tmp_path/seq_file.txt"
     echo "ffconcat version 1.0" > $seq_file
-    len=$(echo $capsule_structure | jq  '.|length')
     if (( $gosid == -1 )) ; then
         # GOS loop
+        len=$(echo $capsule_structure | jq  '.|length')
         for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
         do
             compose_gos $cid $gos_i $len $seq_file
