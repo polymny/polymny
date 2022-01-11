@@ -201,6 +201,18 @@ pub struct Fade {
     afadeout: Option<i32>,
 }
 
+impl Fade {
+    /// Returns the default fade, which is no fade at all.
+    pub fn none() -> Fade {
+        Fade {
+            vfadein: None,
+            vfadeout: None,
+            afadein: None,
+            afadeout: None,
+        }
+    }
+}
+
 /// The different pieces of information that we collect about a gos.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gos {
@@ -217,7 +229,7 @@ pub struct Gos {
     pub webcam_settings: WebcamSettings,
 
     /// Video/audio fade options
-    pub fade: Option<Fade>,
+    pub fade: Fade,
 }
 
 impl Gos {
@@ -228,7 +240,7 @@ impl Gos {
             slides: vec![],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
-            fade: None,
+            fade: Fade::none(),
         }
     }
 }

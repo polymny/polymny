@@ -1862,7 +1862,7 @@ activateFade : Lang -> String
 activateFade lang =
     case lang of
         FrFr ->
-            "Activer le fading²"
+            "Activer le fading"
 
         _ ->
             "Activate fading"

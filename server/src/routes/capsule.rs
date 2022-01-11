@@ -21,7 +21,7 @@ use rocket::{Data, State as S};
 
 use crate::command::{export_slides, run_command};
 use crate::config::Config;
-use crate::db::capsule::{Capsule, Gos, Privacy, Record, Role, Slide, WebcamSettings};
+use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::User;
 use crate::websockets::WebSockets;
@@ -92,7 +92,7 @@ pub async fn new_capsule(
             }],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
-            fade: None,
+            fade: Fade::none(),
         })
         .collect::<Vec<_>>();
 

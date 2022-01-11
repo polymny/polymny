@@ -4,7 +4,6 @@ import Api
 import Capsule exposing (Capsule)
 import Core.Ports as Ports
 import Core.Types as Core
-import Log exposing (debug)
 import Production.Types as Production
 import User
 import Utils exposing (tern)
@@ -127,7 +126,7 @@ update msg model =
                             updateModel { gos | webcamSettings = newSettings } model m
 
                         Production.FadeChanged f ->
-                            updateModel { gos | fade = debug "fade" f } model m
+                            updateModel { gos | fade = f } model m
 
                         Production.HoldingImageChanged b ->
                             case b of

@@ -12,7 +12,6 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Lang
-import Log exposing (debug)
 import Production.Types as Production
 import Route
 import Ui.Colors as Colors
@@ -254,8 +253,7 @@ leftColumn global user _ gos =
           else
             Element.none
         , if User.isPremium user then
-            Input.checkbox
-                disabledAttr
+            Input.checkbox disabledAttr
                 { checked = isJust currentKeyColor
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateKeying global.lang))
@@ -309,21 +307,24 @@ leftColumn global user _ gos =
           else
             Element.none
         , if User.isPremium user then
+            let
+                fade =
+                    gos.fade.vfadein /= Nothing || gos.fade.vfadeout /= Nothing || gos.fade.afadein /= Nothing || gos.fade.afadeout /= Nothing
+            in
             Input.checkbox
-                disabledAttr
-                { checked = debug "checked " <| isJust gos.fade
+                []
+                { checked = fade
                 , icon = Input.defaultCheckbox
-                , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateFade global.lang))
+                , label = Input.labelRight [] (Element.text (Lang.activateFade global.lang))
                 , onChange =
                     \x ->
                         Core.ProductionMsg
                             (Production.FadeChanged
-                                (case gos.fade of
-                                    Just _ ->
-                                        Nothing
+                                (if fade then
+                                    { vfadein = Nothing, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
 
-                                    Nothing ->
-                                        Just { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+                                 else
+                                    { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
                                 )
                             )
                 }

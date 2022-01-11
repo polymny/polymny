@@ -55,7 +55,12 @@ structureFromUiAux acc input =
 
 gosFromSlide : Capsule.Slide -> Capsule.Gos
 gosFromSlide slide =
-    { record = Nothing, slides = [ slide ], events = [], webcamSettings = Capsule.defaultWebcamSettings, fade = Nothing }
+    { record = Nothing
+    , slides = [ slide ]
+    , events = []
+    , webcamSettings = Capsule.defaultWebcamSettings
+    , fade = { vfadein = Nothing, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+    }
 
 
 type Msg
