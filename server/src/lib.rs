@@ -400,7 +400,10 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
             ],
         )
         .mount("/dist", routes![routes::dist])
-        .mount("/data", routes![routes::assets, routes::produced_video])
+        .mount(
+            "/data",
+            routes![routes::assets, routes::tmp, routes::produced_video],
+        )
         .mount(
             "/api",
             if config.registration_disabled {

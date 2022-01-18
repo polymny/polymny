@@ -313,6 +313,30 @@ pub async fn produced_video<'a>(
     .map_err(|_| Error(Status::NotFound))
 }
 
+/// The route for temporary static files that require authorization.
+#[get("/<capsule_id>/tmp/<path..>")]
+pub async fn tmp<'a>(
+    capsule_id: HashId,
+    path: PathBuf,
+    user: User,
+    config: &S<Config>,
+    db: Db,
+) -> Result<NamedFile> {
+    let (_, _) = user
+        .get_capsule_with_permission(*capsule_id, Role::Read, &db)
+        .await?;
+
+    NamedFile::open(
+        config
+            .data_path
+            .join(format!("{}", *capsule_id))
+            .join("tmp")
+            .join(path),
+    )
+    .await
+    .map_err(|_| Error(Status::NotFound))
+}
+
 /// The route for static files.
 #[get("/<path..>")]
 pub async fn dist(path: PathBuf) -> Result<NamedFile> {
