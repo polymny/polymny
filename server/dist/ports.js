@@ -282,21 +282,6 @@ function setupPorts(app) {
 
         await playWebcam();
 
-        function sendRecordToElmIfReady() {
-            if (recordArrived === null || pointerArrived === null) {
-                return;
-            }
-
-            app.ports.recordArrived.send({
-                webcam_blob: recordArrived,
-                pointer_blob: pointerExists ? pointerArrived : null,
-                events: currentEvents,
-            });
-
-            recordArrived = null;
-            pointerArrived = null;
-        }
-
         recorder = new MediaRecorder(stream, recorderOptions);
         recorder.ondataavailable = (data) => {
             recordArrived = data.data;
@@ -307,7 +292,31 @@ function setupPorts(app) {
             console.log(err);
         };
 
-        setTimeout(() => {
+        bindingWebcam = false;
+
+        console.log("Webcam bound");
+        app.ports.webcamBound.send(null);
+    }
+
+    function sendRecordToElmIfReady() {
+        if (recordArrived === null || pointerArrived === null) {
+            return;
+        }
+
+        app.ports.recordArrived.send({
+            webcam_blob: recordArrived,
+            pointer_blob: pointerExists ? pointerArrived : null,
+            events: currentEvents,
+        });
+
+        recordArrived = null;
+        pointerArrived = null;
+    }
+
+    function bindPointer() {
+        requestAnimationFrame(() => {
+            console.log("Binding pointer");
+
             setupCanvasListeners();
 
             let pointerOptions = {
@@ -324,12 +333,10 @@ function setupPorts(app) {
             pointerRecorder.onerror = (err) => {
                 console.log(err);
             };
-        }, 1000);
 
-        bindingWebcam = false;
-
-        console.log("Webcam bound");
-        app.ports.webcamBound.send(null);
+            console.log("Pointer bound");
+            app.ports.pointerBound.send(null);
+        });
     }
 
     async function unbindWebcam() {
@@ -751,6 +758,7 @@ function setupPorts(app) {
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);
     subscribe(app.ports.unbindWebcam, unbindWebcam);
+    subscribe(app.ports.bindPointer, bindPointer);
     subscribe(app.ports.startRecording, startRecording);
     subscribe(app.ports.stopRecording, stopRecording);
     subscribe(app.ports.playRecord, playRecord);

@@ -215,6 +215,7 @@ type Msg
     | RefreshDevices
     | DevicesReceived Devices
     | WebcamBound
+    | PointerBound
     | InvertAcquisition
     | StartRecording
     | StopRecording

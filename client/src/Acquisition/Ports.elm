@@ -18,6 +18,12 @@ port unbindWebcam : () -> Cmd msg
 port webcamBound : (() -> msg) -> Sub msg
 
 
+port bindPointer : () -> Cmd msg
+
+
+port pointerBound : (() -> msg) -> Sub msg
+
+
 port devicesReceived : (Json.Encode.Value -> msg) -> Sub msg
 
 

@@ -13,6 +13,7 @@ subscriptions : Acquisition.Model -> Sub Core.Msg
 subscriptions model =
     Sub.batch
         [ Ports.webcamBound (\_ -> Core.AcquisitionMsg Acquisition.WebcamBound)
+        , Ports.pointerBound (\_ -> Core.AcquisitionMsg Acquisition.PointerBound)
         , Ports.recordArrived
             (\x ->
                 case Decode.decodeValue Acquisition.decodeRecord x of

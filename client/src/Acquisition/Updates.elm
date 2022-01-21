@@ -67,6 +67,14 @@ update msg model =
         Acquisition.WebcamBound ->
             case model.page of
                 Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | webcamBound = True }), Ports.bindPointer () )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PointerBound ->
+            case model.page of
+                Core.Acquisition p ->
                     ( mkModel model (Core.Acquisition { p | webcamBound = True }), Cmd.none )
 
                 _ ->
