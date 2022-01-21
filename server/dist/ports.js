@@ -14,7 +14,13 @@ function setupPorts(app) {
         onbeforeunloadvalue = false,
         recordArrived = null,
         pointerArrived = null,
-        pointerExists = false;
+        pointerExists = false,
+        tmpCanvas = document.createElement('canvas'),
+        tmpCtx = tmpCanvas.getContext('2d'),
+        pointerVideo = document.createElement('video');
+
+    tmpCanvas.width = 1920;
+    tmpCanvas.height = 1080;
 
 
     window.addEventListener('beforeunload', function(event) {
@@ -360,16 +366,17 @@ function setupPorts(app) {
     }
 
     async function playRecord(record) {
+        let pointerCanvas;
         let video = document.getElementById(videoId);
         video.srcObject = null;
+
+        video.muted = false;
 
         if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
             video.src = record.webcam_blob;
         } else {
             video.src = URL.createObjectURL(record.webcam_blob);
         }
-
-        video.muted = false;
 
         video.onended = () => {
             playWebcam();
@@ -380,6 +387,16 @@ function setupPorts(app) {
             }
             app.ports.playRecordFinished.send(null);
         };
+
+        if (record.pointer_blob !== null) {
+            pointerCanvas = document.getElementById('pointer-canvas');
+
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
+                pointerVideo.src = record.pointer_blob;
+            } else {
+                pointerVideo.src = URL.createObjectURL(record.pointer_blob);
+            }
+        }
 
         // Skip last transition which is the end of the video.
         for (let i = 0; i < record.events.length - 1; i++) {
@@ -414,6 +431,33 @@ function setupPorts(app) {
         }
 
         video.play();
+
+        if (pointerCanvas !== undefined) {
+            pointerVideo.play();
+            renderPointer();
+        }
+
+        function renderPointer() {
+            if (video.paused || video.ended) {
+                return;
+            }
+
+            tmpCtx.drawImage(pointerVideo, 0, 0);
+            let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+            let length = frame.data.length;
+            let data = frame.data;
+
+            for (let i = 0; i < length; i += 4) {
+                data[i + 3] = data[i];
+                data[i] = 255;
+            }
+
+            ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+            ctx.putImageData(frame, 0, 0);
+
+            requestAnimationFrame(renderPointer);
+
+        }
     }
 
     function startRecording() {

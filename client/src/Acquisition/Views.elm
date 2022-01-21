@@ -170,31 +170,39 @@ rightColumn global _ submodel =
 
         recordView : Int -> Acquisition.Record -> Element Core.Msg
         recordView id record =
-            Element.row [ Ui.wf, Element.spacing 10, Element.paddingXY 0 10 ]
+            Element.row [ Ui.wf, Element.spacing 20, Element.padding 10, Border.color Colors.greyLight, Border.rounded 5, Border.width 1 ]
                 [ Element.text (String.fromInt (id + 1))
-                , Ui.iconButton [ Font.color Colors.navbar ]
-                    { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
-                    , icon = Fa.play
-                    , text = Nothing
-                    , tooltip = Just (Lang.playRecord global.lang)
-                    }
-                , Ui.iconButton [ Font.color Colors.navbar ]
-                    { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
-                    , icon = Fa.check
-                    , text = Nothing
-                    , tooltip = Just (Lang.uploadRecord global.lang)
-                    }
-                , record.events
-                    |> List.reverse
-                    |> List.head
-                    |> Maybe.map (\x -> formatTime x.time)
-                    |> Maybe.withDefault ""
-                    |> Element.text
-                , if record.pointerBlob == Nothing then
-                    Element.text "no pointer"
+                , Element.column [ Element.spacing 10 ]
+                    [ Element.row [ Element.spacing 10 ]
+                        [ record.events
+                            |> List.reverse
+                            |> List.head
+                            |> Maybe.map (\x -> formatTime x.time)
+                            |> Maybe.withDefault ""
+                            |> Element.text
+                        ]
+                    , Element.row [ Element.spacing 10 ]
+                        [ if record.pointerBlob == Nothing then
+                            Element.text "no pointer"
 
-                  else
-                    Element.text "pointer"
+                          else
+                            Element.text "pointer"
+                        ]
+                    ]
+                , Element.row [ Element.alignRight, Element.spacing 10, Element.centerY ]
+                    [ Ui.iconButton [ Font.color Colors.navbar ]
+                        { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
+                        , icon = Fa.play
+                        , text = Nothing
+                        , tooltip = Just (Lang.playRecord global.lang)
+                        }
+                    , Ui.iconButton [ Font.color Colors.navbar ]
+                        { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
+                        , icon = Fa.check
+                        , text = Nothing
+                        , tooltip = Just (Lang.uploadRecord global.lang)
+                        }
+                    ]
                 ]
 
         records =
@@ -206,6 +214,7 @@ rightColumn global _ submodel =
                         , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
                         , Border.color Colors.greyLighter
                         , Element.padding 10
+                        , Element.spacing 10
                         ]
                         (Element.el [ Element.centerX ] (Element.text (Lang.records global.lang))
                             :: List.indexedMap recordView (List.reverse s.records)
