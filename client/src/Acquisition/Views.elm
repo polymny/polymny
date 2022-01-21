@@ -190,6 +190,11 @@ rightColumn global _ submodel =
                     |> Maybe.map (\x -> formatTime x.time)
                     |> Maybe.withDefault ""
                     |> Element.text
+                , if record.pointerBlob == Nothing then
+                    Element.text "no pointer"
+
+                  else
+                    Element.text "pointer"
                 ]
 
         records =
@@ -581,15 +586,17 @@ slideElement global user model =
                 ]
 
         ( Just s, Nothing ) ->
-            Element.el
-                [ Input.focusedOnLoad
-                , Ui.wf
-                , Ui.hfp 2
-                , ("center / contain content-box no-repeat url('" ++ Capsule.slidePath model.capsule s ++ "')")
-                    |> Html.Attributes.style "background"
-                    |> Element.htmlAttribute
+            Element.column [ Ui.wf, Ui.hfp 2 ]
+                [ Element.el [ Ui.hf ] Element.none
+                , Element.image
+                    [ Ui.wf
+                    , Ui.hf
+                    , Element.htmlAttribute (Html.Attributes.id "slideimg")
+                    , Element.inFront (Element.html (Html.canvas [ Html.Attributes.id "pointer-canvas" ] []))
+                    ]
+                    { description = "slide", src = Capsule.slidePath model.capsule s }
+                , Element.el [ Ui.hf ] Element.none
                 ]
-                Element.none
 
         _ ->
             Element.none

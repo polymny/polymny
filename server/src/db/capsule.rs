@@ -141,6 +141,9 @@ pub struct Record {
     /// The uuid of the record.
     pub uuid: Uuid,
 
+    /// The uuid of the pointer of the record.
+    pub pointer_uuid: Option<Uuid>,
+
     /// The size of the record, if it contains video.
     pub size: Option<(u32, u32)>,
 }

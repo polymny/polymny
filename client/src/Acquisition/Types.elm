@@ -46,16 +46,18 @@ type alias Model =
 
 type alias Record =
     { events : List Capsule.Event
-    , blob : Encode.Value
+    , webcamBlob : Encode.Value
+    , pointerBlob : Maybe Encode.Value
     , old : Bool
     }
 
 
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map3 Record
+    Decode.map4 Record
         (Decode.field "events" (Decode.list Capsule.decodeEvent))
-        (Decode.field "blob" Decode.value)
+        (Decode.field "webcam_blob" Decode.value)
+        (Decode.field "pointer_blob" (Decode.nullable Decode.value))
         (Decode.succeed False)
 
 
@@ -63,7 +65,8 @@ encodeRecord : Record -> Encode.Value
 encodeRecord record =
     Encode.object
         [ ( "events", Encode.list Capsule.encodeEvent record.events )
-        , ( "blob", record.blob )
+        , ( "webcam_blob", record.webcamBlob )
+        , ( "pointer_blob", record.pointerBlob |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -117,7 +120,12 @@ init devices chosenDeviceIds capsule id =
                 in
                 case ( Maybe.map .record gos, gos ) of
                     ( Just (Just r), Just g ) ->
-                        [ { blob = Encode.string (Capsule.assetPath capsule (r.uuid ++ ".webm"))
+                        [ { webcamBlob = Encode.string (Capsule.assetPath capsule (r.uuid ++ ".webm"))
+                          , pointerBlob =
+                                r.pointerUuid
+                                    |> Maybe.map (\x -> x ++ ".webm")
+                                    |> Maybe.map (Capsule.assetPath capsule)
+                                    |> Maybe.map Encode.string
                           , events = g.events
                           , old = True
                           }

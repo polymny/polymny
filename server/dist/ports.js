@@ -4,10 +4,18 @@ function setupPorts(app) {
         bindingWebcam = false,
         unbindRequested = false,
         recorder,
+        pointerRecorder,
+        pointerStream = null,
+        pointer = { x: 0, y: 0, down: false },
+        ctx = null,
         recording,
         currentEvents,
         nextSlideCallbacks = [],
-        onbeforeunloadvalue = false;
+        onbeforeunloadvalue = false,
+        recordArrived = null,
+        pointerArrived = null,
+        pointerExists = false;
+
 
     window.addEventListener('beforeunload', function(event) {
         if (onbeforeunloadvalue) {
@@ -47,6 +55,33 @@ function setupPorts(app) {
         }
     }
 
+    function makeRequest(method, url, data, onprogress) {
+        return new Promise(function (resolve, reject) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url, true);
+            xhr.onload = function () {
+                if (this.status >= 200 && this.status < 300) {
+                    resolve(xhr);
+                } else {
+                    reject({
+                        status: this.status,
+                        statusText: xhr.statusText
+                    });
+                }
+            };
+            xhr.onerror = function () {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
+            };
+            if (typeof onprogress === 'function') {
+                xhr.upload.onprogress = onprogress;
+            }
+            xhr.send(data);
+        });
+    }
+
     function setLanguage(arg) {
         localStorage.setItem('language', arg);
     }
@@ -83,6 +118,56 @@ function setupPorts(app) {
         onbeforeunloadvalue = arg;
     }
 
+    function refresh(canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (pointer.down) {
+            pointerExists = true;
+            let gradient = ctx.createRadialGradient(
+                pointer.x, pointer.y, 3,
+                pointer.x, pointer.y, 10
+            );
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+
+            ctx.beginPath();
+            ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
+
+    function setupCanvasListeners() {
+        let canvas = document.getElementById('pointer-canvas');
+        canvas.width = 1920;
+        canvas.height = 1080;
+        ctx = canvas.getContext('2d');
+
+        pointerStream = canvas.captureStream(30);
+
+        canvas.addEventListener('mousedown', function(event) {
+            pointer.down = true;
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('mouseup', function(event) {
+            pointer.down = false;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('moueout', function(event) {
+            pointer.down = false;
+            refresh(canvas);
+        });
+
+        canvas.addEventListener('mousemove', function(event) {
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas);
+        });
+    }
+
     async function findDevices(force) {
 
         let inputs = localStorage.getItem('devices');
@@ -97,7 +182,9 @@ function setupPorts(app) {
 
         // Ask user media to ask permission so we can read labels later.
         try {
+            console.log("a");
             stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
+            console.log("b");
         } catch (e) {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({video: false, audio: true});
@@ -189,16 +276,49 @@ function setupPorts(app) {
 
         await playWebcam();
 
-        recorder = new MediaRecorder(stream, recorderOptions);
-        recorder.ondataavailable = (data) => {
+        function sendRecordToElmIfReady() {
+            if (recordArrived === null || pointerArrived === null) {
+                return;
+            }
+
             app.ports.recordArrived.send({
-                blob: data.data,
+                webcam_blob: recordArrived,
+                pointer_blob: pointerExists ? pointerArrived : null,
                 events: currentEvents,
             });
+
+            recordArrived = null;
+            pointerArrived = null;
+        }
+
+        recorder = new MediaRecorder(stream, recorderOptions);
+        recorder.ondataavailable = (data) => {
+            recordArrived = data.data;
+            sendRecordToElmIfReady();
         };
+
         recorder.onerror = (err) => {
             console.log(err);
         };
+
+        setTimeout(() => {
+            setupCanvasListeners();
+
+            let pointerOptions = {
+                videoBitsPerSecond : 2500000,
+                mimeType : 'video/webm;codecs=vp8'
+            };
+
+            pointerRecorder = new MediaRecorder(pointerStream, pointerOptions);
+            pointerRecorder.ondataavailable = (data) => {
+                pointerArrived = data.data;
+                sendRecordToElmIfReady();
+            };
+
+            pointerRecorder.onerror = (err) => {
+                console.log(err);
+            };
+        }, 1000);
 
         bindingWebcam = false;
 
@@ -243,10 +363,10 @@ function setupPorts(app) {
         let video = document.getElementById(videoId);
         video.srcObject = null;
 
-        if (typeof record.blob === "string" || record.blob instanceof String) {
-            video.src = record.blob;
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+            video.src = record.webcam_blob;
         } else {
-            video.src = URL.createObjectURL(record.blob);
+            video.src = URL.createObjectURL(record.webcam_blob);
         }
 
         video.muted = false;
@@ -269,6 +389,7 @@ function setupPorts(app) {
                 case "next_slide":
                     callback = () => app.ports.nextSlideReceived.send(null);
                     break;
+
                 case "play":
                     callback = () => {
                         let extra = document.getElementById('extra');
@@ -277,6 +398,7 @@ function setupPorts(app) {
                         extra.play();
                     };
                     break;
+
                 case "stop":
                     callback = () => {
                         let extra = document.getElementById('extra');
@@ -296,8 +418,10 @@ function setupPorts(app) {
 
     function startRecording() {
         if (recorder !== undefined && !recording) {
+            pointerExists = false;
             recording = true;
             recorder.start();
+            pointerRecorder.start();
             currentEvents = [{
                 time: Math.round(window.performance.now()),
                 ty: "start"
@@ -337,16 +461,17 @@ function setupPorts(app) {
 
             currentEvents[0].time = 0;
             recorder.stop();
+            pointerRecorder.stop();
             recording = false;
         }
     }
 
-    function uploadRecord(args) {
+    async function uploadRecord(args) {
         let capsuleId = args[0];
         let gos = args[1];
         let record = args[2];
 
-        if (typeof record.blob === "string" || record.blob instanceof String) {
+        if (typeof record.webcam_blob === "string" || record.webmca_blob instanceof String) {
 
             // User wants to validate the old record, don't need to do anything,
             // just send the message to let them know it's done
@@ -354,41 +479,31 @@ function setupPorts(app) {
 
         } else {
 
-            let xhr = new XMLHttpRequest();
-            xhr.open("POST", "/api/upload-record/" + capsuleId + "/" + gos, true);
+            try {
+                let factor = record.pointer_blob === null ? 1 : 2;
+                let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+                    app.ports.progressReceived.send(e.loaded / (factor * e.total));
+                });
 
-            xhr.upload.onprogress = (e) => {
-                app.ports.progressReceived.send(e.loaded / e.total);
-            };
-
-            xhr.onreadystatechange = () => {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        let capsule = JSON.parse(xhr.responseText);
-                        capsule.structure[gos].events = record.events;
-
-                        let xhr2 = new XMLHttpRequest();
-                        xhr2.open("POST", "/api/update-capsule/", true);
-
-                        xhr2.onreadystatechange = () => {
-                            if (xhr2.readyState === 4) {
-                                if (xhr2.status === 200) {
-                                    app.ports.capsuleUpdated.send(capsule);
-                                } else {
-                                    app.ports.uploadRecordFailed.send(null);
-                                }
-                            };
-                        }
-
-                        xhr2.send(JSON.stringify(capsule));
-                    } else {
-                        app.ports.uploadRecordFailed.send(null);
-                    }
+                if (record.pointer_blob !== null) {
+                    xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                        app.ports.progressReceived.send(0.5 + e.loaded / e.total);
+                    });
                 }
+
+                let capsule = JSON.parse(xhr.responseText);
+                capsule.structure[gos].events = record.events;
+
+                await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
+                app.ports.capsuleUpdated.send(capsule);
+            } catch (e) {
+                console.log(e)
+                app.ports.uploadRecordFailed.send(null);
             }
 
-            xhr.send(record.blob);
         }
+
     }
 
     function askNextSlide() {

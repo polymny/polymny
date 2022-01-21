@@ -243,10 +243,57 @@ pub async fn upload_record(
         None
     };
 
-    gos.record = Some(Record { uuid, size });
+    gos.record = Some(Record {
+        uuid,
+        size,
+        pointer_uuid: None,
+    });
+
     if size.is_none() {
         gos.webcam_settings = WebcamSettings::Disabled;
     }
+    capsule.set_changed();
+    capsule.save(&db).await?;
+
+    Ok(capsule.to_json(role, &db).await?)
+}
+
+/// The route that uploads a pointer to a capsule for a specific gos.
+#[post("/upload-pointer/<id>/<gos>", data = "<data>")]
+pub async fn upload_pointer(
+    user: User,
+    db: Db,
+    config: &S<Config>,
+    id: HashId,
+    gos: i32,
+    data: Data<'_>,
+) -> Result<Value> {
+    // Check that the user has write access to the capsule.
+    let (mut capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    let gos = capsule
+        .structure
+        .0
+        .get_mut(gos as usize)
+        .ok_or(Error(Status::BadRequest))?;
+
+    if gos.record.is_none() {
+        return Err(Error(Status::BadRequest));
+    }
+
+    let pointer_uuid = Uuid::new_v4();
+    let output = config
+        .data_path
+        .join(format!("{}", *id))
+        .join("assets")
+        .join(format!("{}.webm", pointer_uuid));
+
+    data.open(1_i32.gibibytes()).into_file(output).await?;
+
+    gos.record.as_mut().unwrap().pointer_uuid = Some(pointer_uuid);
+
     capsule.set_changed();
     capsule.save(&db).await?;
 

@@ -216,14 +216,16 @@ videoPath capsule =
 
 type alias Record =
     { uuid : String
+    , pointerUuid : Maybe String
     , size : Maybe ( Int, Int )
     }
 
 
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map2 Record
+    Decode.map3 Record
         (Decode.field "uuid" Decode.string)
+        (Decode.maybe (Decode.field "pointer_uuid" Decode.string))
         (Decode.maybe (Decode.field "size" decodeIntPair))
 
 
@@ -233,6 +235,7 @@ encodeRecord record =
         Just r ->
             Encode.object
                 [ ( "uuid", Encode.string r.uuid )
+                , ( "pointer_uuid", r.pointerUuid |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
                 , case r.size of
                     Just ( w, h ) ->
                         ( "size", Encode.list Encode.int [ w, h ] )
