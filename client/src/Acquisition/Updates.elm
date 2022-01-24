@@ -97,6 +97,16 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        Acquisition.StartPointerRecording record ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | recording = True, currentSlide = 0, currentLine = 0 })
+                    , Ports.startPointerRecording (Acquisition.encodeRecord record)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
         Acquisition.StopRecording ->
             case model.page of
                 Core.Acquisition p ->
@@ -109,6 +119,26 @@ update msg model =
             case model.page of
                 Core.Acquisition p ->
                     ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Ports.stopRecording () )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PointerRecordArrived record ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        updater : Acquisition.Record -> Acquisition.Record
+                        updater old =
+                            if old.webcamBlob == record.webcamBlob then
+                                Debug.log "yo" record
+
+                            else
+                                old
+
+                        newRecords =
+                            List.map updater p.records
+                    in
+                    ( mkModel model (Core.Acquisition { p | records = newRecords }), Ports.stopRecording () )
 
                 _ ->
                     ( model, Cmd.none )

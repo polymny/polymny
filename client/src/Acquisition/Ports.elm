@@ -36,6 +36,12 @@ port stopRecording : () -> Cmd msg
 port recordArrived : (Json.Encode.Value -> msg) -> Sub msg
 
 
+port startPointerRecording : Json.Encode.Value -> Cmd msg
+
+
+port pointerRecordArrived : (Json.Encode.Value -> msg) -> Sub msg
+
+
 port askNextSlide : () -> Cmd msg
 
 

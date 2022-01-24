@@ -23,6 +23,15 @@ subscriptions model =
                     _ ->
                         Core.Noop
             )
+        , Ports.pointerRecordArrived
+            (\x ->
+                case Decode.decodeValue Acquisition.decodeRecord x of
+                    Ok o ->
+                        Core.AcquisitionMsg (Acquisition.PointerRecordArrived o)
+
+                    _ ->
+                        Core.Noop
+            )
         , Keyboard.ups (Acquisition.shortcuts model)
         , Ports.nextSlideReceived (\_ -> Core.AcquisitionMsg Acquisition.NextSlideReceived)
         , Ports.playRecordFinished (\_ -> Core.AcquisitionMsg Acquisition.PlayRecordFinished)

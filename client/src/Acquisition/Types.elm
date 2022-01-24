@@ -220,6 +220,8 @@ type Msg
     | StartRecording
     | StopRecording
     | RecordArrived Record
+    | StartPointerRecording Record
+    | PointerRecordArrived Record
     | ToggleSettings
     | VideoDeviceChanged (Maybe VideoDevice)
     | ResolutionChanged Resolution

@@ -188,9 +188,7 @@ function setupPorts(app) {
 
         // Ask user media to ask permission so we can read labels later.
         try {
-            console.log("a");
             stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true});
-            console.log("b");
         } catch (e) {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({video: false, audio: true});
@@ -298,12 +296,18 @@ function setupPorts(app) {
         app.ports.webcamBound.send(null);
     }
 
-    function sendRecordToElmIfReady() {
+    function sendRecordToElmIfReady(port = app.ports.recordArrived) {
         if (recordArrived === null || pointerArrived === null) {
             return;
         }
 
-        app.ports.recordArrived.send({
+        console.log({
+            webcam_blob: recordArrived,
+            pointer_blob: pointerExists ? pointerArrived : null,
+            events: currentEvents,
+        });
+
+        port.send({
             webcam_blob: recordArrived,
             pointer_blob: pointerExists ? pointerArrived : null,
             events: currentEvents,
@@ -514,6 +518,85 @@ function setupPorts(app) {
             recorder.stop();
             pointerRecorder.stop();
             recording = false;
+        }
+    }
+
+    function startPointerRecording(record) {
+        if (recorder !== undefined && !recording) {
+            recording = true;
+            pointerExists = false;
+
+            let video = document.getElementById(videoId);
+            video.srcObject = null;
+
+            video.muted = false;
+
+            if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+                video.src = record.webcam_blob;
+            } else {
+                video.src = URL.createObjectURL(record.webcam_blob);
+            }
+
+            video.onended = () => {
+                playWebcam();
+                let extra = document.getElementById('extra');
+                if (extra instanceof HTMLVideoElement) {
+                    extra.pause();
+                    extra.currentTime = 0;
+                }
+                pointerRecorder.stop();
+                recording = false;
+                app.ports.playRecordFinished.send(null);
+            };
+
+            pointerRecorder.ondataavailable = (data) => {
+                recordArrived = record.webcam_blob;
+                pointerArrived = data.data;
+                sendRecordToElmIfReady(app.ports.pointerRecordArrived);
+            };
+
+            // Skip last transition which is the end of the video.
+            for (let i = 0; i < record.events.length - 1; i++) {
+                let event = record.events[i];
+                let callback;
+                switch (event.ty) {
+                    case "next_slide":
+                        callback = () => app.ports.nextSlideReceived.send(null);
+                        break;
+
+                    case "play":
+                        callback = () => {
+                            let extra = document.getElementById('extra');
+                            extra.muted = true;
+                            extra.currentTime = 0;
+                            extra.play();
+                        };
+                        break;
+
+                    case "stop":
+                        callback = () => {
+                            let extra = document.getElementById('extra');
+                            extra.currentTime = 0;
+                            extra.stop();
+                        };
+                        break;
+                }
+
+                if (callback !== undefined) {
+                    nextSlideCallbacks.push(setTimeout(callback, event.time));
+                }
+
+            }
+
+            video.play();
+            pointerRecorder.start();
+
+            let extra = document.getElementById('extra');
+            if (extra instanceof HTMLVideoElement) {
+                extra.muted = true;
+                extra.currentTime = 0;
+                extra.play();
+            }
         }
     }
 
@@ -761,6 +844,7 @@ function setupPorts(app) {
     subscribe(app.ports.bindPointer, bindPointer);
     subscribe(app.ports.startRecording, startRecording);
     subscribe(app.ports.stopRecording, stopRecording);
+    subscribe(app.ports.startPointerRecording, startPointerRecording);
     subscribe(app.ports.playRecord, playRecord);
     subscribe(app.ports.askNextSlide, askNextSlide);
     subscribe(app.ports.askNextSentence, askNextSentence);

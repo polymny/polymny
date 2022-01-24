@@ -182,7 +182,8 @@ rightColumn global _ submodel =
                             |> Element.text
                         ]
                     , Element.row [ Element.spacing 10 ]
-                        [ if record.pointerBlob == Nothing then
+                        [ Input.button [] { label = Element.text "record", onPress = Just (Core.AcquisitionMsg (Acquisition.StartPointerRecording record)) }
+                        , if record.pointerBlob == Nothing then
                             Element.text "no pointer"
 
                           else
