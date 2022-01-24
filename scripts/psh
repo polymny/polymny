@@ -184,7 +184,15 @@ colorkey(){
     echo "$colorkey,$despill"
 }
 
-
+pointerkey(){
+    colorkey_color="$1"
+    # color key params
+    colorkey_similarity="0.3"
+    colorkey_blend="0.2"
+    colorkey="colorkey=$colorkey_color:$colorkey_similarity:$colorkey_blend"
+    despill="despill=$1"
+    echo "$colorkey,$despill"
+}
 # USAGE:
 #   params_pip_slide_record  <slide_path> <record_path> <offset> <duration> <output_path>
 #
@@ -312,9 +320,164 @@ params_pip_slide_record() {
 
 }
 
+# USAGE:
+#   params_pip_slide_record2  <slide_path> <record_path> <duration> <output_path>
+#
+# EXAMPLE:
+#   params  tmp/video.mp4
+params_pip_slide_record2() {
+
+    slide=$1
+    shift
+
+    record=$1
+    shift
+
+    duration=$1
+    shift
+
+    webcam_settings=$1
+    shift
+
+    pointer_overlay=$1
+    shift
+
+    output=$1
+    shift
+
+
+    width_slide="1920"
+    height_slide="1080"
+
+    vcodec=$vcodec264
+    vcodec_opts="-crf 15"
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+    composition_type=$(echo "$webcam_settings"| jq -cr ".type")
+
+    keying_filter="null"
+    color=$(get_keycolor "$webcam_settings")
+    if [[  "$color" != "null" ]]; then
+        keying_filter=$(colorkey $color)
+    fi
+    pointer_filter=$(colorkey black)
+
+    case $composition_type in
+         "pip" )
+            webcam_alpha=$(get_alpha "$webcam_settings")
+            size=$(echo "$webcam_settings" | jq -cr ".size[0]")
+            webcam_size=$(get_webcam_size "$webcam_settings")
+            overlay=$(get_overlay "$webcam_settings")
+            scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
+            filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[2]$pointer_filter[pointer];[slide][record]overlay=$overlay[pip];[pip][pointer]overlay=0:0,fps=fps=$fps"
+
+
+            echo -n -fflags \
+                 +genpts \
+                 -i $slide \
+                 -i $record \
+                 -i $pointer_overlay \
+                 -filter_complex "$filter_complex"
+            ;;
+
+        "fullscreen" )
+            record_alpha=$(get_alpha "$webcam_settings")
+            overlay="0:0"
+            aspect_ratio=$(get_aspect_ratio $record)
+            case $aspect_ratio in
+                "4:3")
+                    record_filter="[1]$keying_filter,scale=1440:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="(W-w)/2:0"
+                    ;;
+                "16/9")
+                    record_filter="[1]$keying_filter,scale=${width_slide}:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="0:0"
+                    ;;
+
+                *)
+                    record_filter="[1]$keying_filter,scale=${width_slide}:-1:flags=lanczos,format=argb,colorchannelmixer=aa=${record_alpha}[record]"
+                    overlay="(W-w)/2:(H-h)/2"
+                    ;;
+
+            esac
+            filter_complex="[0]scale=$width_slide:$height_slide[slide];${record_filter};[slide][record]overlay=$overlay"
+
+            echo -n -fflags \
+                 +genpts \
+                 -i $slide \
+                 -i $record \
+                 -filter_complex "$filter_complex"
+            ;;
+
+
+        "disabled" )
+                 echo -n -fflags \
+                 +genpts \
+                 -loop 1 \
+                 -i $slide \
+                 -i $record \
+                 -map 0:v \
+                 -map 1:a
+             ;;
+
+        "slide" )
+                 echo -n -fflags \
+                 +genpts \
+                 -f lavfi \
+                 -i anullsrc=channel_layout=stereo:sample_rate=$arate \
+                 -loop 1 \
+                 -i $slide
+             ;;
+
+        *)
+            return 1
+            ;;
+    esac
+    echo " -t $duration \
+         -vsync cfr \
+         -pix_fmt yuv420p \
+         -vcodec $vcodec $vcodec_opts\
+         -acodec $acodec \
+         -ar $arate \
+         -ac 2 \
+         -b:a $abitrate \
+         -s hd1080 \
+         $output"
+
+
+}
+
+
 
 # USAGE:
-#   concat_records <path to list of file to conat> <output>
+#   concat_slides  concat slides
+#
+# EXAMPLE:
+#   concat_slides  tmp/concat_file_gos1.txt  tmp/slides.mp4
+concat_slides() {
+
+    input=$1
+    shift
+    output=$1
+    shift
+
+    echo -f concat \
+         -safe 0 \
+         -i $input \
+         -movflags \
+         +faststart \
+         -vsync cfr \
+         -pix_fmt yuv420p \
+         -s hd1080 \
+         -r 25 \
+         $output \
+
+}
+
+# USAGE:
+#   concat_slides <path to list of file to conat> <output>
 #
 # EXAMPLE:
 #   concat_records  tmp/seq_file.txt  tmp/capsule.mp4
@@ -334,7 +497,6 @@ concat_records() {
          $output
 
 }
-
 
 # USAGE:
 #   miniatures <input> <miniature> <output>
@@ -490,8 +652,8 @@ transcode_records(){
 run_ffmpeg_command(){
     cmd=$1
     duration_ms=$(echo "$2*1000000" | bc -l )
-    echo $duration_us>&2
-    echo "$cmd">&2
+    #echo $duration_us>&2
+    #echo "$cmd">&2
 
     percent_progress="0"
     $cmd | while read line; do
@@ -569,6 +731,10 @@ compose_goss(){
         fi
 
 
+       echo "transitions: $transitions">&2
+       concat_file="$tmp_path/concat_file_gos$gos_i.txt"
+       echo "ffconcat version 1.0" > $concat_file
+
        len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
        for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
        do
@@ -597,13 +763,15 @@ compose_goss(){
                     slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
                 fi
 
+                echo "slide_duration : $slide_duration" >&2
                 output="slide_${gos_i}_${slide_i}.mp4"
-
+                echo "file ../assets/${uuid}.png" >> $concat_file
+                echo "duration ${slide_duration}ms" >> $concat_file
                 cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
 
                 total_frames=$(echo "($slide_duration*25)/1000" | bc)
 
-                run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
+                #run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
             else
 
                 if [[ $record = "null" ]] ; then
@@ -622,7 +790,32 @@ compose_goss(){
             fi
 
             echo "file '$output'" >> $seq_file
+
+
         done
+
+        # repeat last entry (FFMPEG required kinda end of file)
+        echo "file ../assets/${uuid}.png" >> $concat_file
+
+        video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
+        command=$(header && concat_slides $concat_file $video_slides
+    )
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            echo $command
+            return 1
+        fi
+        echo "transitions: $transitions">&2
+        slide_duration=${transitions[-1]}
+
+        input_pointer="${assets_path}/pointer.webm"
+        cmd=$(header_progress && params_pip_slide_record2 $video_slides $input_record "${slide_duration}ms" "$webcam_settings" $input_pointer "${tmp_path}/gos_${gos_i}.mp4")
+
+        echo "$cmd" >&2
+        total_frames=$(echo "($slide_duration*25)/1000" | bc)
+        run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
+
 
     done
     output="$capsule_path/output.mp4"
@@ -635,6 +828,8 @@ compose_goss(){
     else
         echo "Composition done"
     fi
+
+
 
 
 }
