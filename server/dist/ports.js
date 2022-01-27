@@ -451,6 +451,7 @@ function setupPorts(app) {
                 return;
             }
 
+            tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tmpCtx.drawImage(pointerVideo, 0, 0);
             let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
             let length = frame.data.length;
