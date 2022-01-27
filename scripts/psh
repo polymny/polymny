@@ -525,45 +525,172 @@ transcode_records(){
 
 }
 
+show_ffmpeg_progression(){
+    local line=$1
+    local duration_ms=$2
+    IFS='=' read -ra progress <<< $line
+    case "${progress[0]}" in
+        "out_time_us" )
+            ts="${progress[1]}"
+            percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
+            is_great=$(echo "$percent_progress > 1" | bc)
+            if [ $is_great -eq 1 ]; then
+                percent_progress="1"
+            fi
+            ;;
+        "progress" )
+            if [[ "${progress[1]}" == "end" ]] ; then
+                percent_progress="1"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+    echo $percent_progress
+}
 
-run_ffmpeg_command(){
-    cmd=$1
-    duration_ms=$(echo "$2*1000000" | bc -l )
-    #echo $duration_us>&2
-    #echo "$cmd">&2
 
-    percent_progress="0"
+
+
+run_ffmpeg_slide(){
+    local cmd=$1
+    local duration_ms=$2
+    local gos_i=$3
+    local nb_gos=$4
+    # TODO Remove $sli_i et $nb_sli
+    sli_i=1
+    nb_sli=1
+
+
+    local percent_progress="0"
+    echo "$cmd">&2
+    echo "gos_i =$gos_i">&2
+    echo "sli_i =$sli_i">&2
+    echo "nb_sli =$nb_sli">&2
+
+
     $cmd | while read line; do
-        IFS='=' read -ra progress <<< $line
-        case "${progress[0]}" in
-            "out_time_us" )
-                ts="${progress[1]}"
-                percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
-                is_great=$(echo "$percent_progress > 1" | bc)
-                if [ $is_great -eq 1 ]; then
-                    percent_progress="1"
-                fi
-                ;;
-            "progress" )
-                if [[ "${progress[1]}" == "end" ]] ; then
-                    percent_progress="1"
-                fi
-                ;;
-            *)
-                ;;
-        esac
-
-        if [ -z "$3" ]; then
-            echo -en "\n$percent_progress"
+        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
+        slide_progress=$(echo "scale=3; $sli_i/$nb_sli + (1/$nb_sli)*$percent_progress " |bc -l)
+        echo "slide progress =$slide_progress">&2
+        if (( $nb_gos == -1 )) ; then
+            # case of one GoS production
+            progress=$slide_progress
         else
-            echo -en "\n$3;$percent_progress"
+            # case of complete productuin (GoS by GoS)
+            progress=$(echo "scale=3; $gos_i/$nb_gos +  (1/$nb_gos)*($slide_progress) " |bc -l)
         fi
+        echo "progress =$progress">&2
+        echo -en "\n$progress"
     done
+
 
     if (( $? != 0 )); then
         echo "error with $1" >&2
         return 1
     fi
+
+
+}
+
+
+compose_gos(){
+    local cid=$1
+    local gos_i=$2
+    local nb_gos=$3
+    local seq_file_gos=$4
+    SLIDE_DEFAULT_DURATION="3"
+
+    capsule_path=$(get_config "data_path")"/$cid"
+    assets_path="${capsule_path}/assets"
+    tmp_path="${capsule_path}/tmp"
+
+    gos=$(echo "$capsule_structure" | jq .[$gos_i])
+    record=$(echo "$gos" | jq -cr ".record.uuid")
+
+    len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
+    if [[ $record = "null" ]] ; then
+        webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
+        transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
+        input_record="${assets_path}/null.webm"
+    else
+        transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
+        webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
+        input_record="${assets_path}/$record.webm"
+    fi
+
+
+    pointer=$(echo "$gos" | jq -cr ".record.pointer_uuid")
+    if [[ $pointer = "null" ]] ; then
+            input_pointer="null"
+    else
+        input_pointer="${assets_path}/$pointer.webm"
+    fi
+
+    concat_file="$tmp_path/concat_file_gos$gos_i.txt"
+    echo "ffconcat version 1.0" > $concat_file
+
+    for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
+    do
+        slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
+        uuid=$(echo $slide |  jq  -rc ".uuid")
+        input_slide="${assets_path}/${uuid}.png"
+
+        extra=$(echo "$slide" |  jq  -rc ".extra")
+        echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+        # DEBUG echo $echo_header >&2
+
+
+        if [ $extra = "null" ] ; then
+            # No extra resource : compose slide with record
+             input_slide="${assets_path}/${uuid}.png"
+
+             if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                # the slide have a transition and a record
+                slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+            else
+                # manage case of all slides transitions not done in GOS record
+                # add empty slides
+                #TODO check behavior of GoS with multiple empty slides
+                slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+            fi
+
+            output="slide_${gos_i}_${slide_i}.mp4"
+            line_in_concat_file="file ../assets/${uuid}.png"
+            echo $line_in_concat_file  >> $concat_file
+            echo "duration ${slide_duration}ms" >> $concat_file
+        else
+            # FIXME: mix video resource with record
+            printf '\n%s %3s %%' "$echo_header" "100"
+            line_in_concat_file="file ../assets/${extra}"
+            echo $line_in_concat_file  >> $concat_file
+
+        fi
+
+
+    done
+
+    # repeat last entry (FFMPEG required kinda end of file)
+    echo "file ../assets/${uuid}.png" >> $concat_file
+
+    video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
+    command=$(header && concat_slides $concat_file $video_slides)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        echo $command
+        return 1
+    fi
+    duration_ms=${transitions[-1]}
+
+    output_gos="gos_${gos_i}.mp4"
+    cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
+
+    echo "$cmd" >&2
+    total_frames=$(echo "($slide_duration*25)/1000" | bc)
+    run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos
+    echo "file '$output_gos'" >> $seq_file
+
 
 }
 
@@ -573,135 +700,41 @@ run_ffmpeg_command(){
 # EXAMPLE:
 #   compose_goss 42
 compose_goss(){
-    cid=$1
-    SLIDE_DEFAULT_DURATION="3"
+    local cid=$1
+    local gosid=$2
     capsule_path=$(get_config "data_path")"/$cid"
-    assets_path="${capsule_path}/assets"
     tmp_path="${capsule_path}/tmp"
     fps="25"
     if [ ! -d $tmp_path ]; then
         mkdir $tmp_path
     fi
 
-
     seq_file="$tmp_path/seq_file.txt"
     echo "ffconcat version 1.0" > $seq_file
 
-    # GOS loop
     len=$(echo $capsule_structure | jq  '.|length')
-    for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
-    do
-        gos=$(echo "$capsule_structure" | jq .[$gos_i])
-        record=$(echo "$gos" | jq -cr ".record.uuid")
-
-        len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
-        if [[ $record = "null" ]] ; then
-            webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
-            transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
-            input_record="${assets_path}/null.webm"
-        else
-            transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
-            webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
-            input_record="${assets_path}/$record.webm"
-        fi
 
 
-        pointer=$(echo "$gos" | jq -cr ".record.pointer_uuid")
-        if [[ $pointer = "null" ]] ; then
-                input_pointer="null"
-        else
-            input_pointer="${assets_path}/$pointer.webm"
-        fi
-
-        concat_file="$tmp_path/concat_file_gos$gos_i.txt"
-        echo "ffconcat version 1.0" > $concat_file
-
-        for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
+    if (( $gosid == -1 )) ; then
+        for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
         do
-            slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
-            uuid=$(echo $slide |  jq  -rc ".uuid")
-            input_slide="${assets_path}/${uuid}.png"
-
-            extra=$(echo "$slide" |  jq  -rc ".extra")
-            echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
-            ## DEBUG echo $echo_header >&2
-
-
-            if [ $extra = "null" ] ; then
-                # No extra resource : compose slide with record
-                input_slide="${assets_path}/${uuid}.png"
-
-                if (( $slide_i +1 < ${#transitions[@]} )) ; then
-                    # the slide have a transition and a record
-                    slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
-                else
-                    # manage case of all slides transitions not done in GOS record
-                    # add empty slides
-                    #TODO check behavior of GoS with multiple empty slides
-                    slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
-                fi
-
-                output="slide_${gos_i}_${slide_i}.mp4"
-                echo "file ../assets/${uuid}.png" >> $concat_file
-                echo "duration ${slide_duration}ms" >> $concat_file
-            else
-
-                if [[ $record = "null" ]] ; then
-                     # if no record , add extra resource instead of slide
-
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                else
-                    # FIXME: mix video resource with record
-                    # no slide is dislpayed.
-                    # until fix only extra is displayed
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                fi
-
-            fi
-
-
-
+            compose_gos $cid $gos_i $len $seq_file
         done
-
-        # repeat last entry (FFMPEG required kinda end of file)
-        echo "file ../assets/${uuid}.png" >> $concat_file
-
-        video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
-        command=$(header && concat_slides $concat_file $video_slides)
+        output="$capsule_path/output.mp4"
+        command=$(header && concat_records $seq_file $output)
         $command
         if (( $? != 0 )); then
             echo "error with $1" >&2
-            echo $command
+            echo $command >&2
+
+
             return 1
         fi
-        slide_duration=${transitions[-1]}
 
-        output_gos="gos_${gos_i}.mp4"
-        cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${slide_duration}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
 
-        echo "$cmd" >&2
-        total_frames=$(echo "($slide_duration*25)/1000" | bc)
-        run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
-
-        echo "file '$output_gos'" >> $seq_file
-
-    done
-    output="$capsule_path/output.mp4"
-    command=$(header && concat_records $seq_file $output)
-    $command
-    if (( $? != 0 )); then
-        echo "error with $1" >&2
-        echo $command
-        return 1
     else
-        echo "Composition done"
+        compose_gos $cid $gosid -1 $seq_file
     fi
-
-
-
-
 }
 
 
@@ -751,11 +784,12 @@ on-record() {
 #
 on-produce() {
     local cid=$1
+    local gosid=$2
 
     #transcode_records $cid
-    echo "Composition start for capsule $cid" >&2
-    compose_goss $cid
-    echo "Composition end for capsule $cid" >&2
+    echo "Composition start for capsule $cid and gos $gosid" >&2
+    compose_goss $cid $gosid
+    echo "Composition end for capsule $cid and gos $gosid" >&2
 }
 
 # USAGE:
@@ -777,11 +811,29 @@ on-video-upload() {
             ;;
     esac
 
-    duration_s=$(get_duration $input)
-    run_ffmpeg_command "$cmd" "$duration_s" ""
+
+    duration_ms=$(echo "$(get_duration $input)*1000000" | bc -l )
+
+
+    local percent_progress="0"
+
+
+    echo "$cmd">&2
+    $cmd | while read line; do
+        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
+        echo -en "\n$percent_progress"
+    done
+
+
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return 1
+    fi
+
+
+
 
 }
-
 # USAGE:
 #  format_time <time in milliseconds>
 #
@@ -936,7 +988,7 @@ main() {
             ;;
         "on-produce")
             read -r capsule_structure
-            ## DEBUG echo "$capsule_structure" | jq . >&2
+            # DEBUG echo "$capsule_structure" | jq . >&2
             on-produce "$@"
             ;;
         "on-publish")
