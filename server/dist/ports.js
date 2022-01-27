@@ -150,28 +150,26 @@ function setupPorts(app) {
 
         pointerStream = canvas.captureStream(30);
 
-        canvas.addEventListener('mousedown', function(event) {
+        canvas.addEventListener('pointerdown', function(event) {
             pointer.down = true;
             pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
             pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
             refresh(canvas);
+            canvas.setPointerCapture(event.pointerId);
         });
 
-        canvas.addEventListener('mouseup', function(event) {
+        canvas.addEventListener('pointerup', function(event) {
             pointer.down = false;
             refresh(canvas);
+            canvas.releasePointerCapture(event.pointerId);
         });
 
-        canvas.addEventListener('moueout', function(event) {
-            pointer.down = false;
-            refresh(canvas);
-        });
-
-        canvas.addEventListener('mousemove', function(event) {
+        canvas.addEventListener('pointermove', function(event) {
             pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
             pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
             refresh(canvas);
         });
+
     }
 
     async function findDevices(force) {
