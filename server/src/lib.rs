@@ -400,7 +400,10 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
             ],
         )
         .mount("/dist", routes![routes::dist])
-        .mount("/data", routes![routes::assets, routes::produced_video])
+        .mount(
+            "/data",
+            routes![routes::assets, routes::tmp, routes::produced_video],
+        )
         .mount(
             "/api",
             if config.registration_disabled {
@@ -432,6 +435,7 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
                 routes::capsule::add_slide,
                 routes::capsule::add_gos,
                 routes::capsule::produce,
+                routes::capsule::produce_gos,
                 routes::capsule::cancel_production,
                 routes::capsule::publish,
                 routes::capsule::cancel_publication,

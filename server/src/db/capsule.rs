@@ -403,7 +403,7 @@ impl Capsule {
     ) -> Result<()> {
         let text = json!({
             "type": "capsule_production_progress",
-            "msg": msg,
+            "msg": msg.parse::<f32>().map_err(|_|Error(Status::InternalServerError))?,
             "id": id,
         });
 

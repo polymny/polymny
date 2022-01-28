@@ -6,12 +6,14 @@ import Core.HomeView as Home
 import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import FontAwesome as Fa
 import Lang exposing (diskUsage)
 import Route
 import Status
+import TimeUtils
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 import User as ModUser
@@ -38,7 +40,7 @@ view global model =
                 Admin.CapsulesPage p ->
                     ( capsulesView global model p, Nothing )
     in
-    ( Element.el [ Ui.wf, Ui.hf ] content, popup )
+    ( Element.el [ Ui.wf, Ui.hf, Element.padding 10 ] content, popup )
 
 
 dashboardView : Core.Global -> List Admin.User -> List Capsule -> Element Core.Msg
@@ -53,13 +55,18 @@ shortUsersView : Core.Global -> List Capsule.User -> Element Core.Msg
 shortUsersView global users =
     let
         uView u =
-            Element.paragraph []
+            Element.paragraph borderAttributes
                 [ Element.el [] <| Element.text u.username
                 , Element.text " : "
                 , Element.text (Lang.roleView global.lang u.role)
                 ]
     in
-    Element.column [ Ui.wf ] (List.map uView users)
+    Element.column [ Ui.hf ] (List.map uView users)
+
+
+borderAttributes : List (Element.Attribute Core.Msg)
+borderAttributes =
+    [ Ui.hf, Element.padding 10, Border.widthEach { bottom = 1, left = 0, right = 0, top = 0 }, Border.color Colors.greyLighter ]
 
 
 usersView : Core.Global -> Admin.Model -> Int -> Element Core.Msg
@@ -69,38 +76,38 @@ usersView global model p =
             global.lang
 
         table =
-            Element.table [ Ui.wf ]
+            Element.table [ Ui.wf, Border.width 1, Border.color Colors.greyLighter ]
                 { data = model.users
                 , columns =
-                    [ { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.userId global.lang))
+                    [ { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.userId global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
-                                Element.el [] <| Element.text <| String.fromInt u.id
+                                Element.el borderAttributes <| Element.text <| String.fromInt u.id
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.username global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.username global.lang))
                       , width = Element.fill
                       , view = usernameView global
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.emailAddress global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.emailAddress global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
-                                Element.el [] <| Element.text u.inner.email
+                                Element.el borderAttributes <| Element.text u.inner.email
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.userPlan global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.userPlan global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
-                                Element.el [] <| Element.text <| ModUser.printPlan u.inner.plan
+                                Element.el borderAttributes <| Element.text <| ModUser.printPlan u.inner.plan
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.activatedUser global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.activatedUser global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
-                                Element.el [] <| Element.text <| stringFromBool <| u.activated
+                                Element.el borderAttributes <| Element.text <| stringFromBool <| u.activated
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.nbCapsules global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.nbCapsules global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
@@ -108,9 +115,9 @@ usersView global model p =
                                     |> List.sum
                                     |> String.fromInt
                                     |> Element.text
-                                    |> Element.el []
+                                    |> Element.el borderAttributes
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.diskUsage global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.diskUsage global.lang))
                       , width = Element.fill
                       , view =
                             \u ->
@@ -125,9 +132,9 @@ usersView global model p =
                                     |> List.sum
                                     |> String.fromInt
                                     |> Element.text
-                                    |> Element.el []
+                                    |> Element.el borderAttributes
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.actions global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.actions global.lang))
                       , width = Element.shrink
                       , view = actionsView global
                       }
@@ -200,58 +207,58 @@ capsulesView global { capsules, capsuleSearch, projectSearch, capsuleSearchStatu
             global.lang
 
         table =
-            Element.table [ Ui.wf ]
+            Element.table [ Ui.wf, Border.width 1, Border.color Colors.greyLighter ]
                 { data = capsules
                 , columns =
-                    [ { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.capsuleId global.lang))
+                    [ { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.capsuleId global.lang))
                       , width = Element.fill
                       , view =
                             \c ->
-                                Element.el [] <| Element.text <| c.id
+                                Element.el borderAttributes <| Element.text <| c.id
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.capsuleName global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.capsuleName global.lang))
                       , width = Element.fill
                       , view =
                             \c ->
-                                Element.el [] <| Element.text c.name
+                                Element.el borderAttributes <| Element.text <| String.left 30 c.name
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.projectName global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.projectName global.lang))
                       , width = Element.fill
                       , view =
                             \c ->
-                                Element.el [] <| Element.text c.project
+                                Element.el borderAttributes <| Element.text <| String.left 30 c.project
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.users global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.users global.lang))
                       , width = Element.shrink
                       , view =
                             \c ->
                                 shortUsersView global c.users
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.lastModified global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.lastModified global.lang))
                       , width = Element.fill
                       , view =
                             \c ->
-                                Home.lastModifiedView global (Home.Capsule c)
+                                lastModifiedView global c
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.diskUsage global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.diskUsage global.lang))
                       , width = Element.fill
                       , view =
                             \c ->
-                                Home.diskUsageView global (Home.Capsule c)
+                                diskUsageView global c
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.progress global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.progress global.lang))
                       , width = Element.shrink
                       , view =
                             \c ->
-                                Home.progressView global (Home.Capsule c)
+                                progressView global c
                       }
-                    , { header = Element.el [ Element.padding 10 ] Element.none
+                    , { header = Element.el (Font.bold :: borderAttributes) Element.none
                       , width = Element.fill
                       , view =
                             \c ->
                                 Home.progressIconsView global (Home.Capsule c)
                       }
-                    , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.actions global.lang))
+                    , { header = Element.el (Font.bold :: borderAttributes) (Element.text (Lang.actions global.lang))
                       , width = Element.shrink
                       , view = capsuleActionsView global
                       }
@@ -404,7 +411,7 @@ iconButton onPress icon text tooltip =
 usernameView : Core.Global -> Admin.User -> Element Core.Msg
 usernameView global u =
     Ui.link
-        (Element.mouseOver [ Background.color Colors.navbarOver ] :: Font.color Colors.black :: Element.padding 13 :: [ Ui.hf, Element.padding 5 ])
+        (Element.mouseOver [ Background.color Colors.navbarOver ] :: Font.color Colors.black :: Element.padding 13 :: Ui.hf :: Element.padding 5 :: borderAttributes)
         { route = Route.Admin (Route.User u.id), label = Element.text u.inner.username }
 
 
@@ -414,18 +421,55 @@ actionsView global user =
         deleteUserMsg =
             Just <| Core.AdminMsg <| Admin.RequestDeleteUser user
     in
-    Element.row [ Element.spacing 10, Element.centerY ]
+    Element.row
+        (Element.spacing 10 :: Element.centerY :: borderAttributes)
         [ iconButton Nothing Fa.pen Nothing (Lang.editUser global.lang)
         , iconButton deleteUserMsg Fa.trash Nothing (Lang.deleteUser global.lang)
         ]
 
 
+progressView : Core.Global -> Capsule -> Element Core.Msg
+progressView global capsule =
+    let
+        ( acquisition, edition, publication ) =
+            Home.capsuleProgressView global capsule
+    in
+    Element.row (Element.spacing 10 :: borderAttributes)
+        [ Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
+            [ acquisition, edition, publication ]
+        ]
+
+
 capsuleActionsView : Core.Global -> Capsule -> Element Core.Msg
 capsuleActionsView global capsule =
-    Element.row [ Element.spacing 10, Element.centerY ]
+    Element.row (Element.spacing 10 :: borderAttributes)
         [ iconButton Nothing Fa.pen Nothing (Lang.editUser global.lang)
         , iconButton Nothing Fa.trash Nothing (Lang.deleteUser global.lang)
         ]
+
+
+lastModifiedView : Core.Global -> Capsule -> Element Core.Msg
+lastModifiedView global capsule =
+    let
+        date =
+            capsule.lastModified
+    in
+    TimeUtils.timeToString global.lang global.zone date
+        |> Element.text
+        |> Element.el
+            (Element.paddingEach { top = 10, bottom = 10, right = 20, left = 0 }
+                :: Element.centerY
+                :: borderAttributes
+            )
+
+
+diskUsageView : Core.Global -> Capsule -> Element Core.Msg
+diskUsageView global capsule =
+    let
+        diskUsage =
+            capsule.diskUsage
+    in
+    Element.el (Element.padding 10 :: Element.centerY :: borderAttributes) <| Element.text <| (String.fromInt diskUsage ++ " Mo")
 
 
 inviteUsersView : Core.Global -> Admin.Model -> Element Core.Msg

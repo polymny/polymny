@@ -57,7 +57,7 @@ decodeRole =
 
 type TaskStatus
     = Idle
-    | Running (Maybe String)
+    | Running (Maybe Float)
     | Done
 
 
@@ -209,6 +209,15 @@ videoPath : Capsule -> Maybe String
 videoPath capsule =
     if capsule.produced == Done then
         Just ("/data/" ++ capsule.id ++ "/output.mp4")
+
+    else
+        Nothing
+
+
+videoGosPath : Capsule -> Int -> Maybe String
+videoGosPath capsule gosId =
+    if capsule.produced == Done then
+        Just ("/data/" ++ capsule.id ++ "/tmp/gos_" ++ String.fromInt gosId ++ ".mp4")
 
     else
         Nothing

@@ -552,6 +552,32 @@ show_ffmpeg_progression(){
 
 
 
+show_ffmpeg_progression(){
+    local line=$1
+    local duration_ms=$2
+    IFS='=' read -ra progress <<< $line
+    case "${progress[0]}" in
+        "out_time_us" )
+            ts="${progress[1]}"
+            percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
+            is_great=$(echo "$percent_progress > 1" | bc)
+            if [ $is_great -eq 1 ]; then
+                percent_progress="1"
+            fi
+            ;;
+        "progress" )
+            if [[ "${progress[1]}" == "end" ]] ; then
+                percent_progress="1"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+    echo $percent_progress
+}
+
+
+
 run_ffmpeg_slide(){
     local cmd=$1
     local duration_ms=$2
@@ -567,7 +593,6 @@ run_ffmpeg_slide(){
     echo "gos_i =$gos_i">&2
     echo "sli_i =$sli_i">&2
     echo "nb_sli =$nb_sli">&2
-
 
     $cmd | while read line; do
         local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
@@ -593,7 +618,6 @@ run_ffmpeg_slide(){
 
 }
 
-
 compose_gos(){
     local cid=$1
     local gos_i=$2
@@ -618,7 +642,6 @@ compose_gos(){
         webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
         input_record="${assets_path}/$record.webm"
     fi
-
 
     pointer=$(echo "$gos" | jq -cr ".record.pointer_uuid")
     if [[ $pointer = "null" ]] ; then
@@ -667,12 +690,16 @@ compose_gos(){
 
         fi
 
+        extra=$(echo "$slide" |  jq  -rc ".extra")
+        echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+        echo $echo_header >&2
 
     done
 
     # repeat last entry (FFMPEG required kinda end of file)
-    echo "file ../assets/${uuid}.png" >> $concat_file
+    echo $line_in_concat_file  >> $concat_file
 
+    # concat slides
     video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
     command=$(header && concat_slides $concat_file $video_slides)
     $command
@@ -681,6 +708,8 @@ compose_gos(){
         echo $command
         return 1
     fi
+
+    # ovelay slides / webcam record /pointer
     duration_ms=${transitions[-1]}
 
     output_gos="gos_${gos_i}.mp4"
@@ -690,7 +719,6 @@ compose_gos(){
     total_frames=$(echo "($slide_duration*25)/1000" | bc)
     run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos
     echo "file '$output_gos'" >> $seq_file
-
 
 }
 
@@ -735,6 +763,120 @@ compose_goss(){
     else
         compose_gos $cid $gosid -1 $seq_file
     fi
+=======
+
+        if [ $extra = "null" ] ; then
+            # No extra resource : compose slide with record
+            input_slide="${assets_path}/${uuid}.png"
+
+            if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                # the slide have a transition and a record
+                slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+
+                slide_offset=${transitions[$slide_i]}
+            else
+                # manage case of all slides transitions not done in GOS record
+                # add empty slides
+                slide_offset=0
+                slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+            fi
+
+            output="slide_${gos_i}_${slide_i}.mp4"
+
+            cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
+
+            duration_ms=$(echo "$slide_duration*1000" | bc)
+
+            run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos $slide_i $len_slides
+        else
+
+            if [[ $record = "null" ]] ; then
+                 # if no record , add extra resource instead of slide
+
+                printf '\n%s %3s %%' "$echo_header" "100"
+                output="../assets/${extra}.mp4"
+            else
+                # FIXME: mix video resource with record
+                # no slide is dislpayed.
+                # until fix only extra is displayed
+                printf '\n%s %3s %%' "$echo_header" "100"
+                output="../assets/${extra}.mp4"
+            fi
+
+        fi
+
+        echo "file '$output'" >> $seq_file_slide
+    done
+
+    # concat each per slide video in one GoS
+    output_gos="gos_${gos_i}.mp4"
+    output_gos_path="$tmp_path/$output_gos"
+    command=$(header && concat_records $seq_file_slide $output_gos_path)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        echo $command >&2
+        return 1
+    else
+        echo "file '$output_gos'" >> $seq_file_gos
+    fi
+
+
+
+}
+
+
+
+# combine slide and records
+# USAGE:
+#   compose_goss <capsule id> <gos id>
+# EXAMPLE:
+#   compose_goss 42 -1 for all gos
+#   compose_goss 42 2 for gos 2 only
+
+compose_goss(){
+    local cid=$1
+    local gosid=$2
+    capsule_path=$(get_config "data_path")"/$cid"
+    tmp_path="${capsule_path}/tmp"
+    fps="25"
+    if [ ! -d $tmp_path ]; then
+        mkdir $tmp_path
+    fi
+
+
+    seq_file="$tmp_path/seq_file.txt"
+    if [ -f $seq_file ]; then
+        rm $seq_file
+    fi
+    touch $seq_file
+    # GOS loop
+
+    len=$(echo $capsule_structure | jq  '.|length')
+
+    if (( $gosid == -1 )) ; then
+        for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
+        do
+            compose_gos $cid $gos_i $len $seq_file
+        done
+        output="$capsule_path/output.mp4"
+        command=$(header && concat_records $seq_file $output)
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            echo $command >&2
+
+            return 1
+        fi
+
+    else
+        compose_gos $cid $gosid -1 $seq_file
+    fi
+
+
+
+
+>>>>>>> origin/main
 }
 
 
@@ -811,12 +953,9 @@ on-video-upload() {
             ;;
     esac
 
-
     duration_ms=$(echo "$(get_duration $input)*1000000" | bc -l )
 
-
     local percent_progress="0"
-
 
     echo "$cmd">&2
     $cmd | while read line; do
@@ -824,14 +963,10 @@ on-video-upload() {
         echo -en "\n$percent_progress"
     done
 
-
     if (( $? != 0 )); then
         echo "error with $1" >&2
         return 1
     fi
-
-
-
 
 }
 # USAGE:
@@ -944,7 +1079,7 @@ pdf-to-png() {
         $input \
         $output"
     )
-    echo $cmd >&2
+    #DEBUG: echo $cmd >&2
     $cmd
     if (( $? != 0 )); then
        echo "error with $1" >&2

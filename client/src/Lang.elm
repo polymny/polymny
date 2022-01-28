@@ -1304,6 +1304,16 @@ produceVideo lang =
             "Produce video"
 
 
+produceGosVideo : Lang -> String -> String
+produceGosVideo lang gos =
+    case lang of
+        FrFr ->
+            "Produire le grain " ++ gos
+
+        _ ->
+            "Produce grain " ++ gos
+
+
 publish : Lang -> String
 publish lang =
     case lang of
@@ -1352,6 +1362,16 @@ watchVideo lang =
 
         _ ->
             "Watch video"
+
+
+watchGosVideo : Lang -> String -> String
+watchGosVideo lang gos =
+    case lang of
+        FrFr ->
+            "Voir le grain " ++ gos
+
+        _ ->
+            "Watch grain " ++ gos
 
 
 producing : Lang -> String
@@ -1856,6 +1876,16 @@ grain lang =
 
         _ ->
             "Grain"
+
+
+custom : Lang -> String
+custom lang =
+    case lang of
+        FrFr ->
+            "Personnalisé"
+
+        _ ->
+            "Custom"
 
 
 enterNewNameForCapsule : Lang -> String

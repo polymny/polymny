@@ -299,6 +299,15 @@ produceVideo resultToMsg { id } =
         }
 
 
+produceGos : Core.Msg -> Capsule -> Int -> Cmd Core.Msg
+produceGos resultToMsg { id } gosId =
+    post
+        { url = "/api/produce-gos/" ++ id ++ "/" ++ String.fromInt gosId
+        , expect = Http.expectWhatever (ignoreError (\_ -> resultToMsg))
+        , body = Http.emptyBody
+        }
+
+
 cancelProduction : Core.Msg -> Capsule -> Cmd Core.Msg
 cancelProduction resultToMsg { id } =
     post
