@@ -816,8 +816,6 @@ compose_goss(){
             compose_gos $cid $gos_i $len $seq_file
         done
         output="$capsule_path/output.mp4"
-        # finish with black video
-        echo "file '$black_video'">>$seq_file
         command=$(header && concat_records $seq_file $output)
         $command
         if (( $? != 0 )); then
