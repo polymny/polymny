@@ -393,7 +393,7 @@ concat_slides() {
 }
 
 # USAGE:
-#   concat_slides <path to list of file to conat> <output>
+#   concat_records <path to list of file to conat> <output>
 #
 # EXAMPLE:
 #   concat_records  tmp/seq_file.txt  tmp/capsule.mp4
@@ -619,52 +619,22 @@ show_ffmpeg_progression(){
 
 
 
-
-show_ffmpeg_progression(){
-    local line=$1
-    local duration_ms=$2
-    IFS='=' read -ra progress <<< $line
-    case "${progress[0]}" in
-        "out_time_us" )
-            ts="${progress[1]}"
-            percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
-            is_great=$(echo "$percent_progress > 1" | bc)
-            if [ $is_great -eq 1 ]; then
-                percent_progress="1"
-            fi
-            ;;
-        "progress" )
-            if [[ "${progress[1]}" == "end" ]] ; then
-                percent_progress="1"
-            fi
-            ;;
-        *)
-            ;;
-    esac
-    echo $percent_progress
-}
-
-
-
 run_ffmpeg_slide(){
     local cmd=$1
     local duration_ms=$2
     local gos_i=$3
     local nb_gos=$4
-    # TODO Remove $sli_i et $nb_sli
-    sli_i=1
-    nb_sli=1
+    local step_i=$5
+    local nb_step=$6
 
 
     local percent_progress="0"
     echo "$cmd">&2
-    echo "gos_i =$gos_i">&2
-    echo "sli_i =$sli_i">&2
-    echo "nb_sli =$nb_sli">&2
 
     $cmd | while read line; do
-        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
-        slide_progress=$(echo "scale=3; $sli_i/$nb_sli + (1/$nb_sli)*$percent_progress " |bc -l)
+        local percent_progress=$(show_ffmpeg_progression $line $(echo "$duration_ms*1000" |bc )  )
+        slide_progress=$(echo "scale=3; $step_i/$nb_step + (1/$nb_step)*$percent_progress " |bc -l)
+
         if (( $nb_gos == -1 )) ; then
             # case of one GoS production
             progress=$slide_progress
@@ -765,25 +735,19 @@ compose_gos(){
     # repeat last entry (FFMPEG required kinda end of file)
     echo $line_in_concat_file  >> $concat_file
 
-   # concat slides
-    video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
-    command=$(header && concat_slides $concat_file $video_slides)
-    $command
-    if (( $? != 0 )); then
-        echo "error with $1" >&2
-        echo $command
-        return 1
-    fi
-
-    # ovelay slides / webcam record /pointer
     duration_ms=${transitions[-1]}
 
+    # Step 1 :  concat slides
+    video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
+    cmd=$(header_progress && concat_slides $concat_file $video_slides)
+    run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 0 2
+
+    # Step 2: ovelay slides / webcam record /pointer
     output_gos="gos_${gos_i}.mp4"
     cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
 
-    echo "$cmd" >&2
     total_frames=$(echo "($slide_duration*25)/1000" | bc)
-    run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos
+    run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 1 2
     echo "file '$output_gos'" >> $seq_file
 }
 
@@ -825,13 +789,17 @@ compose_goss(){
             return 1
         fi
 
+        local end=`date +%s`
+        duration=$(get_duration $output)
+        runtime=$( echo "$end - $start" | bc -l )
+        compute_ratio=$( echo "scale=3; $runtime / $duration" |bc -l)
+        compute_ratio_by_min=$( echo "scale=1; $compute_ratio*60" |bc -l)
+        echo "runtime = $runtime s -- video duration = $duration s  >&2
+        echo "compute_ratio $compute_ratio -- Time passed to produced 1 min of video $compute_ratio_by_min s" >&2
     else
         compose_gos $cid $gosid -1 $seq_file
     fi
-    local end=`date +%s`
-    runtime=$( echo "$end - $start" | bc -l )
 
-    echo "runtime $runtime s " >&2
 
 
 }
