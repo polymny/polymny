@@ -737,12 +737,12 @@ compose_gos(){
 
     duration_ms=${transitions[-1]}
 
-    # Step 1 :  concat slides
+    # Step 1 / 2 :  concat slides
     video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
     cmd=$(header_progress && concat_slides $concat_file $video_slides)
     run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 0 2
 
-    # Step 2: ovelay slides / webcam record /pointer
+    # Step 2 / 2: ovelay slides / webcam record /pointer
     output_gos="gos_${gos_i}.mp4"
     cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
 
@@ -794,7 +794,7 @@ compose_goss(){
         runtime=$( echo "$end - $start" | bc -l )
         compute_ratio=$( echo "scale=3; $runtime / $duration" |bc -l)
         compute_ratio_by_min=$( echo "scale=1; $compute_ratio*60" |bc -l)
-        echo "runtime = $runtime s -- video duration = $duration s  >&2
+        echo "runtime = $runtime s -- video duration = $duration s"  >&2
         echo "compute_ratio $compute_ratio -- Time passed to produced 1 min of video $compute_ratio_by_min s" >&2
     else
         compose_gos $cid $gosid -1 $seq_file
