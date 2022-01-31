@@ -287,7 +287,7 @@ params_pip_slide_record() {
             scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
             if [[ "$pointer_overlay" == "null" ]] ; then
                 inputs="-i $slide -i $record "
-                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$overlay,fps=fps=$fps"
+                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,fps=fps=$fps"
             else
                 inputs="-i $slide -i $record -i $pointer_overlay "
                 filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[2]$pointer_filter[pointer];[slide][record]overlay=$webcam_overlay[pip];[pip][pointer]overlay=0:0,fps=fps=$fps"
