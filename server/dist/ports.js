@@ -17,7 +17,9 @@ function setupPorts(app) {
         pointerExists = false,
         tmpCanvas = document.createElement('canvas'),
         tmpCtx = tmpCanvas.getContext('2d'),
-        pointerVideo = document.createElement('video');
+        pointerVideo = document.createElement('video'),
+        style = "Pointer",
+        color = "rgb(255, 0, 0)";
 
     tmpCanvas.width = 1920;
     tmpCanvas.height = 1080;
@@ -125,16 +127,18 @@ function setupPorts(app) {
     }
 
     function refresh(canvas) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (style === "Pointer") {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         if (pointer.down) {
             pointerExists = true;
-            let gradient = ctx.createRadialGradient(
-                pointer.x, pointer.y, 3,
-                pointer.x, pointer.y, 10
-            );
-            gradient.addColorStop(0, 'rgba(255, 0, 0, 1)');
-            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-            ctx.fillStyle = gradient;
+            // let gradient = ctx.createRadialGradient(
+            //     pointer.x, pointer.y, 3,
+            //     pointer.x, pointer.y, 10
+            // );
+            // gradient.addColorStop(0, color);
+            // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = color;
 
             ctx.beginPath();
             ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
@@ -459,8 +463,11 @@ function setupPorts(app) {
             let data = frame.data;
 
             for (let i = 0; i < length; i += 4) {
-                data[i + 3] = data[i];
-                data[i] = 255;
+                let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
+                let threshold = channelAvg > 50;
+                if (!threshold) {
+                    data[i+3] = 0;
+                }
             }
 
             ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
@@ -840,6 +847,19 @@ function setupPorts(app) {
         element.setPointerCapture(pointerId);
     }
 
+    function setCanvas(arg) {
+        switch (arg.ty) {
+            case "ChangeStyle":
+                style = arg.style;
+                break;
+            case "ChangeColor":
+                color = arg.color;
+                break;
+            default:
+                throw new Error("Unknown SetCanvas command: " + arg.ty);
+        }
+    }
+
     subscribe(app.ports.setLanguage, setLanguage);
     subscribe(app.ports.setZoomLevel, setZoomLevel);
     subscribe(app.ports.setAcquisitionInverted, setAcquisitionInverted);
@@ -867,6 +887,7 @@ function setupPorts(app) {
     subscribe(app.ports.importCapsule, importCapsule);
     subscribe(app.ports.select, select);
     subscribe(app.ports.setPointerCapture, setPointerCapture);
+    subscribe(app.ports.setCanvas, setCanvas);
 
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },

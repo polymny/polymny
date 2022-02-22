@@ -76,3 +76,6 @@ port uploadRecordFailed : (() -> msg) -> Sub msg
 
 
 port setPromptSize : Int -> Cmd msg
+
+
+port setCanvas : Json.Encode.Value -> Cmd msg

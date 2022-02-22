@@ -404,6 +404,9 @@ update msg model =
             in
             ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
 
+        Acquisition.SetCanvas s ->
+            ( model, Ports.setCanvas (Acquisition.encodeSetCanvas s) )
+
 
 mkModel : Core.Model -> Core.Page -> Core.Model
 mkModel input newPage =

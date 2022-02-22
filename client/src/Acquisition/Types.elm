@@ -210,6 +210,29 @@ type alias Device =
     }
 
 
+type SetCanvas
+    = ChangeStyle Style
+    | ChangeColor String
+
+
+type Style
+    = Pointer
+    | Brush
+
+
+encodeSetCanvas : SetCanvas -> Encode.Value
+encodeSetCanvas setCanvas =
+    case setCanvas of
+        ChangeStyle Pointer ->
+            Encode.object [ ( "ty", Encode.string "ChangeStyle" ), ( "style", Encode.string "Pointer" ) ]
+
+        ChangeStyle Brush ->
+            Encode.object [ ( "ty", Encode.string "ChangeStyle" ), ( "style", Encode.string "Brush" ) ]
+
+        ChangeColor color ->
+            Encode.object [ ( "ty", Encode.string "ChangeColor" ), ( "color", Encode.string color ) ]
+
+
 type Msg
     = Noop
     | RefreshDevices
@@ -239,6 +262,7 @@ type Msg
     | UploadRecordFailedAck
     | IncreasePromptSize
     | DecreasePromptSize
+    | SetCanvas SetCanvas
 
 
 defaultDevice : Devices -> Device
