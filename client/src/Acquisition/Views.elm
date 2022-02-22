@@ -598,9 +598,9 @@ toolbarElement global user model =
                         |> Just
                 }
 
-        mkMsg : Acquisition.Style -> Maybe Core.Msg
+        mkMsg : Acquisition.SetCanvas -> Maybe Core.Msg
         mkMsg style =
-            Acquisition.ChangeStyle style
+            style
                 |> Acquisition.SetCanvas
                 |> Core.AcquisitionMsg
                 |> Just
@@ -611,7 +611,7 @@ toolbarElement global user model =
                 (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
                     (Ui.iconButton []
                         { icon = Fa.bullseye
-                        , onPress = mkMsg Acquisition.Pointer
+                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Pointer)
                         , text = Nothing
                         , tooltip = Nothing
                         }
@@ -621,12 +621,25 @@ toolbarElement global user model =
                 (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
                     (Ui.iconButton []
                         { icon = Fa.paintBrush
-                        , onPress = mkMsg Acquisition.Brush
+                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Brush)
                         , text = Nothing
                         , tooltip = Nothing
                         }
                     )
                 )
+            ]
+        , Element.row [ Ui.wf, Element.spacing 5 ]
+            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.eraser
+                        , onPress = mkMsg Acquisition.Erase
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
             ]
         , palette
             |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])

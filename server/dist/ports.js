@@ -852,9 +852,17 @@ function setupPorts(app) {
             case "ChangeStyle":
                 style = arg.style;
                 break;
+
             case "ChangeColor":
                 color = arg.color;
                 break;
+
+            case "Erase":
+                if (ctx !== null) {
+                    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                }
+                break;
+
             default:
                 throw new Error("Unknown SetCanvas command: " + arg.ty);
         }
