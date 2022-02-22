@@ -142,9 +142,9 @@ function setupPorts(app) {
             ctx.strokeStyle = color;
             ctx.fillStyle = color;
 
-                ctx.beginPath();
-                ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
-                ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
+            ctx.fill();
 
             if (style === "Brush") {
                 ctx.lineWidth = 40;
