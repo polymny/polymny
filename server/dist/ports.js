@@ -6,6 +6,7 @@ function setupPorts(app) {
         recorder,
         pointerRecorder,
         pointerStream = null,
+        oldPointer = null,
         pointer = { x: 0, y: 0, down: false },
         ctx = null,
         recording,
@@ -138,11 +139,29 @@ function setupPorts(app) {
             // );
             // gradient.addColorStop(0, color);
             // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.strokeStyle = color;
             ctx.fillStyle = color;
 
-            ctx.beginPath();
-            ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
-            ctx.fill();
+                ctx.beginPath();
+                ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+
+            if (style === "Brush") {
+                ctx.lineWidth = 40;
+
+                if (oldPointer === null) {
+                    oldPointer = pointer;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(oldPointer.x, oldPointer.y);
+                ctx.lineTo(pointer.x, pointer.y);
+                ctx.stroke();
+            }
+
+            oldPointer = { x: pointer.x, y: pointer.y };
+        } else {
+            oldPointer = null;
         }
     }
 
@@ -865,6 +884,10 @@ function setupPorts(app) {
 
             default:
                 throw new Error("Unknown SetCanvas command: " + arg.ty);
+        }
+
+        if (ctx !== null) {
+            refresh(ctx.canvas);
         }
     }
 
