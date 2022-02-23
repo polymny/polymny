@@ -148,7 +148,7 @@ function setupPorts(app) {
             ctx.fill();
 
             if (style === "Brush") {
-                ctx.lineWidth = size;
+                ctx.lineWidth = 2 * size;
 
                 if (oldPointer === null) {
                     oldPointer = pointer;
