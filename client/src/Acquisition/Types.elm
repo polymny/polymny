@@ -213,6 +213,7 @@ type alias Device =
 type SetCanvas
     = ChangeStyle Style
     | ChangeColor String
+    | ChangeSize Int
     | Erase
 
 
@@ -232,6 +233,9 @@ encodeSetCanvas setCanvas =
 
         ChangeColor color ->
             Encode.object [ ( "ty", Encode.string "ChangeColor" ), ( "color", Encode.string color ) ]
+
+        ChangeSize size ->
+            Encode.object [ ( "ty", Encode.string "ChangeSize" ), ( "size", Encode.int size ) ]
 
         Erase ->
             Encode.object [ ( "ty", Encode.string "Erase" ) ]

@@ -641,6 +641,28 @@ toolbarElement global user model =
                 )
             , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
             ]
+        , Element.row [ Ui.wf, Element.spacing 5 ]
+            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.circle
+                        , onPress = mkMsg (Acquisition.ChangeSize 20)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.circle
+                        , onPress = mkMsg (Acquisition.ChangeSize 40)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            ]
         , palette
             |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
             |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]

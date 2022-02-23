@@ -20,7 +20,8 @@ function setupPorts(app) {
         tmpCtx = tmpCanvas.getContext('2d'),
         pointerVideo = document.createElement('video'),
         style = "Pointer",
-        color = "rgb(255, 0, 0)";
+        color = "rgb(255, 0, 0)",
+        size = 20;
 
     tmpCanvas.width = 1920;
     tmpCanvas.height = 1080;
@@ -143,11 +144,11 @@ function setupPorts(app) {
             ctx.fillStyle = color;
 
             ctx.beginPath();
-            ctx.arc(pointer.x, pointer.y, 20, 0, 2 * Math.PI);
+            ctx.arc(pointer.x, pointer.y, size, 0, 2 * Math.PI);
             ctx.fill();
 
             if (style === "Brush") {
-                ctx.lineWidth = 40;
+                ctx.lineWidth = size;
 
                 if (oldPointer === null) {
                     oldPointer = pointer;
@@ -287,8 +288,8 @@ function setupPorts(app) {
         }
 
         console.log("Binding webcam");
-        console.log( recorderOptions);
         bindingWebcam = true;
+
         try {
             stream = await navigator.mediaDevices.getUserMedia(cameraOptions);
         } catch (e) {
@@ -874,6 +875,10 @@ function setupPorts(app) {
 
             case "ChangeColor":
                 color = arg.color;
+                break;
+
+            case "ChangeSize":
+                size = arg.size;
                 break;
 
             case "Erase":
