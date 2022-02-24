@@ -118,7 +118,7 @@ update msg model =
         Acquisition.RecordArrived record ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Ports.stopRecording () )
+                    ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -130,7 +130,7 @@ update msg model =
                         updater : Acquisition.Record -> Acquisition.Record
                         updater old =
                             if old.webcamBlob == record.webcamBlob then
-                                Debug.log "yo" record
+                                record
 
                             else
                                 old
@@ -138,7 +138,7 @@ update msg model =
                         newRecords =
                             List.map updater p.records
                     in
-                    ( mkModel model (Core.Acquisition { p | records = newRecords }), Ports.stopRecording () )
+                    ( mkModel model (Core.Acquisition { p | records = newRecords }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -403,6 +403,9 @@ update msg model =
                     global.promptSize - 5 |> max 10
             in
             ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
+
+        Acquisition.SetCanvas s ->
+            ( model, Ports.setCanvas (Acquisition.encodeSetCanvas s) )
 
 
 mkModel : Core.Model -> Core.Page -> Core.Model

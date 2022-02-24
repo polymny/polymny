@@ -381,7 +381,10 @@ centerElement global user model =
             promptElement global user model
 
         slide =
-            slideElement global user model
+            Element.row [ Ui.wf, Ui.hf ]
+                [ toolbarElement global user model
+                , slideElement global user model
+                ]
     in
     Element.column [ Ui.wf, Ui.hf ] (tern global.acquisitionInverted [ slide, prompt ] [ prompt, slide ])
 
@@ -563,6 +566,109 @@ promptElement global user model =
         ]
 
 
+toolbarElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+toolbarElement global user model =
+    let
+        colorToString : Element.Color -> String
+        colorToString color =
+            let
+                { red, green, blue } =
+                    Element.toRgb color
+
+                r =
+                    floor (255 * red) |> String.fromInt
+
+                g =
+                    floor (255 * green) |> String.fromInt
+
+                b =
+                    floor (255 * blue) |> String.fromInt
+            in
+            "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
+
+        colorToButton : Element.Color -> Element Core.Msg
+        colorToButton color =
+            Input.button [ Ui.wf, Element.height (Element.px 45) ]
+                { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
+                , onPress =
+                    colorToString color
+                        |> Acquisition.ChangeColor
+                        |> Acquisition.SetCanvas
+                        |> Core.AcquisitionMsg
+                        |> Just
+                }
+
+        mkMsg : Acquisition.SetCanvas -> Maybe Core.Msg
+        mkMsg style =
+            style
+                |> Acquisition.SetCanvas
+                |> Core.AcquisitionMsg
+                |> Just
+    in
+    Element.column [ Element.centerY ]
+        [ Element.row [ Ui.wf, Element.spacing 5 ]
+            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.bullseye
+                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Pointer)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.paintBrush
+                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Brush)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            ]
+        , Element.row [ Ui.wf, Element.spacing 5 ]
+            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.eraser
+                        , onPress = mkMsg Acquisition.Erase
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
+            ]
+        , Element.row [ Ui.wf, Element.spacing 5 ]
+            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.circle
+                        , onPress = mkMsg (Acquisition.ChangeSize 20)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                    (Ui.iconButton []
+                        { icon = Fa.circle
+                        , onPress = mkMsg (Acquisition.ChangeSize 40)
+                        , text = Nothing
+                        , tooltip = Nothing
+                        }
+                    )
+                )
+            ]
+        , palette
+            |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
+            |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
+        ]
+
+
 slideElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
 slideElement global user model =
     let
@@ -610,6 +716,20 @@ slideElement global user model =
 
         _ ->
             Element.none
+
+
+palette : List ( Element.Color, Element.Color )
+palette =
+    [ ( Element.rgb255 255 0 0, Element.rgb255 128 0 0 )
+    , ( Element.rgb255 255 128 0, Element.rgb255 128 64 0 )
+    , ( Element.rgb255 255 255 0, Element.rgb255 128 128 0 )
+    , ( Element.rgb255 0 255 0, Element.rgb255 0 128 0 )
+    , ( Element.rgb255 0 255 255, Element.rgb255 0 128 128 )
+    , ( Element.rgb255 0 0 255, Element.rgb255 0 0 128 )
+    , ( Element.rgb255 255 0 255, Element.rgb255 128 0 128 )
+    , ( Element.rgb255 255 128 128, Element.rgb255 128 128 255 )
+    , ( Element.rgb255 128 255 128, Element.rgb255 255 255 128 )
+    ]
 
 
 videoId : String
