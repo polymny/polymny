@@ -7,6 +7,7 @@ import Capsule
 import Core.Types as Core
 import Json.Decode as Decode
 import Keyboard
+import Log
 
 
 subscriptions : Acquisition.Model -> Sub Core.Msg
@@ -20,7 +21,11 @@ subscriptions model =
                     Ok o ->
                         Core.AcquisitionMsg (Acquisition.RecordArrived o)
 
-                    _ ->
+                    Err e ->
+                        let
+                            _ =
+                                Log.debug "error decoding record arrived" e
+                        in
                         Core.Noop
             )
         , Ports.pointerRecordArrived
@@ -29,7 +34,11 @@ subscriptions model =
                     Ok o ->
                         Core.AcquisitionMsg (Acquisition.PointerRecordArrived o)
 
-                    _ ->
+                    Err e ->
+                        let
+                            _ =
+                                Log.debug "error decoding pointer record arrived" e
+                        in
                         Core.Noop
             )
         , Keyboard.ups (Acquisition.shortcuts model)

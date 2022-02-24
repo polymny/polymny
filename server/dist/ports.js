@@ -578,6 +578,7 @@ function setupPorts(app) {
 
             pointerRecorder.ondataavailable = (data) => {
                 recordArrived = record.webcam_blob;
+                currentEvents = record.events;
                 pointerArrived = data.data;
                 sendRecordToElmIfReady(app.ports.pointerRecordArrived);
             };
@@ -632,11 +633,31 @@ function setupPorts(app) {
         let gos = args[1];
         let record = args[2];
 
-        if (typeof record.webcam_blob === "string" || record.webmca_blob instanceof String) {
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
 
-            // User wants to validate the old record, don't need to do anything,
-            // just send the message to let them know it's done
-            app.ports.capsuleUpdated.send(null);
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
+
+                // User wants to validate the old record, don't need to do anything,
+                // just send the message to let them know it's done
+                app.ports.capsuleUpdated.send(null);
+
+            } else {
+
+                // User just want to send the pointer blob
+                if (record.pointer_blob !== null) {
+                    try{
+                        xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                            app.ports.progressReceived.send(e.loaded / e.total);
+                        });
+                        let capsule = JSON.parse(xhr.responseText);
+                        app.ports.capsuleUpdated.send(capsule);
+                    } catch (e) {
+                        console.log(e)
+                        app.ports.uploadRecordFailed.send(null);
+                    }
+                }
+
+            }
 
         } else {
 
