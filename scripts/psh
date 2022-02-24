@@ -288,7 +288,7 @@ params_pip_slide_record() {
             scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
             if [[ "$pointer_overlay" == "null" ]] ; then
                 inputs="-i $slide -i $record "
-                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,$fade_filter,fps=fps=$fps[vout]"
+                filter_complex="[1:a]acopy[aclean];[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,$fade_filter,fps=fps=$fps[vout]"
             else
                 inputs="-i $slide -i $record -i $pointer_overlay "
                 filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[2]$pointer_filter[pointer];[slide][record]overlay=$webcam_overlay[pip];[pip][pointer]overlay=0:0,$fade_filter,fps=fps=$fps[vout]"
@@ -299,7 +299,7 @@ params_pip_slide_record() {
                      $inputs \
                     -filter_complex "$filter_complex" \
                     -map [vout] \
-                    -map 1:a
+                    -map [aclean]
             ;;
 
         "fullscreen" )
@@ -413,6 +413,7 @@ concat_slides() {
 
          local filter_complex1
          local filter_complex2
+         local pad
          while read -ra line
          do
              case "${line[0]}" in
@@ -425,13 +426,26 @@ concat_slides() {
 
                     echo "extension = $extension filename =$filename" >&2
                     ;;
+                "pad")
+                    pad=${line[1]}
+                    ;;
                  "duration")
                     echo "duration is ${line[1]}">&2
                     if [[ "$extension" = "mp4" ]] ; then
                         ffmpeg_cmd=$(printf " -t %s -i %s " "${line[1]}" "$assets_path/$asset.$extension")
-                        concat_filter="[$count_slide:v][$count_slide:a]"
-                        filter_complex2="${filter_complex2}${concat_filter}"
+                        if [[ $pad ]] ; then
+                            echo "pad =$pad" >&2
+                            pad_filter="[$count_slide:v]tpad=stop_mode=clone:stop_duration=$pad[video$count_slide]"
                         else
+
+                            pad_filter="[$count_slide]null[video$count_slide];"
+                        fi
+                            filter_complex1="${filter_complex1}${pad_filter};"
+                            pad=''
+
+                        concat_filter="[video$count_slide][$count_slide:a]"
+                        filter_complex2="${filter_complex2}${concat_filter}"
+                    else
                         ffmpeg_cmd=$(printf " -loop 1 -framerate 25 -t %s -i %s " "${line[1]}" "$assets_path/$asset.$extension")
                         sar_filter="[$count_slide:v]setsar=1/1[video$count_slide];"
                         filter_complex1="${filter_complex1}${sar_filter}"
@@ -847,19 +861,27 @@ compose_gos(){
             line_in_concat_file="file ../assets/${extra}.mp4"
             echo $line_in_concat_file  >> $concat_file
 
+            extra_duration=$(get_duration "$assets_path/${extra}.mp4")
+            extra_duration=$(echo "($extra_duration*1000)/1" |bc)
             if (( $slide_i +1 < ${#transitions[@]} )) ; then
                 # the slide have a transition and a record
+
                 slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+                echo "slide_duration = $slide_duration" >&2
+                echo "extra_duration = $extra_duration" >&2
+                if (( $slide_duration > $extra_duration )); then
+                    # record is longer then extra video duration
+                    # pad with last frame extra
+                    pad=$(($slide_duration - $extra_duration))
+                    echo "pad ${pad}ms" >> $concat_file
+                fi
                 echo "duration ${slide_duration}ms" >> $concat_file
             else
                 # manage case of all slides transitions not done in GOS record
                 # add empty slides
                 #TODO check behavior of GoS with multiple empty slides
-                slide_duration=$(get_duration "$assets_path/${extra}.mp4")
-                slide_duration=$(echo "($slide_duration*1000)/1" |bc)
-                transitions+=( "$slide_duration" )
-                echo "slide_duration = $slide_duration" >&2
-                echo "duration ${slide_duration}ms" >> $concat_file
+                transitions+=( "$extra_duration" )
+                echo "duration ${extra_duration}ms" >> $concat_file
             fi
         fi
 
