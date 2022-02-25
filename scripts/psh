@@ -288,7 +288,7 @@ params_pip_slide_record() {
             scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
             if [[ "$pointer_overlay" == "null" ]] ; then
                 inputs="-i $slide -i $record "
-                filter_complex="[1:a]acopy[aclean];[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,$fade_filter,fps=fps=$fps[vout]"
+                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,$fade_filter,fps=fps=$fps[vout]"
             else
                 inputs="-i $slide -i $record -i $pointer_overlay "
                 filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[2]$pointer_filter[pointer];[slide][record]overlay=$webcam_overlay[pip];[pip][pointer]overlay=0:0,$fade_filter,fps=fps=$fps[vout]"
@@ -299,7 +299,7 @@ params_pip_slide_record() {
                      $inputs \
                     -filter_complex "$filter_complex" \
                     -map [vout] \
-                    -map [aclean]
+                    -map 1:a
             ;;
 
         "fullscreen" )
@@ -403,7 +403,6 @@ concat_slides() {
     else
 
 
-         echo "ffconcat = $input ">&2
          echo -n " "
          echo -f lavfi -t 0.1 -i anullsrc=channel_layout=stereo:sample_rate=48000 \
 
@@ -418,26 +417,21 @@ concat_slides() {
          do
              case "${line[0]}" in
                  "file" )
-                    echo "file is ${line[1]}">&2
                     filename=$(basename -- "${line[1]}")
                     extension="${filename##*.}"
                     filename="${filename%.*}"
                     asset=$filename
 
-                    echo "extension = $extension filename =$filename" >&2
                     ;;
                 "pad")
                     pad=${line[1]}
                     ;;
                  "duration")
-                    echo "duration is ${line[1]}">&2
                     if [[ "$extension" = "mp4" ]] ; then
                         ffmpeg_cmd=$(printf " -t %s -i %s " "${line[1]}" "$assets_path/$asset.$extension")
                         if [[ $pad ]] ; then
-                            echo "pad =$pad" >&2
                             pad_filter="[$count_slide:v]tpad=stop_mode=clone:stop_duration=$pad[video$count_slide]"
                         else
-
                             pad_filter="[$count_slide]null[video$count_slide];"
                         fi
                             filter_complex1="${filter_complex1}${pad_filter};"
@@ -453,7 +447,6 @@ concat_slides() {
                         filter_complex2="${filter_complex2}${concat_filter}"
                     fi
                     echo $ffmpeg_cmd
-                    echo "ffmpeg_cmd= $ffmpeg_cmd" >&2
 
                     count_slide=$((count_slide+1))
                     ;;
@@ -753,7 +746,8 @@ run_ffmpeg_slide(){
 
 
     local percent_progress="0"
-    echo "$cmd">&2
+    #For DEBUG of ffmpeg command
+    #echo "$cmd">&2
 
     $cmd | while read line; do
         local percent_progress=$(show_ffmpeg_progression $line $(echo "$duration_ms*1000" |bc )  )
@@ -791,7 +785,6 @@ compose_gos(){
     tmp_path="${capsule_path}/tmp"
 
     gos=$(echo "$capsule_structure" | jq .[$gos_i])
-    echo "gos =$gos" >&2
     record=$(echo "$gos" | jq -cr ".record.uuid")
 
     len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
@@ -867,8 +860,6 @@ compose_gos(){
                 # the slide have a transition and a record
 
                 slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
-                echo "slide_duration = $slide_duration" >&2
-                echo "extra_duration = $extra_duration" >&2
                 if (( $slide_duration > $extra_duration )); then
                     # record is longer then extra video duration
                     # pad with last frame extra
@@ -887,7 +878,7 @@ compose_gos(){
 
         extra=$(echo "$slide" |  jq  -rc ".extra")
         echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
-        echo $echo_header >&2
+        echo "$echo_header" >&2
 
     done
 
@@ -896,7 +887,6 @@ compose_gos(){
     else
         sameCodec="false"
     fi
-    echo "sameCodec = $sameCodec" >&2
 
 
     # repeat last entry (FFMPEG required kinda end of file)
@@ -909,7 +899,6 @@ compose_gos(){
     cmd=$(header_progress && concat_slides  $cid $concat_file $video_slides $sameCodec)
     run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 0 2
 
-    echo "END STEP 1/2">&2
     # Step 2 / 2: ovelay slides / webcam record /pointer
     output_gos="gos_${gos_i}.mp4"
 
@@ -918,10 +907,8 @@ compose_gos(){
         cp $video_slides "${tmp_path}/$output_gos"
     else
         cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
-        echo "slide_duration = $slide_duration">&2
         total_frames=$(echo "($slide_duration*25)/1000" | bc)
 
-        echo "STEP 2/2">&2
         run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 1 2
     fi
     echo "file '$output_gos'" >> $seq_file
