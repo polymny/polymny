@@ -96,7 +96,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/js/main.js"></script>
-        <script src="/dist/ports.js"></script>
+        <script src="/dist/js/ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
@@ -124,31 +124,13 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/js/main.min.js"></script>
-        <script src="/dist/ports.js"></script>
+        <script src="/dist/js/ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
 
 const INDEX_HTML_AFTER_FLAGS: &str = r#";
-            flags.global = flags.global || {};
-            flags.global.width = window.innerWidth;
-            flags.global.height = window.innerHeight;
-            flags.global.storage_language = localStorage.getItem('language');
-            flags.global.acquisitionInverted = localStorage.getItem('acquisitionInverted') === "true";
-            flags.global.zoomLevel = parseInt(localStorage.getItem('zoomLevel'), 10);
-            if (isNaN(flags.global.zoomLevel)) {
-                flags.global.zoomLevel = null;
-            }
-            flags.global.videoDeviceId = localStorage.getItem('videoDeviceId');
-            flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
-            flags.global.resolution = localStorage.getItem('resolution');
-            flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
-            flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
-            var app = Elm.Main.init({
-                flags: flags,
-                node: document.getElementById('root')
-            });
-            setupPorts(app);
+            init(document.getElementById('root'), flags);
         </script>
     </body>
 </html>
@@ -177,7 +159,7 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/js/unlogged.js"></script>
-        <script src="/dist/ports.js"></script>
+        <script src="/dist/js/ports.js"></script>
         <script>
             var flags = "#;
 
@@ -204,17 +186,11 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <body>
         <div id="root"></div>
         <script src="/dist/js/unlogged.min.js"></script>
-        <script src="/dist/ports.js"></script>
+        <script src="/dist/js/ports.js"></script>
         <script>
             var flags = "#;
 
 const UNLOGGED_HTML_AFTER_FLAGS: &str = r#";
-            flags.global = flags.global || {};
-            flags.global.width = window.innerWidth;
-            flags.global.height = window.innerHeight;
-            flags.global.language = localStorage.getItem('language');
-            flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
-            flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
             var app = Elm.Unlogged.init({
                 flags: flags,
                 node: document.getElementById('root')

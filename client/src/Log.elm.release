@@ -1,6 +1,0 @@
-module Log exposing (debug)
-
-
-debug : String -> a -> a
-debug _ value =
-    value

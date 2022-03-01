@@ -1,0 +1,359 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.0.1\n"
+
+#. Verb to connect to the server.
+msgid "Login.login"
+msgstr "Se connecter"
+
+#. Verb to disconnect from the server.
+msgid "Login.logout"
+msgstr "Se déconnecter"
+
+#. Verb to sign up to the server.
+msgid "Login.signUp"
+msgstr "S'inscrire"
+
+#. The connection has failed.
+msgid "Login.loginFailed"
+msgstr "Connexion echouée"
+
+#. The terms of service of the application.
+msgid "Login.termsOfService"
+msgstr "Conditions générales d'utilisation"
+
+#. Sentence that the user pronounces when accepting the terms of service.
+msgid "Login.acceptTermsOfService"
+msgstr "J'ai lu et j'accepte les conditions générales d'utilisation"
+
+#. Adjective describing a user that subscribed to the newsletter.
+msgid "Login.subscribedToTheNewsletter"
+msgstr "Inscrit à la newsletter"
+
+#. Sentence that the user pronounces when singing up to the newsletter.
+msgid "Login.signUpForTheNewsletter"
+msgstr "Je m'inscris à la newsletter"
+
+#. Given address e-mail does not belong in the database.
+msgid "Login.noSuchEmail"
+msgstr "Cette adresse e-mail n'est associée à aucun compte"
+
+#. A mail has been sent to the user.
+msgid "Login.mailSent"
+msgstr "Un e-mail vous a été envoyé"
+
+#. Question to ask to a user if they're not registered into the app yet.
+msgid "Login.notRegisteredYet"
+msgstr "Pas encore inscrit"
+
+#. Forgotten password.
+msgid "Login.forgottenPassword"
+msgstr "Mot de passe oublié"
+
+#. Verb to ask a new password.
+msgid "Login.requestNewPassword"
+msgstr "Demander un nouveau mot de passe"
+
+#. Action to reset a password.
+msgid "Login.resetPassword"
+msgstr "Réinitialiser mon mot de passe"
+
+#. Action to change the password.
+msgid "Login.changePassword"
+msgstr "Changer mon mot de passe"
+
+#. The password has been changed.
+msgid "Login.passwordChanged"
+msgstr "Votre mot de passe a été changé"
+
+#. A new password.
+msgid "Login.newPassword"
+msgstr "Nouveau mot de passe"
+
+#. Order to repeat the password to make sure it's correct.
+msgid "Login.repeatPassword"
+msgstr "Répétez le mot de passe"
+
+#. The e-mail address in not correct.
+msgid "Login.incorrectEmailAddress"
+msgstr "L'adresse e-mail est erronée"
+
+#. The password in wrong.
+msgid "Login.wrongPassword"
+msgstr "Le mot de passe est incorrect"
+
+#. The username must have at least 3 characters
+msgid "Login.usernameAtLeastThreeCharacters"
+msgstr "Le nom d'utilisateur doit contenir au moins trois caractères"
+
+#. The two passwords don't match.
+msgid "Login.passwordsDontMatch"
+msgstr "Les deux mots de passe ne correspondent pas"
+
+#. The form contains errors.
+msgid "Login.formContainsError"
+msgid_plural ""
+msgstr[0] "Le formulaire contient une erreur"
+msgstr[1] "Le formulaire contient des erreurs"
+
+#. You must accept the terms of service.
+msgid "Login.mustAcceptTermsOfService"
+msgstr "Vous devez accepter les conditions générales d'utilisation"
+
+#. Your account has been successfully activated.
+msgid "Login.accountActivated"
+msgstr "Votre compte a été activé"
+
+#. A user username.
+msgid "Data.User.username"
+msgstr "Nom d'utilisateur"
+
+#. A user password.
+msgid "Data.User.password"
+msgstr "Mot de passe"
+
+#. A user email address.
+msgid "Data.User.emailAddress"
+msgstr "Adresse e-mail"
+
+#. The user's current email address.
+msgid "Data.User.currentEmailAddress"
+msgstr "Adresse e-mail actuelle"
+
+#. The user's new email address.
+msgid "Data.User.newEmailAddress"
+msgstr "Nouvelle adresse e-mail"
+
+#. A user which have verified its email address.
+msgid "Data.User.verifiedUser"
+msgid_plural ""
+msgstr[0] "Utilisateur vérifié"
+msgstr[1] "Utilisateurs vérifiés"
+
+#. Plan that a user can register to.
+msgid "Data.User.plan"
+msgstr "Type d'offre"
+
+#. The name of a project.
+msgid "Data.Project.projectName"
+msgstr "Nom du projet"
+
+#. Action to rename a project.
+msgid "Data.Project.renameProject"
+msgstr "Renommer le projet"
+
+#. Action to delete a project.
+msgid "Data.Project.deleteProject"
+msgstr "Supprimer le projet"
+
+#. The capsule itself.
+msgid "Data.Capsule.capsule"
+msgid_plural ""
+msgstr[0] "Capsule"
+msgstr[1] "Capsules"
+
+#. The hash id of a capsule.
+msgid "Data.Capsule.hashid"
+msgstr "Hash id"
+
+#. The name of a capsule.
+msgid "Data.Capsule.capsuleName"
+msgstr "Nom de la capsule"
+
+#. A group of many slides that are recorded together.
+msgid "Data.Capsule.grain"
+msgid_plural ""
+msgstr[0] "Grain"
+msgstr[1] "Grains"
+
+#. A slide.
+msgid "Data.Capsule.slide"
+msgid_plural ""
+msgstr[0] "Planche"
+msgstr[1] "Planches"
+
+#. A line of a prompt.
+msgid "Data.Capsule.line"
+msgid_plural ""
+msgstr[0] "Ligne"
+msgstr[1] "Lignes"
+
+#. A new capsule that can be created.
+msgid "Data.Capsule.newCapsule"
+msgstr "Nouvelle capsule"
+
+#. Action to rename a capsule.
+msgid "Data.Capsule.renameCapsule"
+msgstr "Renommer la capsule"
+
+#. Action to delete a capsule.
+msgid "Data.Capsule.deleteCapsule"
+msgstr "Supprimer la capsule"
+
+#. The number of capsules.
+msgid "Data.Capsule.capsuleNumber"
+msgstr "Nombre de capsules"
+
+#. The progression of a capsule.
+msgid "Data.Capsule.progress"
+msgstr "Progression"
+
+#. The possible actions on a capsule or a project.
+msgid "Data.Capsule.action"
+msgid_plural ""
+msgstr[0] "Action"
+msgstr[1] "Actions"
+
+#. Capsule that have been produced
+msgid "Data.Capsule.produced"
+msgid_plural ""
+msgstr[0] "Produite"
+msgstr[1] "Produites"
+
+#. Capsule that have been published
+msgid "Data.Capsule.published"
+msgid_plural ""
+msgstr[0] "Publiée"
+msgstr[1] "Publiées"
+
+#. Role of a user of a capsule.
+msgid "Data.Capsule.Role.role"
+msgstr "Rôle"
+
+#. Owner of a capsule.
+msgid "Data.Capsule.Role.owner"
+msgstr "Propriétaire"
+
+#. User that have write access to a capsule.
+msgid "Data.Capsule.Role.write"
+msgstr "Écriture"
+
+#. User that have read access to a capsule.
+msgid "Data.Capsule.Role.read"
+msgstr "Lecture"
+
+#. Step of preparation of content.
+msgid "Steps.Preparation.preparation"
+msgstr "Préparation"
+
+#. Verb corresponding to the preparation step.
+msgid "Steps.Preparation.prepare"
+msgstr "Préparer"
+
+#. A sentence that explains how the solid lines separates grains whereas dashed lines don't.
+msgid "Steps.Preparation.dashedLineExplanation"
+msgstr "Les planches séparées par des pointillets seront filmées en une fois"
+
+#. Action to organize slides.
+msgid "Steps.Preparation.organizeSlides"
+msgstr "Organiser les planches"
+
+#. Step of video and audio acquisition.
+msgid "Steps.Acqusition.acquisition"
+msgstr "Acquisition"
+
+#. Action to start the recording.
+msgid "Steps.Acqusition.startRecording"
+msgstr "Démarrer l'enregistrement"
+
+#. Action to record a video.
+msgid "Steps.Acquisition.record"
+msgstr "Enregistrer"
+
+#. Step of video production.
+msgid "Steps.Production.production"
+msgstr "Production"
+
+#. Verb corresponding to the action of production.
+msgid "Steps.Production.produce"
+msgstr "Produire"
+
+#. Step of video publication.
+msgid "Steps.Publication.publication"
+msgstr "Publication"
+
+#. A warning to the user.
+msgid "Ui.warning"
+msgstr "Warning"
+
+#. The question to ask to make sure the user really wants to delete a capsule.
+msgid "Ui.Warning.confirmDeleteCapsule"
+msgstr "Voulez-vous vraiment supprimer la capsule"
+
+#. The question to ask to make sure the user really wants to delete a project.
+msgid "Ui.Warning.confirmDeleteProject"
+msgstr "Voulez-vous vraiment supprimer le projet"
+
+#. The text in the button to confirm an action.
+msgid "Ui.confirm"
+msgstr "Valider"
+
+#. The text in the button to cancel an action.
+msgid "Ui.cancel"
+msgstr "Annuler"
+
+#. The admin can edit a user.
+msgid "Admin.editUser"
+msgstr "Éditer l'utilisateur"
+
+#. The admin can delete a user.
+msgid "Admin.deleteUser"
+msgstr "Supprimer l'utilisateur"
+
+#. Go to polymny home.
+msgid "Navigation.goToPolymny"
+msgstr "Aller sur Polymny"
+
+#. Increase zoom level.
+msgid "Actions.zoomIn"
+msgstr "Zoomer"
+
+#. Decrease zoom level.
+msgid "Actions.zoomOut"
+msgstr "Dézoomer"
+
+#. Move to the next slide.
+msgid "Actions.goToNextSlide"
+msgstr "Aller à la planche suivante"
+
+#. Move to the previous slide.
+msgid "Actions.goToPreviousSlide"
+msgstr "Aller à la planche précédente"
+
+#. Edit the prompt text.
+msgid "Actions.editPrompt"
+msgstr "Éditer le texte du prompteur"
+
+#. Delete a slide.
+msgid "Actions.deleteSlide"
+msgstr "Supprimer la planche"
+
+#. The question to ask to confirm a deletion of a slide.
+msgid "Actions.Confirm.deleteSlide"
+msgstr "Voulez-vous vraiment supprimer cette planche"
+
+#. A webcam.
+msgid "Device.webcam"
+msgstr "Webcam"
+
+#. The resolution of a webcam.
+msgid "Device.resolution"
+msgstr "Résolution"
+
+#. When a device is disabled.
+msgid "Device.disabled"
+msgstr "Désactivé"
+
+#. A microphone.
+msgid "Device.microphone"
+msgstr "Microphone"

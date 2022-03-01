@@ -80,14 +80,16 @@ where
 /// Prepares the global flags.
 pub fn global_flags(config: &S<Config>, lang: &Lang) -> Value {
     json!({
-        "root": config.root,
-        "socket_root": config.socket_root,
-        "video_root": config.video_root,
-        "version": config.version,
-        "commit": config.commit,
-        "home": config.home,
-        "registration_disabled": config.registration_disabled,
-        "request_language": lang,
+        "serverConfig": {
+            "root": config.root,
+            "socketRoot": config.socket_root,
+            "videoRoot": config.video_root,
+            "version": config.version,
+            "commit": config.commit,
+            "home": config.home,
+            "registrationDisabled": config.registration_disabled,
+            "requestLanguage": lang,
+        },
     })
 }
 

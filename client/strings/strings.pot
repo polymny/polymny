@@ -1,0 +1,336 @@
+#. Verb to connect to the server.
+msgid "Login.login"
+msgstr ""
+
+#. Verb to disconnect from the server.
+msgid "Login.logout"
+msgstr ""
+
+#. Verb to sign up to the server.
+msgid "Login.signUp"
+msgstr ""
+
+#. The connection has failed.
+msgid "Login.loginFailed"
+msgstr ""
+
+#. The terms of service of the application.
+msgid "Login.termsOfService"
+msgstr ""
+
+#. Sentence that the user pronounces when accepting the terms of service.
+msgid "Login.acceptTermsOfService"
+msgstr ""
+
+#. Adjective describing a user that subscribed to the newsletter.
+msgid "Login.subscribedToTheNewsletter"
+msgstr ""
+
+#. Sentence that the user pronounces when singing up to the newsletter.
+msgid "Login.signUpForTheNewsletter"
+msgstr ""
+
+#. Given address e-mail does not belong in the database.
+msgid "Login.noSuchEmail"
+msgstr ""
+
+#. A mail has been sent to the user.
+msgid "Login.mailSent"
+msgstr ""
+
+#. Question to ask to a user if they're not registered into the app yet.
+msgid "Login.notRegisteredYet"
+msgstr ""
+
+#. Forgotten password.
+msgid "Login.forgottenPassword"
+msgstr ""
+
+#. Verb to ask a new password.
+msgid "Login.requestNewPassword"
+msgstr ""
+
+#. Action to reset a password.
+msgid "Login.resetPassword"
+msgstr ""
+
+#. Action to change the password.
+msgid "Login.changePassword"
+msgstr ""
+
+#. The password has been changed.
+msgid "Login.passwordChanged"
+msgstr ""
+
+#. A new password.
+msgid "Login.newPassword"
+msgstr ""
+
+#. Order to repeat the password to make sure it's correct.
+msgid "Login.repeatPassword"
+msgstr ""
+
+#. The e-mail address in not correct.
+msgid "Login.incorrectEmailAddress"
+msgstr ""
+
+#. The password in wrong.
+msgid "Login.wrongPassword"
+msgstr ""
+
+#. The username must have at least 3 characters
+msgid "Login.usernameAtLeastThreeCharacters"
+msgstr ""
+
+#. The two passwords don't match.
+msgid "Login.passwordsDontMatch"
+msgstr ""
+
+#. The form contains errors.
+msgid "Login.formContainsError"
+msgid_plural ""
+msgstr[0] ""
+
+#. You must accept the terms of service.
+msgid "Login.mustAcceptTermsOfService"
+msgstr ""
+
+#. Your account has been successfully activated.
+msgid "Login.accountActivated"
+msgstr ""
+
+#. A user username.
+msgid "Data.User.username"
+msgstr ""
+
+#. A user password.
+msgid "Data.User.password"
+msgstr ""
+
+#. A user email address.
+msgid "Data.User.emailAddress"
+msgstr ""
+
+#. The user's current email address.
+msgid "Data.User.currentEmailAddress"
+msgstr ""
+
+#. The user's new email address.
+msgid "Data.User.newEmailAddress"
+msgstr ""
+
+#. A user which have verified its email address.
+msgid "Data.User.verifiedUser"
+msgid_plural ""
+msgstr[0] ""
+
+#. Plan that a user can register to.
+msgid "Data.User.plan"
+msgstr ""
+
+#. The name of a project.
+msgid "Data.Project.projectName"
+msgstr ""
+
+#. Action to rename a project.
+msgid "Data.Project.renameProject"
+msgstr ""
+
+#. Action to delete a project.
+msgid "Data.Project.deleteProject"
+msgstr ""
+
+#. The capsule itself.
+msgid "Data.Capsule.capsule"
+msgid_plural ""
+msgstr[0] ""
+
+#. The hash id of a capsule.
+msgid "Data.Capsule.hashid"
+msgstr ""
+
+#. The name of a capsule.
+msgid "Data.Capsule.capsuleName"
+msgstr ""
+
+#. A group of many slides that are recorded together.
+msgid "Data.Capsule.grain"
+msgid_plural ""
+msgstr[0] ""
+
+#. A slide.
+msgid "Data.Capsule.slide"
+msgid_plural ""
+msgstr[0] ""
+
+#. A line of a prompt.
+msgid "Data.Capsule.line"
+msgid_plural ""
+msgstr[0] ""
+
+#. A new capsule that can be created.
+msgid "Data.Capsule.newCapsule"
+msgstr ""
+
+#. Action to rename a capsule.
+msgid "Data.Capsule.renameCapsule"
+msgstr ""
+
+#. Action to delete a capsule.
+msgid "Data.Capsule.deleteCapsule"
+msgstr ""
+
+#. The number of capsules.
+msgid "Data.Capsule.capsuleNumber"
+msgstr ""
+
+#. The progression of a capsule.
+msgid "Data.Capsule.progress"
+msgstr ""
+
+#. The possible actions on a capsule or a project.
+msgid "Data.Capsule.action"
+msgid_plural ""
+msgstr[0] ""
+
+#. Capsule that have been produced
+msgid "Data.Capsule.produced"
+msgid_plural ""
+msgstr[0] ""
+
+#. Capsule that have been published
+msgid "Data.Capsule.published"
+msgid_plural ""
+msgstr[0] ""
+
+#. Role of a user of a capsule.
+msgid "Data.Capsule.Role.role"
+msgstr ""
+
+#. Owner of a capsule.
+msgid "Data.Capsule.Role.owner"
+msgstr ""
+
+#. User that have write access to a capsule.
+msgid "Data.Capsule.Role.write"
+msgstr ""
+
+#. User that have read access to a capsule.
+msgid "Data.Capsule.Role.read"
+msgstr ""
+
+#. Step of preparation of content.
+msgid "Steps.Preparation.preparation"
+msgstr ""
+
+#. Verb corresponding to the preparation step.
+msgid "Steps.Preparation.prepare"
+msgstr ""
+
+#. A sentence that explains how the solid lines separates grains whereas dashed lines don't.
+msgid "Steps.Preparation.dashedLineExplanation"
+msgstr ""
+
+#. Action to organize slides.
+msgid "Steps.Preparation.organizeSlides"
+msgstr ""
+
+#. Step of video and audio acquisition.
+msgid "Steps.Acqusition.acquisition"
+msgstr ""
+
+#. Action to start the recording.
+msgid "Steps.Acqusition.startRecording"
+msgstr ""
+
+#. Action to record a video.
+msgid "Steps.Acquisition.record"
+msgstr ""
+
+#. Step of video production.
+msgid "Steps.Production.production"
+msgstr ""
+
+#. Verb corresponding to the action of production.
+msgid "Steps.Production.produce"
+msgstr ""
+
+#. Step of video publication.
+msgid "Steps.Publication.publication"
+msgstr ""
+
+#. A warning to the user.
+msgid "Ui.warning"
+msgstr ""
+
+#. The question to ask to make sure the user really wants to delete a capsule.
+msgid "Ui.Warning.confirmDeleteCapsule"
+msgstr ""
+
+#. The question to ask to make sure the user really wants to delete a project.
+msgid "Ui.Warning.confirmDeleteProject"
+msgstr ""
+
+#. The text in the button to confirm an action.
+msgid "Ui.confirm"
+msgstr ""
+
+#. The text in the button to cancel an action.
+msgid "Ui.cancel"
+msgstr ""
+
+#. The admin can edit a user.
+msgid "Admin.editUser"
+msgstr ""
+
+#. The admin can delete a user.
+msgid "Admin.deleteUser"
+msgstr ""
+
+#. Go to polymny home.
+msgid "Navigation.goToPolymny"
+msgstr ""
+
+#. Increase zoom level.
+msgid "Actions.zoomIn"
+msgstr ""
+
+#. Decrease zoom level.
+msgid "Actions.zoomOut"
+msgstr ""
+
+#. Move to the next slide.
+msgid "Actions.goToNextSlide"
+msgstr ""
+
+#. Move to the previous slide.
+msgid "Actions.goToPreviousSlide"
+msgstr ""
+
+#. Edit the prompt text.
+msgid "Actions.editPrompt"
+msgstr ""
+
+#. Delete a slide.
+msgid "Actions.deleteSlide"
+msgstr ""
+
+#. The question to ask to confirm a deletion of a slide.
+msgid "Actions.Confirm.deleteSlide"
+msgstr ""
+
+#. A webcam.
+msgid "Device.webcam"
+msgstr ""
+
+#. The resolution of a webcam.
+msgid "Device.resolution"
+msgstr ""
+
+#. When a device is disabled.
+msgid "Device.disabled"
+msgstr ""
+
+#. A microphone.
+msgid "Device.microphone"
+msgstr ""

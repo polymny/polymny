@@ -1,0 +1,19 @@
+{
+    "name": "polymny/polymny",
+    "summary": "The client for Polymny Studio",
+    "version": "1.0.0",
+    "exposed-modules": [
+        "Route",
+        "Lang",
+        "Config",
+        "App.Types",
+        "App.Views",
+        "Ui.Colors",
+        "Ui.Utils",
+        "Ui.Navbar",
+        "Ui.Elements",
+        "Data.Types",
+        "Data.User",
+        "Data.Capsule"
+    ]
+}

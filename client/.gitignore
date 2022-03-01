@@ -1,3 +1,5 @@
 src/Log.elm
 elm-stuff
 repl-temp-*
+strings/import
+src/Strings.elm
