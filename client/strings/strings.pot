@@ -168,6 +168,10 @@ msgid "Data.Capsule.line"
 msgid_plural ""
 msgstr[0] ""
 
+#. The last modification of a capsule.
+msgid "Data.Capsule.lastModification"
+msgstr ""
+
 #. A new capsule that can be created.
 msgid "Data.Capsule.newCapsule"
 msgstr ""
@@ -334,3 +338,52 @@ msgstr ""
 #. A microphone.
 msgid "Device.microphone"
 msgstr ""
+
+#. The January month.
+msgid "Date.Month.january"
+msgstr ""
+
+#. The February month.
+msgid "Date.Month.february"
+msgstr ""
+
+#. The March month.
+msgid "Date.Month.march"
+msgstr ""
+
+#. The April month.
+msgid "Date.Month.april"
+msgstr ""
+
+#. The May month.
+msgid "Date.Month.may"
+msgstr ""
+
+#. The June month.
+msgid "Date.Month.june"
+msgstr ""
+
+#. The July month.
+msgid "Date.Month.july"
+msgstr ""
+
+#. The August month.
+msgid "Date.Month.august"
+msgstr ""
+
+#. The September month.
+msgid "Date.Month.september"
+msgstr ""
+
+#. The October month.
+msgid "Date.Month.october"
+msgstr ""
+
+#. The November month.
+msgid "Date.Month.november"
+msgstr ""
+
+#. The December month.
+msgid "Date.Month.december"
+msgstr ""
+

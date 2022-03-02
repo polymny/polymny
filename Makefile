@@ -24,7 +24,7 @@ client-dev: client/src/** server/dist/js/ports.js client/src/Strings.elm
 	@cd client && $(ELM) make src/Main.elm --output ../$(BUILD_DIR)/main.js
 	@/bin/echo -e "\033[32;1m    Finished\033[0m client (debug)"
 
-client-release: client/src/** client/src/Lang/.generated
+client-release: client/src/** client/src/Strings.elm
 	@/bin/echo -e "\033[32;1m   Compiling\033[0m client (release)"
 	@mkdir -p $(BUILD_DIR)
 	@cd client && $(ELM) make src/Main.elm --optimize --output ../$(BUILD_DIR)/main.tmp.js
@@ -71,7 +71,7 @@ clean-server:
 	@/bin/echo -e "\033[32;1m     Cleaned\033[0m server"
 
 client/src/Strings.elm: client/strings/*po
-	@potoelm client/strings/ > client/src/Strings.elm
+	potoelm client/strings/ > client/src/Strings.elm
 
 clean: clean-client clean-server
 

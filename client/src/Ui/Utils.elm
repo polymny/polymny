@@ -3,10 +3,10 @@ module Ui.Utils exposing
     , pl, pr, pt, pb, py, px, p
     , bl, br, bt, bb, by, bx, b
     , cx, cy
-    , shrink, formatDuration
+    , shrink
     )
 
-{-| This module contains shortcuts to very used elm-ui values.
+{-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
 
 
 # Width and height aliases
@@ -31,12 +31,13 @@ module Ui.Utils exposing
 
 # Text utilities
 
-@docs shrink, formatDuration
+@docs shrink
 
 -}
 
 import Element
 import Element.Border as Border
+import Material.Icons.Types exposing (Icon)
 
 
 {-| An alias for `Element.width Element.fill`.
@@ -202,34 +203,3 @@ shrink length string =
 
     else
         string
-
-
-{-| Helper to pretty print a duration.
--}
-formatDuration : Int -> String
-formatDuration milliseconds =
-    let
-        seconds =
-            milliseconds // 1000
-
-        minutes =
-            seconds // 60
-
-        secs =
-            modBy 60 seconds
-
-        secsString =
-            if secs < 10 then
-                "0" ++ String.fromInt secs
-
-            else
-                String.fromInt secs
-
-        minutesString =
-            if minutes < 10 then
-                "0" ++ String.fromInt minutes
-
-            else
-                String.fromInt minutes
-    in
-    minutesString ++ ":" ++ secsString

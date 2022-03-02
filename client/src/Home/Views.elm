@@ -17,8 +17,11 @@ import Element.Border as Border
 import Element.Font as Font
 import Home.Types as Home
 import Lang exposing (Lang)
+import Material.Icons as Icons
 import Route
 import Strings
+import Time
+import TimeUtils
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
@@ -53,6 +56,9 @@ table config user =
     let
         lang =
             config.clientState.lang
+
+        zone =
+            config.clientState.zone
     in
     Element.table [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Border.rounded 20 ]
         { data = projectsToPoc user.projects
@@ -63,19 +69,19 @@ table config user =
               }
             , { header = makeHeader (Strings.dataCapsuleProgress lang)
               , width = Element.shrink
-              , view = \x -> makeCell (progress config.clientState.lang x)
+              , view = \x -> makeCell (progress lang x)
               }
             , { header = makeHeader ""
               , width = Element.fill
-              , view = \x -> Element.none
+              , view = \x -> makeCell (progressIcons config x)
               }
             , { header = makeHeader (Strings.dataCapsuleRoleRole lang)
               , width = Element.shrink
-              , view = \x -> Element.none
+              , view = \x -> makeCell (role lang x)
               }
-            , { header = makeHeader "TODO"
+            , { header = makeHeader (Strings.dataCapsuleLastModification lang)
               , width = Element.shrink
-              , view = \x -> Element.none
+              , view = \x -> makeCell (lastModified lang zone x)
               }
             , { header = makeHeader (Strings.dataCapsuleAction lang 3)
               , width = Element.shrink
@@ -175,7 +181,7 @@ projectProgress lang project =
     Element.el [ Font.italic ] (Element.text text)
 
 
-{-| This function returns th progress of a capsule.
+{-| This function returns the progress of a capsule.
 
 It is a kind of progress bar that shows the different steps between acquisition, production and publication.
 
@@ -237,7 +243,82 @@ capsuleProgress lang capsule =
                 (makeText (Strings.stepsPublicationPublication lang))
 
         duration =
-            Element.el [ Ui.p 10 ] <| Element.text <| Ui.formatDuration capsule.duration
+            Element.el [ Ui.p 10 ] <| Element.text <| TimeUtils.formatDuration capsule.duration
     in
     Element.row [ Ui.hf, Ui.wf, Element.centerY ]
         [ acquisition, production, publication, duration ]
+
+
+{-| The progress icons of a caspule.
+-}
+progressIcons : Config -> Poc -> Element App.Msg
+progressIcons config poc =
+    case poc of
+        Project _ ->
+            Element.none
+
+        Capsule c ->
+            let
+                watch : Element App.Msg
+                watch =
+                    case ( c.published, Data.videoPath c ) of
+                        ( Data.Done, _ ) ->
+                            Ui.primaryIcon []
+                                { icon = Icons.theaters
+                                , action = Ui.Route (Route.Custom (config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"))
+                                , tooltip = "TODO"
+                                }
+
+                        ( _, Just url ) ->
+                            Ui.primaryIcon []
+                                { icon = Icons.theaters
+                                , action = Ui.Route (Route.Custom url)
+                                , tooltip = "TODO"
+                                }
+
+                        _ ->
+                            Element.none
+
+                x =
+                    0
+            in
+            Element.row [ Element.spacing 10 ]
+                [ watch ]
+
+
+{-| This function returns the role of a capsule, or an empty element if a project.
+-}
+role : Lang -> Poc -> Element App.Msg
+role lang poc =
+    case poc of
+        Project _ ->
+            Element.none
+
+        Capsule c ->
+            Element.text
+                (case c.role of
+                    Data.Read ->
+                        Strings.dataCapsuleRoleRead lang
+
+                    Data.Write ->
+                        Strings.dataCapsuleRoleWrite lang
+
+                    Data.Owner ->
+                        Strings.dataCapsuleRoleOwner lang
+                )
+
+
+{-| This function returns the last modified date of a project or a capsule.
+-}
+lastModified : Lang -> Time.Zone -> Poc -> Element App.Msg
+lastModified lang zone poc =
+    let
+        date =
+            case poc of
+                Project p ->
+                    List.head p.capsules |> Maybe.map .lastModified |> Maybe.withDefault 0
+
+                Capsule c ->
+                    c.lastModified
+    in
+    TimeUtils.formatTime lang zone date |> Element.text

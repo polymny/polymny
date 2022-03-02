@@ -160,7 +160,7 @@ Returns Nothing if the capsule hasn't been produced yet.
 videoPath : Capsule -> Maybe String
 videoPath capsule =
     if capsule.produced == Data.Done then
-        Just (assetPath capsule "output.mp4")
+        Just ("/data/" ++ capsule.id ++ "/output.mp4")
 
     else
         Nothing

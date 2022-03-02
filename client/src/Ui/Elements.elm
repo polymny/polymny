@@ -1,8 +1,8 @@
-module Ui.Elements exposing (primary, secondary, link, Action(..))
+module Ui.Elements exposing (primary, primaryIcon, secondary, link, Action(..), icon)
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, secondary, link, Action
+@docs primary, primaryIcon, secondary, link, Action, icon
 
 -}
 
@@ -11,6 +11,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html.Attributes
+import Material.Icons.Types exposing (Coloring(..), Icon)
 import Route exposing (Route)
 import Ui.Colors as Colors
 import Ui.Utils as Ui
@@ -32,7 +34,7 @@ type Action msg
 -}
 primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 primary attr { label, action } =
-    navigationElement action (addPrimaryAttr attr) label
+    navigationElement action (addPrimaryAttr attr) (Element.text label)
 
 
 {-| The attributes of a primary button.
@@ -45,12 +47,30 @@ addPrimaryAttr attr =
         :: attr
 
 
+{-| Creates a primary button with an icon.
+-}
+primaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
+primaryIcon attr params =
+    navigationElement params.action (Element.htmlAttribute (Html.Attributes.title params.tooltip) :: addPrimaryIconAttr attr) (icon 22 params.icon)
+
+
+{-| The attributes of a primary button.
+-}
+addPrimaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
+addPrimaryIconAttr attr =
+    Border.rounded 5
+        :: Ui.p 2
+        :: Background.color Colors.green1
+        :: Font.color Colors.greyBackground
+        :: attr
+
+
 {-| Creates a secondary button, with colored background and white text.
 -}
 secondary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 secondary attr { label, action } =
     --navigationElement action (addSecondaryAttr attr) label
-    Element.el attr (navigationElement action (addSecondaryAttr []) label)
+    Element.el attr (navigationElement action (addSecondaryAttr []) (Element.text label))
 
 
 {-| The attributes of a secondary button.
@@ -69,7 +89,7 @@ addSecondaryAttr attr =
 -}
 link : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 link attr { label, action } =
-    navigationElement action (addLinkAttr attr) label
+    navigationElement action (addLinkAttr attr) (Element.text label)
 
 
 {-| The attributes of a link.
@@ -81,14 +101,21 @@ addLinkAttr attr =
 
 {-| An utility functions to create buttons or link depending on the action.
 -}
-navigationElement : Action msg -> List (Element.Attribute msg) -> String -> Element msg
+navigationElement : Action msg -> List (Element.Attribute msg) -> Element msg -> Element msg
 navigationElement action attr label =
     case action of
         Route route ->
-            Element.link attr { url = Route.toUrl route, label = Element.text label }
+            Element.link attr { url = Route.toUrl route, label = label }
 
         Msg msg ->
-            Input.button attr { onPress = Just msg, label = Element.text label }
+            Input.button attr { onPress = Just msg, label = label }
 
         None ->
-            Element.el attr (Element.text label)
+            Element.el attr label
+
+
+{-| Transforms an icon into an elm-ui element.
+-}
+icon : Int -> Icon msg -> Element msg
+icon size material =
+    Element.html (material size Inherit)
