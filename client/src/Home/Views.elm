@@ -263,14 +263,14 @@ progressIcons config poc =
                 watch =
                     case ( c.published, Data.videoPath c ) of
                         ( Data.Done, _ ) ->
-                            Ui.primaryIcon []
+                            Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.Route (Route.Custom (config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"))
                                 , tooltip = "TODO"
                                 }
 
                         ( _, Just url ) ->
-                            Ui.primaryIcon []
+                            Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.Route (Route.Custom url)
                                 , tooltip = "TODO"

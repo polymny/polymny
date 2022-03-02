@@ -1,8 +1,8 @@
-module Ui.Elements exposing (primary, primaryIcon, secondary, link, Action(..), icon)
+module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon)
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, primaryIcon, secondary, link, Action, icon
+@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, icon
 
 -}
 
@@ -81,6 +81,26 @@ addSecondaryAttr attr =
         :: Background.color Colors.greyBackground
         :: Font.color Colors.greyFont
         :: Ui.p 12
+        :: Font.bold
+        :: attr
+
+
+{-| Creates a secondary button with an icon.
+-}
+secondaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
+secondaryIcon attr params =
+    navigationElement params.action (Element.htmlAttribute (Html.Attributes.title params.tooltip) :: addSecondaryIconAttr attr) (icon 22 params.icon)
+
+
+{-| The attributes of a secondary button.
+-}
+addSecondaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
+addSecondaryIconAttr attr =
+    Border.rounded 5
+        :: Ui.b 1
+        :: Border.color Colors.greyBorder
+        :: Font.color Colors.green1
+        :: Ui.p 2
         :: Font.bold
         :: attr
 
