@@ -683,3 +683,4 @@ msgstr "For example, a PDF export version of Microsoft PowerPoint or LibreOffice
 #. Sentence to exaplin that after the slides have been uploaded, you may record.
 msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr "Once the slides have been uploaded, the recording can start"
+
