@@ -62,6 +62,10 @@ msgstr ""
 msgid "Login.passwordChanged"
 msgstr ""
 
+#. The current password.
+msgid "Login.currentPassword"
+msgstr ""
+
 #. A new password.
 msgid "Login.newPassword"
 msgstr ""
@@ -97,6 +101,10 @@ msgstr ""
 
 #. Your account has been successfully activated.
 msgid "Login.accountActivated"
+msgstr ""
+
+#. Either the username or the e-mail address.
+msgid "Login.usernameOrEmail"
 msgstr ""
 
 #. A user username.
@@ -239,6 +247,42 @@ msgstr ""
 msgid "Steps.Preparation.organizeSlides"
 msgstr ""
 
+#. A sentence that explains that changing slides will destroy records.
+msgid "Steps.Preparation.dndWillBreak"
+msgstr ""
+
+#. Select a pdf file.
+msgid "Steps.Preparation.selectPdf"
+msgstr ""
+
+#. Replace slide / add external resource.
+msgid "Steps.Preparation.replaceSlideOrAddExternalResource"
+msgstr ""
+
+#. Replace slide.
+msgid "Steps.Preparation.replaceSlide"
+msgstr ""
+
+#. Question to ask which page of the PDF should be used.
+msgid "Steps.Preparation.whichPage"
+msgstr ""
+
+#. Order to insert a a number greather than zero.
+msgid "Steps.Preparation.insertNumberGreaterThanZero"
+msgstr ""
+
+#. Delete the extra resource.
+msgid "Steps.Preparation.deleteResource"
+msgstr ""
+
+#. Add a slide.
+msgid "Steps.Preparation.addSlide"
+msgstr ""
+
+#. Create a new grain.
+msgid "Steps.Preparation.createGrain"
+msgstr ""
+
 #. Step of video and audio acquisition.
 msgid "Steps.Acqusition.acquisition"
 msgstr ""
@@ -251,6 +295,31 @@ msgstr ""
 msgid "Steps.Acquisition.record"
 msgstr ""
 
+#. The recording is stopped.
+msgid "Steps.Acquisition.recordingStopped"
+msgstr ""
+
+#. Invert slide and prompt.
+msgid "Steps.Acqusition.invertSlideAndPrompt"
+msgstr ""
+
+#. Records.
+msgid "Steps.Acquisition.recordList"
+msgid_plural ""
+msgstr[0] ""
+
+#. Records will be lost.
+msgid "Steps.Acqusition.nonValidatedRecordsWillBeLost"
+msgstr ""
+
+#. Action to play a record.
+msgid "Steps.Acquisition.playRecord"
+msgstr ""
+
+#. Action to validate a record.
+msgid "Steps.Acquisition.validateRecord"
+msgstr ""
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr ""
@@ -259,8 +328,148 @@ msgstr ""
 msgid "Steps.Production.produce"
 msgstr ""
 
+#. Description of the action to produce the video.
+msgid "Steps.Production.produceVideo"
+msgstr ""
+
+#. Description of the action to produce a grain.
+msgid "Steps.Production.produceGrain"
+msgstr ""
+
+#. Insert the video.
+msgid "Steps.Production.useVideo"
+msgstr ""
+
+#. Webcam size.
+msgid "Steps.Production.webcamSize"
+msgstr ""
+
+#. Small webcam size.
+msgid "Steps.Production.small"
+msgstr ""
+
+#. Medium webcam size.
+msgid "Steps.Production.medium"
+msgstr ""
+
+#. Large webcam size.
+msgid "Steps.Production.large"
+msgstr ""
+
+#. Webcam position.
+msgid "Steps.Production.webcamPosition"
+msgstr ""
+
+#. Top left corner.
+msgid "Steps.Production.topLeft"
+msgstr ""
+
+#. Top right corner.
+msgid "Steps.Production.topRight"
+msgstr ""
+
+#. Bottom left corner.
+msgid "Steps.Production.bottomLeft"
+msgstr ""
+
+#. Bottom right corner.
+msgid "Steps.Production.bottomRight"
+msgstr ""
+
+#. A custom value for a parameter.
+msgid "Steps.Production.custom"
+msgstr ""
+
+#. Key (operation to remove green screen).
+msgid "Steps.Production.key"
+msgstr ""
+
+#. Key color (color to remove).
+msgid "Steps.Production.keyColor"
+msgstr ""
+
+#. Activate the keying.
+msgid "Steps.Production.activateKeying"
+msgstr ""
+
+#. Activate the fading.
+msgid "Steps.Production.activateFading"
+msgstr ""
+
+#. Sentence to watch the video.
+msgid "Steps.Production.watchVideo"
+msgstr ""
+
+#. Sentence to watch the grain.
+msgid "Steps.Production.watchGrain"
+msgstr ""
+
+#. Currently producing video.
+msgid "Steps.Production.producingVideo"
+msgstr ""
+
+#. Cancel the production.
+msgid "Steps.Production.cancelProduction"
+msgstr ""
+
 #. Step of video publication.
 msgid "Steps.Publication.publication"
+msgstr ""
+
+#. Verb to publish the video.
+msgid "Steps.Publication.publish"
+msgstr ""
+
+#. Currently publishing video.
+msgid "Steps.Publication.publishingVideo"
+msgstr ""
+
+#. Setence to describe the publication of the video.
+msgid "Steps.Publication.publishVideo"
+msgstr ""
+
+#. Private video.
+msgid "Steps.Publication.Privacy.private"
+msgstr ""
+
+#. A sentence that explains private videos.
+msgid "Steps.Publication.Privacy.explainPrivate"
+msgstr ""
+
+#. Unlisted video.
+msgid "Steps.Publication.Privacy.unlisted"
+msgstr ""
+
+#. A sentence that explains unlisted videos.
+msgid "Steps.Publication.Privacy.explainUnlisted"
+msgstr ""
+
+#. Warning because private videos are not ready yet.
+msgid "Steps.Publication.Privacy.privateVideosNotAvailable"
+msgstr ""
+
+#. Public video.
+msgid "Steps.Publication.Privacy.public"
+msgstr ""
+
+#. A sentence that explains public videos.
+msgid "Steps.Publication.Privacy.explainPublic"
+msgstr ""
+
+#. Privacy settings.
+msgid "Steps.Publication.Privacy.privacySettings"
+msgstr ""
+
+#. Cancel publication.
+msgid "Steps.Publication.cancelPublication"
+msgstr ""
+
+#. Unpublish the video.
+msgid "Steps.Publication.unpublishVideo"
+msgstr ""
+
+#. An error to the user.
+msgid "Ui.error"
 msgstr ""
 
 #. A warning to the user.
@@ -291,8 +500,40 @@ msgstr ""
 msgid "Admin.deleteUser"
 msgstr ""
 
+#. The question to confirm the deletion of a user.
+msgid "Admin.deleteUserConfirm"
+msgstr ""
+
 #. Go to polymny home.
 msgid "Navigation.goToPolymny"
+msgstr ""
+
+#. Go to the settings page.
+msgid "Navigation.settings"
+msgstr ""
+
+#. Go to the grain recording page.
+msgid "Navigation.recordGrain"
+msgstr ""
+
+#. Go to the record.
+msgid "Navigation.watchRecord"
+msgstr ""
+
+#. The next thing.
+msgid "Navigation.next"
+msgstr ""
+
+#. The previous thing.
+msgid "Navigation.previous"
+msgstr ""
+
+#. Close this popup.
+msgid "Navigation.close"
+msgstr ""
+
+#. Sentence to go back home.
+msgid "Navigation.clickHereToGoBackHome"
 msgstr ""
 
 #. Increase zoom level.
@@ -387,3 +628,34 @@ msgstr ""
 msgid "Date.Month.december"
 msgstr ""
 
+#. The version of the application.
+msgid "Config.version"
+msgstr ""
+
+#. The commit of the application.
+msgid "Config.commit"
+msgstr ""
+
+#. The source code of the application.
+msgid "Config.source"
+msgstr ""
+
+#. Welcome on Polymny.
+msgid "Intro.welcomeOnPolymny"
+msgstr ""
+
+#. There are no projects hier.
+msgid "Intro.noProjectsYet"
+msgstr ""
+
+#. Sentence to explain that the first step is to upload PDF.
+msgid "Intro.toStartYouNeedToUploadPdf"
+msgstr ""
+
+#. Sentence to give an example of PDF file.
+msgid "Intro.exampleOfPdfFile"
+msgstr ""
+
+#. Sentence to exaplin that after the slides have been uploaded, you may record.
+msgid "Intro.afterSlidesUploadYouCanRecord"
+msgstr ""

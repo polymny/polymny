@@ -76,6 +76,10 @@ msgstr "Changer mon mot de passe"
 msgid "Login.passwordChanged"
 msgstr "Votre mot de passe a été changé"
 
+#. The current password.
+msgid "Login.currentPassword"
+msgstr "Mot de passe actuel"
+
 #. A new password.
 msgid "Login.newPassword"
 msgstr "Nouveau mot de passe"
@@ -113,6 +117,10 @@ msgstr "Vous devez accepter les conditions générales d'utilisation"
 #. Your account has been successfully activated.
 msgid "Login.accountActivated"
 msgstr "Votre compte a été activé"
+
+#. Either the username or the e-mail address.
+msgid "Login.usernameOrEmail"
+msgstr "Nom d'utilisateur ou adresse e-mail"
 
 #. A user username.
 msgid "Data.User.username"
@@ -262,6 +270,42 @@ msgstr "Les planches séparées par des pointillets seront filmées en une fois"
 msgid "Steps.Preparation.organizeSlides"
 msgstr "Organiser les planches"
 
+#. A sentence that explains that changing slides will destroy records.
+msgid "Steps.Preparation.dndWillBreak"
+msgstr "Ce déplacement va détruire certains de vos enregistrements"
+
+#. Select a pdf file.
+msgid "Steps.Preparation.selectPdf"
+msgstr "Choisir un PDF"
+
+#. Replace slide / add external resource.
+msgid "Steps.Preparation.replaceSlideOrAddExternalResource"
+msgstr "Remplacer la planche / ajouter une ressource externe"
+
+#. Replace slide.
+msgid "Steps.Preparation.replaceSlide"
+msgstr "Remplacer la planche"
+
+#. Question to ask which page of the PDF should be used.
+msgid "Steps.Preparation.whichPage"
+msgstr "Quelle page du PDF souhaitez-vous utiliser"
+
+#. Order to insert a a number greather than zero.
+msgid "Steps.Preparation.insertNumberGreaterThanZero"
+msgstr "Entrez un numéro de page plus grand que zéro"
+
+#. Delete the extra resource.
+msgid "Steps.Preparation.deleteResource"
+msgstr "Supprimer la ressource"
+
+#. Add a slide.
+msgid "Steps.Preparation.addSlide"
+msgstr "Ajouter une planche"
+
+#. Create a new grain.
+msgid "Steps.Preparation.createGrain"
+msgstr "Créer un grain"
+
 #. Step of video and audio acquisition.
 msgid "Steps.Acqusition.acquisition"
 msgstr "Acquisition"
@@ -274,6 +318,32 @@ msgstr "Démarrer l'enregistrement"
 msgid "Steps.Acquisition.record"
 msgstr "Enregistrer"
 
+#. The recording is stopped.
+msgid "Steps.Acquisition.recordingStopped"
+msgstr "Enregistrement arrété"
+
+#. Invert slide and prompt.
+msgid "Steps.Acqusition.invertSlideAndPrompt"
+msgstr "Inverser la planche et le prompteur"
+
+#. Records.
+msgid "Steps.Acquisition.recordList"
+msgid_plural ""
+msgstr[0] "Enregistrement"
+msgstr[1] "Enregistrements"
+
+#. Records will be lost.
+msgid "Steps.Acqusition.nonValidatedRecordsWillBeLost"
+msgstr "Les enregistrements non validés seront perdus"
+
+#. Action to play a record.
+msgid "Steps.Acquisition.playRecord"
+msgstr "Jouer l'enregistrement"
+
+#. Action to validate a record.
+msgid "Steps.Acquisition.validateRecord"
+msgstr "Valider l'enregistrement"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"
@@ -282,9 +352,149 @@ msgstr "Production"
 msgid "Steps.Production.produce"
 msgstr "Produire"
 
+#. Description of the action to produce the video.
+msgid "Steps.Production.produceVideo"
+msgstr "Produire la vidéo"
+
+#. Description of the action to produce a grain.
+msgid "Steps.Production.produceGrain"
+msgstr "Produire le grain"
+
+#. Insert the video.
+msgid "Steps.Production.useVideo"
+msgstr "Incruster la vidéo"
+
+#. Webcam size.
+msgid "Steps.Production.webcamSize"
+msgstr "Taille de la webcam"
+
+#. Small webcam size.
+msgid "Steps.Production.small"
+msgstr "Petite"
+
+#. Medium webcam size.
+msgid "Steps.Production.medium"
+msgstr "Moyenne"
+
+#. Large webcam size.
+msgid "Steps.Production.large"
+msgstr "Grande"
+
+#. Webcam position.
+msgid "Steps.Production.webcamPosition"
+msgstr "Position de la webcam"
+
+#. Top left corner.
+msgid "Steps.Production.topLeft"
+msgstr "En haut à gauche"
+
+#. Top right corner.
+msgid "Steps.Production.topRight"
+msgstr "En haut à droite"
+
+#. Bottom left corner.
+msgid "Steps.Production.bottomLeft"
+msgstr "En bas à gauche"
+
+#. Bottom right corner.
+msgid "Steps.Production.bottomRight"
+msgstr "En bas à droite"
+
+#. A custom value for a parameter.
+msgid "Steps.Production.custom"
+msgstr "Personnalisé"
+
+#. Key (operation to remove green screen).
+msgid "Steps.Production.key"
+msgstr "Key"
+
+#. Key color (color to remove).
+msgid "Steps.Production.keyColor"
+msgstr "Couleur de keying"
+
+#. Activate the keying.
+msgid "Steps.Production.activateKeying"
+msgstr "Activer le keying"
+
+#. Activate the fading.
+msgid "Steps.Production.activateFading"
+msgstr "Activer le fading"
+
+#. Sentence to watch the video.
+msgid "Steps.Production.watchVideo"
+msgstr "Regarder la vidéo"
+
+#. Sentence to watch the grain.
+msgid "Steps.Production.watchGrain"
+msgstr "Regarder le grain"
+
+#. Currently producing video.
+msgid "Steps.Production.producingVideo"
+msgstr "Production de la vidéo en cours"
+
+#. Cancel the production.
+msgid "Steps.Production.cancelProduction"
+msgstr "Annuler la production"
+
 #. Step of video publication.
 msgid "Steps.Publication.publication"
 msgstr "Publication"
+
+#. Verb to publish the video.
+msgid "Steps.Publication.publish"
+msgstr "Publier"
+
+#. Currently publishing video.
+msgid "Steps.Publication.publishingVideo"
+msgstr "Publication de la vidéo en cours"
+
+#. Setence to describe the publication of the video.
+msgid "Steps.Publication.publishVideo"
+msgstr "Publier la vidéo"
+
+#. Private video.
+msgid "Steps.Publication.Privacy.private"
+msgstr "Privée"
+
+#. A sentence that explains private videos.
+msgid "Steps.Publication.Privacy.explainPrivate"
+msgstr "La vidéo ne sera visible que par les utilisateurs explicitement autorisés"
+
+#. Unlisted video.
+msgid "Steps.Publication.Privacy.unlisted"
+msgstr "Non repértoriée"
+
+#. A sentence that explains unlisted videos.
+msgid "Steps.Publication.Privacy.explainUnlisted"
+msgstr "La vidéo ne sera visible que par les personnes connaissant l'URL, Polymny Studio ne partagera pas l'URL de la vidéo"
+
+#. Warning because private videos are not ready yet.
+msgid "Steps.Publication.Privacy.privateVideosNotAvailable"
+msgstr "Cette fonctionnalité n'est pas encore prête : aucun utilisateur ne pourra voir la vidéo à part vous-même"
+
+#. Public video.
+msgid "Steps.Publication.Privacy.public"
+msgstr "Publique"
+
+#. A sentence that explains public videos.
+msgid "Steps.Publication.Privacy.explainPublic"
+msgstr "La vidéo sera visible par les personnes connaissant l'URL, Polymny Studio pourrait, dans le futur, partager l'URL de la vidéo via un moteur de recherche, un système de recommandations, etc"
+
+#. Privacy settings.
+msgid "Steps.Publication.Privacy.privacySettings"
+msgstr "Paramètres de confidentialité"
+
+#. Cancel publication.
+msgid "Steps.Publication.cancelPublication"
+msgstr "Annuler la publication"
+
+#. Unpublish the video.
+msgid "Steps.Publication.unpublishVideo"
+msgstr "Dépublier la vidéo"
+
+#. An error to the user.
+msgid "Ui.error"
+msgstr "Erreur"
 
 #. A warning to the user.
 msgid "Ui.warning"
@@ -314,9 +524,41 @@ msgstr "Éditer l'utilisateur"
 msgid "Admin.deleteUser"
 msgstr "Supprimer l'utilisateur"
 
+#. The question to confirm the deletion of a user.
+msgid "Admin.deleteUserConfirm"
+msgstr "Voulez-vous vraiment supprimer l'utilisateur"
+
 #. Go to polymny home.
 msgid "Navigation.goToPolymny"
 msgstr "Aller sur Polymny"
+
+#. Go to the settings page.
+msgid "Navigation.settings"
+msgstr "Paramètres"
+
+#. Go to the grain recording page.
+msgid "Navigation.recordGrain"
+msgstr "Enregistrer ce grain"
+
+#. Go to the record.
+msgid "Navigation.watchRecord"
+msgstr "Regarder cet enregistrement"
+
+#. The next thing.
+msgid "Navigation.next"
+msgstr "Suivant"
+
+#. The previous thing.
+msgid "Navigation.previous"
+msgstr "Précédent"
+
+#. Close this popup.
+msgid "Navigation.close"
+msgstr "Fermer"
+
+#. Sentence to go back home.
+msgid "Navigation.clickHereToGoBackHome"
+msgstr "Cliquer ici pour retourner à l'accueil"
 
 #. Increase zoom level.
 msgid "Actions.zoomIn"
@@ -410,3 +652,37 @@ msgstr "Novembre"
 msgid "Date.Month.december"
 msgstr "Décembre"
 
+#. The version of the application.
+msgid "Config.version"
+msgstr "Version"
+
+#. The commit of the application.
+msgid "Config.commit"
+msgstr "Commit"
+
+#. The source code of the application.
+msgid "Config.source"
+msgstr "Source"
+
+#. Welcome on Polymny.
+msgid "Intro.welcomeOnPolymny"
+msgstr "Bienvenue sur Polymny Studio"
+
+#. There are no projects hier.
+msgid "Intro.noProjectsYet"
+msgstr "On dirait que vous n'avez encore aucun projet"
+
+#. Sentence to explain that the first step is to upload PDF.
+msgid "Intro.toStartYouNeedToUploadPdf"
+msgstr "Pour commencer un enregistrement, il faut choisir une présentation au format PDF sur votre machine"
+
+#. Sentence to give an example of PDF file.
+msgid "Intro.exampleOfPdfFile"
+msgstr "Par exemple, un export PDF de Microsoft PowerPoint ou LibreOffice Impress en paysage au format HD"
+
+#. Sentence to exaplin that after the slides have been uploaded, you may record.
+msgid "Intro.afterSlidesUploadYouCanRecord"
+msgstr "Une fois la présentation téléchargée, l'enregistrement vidéo des planches pourra débuter"
+
+#~ msgid "Steps.Production.grain"
+#~ msgstr "Grain"
