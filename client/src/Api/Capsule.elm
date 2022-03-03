@@ -5,43 +5,30 @@ module Api.Capsule exposing (..)
 
 import Api.Utils as Api
 import App.Types as App
+import Data.Capsule as Data
 import File
-import FileValue exposing (File)
+import FileValue
 import Http
-import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import RemoteData
 
 
 {-| Uploads a slideshow to the server, creating a new capsule.
 -}
-uploadSlideShow : String -> File -> Cmd App.Msg
-uploadSlideShow project file =
+uploadSlideShow : String -> FileValue.File -> File.File -> Cmd App.Msg
+uploadSlideShow project fileValue file =
     let
         name =
-            file.name
+            fileValue.name
                 |> String.split "."
                 |> List.reverse
                 |> List.drop 1
                 |> List.reverse
                 |> String.join "."
-
-        realFile =
-            Decode.decodeValue File.decoder file.value
-
-        resultToMsg result =
-            RemoteData.fromResult result
-                |> RemoteData.mapError NewCapsule.HttpError
-                |> NewCapsule.SlideUpload
-                |> App.NewCapsuleMsg
     in
-    case realFile of
-        Ok f ->
-            Api.post
-                { url = "/api/new-capsule/" ++ project ++ "/" ++ name ++ "/"
-                , expect = Http.expectWhatever resultToMsg
-                , body = Http.fileBody f
-                }
-
-        _ ->
-            Cmd.none
+    Api.postJson
+        { url = "/api/new-capsule/" ++ project ++ "/" ++ name ++ "/"
+        , body = Http.fileBody file
+        , decoder = Data.decodeCapsule
+        , resultToMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
+        }

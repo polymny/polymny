@@ -17,6 +17,7 @@ port module Home.Updates exposing
 import Api.Capsule as Api
 import App.Types as App
 import Data.User as Data
+import File
 import FileValue
 import Home.Types as Home
 import Json.Decode as Decode
@@ -39,12 +40,12 @@ update msg model =
                 |> select Nothing
             )
 
-        Home.SlideUploadReceived project file ->
-            case file.mime of
+        Home.SlideUploadReceived project fileValue file ->
+            case fileValue.mime of
                 "application/pdf" ->
                     let
                         name =
-                            file.name
+                            fileValue.name
                                 |> String.split "."
                                 |> List.reverse
                                 |> List.drop 1
@@ -52,7 +53,7 @@ update msg model =
                                 |> String.join "."
                     in
                     ( { model | page = App.NewCapsule (NewCapsule.init (RemoteData.Loading Nothing)) }
-                    , Api.uploadSlideShow name file
+                    , Api.uploadSlideShow name fileValue file
                     )
 
                 -- TODO : manage "application/zip"
@@ -83,9 +84,9 @@ subs : App.Model -> Sub App.Msg
 subs model =
     selected
         (\( p, x ) ->
-            case Decode.decodeValue FileValue.decoder x of
-                Ok y ->
-                    App.HomeMsg (Home.SlideUploadReceived p y)
+            case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
+                ( Ok y, Ok z ) ->
+                    App.HomeMsg (Home.SlideUploadReceived p y z)
 
                 _ ->
                     App.Noop

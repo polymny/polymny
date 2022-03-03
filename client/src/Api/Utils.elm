@@ -1,4 +1,7 @@
-module Api.Utils exposing (get, post, put, delete, requestWithMethodAndTracker, postWithTracker)
+module Api.Utils exposing
+    ( get, post, put, delete, requestWithMethodAndTracker, postWithTracker
+    , getJson, postJson
+    )
 
 {-| This module contains helper that we can use to manage REST APIs easily.
 
@@ -7,6 +10,8 @@ module Api.Utils exposing (get, post, put, delete, requestWithMethodAndTracker, 
 -}
 
 import Http
+import Json.Decode as Decode exposing (Decoder)
+import RemoteData exposing (RemoteData)
 
 
 requestWithMethodAndTracker : String -> Maybe String -> { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
@@ -32,9 +37,27 @@ get =
     requestWithMethod "GET"
 
 
+getJson : { url : String, body : Http.Body, decoder : Decoder a, resultToMsg : RemoteData Http.Error a -> msg } -> Cmd msg
+getJson { url, body, decoder, resultToMsg } =
+    get
+        { url = url
+        , body = body
+        , expect = Http.expectJson (\x -> resultToMsg (RemoteData.fromResult x)) decoder
+        }
+
+
 post : { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg
 post =
     requestWithMethod "POST"
+
+
+postJson : { url : String, body : Http.Body, decoder : Decoder a, resultToMsg : RemoteData Http.Error a -> msg } -> Cmd msg
+postJson { url, body, decoder, resultToMsg } =
+    post
+        { url = url
+        , body = body
+        , expect = Http.expectJson (\x -> resultToMsg (RemoteData.fromResult x)) decoder
+        }
 
 
 postWithTracker : String -> { url : String, body : Http.Body, expect : Http.Expect msg } -> Cmd msg

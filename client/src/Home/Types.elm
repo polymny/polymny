@@ -7,7 +7,8 @@ module Home.Types exposing (Msg(..))
 -}
 
 import Data.User as Data
-import FileValue exposing (File)
+import File
+import FileValue
 
 
 {-| This type represents the different events that can happen on the home page
@@ -15,4 +16,4 @@ import FileValue exposing (File)
 type Msg
     = Toggle Data.Project
     | SlideUploadClicked
-    | SlideUploadReceived (Maybe String) File
+    | SlideUploadReceived (Maybe String) FileValue.File File.File
