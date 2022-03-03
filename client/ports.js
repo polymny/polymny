@@ -7,12 +7,12 @@ function init(node, flags) {
             return;
         }
 
-        if (app.ports[port.name] === undefined) {
+        if (app.ports[port.name + "Port"] === undefined) {
             console.log("app.ports." + port.name + " is undefined, not mounting port...");
             return;
         }
 
-        app.ports[port.name].subscribe(port.fn);
+        app.ports[port.name + "Port"].subscribe(port.fn);
     }
 
     function makePort(name, fn) {
@@ -20,8 +20,23 @@ function init(node, flags) {
     }
 
     // Ports definitions
-    const saveStoragePort = makePort("saveStoragePort", function(clientConfig) {
+
+    // Saves the client config into the local storage.
+    const saveStorage = makePort("saveStorage", function(clientConfig) {
         localStorage.setItem('clientConfig', JSON.stringify(clientConfig));
+    });
+
+    // Open the file select popup.
+    const select = makePort("select", function(args) {
+        let project = args[0];
+        let mimes = args[1];
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = mimes.join(',');
+        input.onchange = function(e) {
+            app.ports.selected.send([project, e.target.files[0]]);
+        };
+        input.click();
     });
 
     // Initializing code for elm app.
@@ -39,9 +54,8 @@ function init(node, flags) {
     });
 
     // Mount ports
-    subscribe(app, saveStoragePort);
-
-
+    subscribe(app, saveStorage);
+    subscribe(app, select);
 
     /*
     flags.global = flags.global || {};

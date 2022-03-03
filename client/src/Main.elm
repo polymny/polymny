@@ -13,7 +13,7 @@ main =
         { init = App.init
         , update = App.update
         , view = App.view
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = App.subs
         , onUrlChange = \_ -> App.Noop
         , onUrlRequest = \_ -> App.Noop
         }

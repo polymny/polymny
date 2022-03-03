@@ -32,11 +32,34 @@ import Utils
 -}
 view : Config -> User -> Element App.Msg
 view config user =
-    Element.row [ Ui.wf, Ui.p 10 ]
-        [ Element.el [ Ui.wfp 2 ] Element.none
-        , Element.el [ Ui.wfp 8 ] (table config user)
-        , Element.el [ Ui.wfp 2 ] Element.none
+    Element.row [ Ui.wf, Ui.hf ]
+        [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
+        , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop ] (table config user)
         ]
+
+
+{-| This function returns the left colum view.
+
+It contains the button to start a new capsule, but also gives information about users quota.
+
+-}
+leftColumn : Config -> User -> Element App.Msg
+leftColumn config user =
+    let
+        uploadSlidesButton =
+            Ui.primary [ Ui.wf ]
+                { label = Strings.stepsPreparationSelectPdf config.clientState.lang
+                , action = Ui.Msg (App.HomeMsg Home.SlideUploadClicked)
+                }
+    in
+    Element.column
+        [ Ui.hf
+        , Ui.wf
+        , Ui.br 1
+        , Element.padding 10
+        , Border.color (Colors.grey 6)
+        ]
+        [ uploadSlidesButton ]
 
 
 {-| This type can be a project or a capsule.
@@ -219,7 +242,7 @@ capsuleProgress lang capsule =
                 , Border.color Colors.black
                 , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
                 ]
-                (makeText (Strings.stepsAcqusitionAcquisition lang))
+                (makeText (Strings.stepsAcquisitionAcquisition lang))
 
         production =
             Element.el

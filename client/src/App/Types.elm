@@ -78,7 +78,11 @@ init flags url key =
         model =
             case ( serverConfig, clientConfig, user ) of
                 ( Ok s, Ok c, Ok u ) ->
-                    Ok { config = { serverConfig = s, clientConfig = c, clientState = clientState }, user = u, page = Home }
+                    Ok
+                        { config = { serverConfig = s, clientConfig = c, clientState = clientState }
+                        , user = u
+                        , page = Home
+                        }
 
                 ( Err s, _, _ ) ->
                     Err (DecodeError s)

@@ -1,8 +1,8 @@
-module Data.User exposing (User, decodeUser, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing (User, decodeUser, isPremium, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, Project, toggleProject, compareCapsule, compareProject
 
 -}
 
@@ -62,6 +62,21 @@ type alias User =
     , plan : Data.Plan
     , projects : List Project
     }
+
+
+{-| Returns true if the user have access to premium functionnalities.
+-}
+isPremium : User -> Bool
+isPremium user =
+    case user.plan of
+        Data.PremiumLvl1 ->
+            True
+
+        Data.Admin ->
+            True
+
+        _ ->
+            False
 
 
 {-| JSON decoder for user.

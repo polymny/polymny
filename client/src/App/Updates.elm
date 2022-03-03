@@ -1,8 +1,8 @@
-module App.Updates exposing (update, updateModel)
+module App.Updates exposing (update, updateModel, subs)
 
 {-| This module contains the update function of the polymny application.
 
-@docs update, updateModel
+@docs update, updateModel, subs
 
 -}
 
@@ -40,3 +40,15 @@ updateModel msg model =
 
         App.HomeMsg sMsg ->
             Home.update sMsg model
+
+
+{-| Returns the subscriptions of the app.
+-}
+subs : Result App.Error App.Model -> Sub App.Msg
+subs m =
+    case m of
+        Err _ ->
+            Sub.none
+
+        Ok model ->
+            Sub.batch [ Home.subs model ]

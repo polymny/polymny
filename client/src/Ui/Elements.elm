@@ -34,7 +34,7 @@ type Action msg
 -}
 primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 primary attr { label, action } =
-    navigationElement action (addPrimaryAttr attr) (Element.text label)
+    navigationElement action (addPrimaryAttr attr) (Element.el [ Ui.cx, Font.bold ] (Element.text label))
 
 
 {-| The attributes of a primary button.
@@ -44,6 +44,7 @@ addPrimaryAttr attr =
     Border.rounded 100
         :: Background.color Colors.green1
         :: Font.color Colors.greyBackground
+        :: Ui.p 12
         :: attr
 
 
