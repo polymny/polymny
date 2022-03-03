@@ -30,7 +30,10 @@ uploadSlideShow project file =
             Decode.decodeValue File.decoder file.value
 
         resultToMsg result =
-            App.NewCapsuleMsg (NewCapsule.SlideUpload (RemoteData.fromResult result))
+            RemoteData.fromResult result
+                |> RemoteData.mapError NewCapsule.HttpError
+                |> NewCapsule.SlideUpload
+                |> App.NewCapsuleMsg
     in
     case realFile of
         Ok f ->

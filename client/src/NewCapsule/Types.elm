@@ -1,26 +1,35 @@
-module NewCapsule.Types exposing (Model, Msg(..), init)
+module NewCapsule.Types exposing (Model, Msg(..), SlideUploadError(..), init)
 
 {-| This module contains the types for the page the users land when they upload a slideshow.
 -}
 
-import RemoteData exposing (WebData)
+import Http
+import RemoteData exposing (RemoteData)
 
 
 {-| The model of the new capsule page.
 -}
 type alias Model =
-    { slidesUpload : WebData ()
+    { slideUpload : RemoteData SlideUploadError ()
     }
 
 
 {-| An init function to easily create a model for the new capsule page.
 -}
-init : WebData () -> Model
-init slidesUpload =
-    { slidesUpload = slidesUpload }
+init : RemoteData SlideUploadError () -> Model
+init slideUpload =
+    { slideUpload = slideUpload }
 
 
 {-| The message type for the new capsule page.
 -}
 type Msg
-    = SlideUpload (WebData ())
+    = SlideUpload (RemoteData SlideUploadError ())
+
+
+{-| The error that can occurs when uploading slides.
+-}
+type SlideUploadError
+    = ReadFileError
+    | HttpError Http.Error
+    | DecodeResponseError
