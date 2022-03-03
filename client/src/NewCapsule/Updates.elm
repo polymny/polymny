@@ -14,4 +14,9 @@ import NewCapsule.Types as NewCapsule
 -}
 update : NewCapsule.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    ( model, Cmd.none )
+    case ( model.page, msg ) of
+        ( App.NewCapsule m, NewCapsule.SlideUpload newSlideUpload ) ->
+            ( { model | page = App.NewCapsule { m | slideUpload = newSlideUpload } }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
