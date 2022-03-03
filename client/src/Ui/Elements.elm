@@ -1,8 +1,8 @@
-module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon)
+module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon, title)
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, icon
+@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, icon, title
 
 -}
 
@@ -140,3 +140,10 @@ navigationElement action attr label =
 icon : Int -> Icon msg -> Element msg
 icon size material =
     Element.html (material size Inherit)
+
+
+{-| Creates a title.
+-}
+title : String -> Element msg
+title content =
+    Element.el [ Font.bold, Font.size 20 ] (Element.text content)

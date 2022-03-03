@@ -12,8 +12,12 @@ import Data.Capsule as Data
 import Data.User as Data exposing (User)
 import Element exposing (Element)
 import Element.Border as Border
+import Element.Input as Input
 import NewCapsule.Types as NewCapsule
+import RemoteData
+import Strings
 import Ui.Colors as Colors
+import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
 
@@ -22,30 +26,99 @@ import Utils
 -}
 view : Config -> User -> NewCapsule.Model -> Element App.Msg
 view config user model =
-    Element.none
+    let
+        slidesView =
+            case model.slideUpload of
+                RemoteData.Success ( capsule, slides ) ->
+                    makeView capsule slides
+                        |> Utils.regroupFixed 10
+                        |> List.map
+                            (List.indexedMap
+                                (\i x ->
+                                    case ( x, modBy 2 i == 0 ) of
+                                        ( Just e, _ ) ->
+                                            e
+
+                                        ( _, True ) ->
+                                            Element.el [ Ui.wf ] Element.none
+
+                                        ( _, False ) ->
+                                            Element.el [ Ui.p 10 ] Element.none
+                                )
+                            )
+                        |> List.map (Element.row [ Ui.wf ])
+                        |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf ]
+
+                _ ->
+                    Element.none
+    in
+    Element.row [ Ui.wf, Ui.hf, Ui.p 10 ]
+        [ Element.el [ Ui.wfp 1 ] Element.none
+        , Element.column [ Ui.wfp 6, Element.spacing 10, Element.alignTop ]
+            [ Input.text []
+                { label = Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName config.clientState.lang))
+                , text = model.projectName
+                , placeholder = Nothing
+                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.ProjectChanged x)
+                }
+            , Input.text []
+                { label = Input.labelAbove [] (Ui.title (Strings.dataCapsuleCapsuleName config.clientState.lang))
+                , text = model.capsuleName
+                , placeholder = Nothing
+                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.NameChanged x)
+                }
+            , slidesView
+            ]
+        , Element.el [ Ui.wfp 1 ] Element.none
+        ]
 
 
-{-| Local type for slide.
-The first int is the index of the grain, the second is the index of the slide.
--}
-type alias Slide =
-    ( Int, ( Int, Data.Slide ) )
+makeView : Data.Capsule -> List NewCapsule.Slide -> List (Element App.Msg)
+makeView capsule input =
+    makeViewAux capsule [] input |> List.reverse
+
+
+makeViewAux : Data.Capsule -> List (Element App.Msg) -> List NewCapsule.Slide -> List (Element App.Msg)
+makeViewAux capsule acc input =
+    case input of
+        h1 :: h2 :: t ->
+            makeViewAux capsule (delimiterView h1 h2 :: slideView capsule h1 :: acc) (h2 :: t)
+
+        h1 :: [] ->
+            slideView capsule h1 :: acc
+
+        [] ->
+            acc
 
 
 {-| Shows a slide of the capsule.
 -}
-slideView : Data.Capsule -> Maybe Slide -> Element App.Msg
-slideView capsule slide =
-    let
-        slideElement =
-            case slide of
-                Nothing ->
-                    Element.none
+slideView : Data.Capsule -> NewCapsule.Slide -> Element App.Msg
+slideView capsule ( i, _, s ) =
+    Element.el [ Ui.wf ]
+        (Element.image [ Border.color Colors.greyBorder, Ui.b 1, Ui.wf ]
+            { description = "Slide number " ++ String.fromInt i
+            , src = Data.assetPath capsule (s.uuid ++ ".png")
+            }
+        )
 
-                Just ( _, ( i, s ) ) ->
-                    Element.image [ Border.color Colors.greyBorder, Ui.b 1, Ui.wf ]
-                        { description = "Slide number " ++ String.fromInt i
-                        , src = Data.assetPath capsule (s.uuid ++ ".png")
-                        }
+
+{-| Show a vertical delimiter between two slides.
+
+If the slides belong to the same grain, the delimiter will be dashed, otherwise, it will be solid.
+
+-}
+delimiterView : NewCapsule.Slide -> NewCapsule.Slide -> Element App.Msg
+delimiterView ( _, grain1, _ ) ( _, grain2, _ ) =
+    let
+        border =
+            if grain1 == grain2 then
+                Border.dashed
+
+            else
+                Border.solid
     in
-    Element.el [ Ui.wf ] slideElement
+    Input.button [ Ui.px 10, Ui.hf ]
+        { label = Element.el [ border, Ui.cx, Ui.hf, Ui.bl 2, Border.color Colors.black ] Element.none
+        , onPress = Nothing
+        }

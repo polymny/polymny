@@ -26,8 +26,7 @@ view fullModel =
     { title = "Polymny Studio"
     , body =
         [ Element.layout
-            [ Ui.hf
-            , Ui.wf
+            [ Ui.wf
             , Font.size 18
             , Font.family
                 [ Font.typeface "Ubuntu"
