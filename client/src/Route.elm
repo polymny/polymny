@@ -79,3 +79,6 @@ fromPage page =
     case page of
         App.Home ->
             Home
+
+        App.NewCapsule _ ->
+            Home

@@ -12,6 +12,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Home.Views as Home
+import NewCapsule.Views as NewCapsule
 import Ui.Colors as Colors
 import Ui.Graphics as Ui
 import Ui.Navbar as Ui
@@ -71,6 +72,9 @@ viewSuccess model =
     case model.page of
         App.Home ->
             Home.view model.config model.user
+
+        App.NewCapsule m ->
+            NewCapsule.view model.config model.user m
 
 
 {-| Returns the view if the model is in error.

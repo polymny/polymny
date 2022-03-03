@@ -14,10 +14,14 @@ port module Home.Updates exposing
 
 -}
 
+import Api.Capsule as Api
 import App.Types as App
 import Data.User as Data
+import FileValue
 import Home.Types as Home
 import Json.Decode as Decode
+import NewCapsule.Types as NewCapsule
+import RemoteData
 import Utils
 
 
@@ -46,9 +50,10 @@ update msg model =
                                 |> List.drop 1
                                 |> List.reverse
                                 |> String.join "."
-                                |> Debug.log "name"
                     in
-                    ( model, Cmd.none )
+                    ( { model | page = App.NewCapsule (NewCapsule.init (RemoteData.Loading Nothing)) }
+                    , Api.uploadSlideShow name file
+                    )
 
                 -- TODO : manage "application/zip"
                 _ ->
@@ -76,4 +81,12 @@ port selected : (( Maybe String, Decode.Value ) -> msg) -> Sub msg
 -}
 subs : App.Model -> Sub App.Msg
 subs model =
-    selected (\_ -> App.Noop)
+    selected
+        (\( p, x ) ->
+            case Decode.decodeValue FileValue.decoder x of
+                Ok y ->
+                    App.HomeMsg (Home.SlideUploadReceived p y)
+
+                _ ->
+                    App.Noop
+        )

@@ -9,6 +9,7 @@ module App.Updates exposing (update, updateModel, subs)
 import App.Types as App
 import Config
 import Home.Updates as Home
+import NewCapsule.Updates as NewCapsule
 
 
 {-| Updates the model from a message, and returns the new model as well as the command to send.
@@ -40,6 +41,9 @@ updateModel msg model =
 
         App.HomeMsg sMsg ->
             Home.update sMsg model
+
+        App.NewCapsuleMsg sMsg ->
+            NewCapsule.update sMsg model
 
 
 {-| Returns the subscriptions of the app.

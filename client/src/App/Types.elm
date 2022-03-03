@@ -22,6 +22,7 @@ import Config exposing (Config)
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
+import NewCapsule.Types as NewCapsule
 import Url exposing (Url)
 
 
@@ -38,6 +39,7 @@ type alias Model =
 -}
 type Page
     = Home
+    | NewCapsule NewCapsule.Model
 
 
 {-| This type represents the errors that can occur when the page starts.
@@ -101,4 +103,5 @@ init flags url key =
 type Msg
     = Noop
     | HomeMsg Home.Msg
+    | NewCapsuleMsg NewCapsule.Msg
     | ConfigMsg Config.Msg

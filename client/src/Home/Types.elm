@@ -15,4 +15,4 @@ import FileValue exposing (File)
 type Msg
     = Toggle Data.Project
     | SlideUploadClicked
-    | SlideUploadReceived String File
+    | SlideUploadReceived (Maybe String) File
