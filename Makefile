@@ -71,7 +71,7 @@ clean-server:
 	@/bin/echo -e "\033[32;1m     Cleaned\033[0m server"
 
 client/src/Strings.elm: client/strings/*po
-	potoelm client/strings/ > client/src/Strings.elm
+	@potoelm client/strings/ > client/src/Strings.elm
 
 clean: clean-client clean-server
 

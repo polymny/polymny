@@ -122,6 +122,28 @@ msgstr "Your account has been successfulylly activated"
 msgid "Login.usernameOrEmail"
 msgstr "Username or e-mail address"
 
+#. Delete account.
+msgid "Login.deleteAccount"
+msgstr "Delete account"
+
+#. Delete account confirm.
+msgid "Login.confirmDeleteAccount"
+msgstr ""
+"All your capsules will be deleted, and the published videos will no longer "
+"be accessible"
+
+#. Disk usage.
+msgid "Login.diskUsage"
+msgstr "Size"
+
+#. Drive space.
+msgid "Login.driveSpace"
+msgstr "Drive space"
+
+#. Giga byte.
+msgid "Login.gigabyte"
+msgstr "GB"
+
 #. A user username.
 msgid "Data.User.username"
 msgstr "Username"
@@ -278,6 +300,14 @@ msgstr "This change will destroy some of your records"
 msgid "Steps.Preparation.selectPdf"
 msgstr "Select PDF"
 
+#. An error occured while uploading PDF.
+msgid "Steps.Preparation.errorUploadingPdf"
+msgstr "An error occured while uploading PDF"
+
+#. An error converting the PDF.
+msgid "Steps.Preparation.errorConvertingPdf"
+msgstr "An error occured while reading PDF"
+
 #. Replace slide / add external resource.
 msgid "Steps.Preparation.replaceSlideOrAddExternalResource"
 msgstr "Replace slide / add external resource"
@@ -292,7 +322,7 @@ msgstr "Which page of the PDF do you want to use"
 
 #. Order to insert a a number greather than zero.
 msgid "Steps.Preparation.insertNumberGreaterThanZero"
-msgstr "Insert a number greater than zero "
+msgstr "Insert a number greater than zero"
 
 #. Delete the extra resource.
 msgid "Steps.Preparation.deleteResource"
@@ -306,12 +336,24 @@ msgstr "Add slide"
 msgid "Steps.Preparation.createGrain"
 msgstr "Create grain"
 
+#. Create a new project.
+msgid "Steps.Preparation.createNewProject"
+msgstr "Create a new project"
+
+#. Select a project.
+msgid "Steps.Preparation.selectProject"
+msgstr "Select a project"
+
+#. Enter a new name for the capsule.
+msgid "Steps.Preparation.enterNewNameForCapsule"
+msgstr "Enter a new name for the capsule"
+
 #. Step of video and audio acquisition.
-msgid "Steps.Acqusition.acquisition"
+msgid "Steps.Acquisition.acquisition"
 msgstr "Acquisition"
 
 #. Action to start the recording.
-msgid "Steps.Acqusition.startRecording"
+msgid "Steps.Acquisition.startRecording"
 msgstr "Start recording"
 
 #. Action to record a video.
@@ -323,7 +365,7 @@ msgid "Steps.Acquisition.recordingStopped"
 msgstr "Recording stopped"
 
 #. Invert slide and prompt.
-msgid "Steps.Acqusition.invertSlideAndPrompt"
+msgid "Steps.Acquisition.invertSlideAndPrompt"
 msgstr "Invert slide and prompt"
 
 #. Records.
@@ -333,7 +375,7 @@ msgstr[0] "Record"
 msgstr[1] "Records"
 
 #. Records will be lost.
-msgid "Steps.Acqusition.nonValidatedRecordsWillBeLost"
+msgid "Steps.Acquisition.nonValidatedRecordsWillBeLost"
 msgstr "Non validated records will be lost"
 
 #. Action to play a record.
@@ -343,6 +385,38 @@ msgstr "Play record"
 #. Action to validate a record.
 msgid "Steps.Acquisition.validateRecord"
 msgstr "Validate record"
+
+#. Refresh the device list.
+msgid "Steps.Acquisition.refreshDeviceList"
+msgstr "Refresh device list"
+
+#. Detecting evices.
+msgid "Steps.Acquisition.detectingDevices"
+msgstr "Detecting devices"
+
+#. Binding webcam.
+msgid "Steps.Acquisition.bindingWebcam"
+msgstr "Binding webcam"
+
+#. Error detecting devices.
+msgid "Steps.Acquisition.errorDetectingDevices"
+msgstr "Error detecting devices"
+
+#. Quetion asking if the webcam is authorized.
+msgid "Steps.Acquisition.areDevicesAuthorized"
+msgstr "Are the webcam and microphone authorized"
+
+#. Error binding webcam.
+msgid "Steps.Acquisition.errorBindingWebcam"
+msgstr "Error binding devices"
+
+#. Question asking if the webcam is used by another software.
+msgid "Steps.Acquisition.isWebcamUsed"
+msgstr "Is the webcam used by another software"
+
+#. Error uploading record.
+msgid "Steps.Acquisition.errorUploadingRecord"
+msgstr "Error uploading record, please try again"
 
 #. Step of video production.
 msgid "Steps.Production.production"
@@ -364,6 +438,14 @@ msgstr "Produce grain"
 msgid "Steps.Production.useVideo"
 msgstr "Use video"
 
+#. Can't use video because there is no record.
+msgid "Steps.Production.cantUseVideoBecauseNoRecord"
+msgstr "You cannot use the video because there is no record for this grain"
+
+#. Can't use video because audio only.
+msgid "Steps.Production.cantUserVideoBecauseAudioOnly"
+msgstr "You cannot use the video because the record only contains audio"
+
 #. Webcam size.
 msgid "Steps.Production.webcamSize"
 msgstr "Webcam size"
@@ -379,6 +461,14 @@ msgstr "Medium"
 #. Large webcam size.
 msgid "Steps.Production.large"
 msgstr "Large"
+
+#. Fullscreen webcam.
+msgid "Steps.Production.fullscreen"
+msgstr "Fullscreen"
+
+#. Opacity of the webcam.
+msgid "Steps.Production.opacity"
+msgstr "Opacity"
 
 #. Webcam position.
 msgid "Steps.Production.webcamPosition"
@@ -436,6 +526,18 @@ msgstr "Currently producing video"
 msgid "Steps.Production.cancelProduction"
 msgstr "Cancel production"
 
+#. Current produced video.
+msgid "Steps.Production.currentProducedVideo"
+msgstr "Current produced video"
+
+#. The video has not been produced yet.
+msgid "Steps.Production.videoNotProduced"
+msgstr "Video has not been produced yet"
+
+#. Download the video.
+msgid "Steps.Production.downloadVideo"
+msgstr "Download video"
+
 #. Step of video publication.
 msgid "Steps.Publication.publication"
 msgstr "Publication"
@@ -466,11 +568,15 @@ msgstr "Unlisted"
 
 #. A sentence that explains unlisted videos.
 msgid "Steps.Publication.Privacy.explainUnlisted"
-msgstr "The video will be visible by anyone who knows the URL, Polymny Studio will not share the video's URL"
+msgstr ""
+"The video will be visible by anyone who knows the URL, Polymny Studio will "
+"not share the video's URL"
 
 #. Warning because private videos are not ready yet.
 msgid "Steps.Publication.Privacy.privateVideosNotAvailable"
-msgstr "This feature is not ready yet: no users except you will be able to watch the video"
+msgstr ""
+"This feature is not ready yet: no users except you will be able to watch the "
+"video"
 
 #. Public video.
 msgid "Steps.Publication.Privacy.public"
@@ -478,7 +584,10 @@ msgstr "Public"
 
 #. A sentence that explains public videos.
 msgid "Steps.Publication.Privacy.explainPublic"
-msgstr "The video will be visible by anyone who knows the URL, Polymny Studio may, in the future, share the video's URL via a search engine, a recommendation system, etc"
+msgstr ""
+"The video will be visible by anyone who knows the URL, Polymny Studio may, "
+"in the future, share the video's URL via a search engine, a recommendation "
+"system, etc"
 
 #. Privacy settings.
 msgid "Steps.Publication.Privacy.privacySettings"
@@ -491,6 +600,46 @@ msgstr "Cancel publication"
 #. Unpublish the video.
 msgid "Steps.Publication.unpublishVideo"
 msgstr "Unpublish video"
+
+#. Use prompt as subtitles.
+msgid "Steps.Publication.promptSubtitles"
+msgstr "Use prompt to generate subtitles"
+
+#. Copy video url.
+msgid "Steps.Publication.copyVideoUrl"
+msgstr "Copy video URL"
+
+#. Share capsule with someone.
+msgid "Steps.Config.share"
+msgstr "Share"
+
+#. Share capsule with someone, long sentence.
+msgid "Steps.Config.shareWith"
+msgstr "Share the capsule with"
+
+#. Error sharing capsule.
+msgid "Steps.Config.errorSharing"
+msgstr "Error sharing capsule"
+
+#. People with access to the capsule.
+msgid "Steps.Config.people"
+msgstr "People"
+
+#. Export a capsule.
+msgid "Steps.Config.exportCapsule"
+msgstr "Export capsule"
+
+#. Admin dashboard.
+msgid "Admin.dashboard"
+msgstr "Dashboard"
+
+#. All users.
+msgid "Admin.users"
+msgstr "Users"
+
+#. Admin can invite a user.
+msgid "Admin.inviteUser"
+msgstr "Invite a user"
 
 #. An error to the user.
 msgid "Ui.error"
@@ -515,6 +664,18 @@ msgstr "Confirm"
 #. The text in the button to cancel an action.
 msgid "Ui.cancel"
 msgstr "Cancel"
+
+#. Something is loading.
+msgid "Ui.loading"
+msgstr "Loading"
+
+#. Something is being uploaded.
+msgid "Ui.uploading"
+msgstr "Uploading"
+
+#. Something is transcoding.
+msgid "Ui.transcoding"
+msgstr "Transcoding"
 
 #. The admin can edit a user.
 msgid "Admin.editUser"
@@ -559,6 +720,14 @@ msgstr "Close"
 #. Sentence to go back home.
 msgid "Navigation.clickHereToGoBackHome"
 msgstr "Click here to go back home"
+
+#. The famous error 404.
+msgid "Navigation.error404"
+msgstr "Error 404"
+
+#. The requested page was not found.
+msgid "Navigation.notFound"
+msgstr "The page you requested was not found"
 
 #. Increase zoom level.
 msgid "Actions.zoomIn"
@@ -678,7 +847,9 @@ msgstr "To start recording, you need to choose a PDF slides from your computer"
 
 #. Sentence to give an example of PDF file.
 msgid "Intro.exampleOfPdfFile"
-msgstr "For example, a PDF export version of Microsoft PowerPoint or LibreOffice Impress in HD format"
+msgstr ""
+"For example, a PDF export version of Microsoft PowerPoint or LibreOffice "
+"Impress in HD format"
 
 #. Sentence to exaplin that after the slides have been uploaded, you may record.
 msgid "Intro.afterSlidesUploadYouCanRecord"
