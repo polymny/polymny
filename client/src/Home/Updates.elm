@@ -51,8 +51,11 @@ update msg model =
                                 |> List.drop 1
                                 |> List.reverse
                                 |> String.join "."
+
+                        newPage =
+                            App.NewCapsule (NewCapsule.init model.config.clientState.lang project name (RemoteData.Loading Nothing))
                     in
-                    ( { model | page = App.NewCapsule (NewCapsule.init (RemoteData.Loading Nothing)) }
+                    ( { model | page = newPage }
                     , Api.uploadSlideShow name fileValue file
                     )
 

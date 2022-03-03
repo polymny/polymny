@@ -284,6 +284,10 @@ msgstr "Préparation"
 msgid "Steps.Preparation.prepare"
 msgstr "Préparer"
 
+#. New project.
+msgid "Steps.Preparation.newProject"
+msgstr "Nouveau projet"
+
 #. A sentence that explains how the solid lines separates grains whereas dashed lines don't.
 msgid "Steps.Preparation.dashedLineExplanation"
 msgstr "Les planches séparées par des pointillets seront filmées en une fois"
