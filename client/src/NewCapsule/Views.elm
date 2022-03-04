@@ -109,7 +109,7 @@ If the slides belong to the same grain, the delimiter will be dashed, otherwise,
 
 -}
 delimiterView : NewCapsule.Slide -> NewCapsule.Slide -> Element App.Msg
-delimiterView ( _, grain1, _ ) ( _, grain2, _ ) =
+delimiterView ( index1, grain1, _ ) ( _, grain2, _ ) =
     let
         border =
             if grain1 == grain2 then
@@ -120,5 +120,5 @@ delimiterView ( _, grain1, _ ) ( _, grain2, _ ) =
     in
     Input.button [ Ui.px 10, Ui.hf ]
         { label = Element.el [ border, Ui.cx, Ui.hf, Ui.bl 2, Border.color Colors.black ] Element.none
-        , onPress = Nothing
+        , onPress = Just (App.NewCapsuleMsg (NewCapsule.DelimiterClicked (grain1 == grain2) index1))
         }

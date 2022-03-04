@@ -29,6 +29,13 @@ update msg model =
         ( App.NewCapsule m, NewCapsule.ProjectChanged newName ) ->
             ( mkModel { m | projectName = newName } model, Cmd.none )
 
+        ( App.NewCapsule m, NewCapsule.DelimiterClicked b i ) ->
+            let
+                newSlideUpload =
+                    RemoteData.map (\( c, s ) -> ( c, NewCapsule.toggle b i s )) m.slideUpload
+            in
+            ( mkModel { m | slideUpload = newSlideUpload } model, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
