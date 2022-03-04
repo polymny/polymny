@@ -62,7 +62,12 @@ update msg model =
                                 |> App.NewCapsule
                     in
                     ( { model | page = newPage }
-                    , Api.uploadSlideShow projectName fileValue file
+                    , Api.uploadSlideShow
+                        { project = projectName
+                        , fileValue = fileValue
+                        , file = file
+                        , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
+                        }
                     )
 
                 -- TODO : manage "application/zip"

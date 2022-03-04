@@ -27,6 +27,23 @@ import Utils
 view : Config -> User -> NewCapsule.Model -> Element App.Msg
 view config user model =
     let
+        projectInput =
+            Input.text []
+                { label = Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName config.clientState.lang))
+                , text = model.projectName
+                , placeholder = Nothing
+                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.ProjectChanged x)
+                }
+                |> Utils.tern model.showProject Element.none
+
+        nameInput =
+            Input.text []
+                { label = Input.labelAbove [] (Ui.title (Strings.dataCapsuleCapsuleName config.clientState.lang))
+                , text = model.capsuleName
+                , placeholder = Nothing
+                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.NameChanged x)
+                }
+
         pageContent =
             case model.slideUpload of
                 RemoteData.Loading _ ->
@@ -37,24 +54,32 @@ view config user model =
 
                 _ ->
                     Element.none
+
+        bottomBar =
+            case model.slideUpload of
+                RemoteData.Success _ ->
+                    Element.row [ Ui.wf, Element.spacing 10 ]
+                        [ Ui.secondary []
+                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.Cancel)
+                            , label = Strings.uiCancel config.clientState.lang
+                            }
+                        , Ui.secondary [ Element.alignRight ]
+                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.GoToPreparation)
+                            , label = Strings.stepsPreparationOrganizeSlides config.clientState.lang
+                            }
+                        , Ui.primary [ Element.alignRight ]
+                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.GoToAcquisition)
+                            , label = Strings.stepsAcquisitionStartRecording config.clientState.lang
+                            }
+                        ]
+
+                _ ->
+                    Element.none
     in
     Element.row [ Ui.wf, Ui.hf, Ui.p 10 ]
         [ Element.el [ Ui.wfp 1 ] Element.none
         , Element.column [ Ui.wfp 6, Element.spacing 10, Element.alignTop ]
-            [ Input.text []
-                { label = Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName config.clientState.lang))
-                , text = model.projectName
-                , placeholder = Nothing
-                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.ProjectChanged x)
-                }
-            , Input.text []
-                { label = Input.labelAbove [] (Ui.title (Strings.dataCapsuleCapsuleName config.clientState.lang))
-                , text = model.capsuleName
-                , placeholder = Nothing
-                , onChange = \x -> App.NewCapsuleMsg (NewCapsule.NameChanged x)
-                }
-            , pageContent
-            ]
+            [ projectInput, nameInput, pageContent, bottomBar ]
         , Element.el [ Ui.wfp 1 ] Element.none
         ]
 

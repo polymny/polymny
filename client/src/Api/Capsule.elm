@@ -4,18 +4,19 @@ module Api.Capsule exposing (..)
 -}
 
 import Api.Utils as Api
-import App.Types as App
 import Data.Capsule as Data
 import File
 import FileValue
 import Http
-import NewCapsule.Types as NewCapsule
+import RemoteData exposing (WebData)
 
 
 {-| Uploads a slideshow to the server, creating a new capsule.
 -}
-uploadSlideShow : String -> FileValue.File -> File.File -> Cmd App.Msg
-uploadSlideShow project fileValue file =
+uploadSlideShow :
+    { project : String, fileValue : FileValue.File, file : File.File, toMsg : WebData Data.Capsule -> msg }
+    -> Cmd msg
+uploadSlideShow { project, fileValue, file, toMsg } =
     let
         name =
             fileValue.name
@@ -29,5 +30,17 @@ uploadSlideShow project fileValue file =
         { url = "/api/new-capsule/" ++ project ++ "/" ++ name ++ "/"
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
-        , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
+        , toMsg = toMsg
+        }
+
+
+{-| Updates a caspule on the server.
+-}
+updateCapsule : Data.Capsule -> (WebData Data.Capsule -> msg) -> Cmd msg
+updateCapsule capsule toMsg =
+    Api.post
+        { url = "/api/update-capsule/"
+        , body = Http.jsonBody (Data.encodeCapsule capsule)
+        , decoder = Data.decodeCapsule
+        , toMsg = toMsg
         }

@@ -6,6 +6,7 @@ module NewCapsule.Updates exposing (update)
 
 -}
 
+import Api.Capsule as Api
 import App.Types as App
 import Data.Capsule as Data
 import NewCapsule.Types as NewCapsule
@@ -25,6 +26,9 @@ update msg model =
                         newSlideUpload
             in
             ( mkModel { m | slideUpload = prepared } model, Cmd.none )
+
+        ( App.NewCapsule m, NewCapsule.CapsuleUpdate c ) ->
+            ( mkModel { m | capsuleUpdate = c } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.NameChanged newName ) ->
             let
@@ -57,6 +61,15 @@ update msg model =
             in
             ( mkModel { m | slideUpload = RemoteData.map slideUploadMapper m.slideUpload } model, Cmd.none )
 
+        ( App.NewCapsule m, NewCapsule.GoToPreparation ) ->
+            ( model, RemoteData.map (\( x, _ ) -> updateCapsule x) m.slideUpload |> RemoteData.withDefault Cmd.none )
+
+        ( App.NewCapsule m, NewCapsule.GoToAcquisition ) ->
+            ( model, RemoteData.map (\( x, _ ) -> updateCapsule x) m.slideUpload |> RemoteData.withDefault Cmd.none )
+
+        ( App.NewCapsule m, NewCapsule.Cancel ) ->
+            ( model, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -66,3 +79,10 @@ update msg model =
 mkModel : NewCapsule.Model -> App.Model -> App.Model
 mkModel m model =
     { model | page = App.NewCapsule m }
+
+
+{-| A utility function to easily create the command to update the capsule.
+-}
+updateCapsule : Data.Capsule -> Cmd App.Msg
+updateCapsule capsule =
+    Api.updateCapsule capsule (\x -> App.NewCapsuleMsg (NewCapsule.CapsuleUpdate x))

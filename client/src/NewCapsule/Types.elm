@@ -15,6 +15,7 @@ import Utils
 -}
 type alias Model =
     { slideUpload : WebData ( Data.Capsule, List Slide )
+    , capsuleUpdate : WebData Data.Capsule
     , projectName : String
     , capsuleName : String
     , showProject : Bool
@@ -35,7 +36,8 @@ init lang projectName capsuleName slideUpload =
     { slideUpload = slideUpload
     , projectName = projectName |> Maybe.withDefault (Strings.stepsPreparationNewProject lang)
     , capsuleName = capsuleName
-    , showProject = projectName == Nothing
+    , showProject = projectName /= Nothing
+    , capsuleUpdate = RemoteData.NotAsked
     }
 
 
@@ -146,6 +148,10 @@ structureFromUiAux acc slides =
 -}
 type Msg
     = SlideUpload (WebData Data.Capsule)
+    | CapsuleUpdate (WebData Data.Capsule)
     | NameChanged String
     | ProjectChanged String
     | DelimiterClicked Bool Int
+    | GoToPreparation
+    | GoToAcquisition
+    | Cancel

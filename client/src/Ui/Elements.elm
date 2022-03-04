@@ -87,7 +87,9 @@ secondary attr { label, action } =
 addSecondaryAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
 addSecondaryAttr attr =
     Border.rounded 100
-        :: Background.color Colors.greyBackground
+        :: Background.color Colors.white
+        :: Border.color Colors.greyBorder
+        :: Ui.b 1
         :: Font.color Colors.greyFont
         :: Ui.p 12
         :: Font.bold
