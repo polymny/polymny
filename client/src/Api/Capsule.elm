@@ -10,7 +10,6 @@ import File
 import FileValue
 import Http
 import NewCapsule.Types as NewCapsule
-import RemoteData
 
 
 {-| Uploads a slideshow to the server, creating a new capsule.

@@ -19,15 +19,27 @@ update msg model =
         ( App.NewCapsule m, NewCapsule.SlideUpload newSlideUpload ) ->
             let
                 prepared =
-                    RemoteData.map (\x -> ( x, NewCapsule.prepare x )) newSlideUpload
+                    RemoteData.map
+                        (\x -> ( { x | name = m.capsuleName, project = m.projectName }, NewCapsule.prepare x ))
+                        newSlideUpload
             in
             ( mkModel { m | slideUpload = prepared } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.NameChanged newName ) ->
-            ( mkModel { m | capsuleName = newName } model, Cmd.none )
+            let
+                newSlideUpload =
+                    RemoteData.map (\( x, y ) -> ( { x | name = newName }, y ))
+                        m.slideUpload
+            in
+            ( mkModel { m | capsuleName = newName, slideUpload = newSlideUpload } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.ProjectChanged newName ) ->
-            ( mkModel { m | projectName = newName } model, Cmd.none )
+            let
+                newSlideUpload =
+                    RemoteData.map (\( x, y ) -> ( { x | project = newName }, y ))
+                        m.slideUpload
+            in
+            ( mkModel { m | projectName = newName, slideUpload = newSlideUpload } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.DelimiterClicked b i ) ->
             let

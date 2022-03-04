@@ -64,7 +64,7 @@ toggleAux acc split delimiter input =
             else
                 toggleAux (( i1, g1, s1 ) :: acc) split (delimiter - 1) (( i2, g2, s2 ) :: t)
 
-        ( i1, g1, s1 ) :: t ->
+        ( i1, g1, s1 ) :: [] ->
             if delimiter == -1 then
                 ( i1, g1 + Utils.tern split 1 -1, s1 ) :: acc
 

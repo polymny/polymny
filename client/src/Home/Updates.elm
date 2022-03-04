@@ -23,6 +23,7 @@ import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import RemoteData
+import Strings
 import Utils
 
 
@@ -44,6 +45,9 @@ update msg model =
             case fileValue.mime of
                 "application/pdf" ->
                     let
+                        projectName =
+                            project |> Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang)
+
                         name =
                             fileValue.name
                                 |> String.split "."
@@ -53,10 +57,12 @@ update msg model =
                                 |> String.join "."
 
                         newPage =
-                            App.NewCapsule (NewCapsule.init model.config.clientState.lang project name (RemoteData.Loading Nothing))
+                            RemoteData.Loading Nothing
+                                |> NewCapsule.init model.config.clientState.lang project name
+                                |> App.NewCapsule
                     in
                     ( { model | page = newPage }
-                    , Api.uploadSlideShow name fileValue file
+                    , Api.uploadSlideShow projectName fileValue file
                     )
 
                 -- TODO : manage "application/zip"
