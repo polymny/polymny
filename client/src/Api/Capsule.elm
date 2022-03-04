@@ -25,9 +25,9 @@ uploadSlideShow project fileValue file =
                 |> List.reverse
                 |> String.join "."
     in
-    Api.postJson
+    Api.post
         { url = "/api/new-capsule/" ++ project ++ "/" ++ name ++ "/"
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
-        , resultToMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
+        , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
         }
