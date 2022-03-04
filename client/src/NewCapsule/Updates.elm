@@ -7,6 +7,7 @@ module NewCapsule.Updates exposing (update)
 -}
 
 import App.Types as App
+import Data.Capsule as Data
 import NewCapsule.Types as NewCapsule
 import RemoteData
 
@@ -43,10 +44,18 @@ update msg model =
 
         ( App.NewCapsule m, NewCapsule.DelimiterClicked b i ) ->
             let
-                newSlideUpload =
-                    RemoteData.map (\( c, s ) -> ( c, NewCapsule.toggle b i s )) m.slideUpload
+                slideUploadMapper : ( Data.Capsule, List NewCapsule.Slide ) -> ( Data.Capsule, List NewCapsule.Slide )
+                slideUploadMapper ( capsule, slides ) =
+                    let
+                        newSlides =
+                            NewCapsule.toggle b i slides
+
+                        newCapsule =
+                            { capsule | structure = NewCapsule.structureFromUi newSlides }
+                    in
+                    ( newCapsule, newSlides )
             in
-            ( mkModel { m | slideUpload = newSlideUpload } model, Cmd.none )
+            ( mkModel { m | slideUpload = RemoteData.map slideUploadMapper m.slideUpload } model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

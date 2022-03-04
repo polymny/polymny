@@ -1,4 +1,4 @@
-module NewCapsule.Types exposing (Model, Msg(..), Slide, capsuleFromUi, init, prepare, toggle)
+module NewCapsule.Types exposing (Model, Msg(..), Slide, init, prepare, structureFromUi, toggle)
 
 {-| This module contains the types for the page the users land when they upload a slideshow.
 -}
@@ -7,6 +7,7 @@ import Data.Capsule as Data
 import Lang exposing (Lang)
 import RemoteData exposing (WebData)
 import Strings
+import Triplet
 import Utils
 
 
@@ -105,32 +106,40 @@ because it makes it really easier for both the view and the update.
 This function allows to retrieve the structure of the capsule for the List (Int, Int, Data.Slide).
 
 -}
-capsuleFromUi : List Slide -> List Data.Gos
-capsuleFromUi slides =
-    capsuleFromUiAux [] slides
+structureFromUi : List Slide -> List Data.Gos
+structureFromUi slides =
+    structureFromUiAux [] slides
         |> List.map Tuple.second
         |> List.map List.reverse
         |> List.map (List.map (\( _, _, c ) -> c))
         |> List.map Data.gosFromSlides
 
 
-{-| Auxilary function used as a helper for capsuleFromUiAux.
+{-| Auxilary function used as a helper for structureFromUiAux.
+
+In this function, the `List (Int, List Slide)` is a simplified version of `Data.Gos`, because we only deal with slides.
+We also keep the Int which is the index of the gos, that we keep so we can easily check if the next slides belong to the
+same gos of if we have to create another gos.
+
 -}
-capsuleFromUiAux : List ( Int, List Slide ) -> List Slide -> List ( Int, List Slide )
-capsuleFromUiAux acc slides =
+structureFromUiAux : List ( Int, List Slide ) -> List Slide -> List ( Int, List Slide )
+structureFromUiAux acc slides =
     case ( slides, acc ) of
         ( [], _ ) ->
             acc
 
-        ( ( i, g, s ) :: t, [] ) ->
-            capsuleFromUiAux [ ( g, [ ( i, g, s ) ] ) ] t
+        ( h :: t, [] ) ->
+            structureFromUiAux [ ( Triplet.second h, [ h ] ) ] t
 
-        ( ( i, g, s ) :: t, ( currentGosId, currentGos ) :: t2 ) ->
-            if g == currentGosId then
-                capsuleFromUiAux (( currentGosId, ( i, g, s ) :: currentGos ) :: t2) t
+        ( h :: t, ( currentGosId, currentGos ) :: t2 ) ->
+            -- If the next slide from the input belongs to the same gos as the previous one
+            if Triplet.second h == currentGosId then
+                -- We add it into the list and keep going
+                structureFromUiAux (( currentGosId, h :: currentGos ) :: t2) t
 
             else
-                capsuleFromUiAux (( g, [ ( i, g, s ) ] ) :: ( currentGosId, currentGos ) :: t2) t
+                -- Otherwise, we create its own gos
+                structureFromUiAux (( Triplet.second h, [ h ] ) :: ( currentGosId, currentGos ) :: t2) t
 
 
 {-| The message type for the new capsule page.
