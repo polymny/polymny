@@ -1,6 +1,6 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
-    , Gos, WebcamSettings, Fade, Anchor, Event, EventType(..)
+    , Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..)
     , Slide, slidePath, videoPath, gosVideoPath
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
@@ -19,7 +19,7 @@ module Data.Capsule exposing
 
 # The GoS (Group of Slides) type
 
-@docs Gos, WebcamSettings, Fade, Anchor, Event, EventType
+@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType
 
 
 ## Slides
@@ -428,6 +428,19 @@ decodePip =
         (Decode.maybe (Decode.field "keycolor" Decode.string))
 
 
+{-| Default webcam settings.
+-}
+defaultWebcamSettings : WebcamSettings
+defaultWebcamSettings =
+    Pip
+        { anchor = BottomLeft
+        , keycolor = Nothing
+        , opacity = 1.0
+        , position = ( 0, 0 )
+        , size = ( 400, 300 )
+        }
+
+
 {-| JSON decoder for the fullscreen attributs of webcam settings.
 -}
 decodeFullscreen : Decoder { opacity : Float, keycolor : Maybe String }
@@ -492,6 +505,17 @@ decodeFade =
         (Decode.maybe (Decode.field "afadeout" Decode.int))
 
 
+{-| The default fade which is no fade at all.
+-}
+defaultFade : Fade
+defaultFade =
+    { vfadein = Nothing
+    , vfadeout = Nothing
+    , afadein = Nothing
+    , afadeout = Nothing
+    }
+
+
 {-| This type represents a group of slides (GoS).
 -}
 type alias Gos =
@@ -526,3 +550,15 @@ decodeGos =
         (Decode.field "events" (Decode.list decodeEvent))
         (Decode.field "webcam_settings" decodeWebcamSettings)
         (Decode.field "fade" decodeFade)
+
+
+{-| Creates a gos from only slides.
+-}
+gosFromSlides : List Slide -> Gos
+gosFromSlides slides =
+    { record = Nothing
+    , slides = slides
+    , events = []
+    , webcamSettings = defaultWebcamSettings
+    , fade = defaultFade
+    }
