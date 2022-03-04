@@ -82,33 +82,55 @@ table config user =
 
         zone =
             config.clientState.zone
+
+        data =
+            projectsToPoc user.projects
+
+        len =
+            List.length data
+
+        roundBottomLeft =
+            Border.roundEach
+                { bottomLeft = 20
+                , bottomRight = 0
+                , topLeft = 0
+                , topRight = 0
+                }
+
+        roundBottomRight =
+            Border.roundEach
+                { bottomLeft = 0
+                , bottomRight = 20
+                , topLeft = 0
+                , topRight = 0
+                }
     in
-    Element.table [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Border.rounded 20 ]
-        { data = projectsToPoc user.projects
+    Element.indexedTable [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Border.rounded 20 ]
+        { data = data
         , columns =
             [ { header = makeHeader (Strings.dataProjectProjectName lang)
               , width = Element.fill
-              , view = \x -> makeCell (name x)
+              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomLeft ] []) i (name x)
               }
             , { header = makeHeader (Strings.dataCapsuleProgress lang)
               , width = Element.shrink
-              , view = \x -> makeCell (progress lang x)
+              , view = \i x -> makeCell [] i (progress lang x)
               }
             , { header = makeHeader ""
               , width = Element.fill
-              , view = \x -> makeCell (progressIcons config x)
+              , view = \i x -> makeCell [] i (progressIcons config x)
               }
             , { header = makeHeader (Strings.dataCapsuleRoleRole lang)
               , width = Element.shrink
-              , view = \x -> makeCell (role lang x)
+              , view = \i x -> makeCell [] i (role lang x)
               }
             , { header = makeHeader (Strings.dataCapsuleLastModification lang)
               , width = Element.shrink
-              , view = \x -> makeCell (lastModified lang zone x)
+              , view = \i x -> makeCell [] i (lastModified lang zone x)
               }
             , { header = makeHeader (Strings.dataCapsuleAction lang 3)
               , width = Element.shrink
-              , view = \x -> Element.none
+              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i Element.none
               }
             ]
         }
@@ -123,9 +145,15 @@ makeHeader text =
 
 {-| This functions transforms an element into a table cell.
 -}
-makeCell : Element App.Msg -> Element App.Msg
-makeCell element =
-    Element.el [ Ui.p 10, Ui.cy ] element
+makeCell : List (Element.Attribute App.Msg) -> Int -> Element App.Msg -> Element App.Msg
+makeCell extraAttr index element =
+    Element.el
+        (Ui.p 10
+            :: Ui.hf
+            :: (Background.color <| Utils.tern (modBy 2 index == 0) (Colors.grey 6) (Colors.grey 7))
+            :: extraAttr
+        )
+        (Element.el [ Ui.wf, Ui.cy ] element)
 
 
 {-| This functions transforms a list of projects into a list of Poc that can be given as data in the table.
@@ -150,7 +178,10 @@ name : Poc -> Element App.Msg
 name poc =
     case poc of
         Project p ->
-            Ui.link [] { action = Ui.Msg (App.HomeMsg (Home.Toggle p)), label = Utils.tern p.folded "▷ " "▽ " ++ p.name }
+            Ui.link [ Ui.p 10, Font.bold ]
+                { action = Ui.Msg (App.HomeMsg (Home.Toggle p))
+                , label = Utils.tern p.folded "▷ " "▽ " ++ p.name
+                }
 
         Capsule c ->
             Ui.link [ Ui.pl 30 ] { action = Ui.Route (Route.Preparation c.id), label = Ui.shrink 50 c.name }
@@ -201,7 +232,7 @@ projectProgress lang project =
                 ++ (Strings.dataCapsulePublished lang publishedCount |> String.toLower)
                 ++ ")"
     in
-    Element.el [ Font.italic ] (Element.text text)
+    Element.el [ Font.bold, Font.italic ] (Element.text text)
 
 
 {-| This function returns the progress of a capsule.
