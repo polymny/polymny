@@ -1,4 +1,7 @@
-module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon, title)
+module Ui.Elements exposing
+    ( primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon, title
+    , animatedEl, spin, spinner
+    )
 
 {-| This module contains helpers to easily make buttons.
 
@@ -14,6 +17,11 @@ import Element.Input as Input
 import Html.Attributes
 import Material.Icons.Types exposing (Coloring(..), Icon)
 import Route exposing (Route)
+import Simple.Animation as Animation exposing (Animation)
+import Simple.Animation.Animated as Animated
+import Simple.Animation.Property as P
+import Svg exposing (Svg, g, svg)
+import Svg.Attributes exposing (..)
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 
@@ -147,3 +155,56 @@ icon size material =
 title : String -> Element msg
 title content =
     Element.el [ Font.bold, Font.size 20 ] (Element.text content)
+
+
+{-| Helper to create icons.
+-}
+makeIcon : List (Svg.Attribute msg) -> List (Svg msg) -> Icon msg
+makeIcon attributes nodes size _ =
+    let
+        sizeAsString =
+            String.fromInt size
+    in
+    svg
+        (attributes ++ [ height sizeAsString, width sizeAsString ])
+        [ g
+            [ fill "currentColor"
+            ]
+            nodes
+        ]
+
+
+animatedUi =
+    Animated.ui
+        { behindContent = Element.behindContent
+        , htmlAttribute = Element.htmlAttribute
+        , html = Element.html
+        }
+
+
+{-| Creates a spinner.
+-}
+spinner : Icon msg
+spinner =
+    makeIcon
+        [ viewBox "0 0 24 24" ]
+        [ Svg.path [ d "M0 0h24v24H0z", fill "none" ] []
+        , Svg.path [ d "M2 12A 10 10 10 1 1 12 22", fill "none", stroke "currentColor", strokeWidth "2" ] []
+        ]
+
+
+{-| Makes an animated Element.el.
+-}
+animatedEl : Animation -> List (Element.Attribute msg) -> Element msg -> Element msg
+animatedEl =
+    animatedUi Element.el
+
+
+{-| An animation to make an element spin.
+-}
+spin : Animation
+spin =
+    Animation.fromTo
+        { duration = 1000, options = [ Animation.loop, Animation.linear ] }
+        [ P.rotate 0 ]
+        [ P.rotate 360 ]

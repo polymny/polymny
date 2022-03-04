@@ -27,27 +27,13 @@ import Utils
 view : Config -> User -> NewCapsule.Model -> Element App.Msg
 view config user model =
     let
-        slidesView =
+        pageContent =
             case model.slideUpload of
+                RemoteData.Loading _ ->
+                    Ui.animatedEl Ui.spin [ Ui.cx ] (Ui.icon 60 Ui.spinner)
+
                 RemoteData.Success ( capsule, slides ) ->
-                    makeView capsule slides
-                        |> Utils.regroupFixed 10
-                        |> List.map
-                            (List.indexedMap
-                                (\i x ->
-                                    case ( x, modBy 2 i == 0 ) of
-                                        ( Just e, _ ) ->
-                                            e
-
-                                        ( _, True ) ->
-                                            Element.el [ Ui.wf ] Element.none
-
-                                        ( _, False ) ->
-                                            Element.el [ Ui.p 10 ] Element.none
-                                )
-                            )
-                        |> List.map (Element.row [ Ui.wf ])
-                        |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf ]
+                    slidesView capsule slides
 
                 _ ->
                     Element.none
@@ -67,10 +53,34 @@ view config user model =
                 , placeholder = Nothing
                 , onChange = \x -> App.NewCapsuleMsg (NewCapsule.NameChanged x)
                 }
-            , slidesView
+            , pageContent
             ]
         , Element.el [ Ui.wfp 1 ] Element.none
         ]
+
+
+{-| Shows the slides with the delimiters.
+-}
+slidesView : Data.Capsule -> List NewCapsule.Slide -> Element App.Msg
+slidesView capsule slides =
+    makeView capsule slides
+        |> Utils.regroupFixed 10
+        |> List.map
+            (List.indexedMap
+                (\i x ->
+                    case ( x, modBy 2 i == 0 ) of
+                        ( Just e, _ ) ->
+                            e
+
+                        ( _, True ) ->
+                            Element.el [ Ui.wf ] Element.none
+
+                        ( _, False ) ->
+                            Element.el [ Ui.p 10 ] Element.none
+                )
+            )
+        |> List.map (Element.row [ Ui.wf ])
+        |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf ]
 
 
 makeView : Data.Capsule -> List NewCapsule.Slide -> List (Element App.Msg)
