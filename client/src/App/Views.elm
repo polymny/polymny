@@ -13,6 +13,7 @@ import Element.Background as Background
 import Element.Font as Font
 import Home.Views as Home
 import NewCapsule.Views as NewCapsule
+import Preparation.Views as Preparation
 import Ui.Colors as Colors
 import Ui.Graphics as Ui
 import Ui.Navbar as Ui
@@ -74,6 +75,9 @@ viewSuccess model =
 
         App.NewCapsule m ->
             NewCapsule.view model.config model.user m
+
+        App.Preparation m ->
+            Preparation.view model.config model.user m
 
 
 {-| Returns the view if the model is in error.

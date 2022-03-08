@@ -1,8 +1,8 @@
-module Data.User exposing (User, decodeUser, isPremium, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing (User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, isPremium, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
 
 -}
 
@@ -178,3 +178,31 @@ toggleProject project user =
                 p
     in
     { user | projects = List.map mapper user.projects }
+
+
+{-| Function to easily fetch a capsule from its id.
+-}
+getCapsuleById : String -> User -> Maybe Capsule
+getCapsuleById id user =
+    getCapsuleByIdAux id user.projects
+
+
+{-| Auxilary function to help fetch a capsule from its id.
+-}
+getCapsuleByIdAux : String -> List Project -> Maybe Capsule
+getCapsuleByIdAux id projects =
+    case projects of
+        [] ->
+            Nothing
+
+        h :: t ->
+            case h.capsules of
+                [] ->
+                    getCapsuleByIdAux id t
+
+                h2 :: t2 ->
+                    if h2.id == id then
+                        Just h2
+
+                    else
+                        getCapsuleByIdAux id ({ h | capsules = t2 } :: t)

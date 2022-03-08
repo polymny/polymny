@@ -1,6 +1,7 @@
 module App.Types exposing
-    ( Model, Page(..), init, Msg(..)
-    , Error, errorToString
+    ( Model, Page(..), Msg(..)
+    , Error(..), errorToString
+    , onUrlRequest
     )
 
 {-| This module contains the model and messages of our application.
@@ -8,7 +9,7 @@ module App.Types exposing
 
 # The model
 
-@docs Model, Page, init, Msg
+@docs Model, Page, Msg
 
 
 # Error management
@@ -17,12 +18,13 @@ module App.Types exposing
 
 -}
 
-import Browser.Navigation
+import Browser
 import Config exposing (Config)
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
+import Preparation.Types as Preparation
 import Url exposing (Url)
 
 
@@ -40,6 +42,7 @@ type alias Model =
 type Page
     = Home
     | NewCapsule NewCapsule.Model
+    | Preparation Preparation.Model
 
 
 {-| This type represents the errors that can occur when the page starts.
@@ -57,47 +60,6 @@ errorToString error =
             "Error decoding JSON: " ++ Decode.errorToString e
 
 
-{-| Initializes the model for the application
--}
-init : Decode.Value -> Url -> Browser.Navigation.Key -> ( Result Error Model, Cmd Msg )
-init flags url key =
-    let
-        serverConfig =
-            Decode.decodeValue (Decode.field "global" (Decode.field "serverConfig" Config.decodeServerConfig)) flags
-
-        clientConfig =
-            Decode.decodeValue (Decode.field "global" (Decode.field "clientConfig" Config.decodeClientConfig)) flags
-
-        clientState =
-            Config.initClientState key (clientConfig |> Result.toMaybe |> Maybe.andThen .lang)
-
-        sortBy =
-            clientConfig |> Result.map .sortBy |> Result.withDefault Config.defaultClientConfig.sortBy
-
-        user =
-            Decode.decodeValue (Decode.field "user" (Data.decodeUser sortBy)) flags
-
-        model =
-            case ( serverConfig, clientConfig, user ) of
-                ( Ok s, Ok c, Ok u ) ->
-                    Ok
-                        { config = { serverConfig = s, clientConfig = c, clientState = clientState }
-                        , user = u
-                        , page = Home
-                        }
-
-                ( Err s, _, _ ) ->
-                    Err (DecodeError s)
-
-                ( _, Err c, _ ) ->
-                    Err (DecodeError c)
-
-                ( _, _, Err u ) ->
-                    Err (DecodeError u)
-    in
-    ( model, Cmd.none )
-
-
 {-| This type represents the different messages that can be sent in the application.
 -}
 type Msg
@@ -105,3 +67,18 @@ type Msg
     | HomeMsg Home.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | ConfigMsg Config.Msg
+    | OnUrlChange Url.Url
+    | InternalUrl Url.Url
+    | ExternalUrl String
+
+
+{-| Converts an URL request msg to an App.Msg.
+-}
+onUrlRequest : Browser.UrlRequest -> Msg
+onUrlRequest url =
+    case url of
+        Browser.Internal u ->
+            InternalUrl u
+
+        Browser.External u ->
+            ExternalUrl u

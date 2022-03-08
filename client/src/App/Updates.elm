@@ -7,9 +7,12 @@ module App.Updates exposing (update, updateModel, subs)
 -}
 
 import App.Types as App
+import App.Utils as App
+import Browser.Navigation
 import Config
 import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
+import Route
 
 
 {-| Updates the model from a message, and returns the new model as well as the command to send.
@@ -44,6 +47,15 @@ updateModel msg model =
 
         App.NewCapsuleMsg sMsg ->
             NewCapsule.update sMsg model
+
+        App.OnUrlChange url ->
+            ( { model | page = App.pageFromRoute model.config model.user (Route.fromUrl url) }, Cmd.none )
+
+        App.InternalUrl url ->
+            ( model, Browser.Navigation.pushUrl model.config.clientState.key url.path )
+
+        App.ExternalUrl url ->
+            ( model, Browser.Navigation.load url )
 
 
 {-| Returns the subscriptions of the app.

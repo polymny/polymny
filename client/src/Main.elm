@@ -2,6 +2,7 @@ module Main exposing (main)
 
 import App.Types as App
 import App.Updates as App
+import App.Utils as App
 import App.Views as App
 import Browser
 import Json.Decode as Decode
@@ -14,6 +15,6 @@ main =
         , update = App.update
         , view = App.view
         , subscriptions = App.subs
-        , onUrlChange = \_ -> App.Noop
-        , onUrlRequest = \_ -> App.Noop
+        , onUrlChange = App.OnUrlChange
+        , onUrlRequest = App.onUrlRequest
         }

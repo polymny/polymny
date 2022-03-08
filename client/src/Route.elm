@@ -82,3 +82,6 @@ fromPage page =
 
         App.NewCapsule _ ->
             Home
+
+        App.Preparation _ ->
+            Preparation "toto"
