@@ -1,14 +1,11 @@
-module Preparation.Types exposing
-    ( Model, init
-    , MaybeSlide(..), enumerate
-    )
+module Preparation.Types exposing (Model, init, MaybeSlide(..), toMaybe, enumerate)
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
 In all the following documentation, DnD refers to Drag'n'Drop. It is necessary to have a user-friendly interface, but is
 quite a pain to deal with.
 
-@docs Model, init
+@docs Model, init, MaybeSlide, toMaybe, enumerate
 
 -}
 
@@ -212,3 +209,15 @@ reindexAux currentOuter currentInner acc input =
                             (makeSlide gosId currentOuter slideId currentInner slide :: hA) :: tA
             in
             reindexAux currentOuter (currentInner + 1) newAcc (t :: t2)
+
+
+{-| Converts a MaybeSlide to a Maybe Data.Slide.
+-}
+toMaybe : MaybeSlide -> Maybe Data.Slide
+toMaybe s =
+    case s of
+        Slide { slide } ->
+            Just slide
+
+        _ ->
+            Nothing

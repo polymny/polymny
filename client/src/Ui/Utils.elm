@@ -2,6 +2,7 @@ module Ui.Utils exposing
     ( wf, wfp, wpx, hf, hfp, hpx
     , pl, pr, pt, pb, py, px, p
     , bl, br, bt, bb, by, bx, b
+    , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink
     )
@@ -22,6 +23,11 @@ module Ui.Utils exposing
 # Border aliases
 
 @docs bl, br, bt, bb, by, bx, b
+
+
+# Rounded corners aliases
+
+@docs rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
 
 
 # Centering aliases
@@ -178,6 +184,69 @@ bx x =
 b : Int -> Element.Attribute msg
 b x =
     Border.widthEach { left = x, right = x, top = x, bottom = x }
+
+
+{-| An alias to have rounded corners only on the bottom left.
+-}
+rbl : Int -> Element.Attribute msg
+rbl x =
+    Border.roundEach { bottomLeft = x, bottomRight = 0, topLeft = 0, topRight = 0 }
+
+
+{-| An alias to have rounded corners only on the bottom right.
+-}
+rbr : Int -> Element.Attribute msg
+rbr x =
+    Border.roundEach { bottomLeft = 0, bottomRight = x, topLeft = 0, topRight = 0 }
+
+
+{-| An alias to have rounded corners only on the top left.
+-}
+rtl : Int -> Element.Attribute msg
+rtl x =
+    Border.roundEach { bottomLeft = 0, bottomRight = 0, topLeft = x, topRight = 0 }
+
+
+{-| An alias to have rounded corners only on the top right.
+-}
+rtr : Int -> Element.Attribute msg
+rtr x =
+    Border.roundEach { bottomLeft = 0, bottomRight = 0, topLeft = 0, topRight = x }
+
+
+{-| An alias to have rounded corners only on the left.
+-}
+rl : Int -> Element.Attribute msg
+rl x =
+    Border.roundEach { bottomLeft = x, bottomRight = 0, topLeft = x, topRight = 0 }
+
+
+{-| An alias to have rounded corners only on the right.
+-}
+rr : Int -> Element.Attribute msg
+rr x =
+    Border.roundEach { bottomLeft = 0, bottomRight = x, topLeft = 0, topRight = x }
+
+
+{-| An alias to have rounded corners only on the top.
+-}
+rt : Int -> Element.Attribute msg
+rt x =
+    Border.roundEach { bottomLeft = 0, bottomRight = 0, topLeft = x, topRight = x }
+
+
+{-| An alias to have rounded corners only on the bottom.
+-}
+rb : Int -> Element.Attribute msg
+rb x =
+    Border.roundEach { bottomLeft = x, bottomRight = x, topLeft = 0, topRight = 0 }
+
+
+{-| An alias to have rounded corners everywhere.
+-}
+r : Int -> Element.Attribute msg
+r x =
+    Border.rounded x
 
 
 {-| An alias for `Element.centerX`

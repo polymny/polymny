@@ -11,8 +11,13 @@ import Config exposing (Config)
 import Data.Capsule as Data
 import Data.User exposing (User)
 import Element exposing (Element)
+import Element.Background as Background
+import Element.Border as Border
 import Preparation.Types as Preparation
+import Strings
+import Ui.Colors as Colors
 import Ui.Utils as Ui
+import Utils
 
 
 {-| The view function for the preparation page.
@@ -52,6 +57,52 @@ view config user model =
                         ]
     in
     model.slides
-        |> List.map (List.map v0)
-        |> List.map (Element.row [ Element.spacing 10 ])
-        |> Element.column [ Element.spacing 10 ]
+        |> List.map (gosView config user model)
+        |> Element.column [ Ui.wf ]
+
+
+gosView : Config -> User -> Preparation.Model -> List Preparation.MaybeSlide -> Element App.Msg
+gosView config user model gos =
+    case gos of
+        [ Preparation.GosId gosId ] ->
+            Element.none
+                |> Element.el [ Ui.wf, Ui.bb 1, Border.color Colors.greyBorder ]
+                |> Element.el [ Ui.wf, Ui.py 20 ]
+
+        _ ->
+            gos
+                |> Utils.regroupFixed config.clientConfig.zoomLevel
+                |> List.map (List.map (slideView config user model))
+                |> List.map (Element.row [ Ui.wf ])
+                |> Element.row [ Ui.wf ]
+
+
+slideView : Config -> User -> Preparation.Model -> Maybe Preparation.MaybeSlide -> Element App.Msg
+slideView config user model s =
+    case s of
+        Just (Preparation.Slide { gosId, slideId, slide }) ->
+            let
+                inFront =
+                    Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
+                        (Strings.dataCapsuleGrain config.clientState.lang 1
+                            ++ " "
+                            ++ String.fromInt (gosId + 1)
+                            ++ " / "
+                            ++ Strings.dataCapsuleSlide config.clientState.lang 1
+                            ++ " "
+                            ++ String.fromInt (slideId + 1)
+                            |> Element.text
+                        )
+            in
+            Element.el [ Ui.wf, Ui.pl 20 ]
+                (Element.image [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Element.inFront inFront ]
+                    { src = Data.slidePath model.capsule slide
+                    , description = ""
+                    }
+                )
+
+        Just (Preparation.GosId _) ->
+            Element.none
+
+        _ ->
+            Element.el [ Ui.wf, Ui.pl 20 ] Element.none
