@@ -1,6 +1,9 @@
 module NewCapsule.Types exposing (Model, Msg(..), Slide, init, prepare, structureFromUi, toggle)
 
 {-| This module contains the types for the page the users land when they upload a slideshow.
+
+@docs Model, Msg, Slide, init, prepare, structureFromUi, toggle
+
 -}
 
 import Data.Capsule as Data

@@ -2,7 +2,7 @@ module Home.Types exposing (Msg(..))
 
 {-| This module contains the types required for the home page.
 
-@docs Model, init, Msg
+@docs Msg
 
 -}
 

@@ -1,6 +1,9 @@
-module Api.Capsule exposing (..)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule)
 
 {-| This module contains all the functions to deal with the API of capsules.
+
+@docs uploadSlideShow, updateCapsule
+
 -}
 
 import Api.Utils as Api

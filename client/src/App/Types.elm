@@ -1,7 +1,6 @@
 module App.Types exposing
-    ( Model, Page(..), Msg(..)
+    ( Model, Page(..), Msg(..), onUrlRequest
     , Error(..), errorToString
-    , onUrlRequest
     )
 
 {-| This module contains the model and messages of our application.
@@ -9,7 +8,7 @@ module App.Types exposing
 
 # The model
 
-@docs Model, Page, Msg
+@docs Model, Page, Msg, onUrlRequest
 
 
 # Error management

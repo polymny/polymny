@@ -1,6 +1,6 @@
 port module Home.Updates exposing
     ( update
-    , subs
+    , selected, subs
     )
 
 {-| This module contains the update function of the home page.
@@ -10,7 +10,7 @@ port module Home.Updates exposing
 
 # Subscriptions
 
-@docs selected
+@docs selected, subs
 
 -}
 

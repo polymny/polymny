@@ -2,6 +2,9 @@ module App.Utils exposing (init, pageFromRoute)
 
 {-| This module contains some util functions that should really be in App/Types.elm but that can't be there because elm
 doesn't allow circular module imports...
+
+@docs init, pageFromRoute
+
 -}
 
 import App.Types as App

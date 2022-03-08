@@ -1,4 +1,4 @@
-module Api.Utils exposing (get, post, put, delete, requestWithMethodAndTracker, postWithTracker)
+module Api.Utils exposing (get, post, put, delete, requestWithMethodAndTracker, requestWithMethod, postWithTracker)
 
 {-| This module contains helper that we can use to manage REST APIs easily.
 
@@ -11,6 +11,8 @@ import Json.Decode exposing (Decoder)
 import RemoteData exposing (WebData)
 
 
+{-| A generic function to build HTTP requests.
+-}
 requestWithMethodAndTracker :
     String
     -> Maybe String
@@ -28,6 +30,8 @@ requestWithMethodAndTracker method tracker { url, body, decoder, toMsg } =
         }
 
 
+{-| A generic function to build HTTP requests with no tracker.
+-}
 requestWithMethod :
     String
     -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg }
@@ -36,26 +40,36 @@ requestWithMethod method param =
     requestWithMethodAndTracker method Nothing param
 
 
+{-| Helper function to easily build GET requests.
+-}
 get : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 get =
     requestWithMethod "GET"
 
 
+{-| Helper function to easily build POST requests.
+-}
 post : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 post =
     requestWithMethod "POST"
 
 
+{-| Helper function to easily build POST requests with trackers.
+-}
 postWithTracker : String -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 postWithTracker tracker =
     requestWithMethodAndTracker "POST" (Just tracker)
 
 
+{-| Helper function to easily build PUT requests.
+-}
 put : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 put =
     requestWithMethod "PUT"
 
 
+{-| Helper function to easily build DELETE requests.
+-}
 delete : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 delete =
     requestWithMethod "DELETE"

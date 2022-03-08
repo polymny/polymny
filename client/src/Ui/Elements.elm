@@ -1,11 +1,8 @@
-module Ui.Elements exposing
-    ( primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon, title
-    , animatedEl, spin, spinner
-    )
+module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), icon, title, animatedEl, spin, spinner)
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, icon, title
+@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, icon, title, animatedEl, spin, spinner
 
 -}
 

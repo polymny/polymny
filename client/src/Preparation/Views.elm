@@ -1,6 +1,9 @@
-module Preparation.Views exposing (..)
+module Preparation.Views exposing (view)
 
 {-| The main view for the preparation page.
+
+@docs view
+
 -}
 
 import App.Types as App
