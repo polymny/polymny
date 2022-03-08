@@ -116,7 +116,8 @@ structureFromUi slides =
     structureFromUiAux [] slides
         |> List.map Tuple.second
         |> List.map List.reverse
-        |> List.map (List.map (\( _, _, c ) -> c))
+        |> List.reverse
+        |> List.map (List.map Triplet.third)
         |> List.map Data.gosFromSlides
 
 
