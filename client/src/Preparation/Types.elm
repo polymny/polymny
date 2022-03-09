@@ -1,6 +1,6 @@
 module Preparation.Types exposing
-    ( Model, init, MaybeSlide(..), toMaybe, enumerate
-    , DnDMsg(..), Msg(..), gosSystem, slideSystem
+    ( Model, init, MaybeSlide(..), toSlide, enumerate
+    , DnDMsg(..), Msg(..), gosSystem, regroupSlides, setupSlides, slideSystem
     )
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
@@ -8,7 +8,7 @@ module Preparation.Types exposing
 In all the following documentation, DnD refers to Drag'n'Drop. It is necessary to have a user-friendly interface, but is
 quite a pain to deal with.
 
-@docs Model, init, MaybeSlide, toMaybe, enumerate
+@docs Model, init, MaybeSlide, toSlide, enumerate
 
 -}
 
@@ -32,7 +32,7 @@ type alias Model =
 init : Capsule -> Model
 init capsule =
     { capsule = capsule
-    , slides = setupSlides capsule
+    , slides = capsule.structure |> List.map .slides |> setupSlides
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model
     }
@@ -96,8 +96,8 @@ makeSlide gosId totalGosId slideId totalSlideId slide =
 
 {-| A helper function to prepare the List (List MaybeSlide) from the capsule.
 -}
-setupSlides : Capsule -> List (List MaybeSlide)
-setupSlides capsule =
+setupSlides : List (List Data.Slide) -> List (List MaybeSlide)
+setupSlides structure =
     let
         slideMapper : Int -> ( Int, Data.Slide ) -> MaybeSlide
         slideMapper gosId ( slideId, slide ) =
@@ -106,18 +106,13 @@ setupSlides capsule =
         gosMapper : ( Int, List ( Int, Data.Slide ) ) -> List MaybeSlide
         gosMapper ( gosId, slides ) =
             makeGosId gosId -1 -1 :: List.map (slideMapper gosId) slides
-
-        structure : List (List MaybeSlide)
-        structure =
-            capsule.structure
-                |> List.map .slides
-                |> enumerate
-                |> List.map gosMapper
-                |> List.intersperse [ GosId { gosId = -1, totalGosId = -1, totalSlideId = -1 } ]
-                |> (\x -> [ makeGosId -1 -1 -1 ] :: x ++ [ [ makeGosId -1 -1 -1 ] ])
-                |> reindex
     in
     structure
+        |> enumerate
+        |> List.map gosMapper
+        |> List.intersperse [ GosId { gosId = -1, totalGosId = -1, totalSlideId = -1 } ]
+        |> (\x -> [ makeGosId -1 -1 -1 ] :: x ++ [ [ makeGosId -1 -1 -1 ] ])
+        |> reindex
 
 
 {-| An util function to doubly enumerate elements.
@@ -197,12 +192,38 @@ reindexAux currentOuter currentInner acc input =
             reindexAux currentOuter (currentInner + 1) newAcc (t :: t2)
 
 
+{-| Regroups maybe slides togheter correctly.
+-}
+regroupSlides : List MaybeSlide -> List (List MaybeSlide)
+regroupSlides input =
+    regroupSlidesAux [] input |> List.map List.reverse |> List.reverse
+
+
+{-| Auxilary function to help write regroup slides function.
+-}
+regroupSlidesAux : List (List MaybeSlide) -> List MaybeSlide -> List (List MaybeSlide)
+regroupSlidesAux acc input =
+    case ( input, acc ) of
+        ( [], _ ) ->
+            acc
+
+        ( (GosId a) :: t, _ ) ->
+            regroupSlidesAux ([ GosId a ] :: acc) t
+
+        ( (Slide a) :: t, [] ) ->
+            -- This should be unreachable
+            regroupSlidesAux [ [ Slide a ] ] t
+
+        ( (Slide a) :: t, hA :: tA ) ->
+            regroupSlidesAux ((Slide a :: hA) :: tA) t
+
+
 {-| Converts a MaybeSlide to a Maybe Data.Slide.
 -}
-toMaybe : MaybeSlide -> Maybe Data.Slide
-toMaybe s =
+toSlide : MaybeSlide -> Maybe { gosId : Int, totalGosId : Int, slideId : Int, totalSlideId : Int, slide : Data.Slide }
+toSlide s =
     case s of
-        Slide { slide } ->
+        Slide slide ->
             Just slide
 
         _ ->

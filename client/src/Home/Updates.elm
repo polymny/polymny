@@ -46,7 +46,7 @@ update msg model =
                 "application/pdf" ->
                     let
                         projectName =
-                            project |> Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang)
+                            Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
 
                         name =
                             fileValue.name
@@ -94,8 +94,8 @@ port selected : (( Maybe String, Decode.Value ) -> msg) -> Sub msg
 
 {-| Subscriptions of the page.
 -}
-subs : App.Model -> Sub App.Msg
-subs model =
+subs : Sub App.Msg
+subs =
     selected
         (\( p, x ) ->
             case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of

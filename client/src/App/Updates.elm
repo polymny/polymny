@@ -72,4 +72,12 @@ subs m =
             Sub.none
 
         Ok model ->
-            Sub.batch [ Home.subs model ]
+            case model.page of
+                App.Home ->
+                    Home.subs
+
+                App.NewCapsule _ ->
+                    Sub.none
+
+                App.Preparation x ->
+                    Preparation.subs x
