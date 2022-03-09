@@ -1,4 +1,7 @@
-module Preparation.Types exposing (Model, init, MaybeSlide(..), toMaybe, enumerate)
+module Preparation.Types exposing
+    ( Model, init, MaybeSlide(..), toMaybe, enumerate
+    , DnDMsg(..), Msg(..), gosSystem, slideSystem
+    )
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
@@ -19,9 +22,8 @@ import DnDList.Groups
 type alias Model =
     { capsule : Capsule
     , slides : List (List MaybeSlide)
-
-    -- , slideModel : DnDList.Groups.Model
-    -- , gosModel : DnDList.Model
+    , slideModel : DnDList.Groups.Model
+    , gosModel : DnDList.Model
     }
 
 
@@ -31,25 +33,9 @@ init : Capsule -> Model
 init capsule =
     { capsule = capsule
     , slides = setupSlides capsule
-
-    -- , slideModel = 0
-    -- , gosModel = 0
+    , slideModel = slideSystem.model
+    , gosModel = gosSystem.model
     }
-
-
-
--- {-| A const system for slides that helps us deal with DnD.
--- -}
--- slideSystem : DnDList.Groups.System Data.Slide DnDMsg
--- slideSystem =
---     DnDList.Groups.create slideConfig SlideMoved
---
---
--- {-| A const sytem for gos that helps ups deal with DnD.
--- -}
--- gosSystem : DnDList.System (List Data.Slide) DnDMsg
--- gosSystem =
---     DnDList.create gosConfig GosMoved
 
 
 {-| The message type of this page.
@@ -190,12 +176,12 @@ reindexAux currentOuter currentInner acc input =
         [] :: t ->
             reindexAux (currentOuter + 1) currentInner acc t
 
-        [ GosId { gosId, totalGosId, totalSlideId } ] :: t ->
+        [ GosId { gosId } ] :: t ->
             -- This is the case of a virtual gos.
             -- We need to increase currentInner because the virtual gos contains a virtual slide.
             reindexAux (currentOuter + 1) (currentInner + 1) ([ makeGosId gosId currentOuter currentInner ] :: acc) t
 
-        ((GosId { gosId, totalGosId, totalSlideId }) :: t) :: t2 ->
+        ((GosId { gosId }) :: t) :: t2 ->
             reindexAux currentOuter currentInner ([ makeGosId gosId currentOuter currentInner ] :: acc) (t :: t2)
 
         ((Slide { gosId, slideId, slide }) :: t) :: t2 ->
@@ -221,3 +207,77 @@ toMaybe s =
 
         _ ->
             Nothing
+
+
+{-| Configuration for DnD of slides.
+-}
+slideConfig : DnDList.Groups.Config MaybeSlide
+slideConfig =
+    { beforeUpdate = \_ _ a -> a
+    , listen = DnDList.Groups.OnDrag
+    , operation = DnDList.Groups.Rotate
+    , groups =
+        { listen = DnDList.Groups.OnDrag
+        , operation = DnDList.Groups.InsertAfter
+        , comparator = slideComparator
+        , setter = slideSetter
+        }
+    }
+
+
+{-| Compares two slides to know if they're in the same gos.
+-}
+slideComparator : MaybeSlide -> MaybeSlide -> Bool
+slideComparator slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( Slide s1, Slide s2 ) ->
+            s1.gosId == s2.gosId
+
+        ( GosId gos1, GosId gos2 ) ->
+            gos1.gosId == gos2.gosId
+
+        _ ->
+            False
+
+
+{-| Updates a maybe slide to add into another maybe slide.
+-}
+slideSetter : MaybeSlide -> MaybeSlide -> MaybeSlide
+slideSetter slide1 slide2 =
+    case ( slide1, slide2 ) of
+        ( Slide s1, Slide s2 ) ->
+            Slide { s2 | gosId = s1.gosId, totalGosId = s1.totalGosId }
+
+        ( GosId gos, Slide s2 ) ->
+            Slide { s2 | gosId = gos.gosId, totalGosId = gos.totalGosId }
+
+        ( Slide s1, GosId gos ) ->
+            Slide { s1 | gosId = gos.gosId, totalGosId = gos.totalGosId }
+
+        ( GosId i1, GosId _ ) ->
+            GosId i1
+
+
+{-| The slide system for DnD.
+-}
+slideSystem : DnDList.Groups.System MaybeSlide DnDMsg
+slideSystem =
+    DnDList.Groups.create slideConfig SlideMoved
+
+
+{-| Configuration for DnD of gos.
+-}
+gosConfig : DnDList.Config (List MaybeSlide)
+gosConfig =
+    { beforeUpdate = \_ _ a -> a
+    , movement = DnDList.Free
+    , listen = DnDList.OnDrag
+    , operation = DnDList.Rotate
+    }
+
+
+{-| The gos system for DnD.
+-}
+gosSystem : DnDList.System (List MaybeSlide) DnDMsg
+gosSystem =
+    DnDList.create gosConfig GosMoved

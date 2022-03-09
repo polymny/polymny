@@ -24,7 +24,7 @@ import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
-import Url exposing (Url)
+import Url
 
 
 {-| This type contains all the model of the application.
@@ -65,6 +65,7 @@ type Msg
     = Noop
     | HomeMsg Home.Msg
     | NewCapsuleMsg NewCapsule.Msg
+    | PreparationMsg Preparation.Msg
     | ConfigMsg Config.Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url

@@ -5,6 +5,7 @@ module Ui.Utils exposing
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink
+    , id
     )
 
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
@@ -39,10 +40,16 @@ module Ui.Utils exposing
 
 @docs shrink
 
+
+# HTML utilities
+
+@docs id
+
 -}
 
 import Element
 import Element.Border as Border
+import Html.Attributes
 import Material.Icons.Types exposing (Icon)
 
 
@@ -272,3 +279,10 @@ shrink length string =
 
     else
         string
+
+
+{-| An alias for an HTML id.
+-}
+id : String -> Element.Attribute msg
+id name =
+    Element.htmlAttribute (Html.Attributes.id name)

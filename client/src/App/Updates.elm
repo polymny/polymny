@@ -12,6 +12,8 @@ import Browser.Navigation
 import Config
 import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
+import Preparation.Types as Preparation
+import Preparation.Updates as Preparation
 import Route
 
 
@@ -47,6 +49,9 @@ updateModel msg model =
 
         App.NewCapsuleMsg sMsg ->
             NewCapsule.update sMsg model
+
+        App.PreparationMsg sMsg ->
+            Preparation.update sMsg model
 
         App.OnUrlChange url ->
             ( { model | page = App.pageFromRoute model.config model.user (Route.fromUrl url) }, Cmd.none )
