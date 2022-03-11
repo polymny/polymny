@@ -15,7 +15,7 @@ import DnDList.Groups
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
-import Html.Attributes
+import List.Extra
 import Preparation.Types as Preparation
 import Strings
 import Ui.Colors as Colors
@@ -28,82 +28,66 @@ import Utils
 view : Config -> User -> Preparation.Model -> Element App.Msg
 view config user model =
     let
-        v0 : Preparation.MaybeSlide -> Element App.Msg
-        v0 s =
-            case s of
-                Preparation.GosId { gosId, totalGosId, totalSlideId } ->
-                    "GosId { "
-                        ++ String.fromInt gosId
-                        ++ ", "
-                        ++ String.fromInt totalGosId
-                        ++ ", "
-                        ++ String.fromInt totalSlideId
-                        ++ "}"
-                        |> Element.text
-
-                Preparation.Slide { gosId, totalGosId, slideId, totalSlideId, slide } ->
-                    Element.row [ Element.spacing 10 ]
-                        [ "Slide { "
-                            ++ String.fromInt gosId
-                            ++ ", "
-                            ++ String.fromInt totalGosId
-                            ++ ", "
-                            ++ String.fromInt slideId
-                            ++ ", "
-                            ++ String.fromInt totalSlideId
-                            ++ "}"
-                            |> Element.text
-                        , Element.image [ Ui.wpx 150 ]
-                            { src = Data.slidePath model.capsule slide
-                            , description = ""
-                            }
-                        ]
-
         inFront : Element App.Msg
         inFront =
-            maybeDragSlide model.slideModel (List.concat model.slides)
+            maybeDragSlide model.slideModel model.slides
                 |> slideView config user model True
     in
     model.slides
+        |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
+        |> filterConsecutiveVirtualGos
         |> List.map (gosView config user model)
-        |> Element.column [ Ui.wf, Element.inFront inFront ]
+        |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf, Element.inFront inFront ]
 
 
 {-| Displays a grain.
 -}
-gosView : Config -> User -> Preparation.Model -> List Preparation.MaybeSlide -> Element App.Msg
-gosView config user model gos =
-    case gos of
-        [ Preparation.GosId gosId ] ->
+gosView : Config -> User -> Preparation.Model -> ( Preparation.Slide, List Preparation.Slide ) -> Element App.Msg
+gosView config user model ( head, gos ) =
+    let
+        isDragging =
+            maybeDragSlide model.slideModel model.slides /= Nothing
+    in
+    case ( head.slide, gos, isDragging ) of
+        ( Nothing, [], False ) ->
+            -- Virtual gos
             Element.none
-                |> Element.el [ Ui.wf, Ui.bb 1, Border.color Colors.greyBorder ]
+                |> Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ]
                 |> Element.el
                     (Ui.wf
-                        :: Ui.hf
-                        :: Ui.py 20
-                        :: Ui.id ("slide-" ++ String.fromInt gosId.totalSlideId)
-                        :: slideStyle model.slideModel gosId.totalSlideId Drop
+                        :: Ui.p 20
+                        :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
+                        :: slideStyle model.slideModel head.totalSlideId Drop
                     )
-                |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt gosId.totalGosId) ]
+                |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
 
-        (Preparation.GosId gosId) :: _ ->
-            gos
+        ( Nothing, [], True ) ->
+            -- Virtual gos
+            Element.none
+                |> Element.el [ Ui.wf, Ui.p 15 ]
+                |> Element.el [ Ui.wf, Ui.bt 1, Border.color (Colors.grey 6), Background.color (Colors.grey 6) ]
+                |> Element.el
+                    (Ui.wf
+                        :: Ui.p 5
+                        :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
+                        :: slideStyle model.slideModel head.totalSlideId Drop
+                    )
+                |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+
+        _ ->
+            (head :: gos)
                 |> Utils.regroupFixed config.clientConfig.zoomLevel
                 |> List.map (List.map (slideView config user model False))
                 |> List.map (Element.row [ Ui.wf ])
-                |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt gosId.totalGosId) ]
-
-        _ ->
-            -- This should be unreachable
-            Element.none
+                |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
 
 
 {-| Displays a slide.
 -}
-slideView : Config -> User -> Preparation.Model -> Bool -> Maybe Preparation.MaybeSlide -> Element App.Msg
+slideView : Config -> User -> Preparation.Model -> Bool -> Maybe Preparation.Slide -> Element App.Msg
 slideView config user model ghost s =
-    case s of
-        Just (Preparation.Slide slide) ->
+    case ( s, Maybe.andThen .slide s ) of
+        ( Just slide, Just dataSlide ) ->
             let
                 inFront =
                     Strings.dataCapsuleGrain config.clientState.lang 1
@@ -122,15 +106,16 @@ slideView config user model ghost s =
                     :: Ui.pl 20
                     :: Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
                     :: slideStyle model.slideModel slide.totalSlideId Drag
+                    ++ slideStyle model.slideModel slide.totalSlideId Drop
                     ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
                 )
                 (Element.image [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Element.inFront inFront ]
-                    { src = Data.slidePath model.capsule slide.slide
+                    { src = Data.slidePath model.capsule dataSlide
                     , description = ""
                     }
                 )
 
-        Just (Preparation.GosId _) ->
+        ( Just _, _ ) ->
             Element.none
 
         _ ->
@@ -139,17 +124,10 @@ slideView config user model ghost s =
 
 {-| Finds whether a slide is being dragged.
 -}
-maybeDragSlide : DnDList.Groups.Model -> List Preparation.MaybeSlide -> Maybe Preparation.MaybeSlide
+maybeDragSlide : DnDList.Groups.Model -> List Preparation.Slide -> Maybe Preparation.Slide
 maybeDragSlide model slides =
     Preparation.slideSystem.info model
-        |> Maybe.andThen
-            (\{ dragIndex } ->
-                slides
-                    |> List.filterMap Preparation.toSlide
-                    |> List.filter (\x -> x.totalSlideId == dragIndex)
-                    |> List.head
-                    |> Maybe.map Preparation.Slide
-            )
+        |> Maybe.andThen (\{ dragIndex } -> slides |> List.drop dragIndex |> List.head)
 
 
 {-| A helper type to help us deal with the DnD events.
@@ -203,7 +181,7 @@ gosStyle model gos options =
         |> List.map (Element.mapAttribute (\x -> App.PreparationMsg (Preparation.DnD x)))
 
 
-{-| A helper type to easily describe the content of a MaybeSlide that is a slide.
+{-| A helper type to easily describe the content of a Slide that is a slide.
 -}
 type alias Slide =
     { gosId : Int
@@ -214,10 +192,43 @@ type alias Slide =
     }
 
 
-{-| A helper type to easily describe the content of a MaybeSlide that is a GosId.
+{-| A helper type to easily describe the content of a Slide that is a GosId.
 -}
 type alias GosId =
     { gosId : Int
     , totalGosId : Int
     , totalSlideId : Int
     }
+
+
+{-| An alias to easily describe non empty lists.
+-}
+type alias NeList a =
+    ( a, List a )
+
+
+{-| A helper to remove consecutive virtual gos.
+-}
+filterConsecutiveVirtualGos : List (NeList Preparation.Slide) -> List (NeList Preparation.Slide)
+filterConsecutiveVirtualGos input =
+    filterConsecutiveVirtualGosAux [] input |> List.reverse
+
+
+filterConsecutiveVirtualGosAux : List (NeList Preparation.Slide) -> List (NeList Preparation.Slide) -> List (NeList Preparation.Slide)
+filterConsecutiveVirtualGosAux acc input =
+    case input of
+        [] ->
+            acc
+
+        h :: [] ->
+            h :: acc
+
+        ( h1, [] ) :: ( h2, [] ) :: t ->
+            if h1.slide == Nothing && h2.slide == Nothing then
+                filterConsecutiveVirtualGosAux acc (( h2, [] ) :: t)
+
+            else
+                filterConsecutiveVirtualGosAux (( h1, [] ) :: acc) (( h2, [] ) :: t)
+
+        h1 :: h2 :: t ->
+            filterConsecutiveVirtualGosAux (h1 :: acc) (h2 :: t)

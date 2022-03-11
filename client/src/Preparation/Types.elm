@@ -1,7 +1,4 @@
-module Preparation.Types exposing
-    ( Model, init, MaybeSlide(..), toSlide, enumerate
-    , DnDMsg(..), Msg(..), gosSystem, regroupSlides, setupSlides, slideSystem
-    )
+module Preparation.Types exposing (..)
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
@@ -21,7 +18,7 @@ import DnDList.Groups
 -}
 type alias Model =
     { capsule : Capsule
-    , slides : List (List MaybeSlide)
+    , slides : List Slide
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     }
@@ -51,68 +48,73 @@ type DnDMsg
     | GosMoved DnDList.Msg
 
 
-{-| Something that can be either a gos id or a slide.
-
-We need this type to deal with DnD.
-
-In the case of a `GosId`:
-
-  - the `gosId` attribute is the real gos id, starting at 0 and counting the capsules.
-  - the `totalGosId` is the id of the gos in the view. Each gos is separated by an empty gos that theoritically doesn't
-    exist, but is present in our model because a user can drop a slide on it, and actually create the gos.
-  - the `totalSlideId` is present because virtual gos contain a slide.
-
-If a gos (List MaybeSlide) contains only a GosId, then, it is a virtual gos, and its totalSlideId is the id corresponding
-to the virtual slide, otherwise, its a real gos, which contains slides, and its totalSlideId will be the totalSlideId of
-the first slide of the gos.
-
-In the case of a `Slide`:
+{-| A slide with easy access to its position in the capsule structure.
 
   - the `gosId` is the real gos id to which the slide belongs.
   - the `totalGosId` is the id of the gos the the view.
   - the `slideId` is the real id of the slide, starting from 0 from the first slide of the first gos, and counting every
     slide.
   - the `totalSlideId` takes also into account the fact that an virtual gos contains a virtual slide.
+  - the `slide` is the real slide.
 
 -}
-type MaybeSlide
-    = GosId { gosId : Int, totalGosId : Int, totalSlideId : Int }
-    | Slide { gosId : Int, totalGosId : Int, slideId : Int, totalSlideId : Int, slide : Data.Slide }
-
-
-{-| A helper function to easily create a gos id.
--}
-makeGosId : Int -> Int -> Int -> MaybeSlide
-makeGosId gosId totalGosId totalSlideId =
-    GosId { gosId = gosId, totalGosId = totalGosId, totalSlideId = totalSlideId }
+type alias Slide =
+    { gosId : Int
+    , totalGosId : Int
+    , slideId : Int
+    , totalSlideId : Int
+    , slide : Maybe Data.Slide
+    }
 
 
 {-| A helper function to easily create a slide.
 -}
-makeSlide : Int -> Int -> Int -> Int -> Data.Slide -> MaybeSlide
+makeSlide : Int -> Int -> Int -> Int -> Maybe Data.Slide -> Slide
 makeSlide gosId totalGosId slideId totalSlideId slide =
-    Slide { gosId = gosId, totalGosId = totalGosId, slideId = slideId, totalSlideId = totalSlideId, slide = slide }
+    { gosId = gosId
+    , totalGosId = totalGosId
+    , slideId = slideId
+    , totalSlideId = totalSlideId
+    , slide = slide
+    }
 
 
-{-| A helper function to prepare the List (List MaybeSlide) from the capsule.
+{-| A helper function to prepare the List Slide from the capsule.
 -}
-setupSlides : List (List Data.Slide) -> List (List MaybeSlide)
-setupSlides structure =
+setupSlides : List (List Data.Slide) -> List Slide
+setupSlides input =
     let
-        slideMapper : Int -> ( Int, Data.Slide ) -> MaybeSlide
+        slideMapper : Int -> ( Int, Data.Slide ) -> Slide
         slideMapper gosId ( slideId, slide ) =
-            makeSlide gosId -1 slideId -1 slide
+            makeSlide gosId -1 slideId -1 (Just slide)
 
-        gosMapper : ( Int, List ( Int, Data.Slide ) ) -> List MaybeSlide
+        gosMapper : ( Int, List ( Int, Data.Slide ) ) -> List Slide
         gosMapper ( gosId, slides ) =
-            makeGosId gosId -1 -1 :: List.map (slideMapper gosId) slides
+            List.map (slideMapper gosId) slides
+
+        output : List Slide
+        output =
+            input
+                |> enumerate
+                |> List.map gosMapper
+                |> List.intersperse [ makeSlide -1 -1 -1 -1 Nothing ]
+                |> (\x -> [ makeSlide -1 -1 -1 -1 Nothing ] :: x ++ [ [ makeSlide -1 -1 -1 -1 Nothing ] ])
+                |> reindex
+                |> List.concat
     in
-    structure
-        |> enumerate
-        |> List.map gosMapper
-        |> List.intersperse [ GosId { gosId = -1, totalGosId = -1, totalSlideId = -1 } ]
-        |> (\x -> [ makeGosId -1 -1 -1 ] :: x ++ [ [ makeGosId -1 -1 -1 ] ])
-        |> reindex
+    output
+
+
+{-| Fixes the totalGosId and totalSlideId of the List (List Slide).
+-}
+reindex : List (List Slide) -> List (List Slide)
+reindex input =
+    let
+        mapper : ( Int, List ( Int, Slide ) ) -> List Slide
+        mapper ( totalGosId, a ) =
+            List.map (\( i, x ) -> { x | totalGosId = totalGosId, totalSlideId = i }) a
+    in
+    input |> enumerate |> List.map mapper
 
 
 {-| An util function to doubly enumerate elements.
@@ -148,91 +150,23 @@ enumerateAux currentOuter currentInner acc input =
             enumerateAux currentOuter (currentInner + 1) (( hiA, ( currentInner, h ) :: hlAh :: hlAt ) :: t1) (t :: t2)
 
 
-{-| A helper function that recomputes the totalGosId and totalSlideId of the List (List MaybeSlide).
+{-| Compares two slides to know if they're in the same gos.
 -}
-reindex : List (List MaybeSlide) -> List (List MaybeSlide)
-reindex input =
-    reindexAux 0 0 [] input
-        |> List.map List.reverse
-        |> List.reverse
+slideComparator : Slide -> Slide -> Bool
+slideComparator s1 s2 =
+    s1.totalGosId == s2.totalGosId
 
 
-{-| An auxilary function to help us write the reindex functions.
+{-| Changes the gos of a slide.
 -}
-reindexAux : Int -> Int -> List (List MaybeSlide) -> List (List MaybeSlide) -> List (List MaybeSlide)
-reindexAux currentOuter currentInner acc input =
-    case input of
-        [] ->
-            acc
-
-        [] :: [] ->
-            acc
-
-        [] :: t ->
-            reindexAux (currentOuter + 1) currentInner acc t
-
-        [ GosId { gosId } ] :: t ->
-            -- This is the case of a virtual gos.
-            -- We need to increase currentInner because the virtual gos contains a virtual slide.
-            reindexAux (currentOuter + 1) (currentInner + 1) ([ makeGosId gosId currentOuter currentInner ] :: acc) t
-
-        ((GosId { gosId }) :: t) :: t2 ->
-            reindexAux currentOuter currentInner ([ makeGosId gosId currentOuter currentInner ] :: acc) (t :: t2)
-
-        ((Slide { gosId, slideId, slide }) :: t) :: t2 ->
-            let
-                newAcc =
-                    case acc of
-                        [] ->
-                            [ [ makeSlide gosId currentOuter slideId currentInner slide ] ]
-
-                        hA :: tA ->
-                            (makeSlide gosId currentOuter slideId currentInner slide :: hA) :: tA
-            in
-            reindexAux currentOuter (currentInner + 1) newAcc (t :: t2)
-
-
-{-| Regroups maybe slides togheter correctly.
--}
-regroupSlides : List MaybeSlide -> List (List MaybeSlide)
-regroupSlides input =
-    regroupSlidesAux [] input |> List.map List.reverse |> List.reverse
-
-
-{-| Auxilary function to help write regroup slides function.
--}
-regroupSlidesAux : List (List MaybeSlide) -> List MaybeSlide -> List (List MaybeSlide)
-regroupSlidesAux acc input =
-    case ( input, acc ) of
-        ( [], _ ) ->
-            acc
-
-        ( (GosId a) :: t, _ ) ->
-            regroupSlidesAux ([ GosId a ] :: acc) t
-
-        ( (Slide a) :: t, [] ) ->
-            -- This should be unreachable
-            regroupSlidesAux [ [ Slide a ] ] t
-
-        ( (Slide a) :: t, hA :: tA ) ->
-            regroupSlidesAux ((Slide a :: hA) :: tA) t
-
-
-{-| Converts a MaybeSlide to a Maybe Data.Slide.
--}
-toSlide : MaybeSlide -> Maybe { gosId : Int, totalGosId : Int, slideId : Int, totalSlideId : Int, slide : Data.Slide }
-toSlide s =
-    case s of
-        Slide slide ->
-            Just slide
-
-        _ ->
-            Nothing
+slideSetter : Slide -> Slide -> Slide
+slideSetter s1 s2 =
+    { s2 | totalGosId = s1.totalGosId, gosId = s1.gosId }
 
 
 {-| Configuration for DnD of slides.
 -}
-slideConfig : DnDList.Groups.Config MaybeSlide
+slideConfig : DnDList.Groups.Config Slide
 slideConfig =
     { beforeUpdate = \_ _ a -> a
     , listen = DnDList.Groups.OnDrag
@@ -246,49 +180,16 @@ slideConfig =
     }
 
 
-{-| Compares two slides to know if they're in the same gos.
--}
-slideComparator : MaybeSlide -> MaybeSlide -> Bool
-slideComparator slide1 slide2 =
-    case ( slide1, slide2 ) of
-        ( Slide s1, Slide s2 ) ->
-            s1.gosId == s2.gosId
-
-        ( GosId gos1, GosId gos2 ) ->
-            gos1.gosId == gos2.gosId
-
-        _ ->
-            False
-
-
-{-| Updates a maybe slide to add into another maybe slide.
--}
-slideSetter : MaybeSlide -> MaybeSlide -> MaybeSlide
-slideSetter slide1 slide2 =
-    case ( slide1, slide2 ) of
-        ( Slide s1, Slide s2 ) ->
-            Slide { s2 | gosId = s1.gosId, totalGosId = s1.totalGosId }
-
-        ( GosId gos, Slide s2 ) ->
-            Slide { s2 | gosId = gos.gosId, totalGosId = gos.totalGosId }
-
-        ( Slide s1, GosId gos ) ->
-            Slide { s1 | gosId = gos.gosId, totalGosId = gos.totalGosId }
-
-        ( GosId i1, GosId _ ) ->
-            GosId i1
-
-
 {-| The slide system for DnD.
 -}
-slideSystem : DnDList.Groups.System MaybeSlide DnDMsg
+slideSystem : DnDList.Groups.System Slide DnDMsg
 slideSystem =
     DnDList.Groups.create slideConfig SlideMoved
 
 
 {-| Configuration for DnD of gos.
 -}
-gosConfig : DnDList.Config (List MaybeSlide)
+gosConfig : DnDList.Config (List Slide)
 gosConfig =
     { beforeUpdate = \_ _ a -> a
     , movement = DnDList.Free
@@ -299,6 +200,6 @@ gosConfig =
 
 {-| The gos system for DnD.
 -}
-gosSystem : DnDList.System (List MaybeSlide) DnDMsg
+gosSystem : DnDList.System (List Slide) DnDMsg
 gosSystem =
     DnDList.create gosConfig GosMoved

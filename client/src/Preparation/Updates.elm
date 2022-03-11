@@ -4,6 +4,7 @@ module Preparation.Updates exposing (..)
 -}
 
 import App.Types as App
+import List.Extra
 import Preparation.Types as Preparation
 
 
@@ -34,7 +35,7 @@ updateDnD msg model =
                     Preparation.slideSystem.info model.slideModel
 
                 ( slideModel, slides ) =
-                    Preparation.slideSystem.update sMsg model.slideModel (List.concat model.slides)
+                    Preparation.slideSystem.update sMsg model.slideModel model.slides
 
                 post =
                     Preparation.slideSystem.info slideModel
@@ -42,21 +43,15 @@ updateDnD msg model =
                 newSlides =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
-                            let
-                                _ =
-                                    slides
-                                        |> List.filterMap Preparation.toSlide
-                                        |> List.map (\x -> ( x.totalGosId, x.slideId ))
-                                        |> Debug.log "slides"
-                            in
-                            Preparation.regroupSlides slides
-                                |> List.map (List.filterMap Preparation.toSlide)
-                                |> List.map (List.map .slide)
+                            slides
+                                |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
+                                |> List.map (\( h, t ) -> h :: t)
+                                |> List.map (List.filterMap .slide)
                                 |> List.filter (\x -> x /= [])
                                 |> Preparation.setupSlides
 
                         _ ->
-                            Preparation.regroupSlides slides
+                            slides
             in
             ( { model | slideModel = slideModel, slides = newSlides }
             , Preparation.slideSystem.commands slideModel
