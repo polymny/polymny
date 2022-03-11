@@ -1,4 +1,7 @@
-module Route exposing (Route(..), toUrl, fromUrl, fromPage)
+module Route exposing
+    ( Route(..), toUrl, fromUrl, fromPage
+    , push
+    )
 
 {-| This module contains the type definition of the routes of the app, and the utility functions to manipulate routes.
 
@@ -7,6 +10,7 @@ module Route exposing (Route(..), toUrl, fromUrl, fromPage)
 -}
 
 import App.Types as App
+import Browser.Navigation
 import Url
 
 
@@ -85,3 +89,10 @@ fromPage page =
 
         App.Preparation _ ->
             Preparation "toto"
+
+
+{-| Go to the corresponding page.
+-}
+push : Browser.Navigation.Key -> Route -> Cmd msg
+push key route =
+    Browser.Navigation.pushUrl key (toUrl route)

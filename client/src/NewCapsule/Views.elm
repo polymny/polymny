@@ -45,30 +45,33 @@ view config user model =
                 }
 
         pageContent =
-            case model.slideUpload of
-                RemoteData.Loading _ ->
+            case ( model.slideUpload, model.capsuleUpdate ) of
+                ( RemoteData.Loading _, _ ) ->
                     Ui.animatedEl Ui.spin [ Ui.cx ] (Ui.icon 60 Ui.spinner)
 
-                RemoteData.Success ( capsule, slides ) ->
+                ( _, ( _, RemoteData.Loading _ ) ) ->
+                    Ui.animatedEl Ui.spin [ Ui.cx ] (Ui.icon 60 Ui.spinner)
+
+                ( RemoteData.Success ( capsule, slides ), _ ) ->
                     slidesView capsule slides
 
                 _ ->
                     Element.none
 
         bottomBar =
-            case model.slideUpload of
-                RemoteData.Success _ ->
+            case ( model.slideUpload, model.capsuleUpdate ) of
+                ( RemoteData.Success _, ( _, RemoteData.NotAsked ) ) ->
                     Element.row [ Ui.wf, Element.spacing 10 ]
                         [ Ui.secondary []
                             { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.Cancel)
                             , label = Strings.uiCancel config.clientState.lang
                             }
                         , Ui.secondary [ Element.alignRight ]
-                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.GoToPreparation)
+                            { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Submit <| NewCapsule.Preparation
                             , label = Strings.stepsPreparationOrganizeSlides config.clientState.lang
                             }
                         , Ui.primary [ Element.alignRight ]
-                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.GoToAcquisition)
+                            { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Submit <| NewCapsule.Acquisition
                             , label = Strings.stepsAcquisitionStartRecording config.clientState.lang
                             }
                         ]

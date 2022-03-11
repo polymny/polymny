@@ -9,8 +9,10 @@ module NewCapsule.Updates exposing (update)
 import Api.Capsule as Api
 import App.Types as App
 import Data.Capsule as Data
+import Data.User as Data
 import NewCapsule.Types as NewCapsule
 import RemoteData
+import Route exposing (Route)
 
 
 {-| The update function of the new capsule page.
@@ -28,7 +30,22 @@ update msg model =
             ( mkModel { m | slideUpload = prepared } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.CapsuleUpdate c ) ->
-            ( mkModel { m | capsuleUpdate = c } model, Cmd.none )
+            case ( m.slideUpload, Debug.log "c" c ) of
+                ( RemoteData.Success ( capsule, _ ), ( nextPage, RemoteData.Success () ) ) ->
+                    let
+                        cmd =
+                            case nextPage of
+                                NewCapsule.Preparation ->
+                                    Route.push model.config.clientState.key (Route.Preparation capsule.id)
+
+                                NewCapsule.Acquisition ->
+                                    -- Route.push model.config.clientState.key (Route.Acquisition capsule.id)
+                                    Cmd.none
+                    in
+                    ( { model | user = Data.updateUser capsule model.user }, cmd )
+
+                _ ->
+                    ( mkModel { m | capsuleUpdate = c } model, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.NameChanged newName ) ->
             let
@@ -61,11 +78,8 @@ update msg model =
             in
             ( mkModel { m | slideUpload = RemoteData.map slideUploadMapper m.slideUpload } model, Cmd.none )
 
-        ( App.NewCapsule m, NewCapsule.GoToPreparation ) ->
-            ( model, RemoteData.map (\( x, _ ) -> updateCapsule x) m.slideUpload |> RemoteData.withDefault Cmd.none )
-
-        ( App.NewCapsule m, NewCapsule.GoToAcquisition ) ->
-            ( model, RemoteData.map (\( x, _ ) -> updateCapsule x) m.slideUpload |> RemoteData.withDefault Cmd.none )
+        ( App.NewCapsule m, NewCapsule.Submit nextPage ) ->
+            ( model, RemoteData.map (\( x, _ ) -> updateCapsule nextPage x) m.slideUpload |> RemoteData.withDefault Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.Cancel ) ->
             ( model, Cmd.none )
@@ -83,6 +97,6 @@ mkModel m model =
 
 {-| A utility function to easily create the command to update the capsule.
 -}
-updateCapsule : Data.Capsule -> Cmd App.Msg
-updateCapsule capsule =
-    Api.updateCapsule capsule (\x -> App.NewCapsuleMsg (NewCapsule.CapsuleUpdate x))
+updateCapsule : NewCapsule.NextPage -> Data.Capsule -> Cmd App.Msg
+updateCapsule nextPage capsule =
+    Api.updateCapsule capsule (\x -> App.NewCapsuleMsg (NewCapsule.CapsuleUpdate ( nextPage, x )))

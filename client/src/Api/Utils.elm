@@ -1,4 +1,7 @@
-module Api.Utils exposing (get, post, put, delete, requestWithMethodAndTracker, requestWithMethod, postWithTracker)
+module Api.Utils exposing
+    ( get, post, put, delete, requestWithMethodAndTracker, requestWithMethod, postWithTracker
+    , deleteJson, getJson, postJson, postWithTrackerJson, putJson, requestWithMethodAndTrackerJson, requestWithMethodJson
+    )
 
 {-| This module contains helper that we can use to manage REST APIs easily.
 
@@ -16,9 +19,28 @@ import RemoteData exposing (WebData)
 requestWithMethodAndTracker :
     String
     -> Maybe String
+    -> { url : String, body : Http.Body, toMsg : WebData () -> msg }
+    -> Cmd msg
+requestWithMethodAndTracker method tracker { url, body, toMsg } =
+    Http.request
+        { method = method
+        , headers = [ Http.header "Accept" "application/json" ]
+        , url = url
+        , body = body
+        , expect = Http.expectWhatever (\x -> toMsg (RemoteData.fromResult x))
+        , timeout = Nothing
+        , tracker = tracker
+        }
+
+
+{-| A generic function to build HTTP requests.
+-}
+requestWithMethodAndTrackerJson :
+    String
+    -> Maybe String
     -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg }
     -> Cmd msg
-requestWithMethodAndTracker method tracker { url, body, decoder, toMsg } =
+requestWithMethodAndTrackerJson method tracker { url, body, decoder, toMsg } =
     Http.request
         { method = method
         , headers = [ Http.header "Accept" "application/json" ]
@@ -34,7 +56,7 @@ requestWithMethodAndTracker method tracker { url, body, decoder, toMsg } =
 -}
 requestWithMethod :
     String
-    -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg }
+    -> { url : String, body : Http.Body, toMsg : WebData () -> msg }
     -> Cmd msg
 requestWithMethod method param =
     requestWithMethodAndTracker method Nothing param
@@ -42,34 +64,79 @@ requestWithMethod method param =
 
 {-| Helper function to easily build GET requests.
 -}
-get : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+get : { url : String, body : Http.Body, toMsg : WebData () -> msg } -> Cmd msg
 get =
     requestWithMethod "GET"
 
 
 {-| Helper function to easily build POST requests.
 -}
-post : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+post : { url : String, body : Http.Body, toMsg : WebData () -> msg } -> Cmd msg
 post =
     requestWithMethod "POST"
 
 
 {-| Helper function to easily build POST requests with trackers.
 -}
-postWithTracker : String -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+postWithTracker : String -> { url : String, body : Http.Body, toMsg : WebData () -> msg } -> Cmd msg
 postWithTracker tracker =
     requestWithMethodAndTracker "POST" (Just tracker)
 
 
 {-| Helper function to easily build PUT requests.
 -}
-put : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+put : { url : String, body : Http.Body, toMsg : WebData () -> msg } -> Cmd msg
 put =
     requestWithMethod "PUT"
 
 
 {-| Helper function to easily build DELETE requests.
 -}
-delete : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+delete : { url : String, body : Http.Body, toMsg : WebData () -> msg } -> Cmd msg
 delete =
     requestWithMethod "DELETE"
+
+
+{-| A generic function to build HTTP requests with no tracker.
+-}
+requestWithMethodJson :
+    String
+    -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg }
+    -> Cmd msg
+requestWithMethodJson method param =
+    requestWithMethodAndTrackerJson method Nothing param
+
+
+{-| Helper function to easily build GET requests.
+-}
+getJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+getJson =
+    requestWithMethodJson "GET"
+
+
+{-| Helper function to easily build POST requests.
+-}
+postJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+postJson =
+    requestWithMethodJson "POST"
+
+
+{-| Helper function to easily build POST requests with trackers.
+-}
+postWithTrackerJson : String -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+postWithTrackerJson tracker =
+    requestWithMethodAndTrackerJson "POST" (Just tracker)
+
+
+{-| Helper function to easily build PUT requests.
+-}
+putJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+putJson =
+    requestWithMethodJson "PUT"
+
+
+{-| Helper function to easily build DELETE requests.
+-}
+deleteJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
+deleteJson =
+    requestWithMethodJson "DELETE"

@@ -1,4 +1,7 @@
-module Data.User exposing (User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing
+    ( User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
+    , updateUser
+    )
 
 {-| This module contains all the data related to the user.
 
@@ -206,3 +209,23 @@ getCapsuleByIdAux id projects =
 
                     else
                         getCapsuleByIdAux id ({ h | capsules = t2 } :: t)
+
+
+{-| Updates a capsule in a user.
+-}
+updateUser : Capsule -> User -> User
+updateUser capsule user =
+    let
+        capsuleMapper : Capsule -> Capsule
+        capsuleMapper c =
+            if c.id == capsule.id then
+                capsule
+
+            else
+                c
+
+        projectMapper : Project -> Project
+        projectMapper project =
+            { project | capsules = List.map capsuleMapper project.capsules }
+    in
+    { user | projects = List.map projectMapper user.projects }

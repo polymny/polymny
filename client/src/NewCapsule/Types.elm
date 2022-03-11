@@ -1,4 +1,7 @@
-module NewCapsule.Types exposing (Model, Msg(..), Slide, init, prepare, structureFromUi, toggle)
+module NewCapsule.Types exposing
+    ( Model, Msg(..), Slide, init, prepare, structureFromUi, toggle
+    , NextPage(..)
+    )
 
 {-| This module contains the types for the page the users land when they upload a slideshow.
 
@@ -18,11 +21,18 @@ import Utils
 -}
 type alias Model =
     { slideUpload : WebData ( Data.Capsule, List Slide )
-    , capsuleUpdate : WebData Data.Capsule
+    , capsuleUpdate : ( NextPage, WebData () )
     , projectName : String
     , capsuleName : String
     , showProject : Bool
     }
+
+
+{-| Whether the user clicked on preparation or acquisition.
+-}
+type NextPage
+    = Preparation
+    | Acquisition
 
 
 {-| Local type for slide.
@@ -40,7 +50,7 @@ init lang projectName capsuleName slideUpload =
     , projectName = projectName |> Maybe.withDefault (Strings.stepsPreparationNewProject lang)
     , capsuleName = capsuleName
     , showProject = projectName /= Nothing
-    , capsuleUpdate = RemoteData.NotAsked
+    , capsuleUpdate = ( Preparation, RemoteData.NotAsked )
     }
 
 
@@ -152,10 +162,9 @@ structureFromUiAux acc slides =
 -}
 type Msg
     = SlideUpload (WebData Data.Capsule)
-    | CapsuleUpdate (WebData Data.Capsule)
+    | CapsuleUpdate ( NextPage, WebData () )
     | NameChanged String
     | ProjectChanged String
     | DelimiterClicked Bool Int
-    | GoToPreparation
-    | GoToAcquisition
+    | Submit NextPage
     | Cancel
