@@ -31,7 +31,8 @@ view config user model =
         inFront : Element App.Msg
         inFront =
             maybeDragSlide model.slideModel model.slides
-                |> slideView config user model True
+                |> Maybe.map (\x -> slideView config user model True x (Just x))
+                |> Maybe.withDefault Element.none
     in
     model.slides
         |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
@@ -47,6 +48,9 @@ gosView config user model ( head, gos ) =
     let
         isDragging =
             maybeDragSlide model.slideModel model.slides /= Nothing
+
+        last =
+            neListLast ( head, gos )
     in
     case ( head.slide, gos, isDragging ) of
         ( Nothing, [], False ) ->
@@ -78,15 +82,15 @@ gosView config user model ( head, gos ) =
             (head :: gos)
                 |> List.filter (\x -> x.slide /= Nothing)
                 |> Utils.regroupFixed (Debug.log "zoomLevel" config.clientConfig.zoomLevel)
-                |> List.map (List.map (slideView config user model False))
+                |> List.map (List.map (slideView config user model False last))
                 |> List.map (Element.row [ Ui.wf ])
                 |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
 
 
 {-| Displays a slide.
 -}
-slideView : Config -> User -> Preparation.Model -> Bool -> Maybe Preparation.Slide -> Element App.Msg
-slideView config user model ghost s =
+slideView : Config -> User -> Preparation.Model -> Bool -> Preparation.Slide -> Maybe Preparation.Slide -> Element App.Msg
+slideView config user model ghost default s =
     case ( s, Maybe.andThen .slide s ) of
         ( Just slide, Just dataSlide ) ->
             let
@@ -120,7 +124,7 @@ slideView config user model ghost s =
             Element.none
 
         _ ->
-            Element.el [ Ui.wf, Ui.pl 20 ] Element.none
+            Element.el (Ui.wf :: Ui.hf :: Ui.pl 20 :: slideStyle model.slideModel default.totalSlideId Drop) Element.none
 
 
 {-| Finds whether a slide is being dragged.
@@ -233,3 +237,13 @@ filterConsecutiveVirtualGosAux acc input =
 
         h1 :: h2 :: t ->
             filterConsecutiveVirtualGosAux (h1 :: acc) (h2 :: t)
+
+
+neListLast : ( a, List a ) -> a
+neListLast ( h, t ) =
+    case t of
+        [] ->
+            h
+
+        h1 :: t1 ->
+            neListLast ( h1, t1 )
