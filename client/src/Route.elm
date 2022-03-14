@@ -84,8 +84,8 @@ fromPage page =
         App.NewCapsule _ ->
             Home
 
-        App.Preparation _ ->
-            Preparation "toto"
+        App.Preparation m ->
+            Preparation m.capsule.id
 
 
 {-| Go to the corresponding page.

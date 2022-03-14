@@ -33,7 +33,9 @@ type NextPage
 
 
 {-| Local type for slide.
+
 The first int is the index of the slide, the second is the index of the grain.
+
 -}
 type alias Slide =
     ( Int, Int, Data.Slide )

@@ -26,11 +26,15 @@ update msg model =
                     RemoteData.map
                         (\x -> ( { x | name = m.capsuleName, project = m.projectName }, NewCapsule.prepare x ))
                         newSlideUpload
+
+                newUser =
+                    RemoteData.map (\x -> Data.addCapsule x model.user) newSlideUpload
+                        |> RemoteData.withDefault model.user
             in
-            ( mkModel { m | slideUpload = prepared } model, Cmd.none )
+            ( mkModel { m | slideUpload = prepared } { model | user = newUser }, Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.CapsuleUpdate c ) ->
-            case ( m.slideUpload, Debug.log "c" c ) of
+            case ( m.slideUpload, c ) of
                 ( RemoteData.Success ( capsule, _ ), ( nextPage, RemoteData.Success () ) ) ->
                     let
                         cmd =

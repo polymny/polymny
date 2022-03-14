@@ -1,8 +1,8 @@
-module Data.User exposing (User, decodeUser, isPremium, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing (User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, isPremium, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
 
 -}
 
@@ -206,6 +206,34 @@ getCapsuleByIdAux id projects =
 
                     else
                         getCapsuleByIdAux id ({ h | capsules = t2 } :: t)
+
+
+{-| Adds a capsule in a user.
+-}
+addCapsule : Capsule -> User -> User
+addCapsule capsule user =
+    { user | projects = addCapsuleAux capsule False [] user.projects }
+
+
+addCapsuleAux : Capsule -> Bool -> List Project -> List Project -> List Project
+addCapsuleAux capsule finished acc input =
+    case input of
+        [] ->
+            if finished then
+                acc
+
+            else
+                { name = capsule.project, capsules = [ capsule ], folded = False } :: acc
+
+        h :: t ->
+            if finished then
+                addCapsuleAux capsule True (h :: acc) t
+
+            else if h.name == capsule.project then
+                addCapsuleAux capsule True ({ h | capsules = capsule :: h.capsules } :: acc) t
+
+            else
+                addCapsuleAux capsule False (h :: acc) t
 
 
 {-| Updates a capsule in a user.
