@@ -81,7 +81,7 @@ gosView config user model ( head, gos ) =
         _ ->
             (head :: gos)
                 |> List.filter (\x -> x.slide /= Nothing)
-                |> Utils.regroupFixed (Debug.log "zoomLevel" config.clientConfig.zoomLevel)
+                |> Utils.regroupFixed config.clientConfig.zoomLevel
                 |> List.map (List.map (slideView config user model False last))
                 |> List.map (Element.row [ Ui.wf ])
                 |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
