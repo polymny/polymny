@@ -1,11 +1,31 @@
 module Api.Utils exposing
-    ( get, post, put, delete, requestWithMethodAndTracker, requestWithMethod, postWithTracker
-    , deleteJson, getJson, postJson, postWithTrackerJson, putJson, requestWithMethodAndTrackerJson, requestWithMethodJson
+    ( requestWithMethodAndTracker, requestWithMethodAndTrackerJson, requestWithMethod, requestWithMethodJson
+    , get, post, put, delete
+    , getJson, postJson, putJson, deleteJson
+    , postWithTracker, postWithTrackerJson
     )
 
 {-| This module contains helper that we can use to manage REST APIs easily.
 
-@docs get, post, put, delete, requestWithMethodAndTracker, requestWithMethod, postWithTracker
+
+# Generic functions
+
+@docs requestWithMethodAndTracker, requestWithMethodAndTrackerJson, requestWithMethod, requestWithMethodJson
+
+
+# Classical functions
+
+@docs get, post, put, delete
+
+
+# Classic functions with JSON data in response
+
+@docs getJson, postJson, putJson, deleteJson
+
+
+# With trackers
+
+@docs postWithTracker, postWithTrackerJson
 
 -}
 
@@ -33,7 +53,7 @@ requestWithMethodAndTracker method tracker { url, body, toMsg } =
         }
 
 
-{-| A generic function to build HTTP requests.
+{-| A generic function to build HTTP requests that expects JSON data in the response.
 -}
 requestWithMethodAndTrackerJson :
     String
@@ -97,7 +117,7 @@ delete =
     requestWithMethod "DELETE"
 
 
-{-| A generic function to build HTTP requests with no tracker.
+{-| A generic function to build HTTP requests with no tracker that expects JSON data in the response.
 -}
 requestWithMethodJson :
     String
@@ -107,35 +127,35 @@ requestWithMethodJson method param =
     requestWithMethodAndTrackerJson method Nothing param
 
 
-{-| Helper function to easily build GET requests.
+{-| Helper function to easily build GET requests that expects JSON data in the response.
 -}
 getJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 getJson =
     requestWithMethodJson "GET"
 
 
-{-| Helper function to easily build POST requests.
+{-| Helper function to easily build POST requests that expects JSON data in the response.
 -}
 postJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 postJson =
     requestWithMethodJson "POST"
 
 
-{-| Helper function to easily build POST requests with trackers.
+{-| Helper function to easily build POST requests with trackers that expects JSON data in the response.
 -}
 postWithTrackerJson : String -> { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 postWithTrackerJson tracker =
     requestWithMethodAndTrackerJson "POST" (Just tracker)
 
 
-{-| Helper function to easily build PUT requests.
+{-| Helper function to easily build PUT requests that expects JSON data in the response.
 -}
 putJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 putJson =
     requestWithMethodJson "PUT"
 
 
-{-| Helper function to easily build DELETE requests.
+{-| Helper function to easily build DELETE requests that expects JSON data in the response.
 -}
 deleteJson : { url : String, body : Http.Body, decoder : Decoder a, toMsg : WebData a -> msg } -> Cmd msg
 deleteJson =

@@ -165,47 +165,6 @@ slideStyle model totalSlideId options =
         |> List.map (Element.mapAttribute (\x -> App.PreparationMsg (Preparation.DnD x)))
 
 
-{-| A function that gives the corresponding attributes for gos.
--}
-gosStyle : DnDList.Model -> GosId -> DragOptions -> List (Element.Attribute App.Msg)
-gosStyle model gos options =
-    (case options of
-        Drag ->
-            Preparation.gosSystem.dragEvents gos.totalGosId ("gos-" ++ String.fromInt gos.totalGosId)
-
-        Drop ->
-            Preparation.gosSystem.dropEvents gos.totalGosId ("gos-" ++ String.fromInt gos.totalGosId)
-
-        Ghost ->
-            Preparation.gosSystem.ghostStyles model
-
-        None ->
-            []
-    )
-        |> List.map Element.htmlAttribute
-        |> List.map (Element.mapAttribute (\x -> App.PreparationMsg (Preparation.DnD x)))
-
-
-{-| A helper type to easily describe the content of a Slide that is a slide.
--}
-type alias Slide =
-    { gosId : Int
-    , totalGosId : Int
-    , slideId : Int
-    , totalSlideId : Int
-    , slide : Data.Slide
-    }
-
-
-{-| A helper type to easily describe the content of a Slide that is a GosId.
--}
-type alias GosId =
-    { gosId : Int
-    , totalGosId : Int
-    , totalSlideId : Int
-    }
-
-
 {-| An alias to easily describe non empty lists.
 -}
 type alias NeList a =
@@ -219,6 +178,8 @@ filterConsecutiveVirtualGos input =
     filterConsecutiveVirtualGosAux [] input |> List.reverse
 
 
+{-| Auxilary function to help write filterConsecutiveVirtualGos.
+-}
 filterConsecutiveVirtualGosAux : List (NeList Preparation.Slide) -> List (NeList Preparation.Slide) -> List (NeList Preparation.Slide)
 filterConsecutiveVirtualGosAux acc input =
     case input of
@@ -239,6 +200,8 @@ filterConsecutiveVirtualGosAux acc input =
             filterConsecutiveVirtualGosAux (h1 :: acc) (h2 :: t)
 
 
+{-| Gets the last element of a non empty list.
+-}
 neListLast : ( a, List a ) -> a
 neListLast ( h, t ) =
     case t of

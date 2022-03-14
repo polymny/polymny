@@ -1,11 +1,8 @@
-module Data.User exposing
-    ( User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
-    , updateUser
-    )
+module Data.User exposing (User, decodeUser, isPremium, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, isPremium, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
 
 -}
 

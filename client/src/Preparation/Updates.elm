@@ -1,6 +1,9 @@
-module Preparation.Updates exposing (..)
+module Preparation.Updates exposing (update, subs)
 
 {-| This module contains the update function for the preparation page.
+
+@docs update, subs
+
 -}
 
 import App.Types as App

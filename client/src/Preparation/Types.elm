@@ -1,11 +1,11 @@
-module Preparation.Types exposing (..)
+module Preparation.Types exposing (Model, Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), DnDMsg(..), enumerate)
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
 In all the following documentation, DnD refers to Drag'n'Drop. It is necessary to have a user-friendly interface, but is
 quite a pain to deal with.
 
-@docs Model, init, MaybeSlide, toSlide, enumerate
+@docs Model, Slide, slideSystem, gosSystem, setupSlides, init, Msg, DnDMsg, enumerate
 
 -}
 

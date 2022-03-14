@@ -1,11 +1,8 @@
-module Route exposing
-    ( Route(..), toUrl, fromUrl, fromPage
-    , push
-    )
+module Route exposing (Route(..), toUrl, fromUrl, fromPage, push)
 
 {-| This module contains the type definition of the routes of the app, and the utility functions to manipulate routes.
 
-@docs Route, toUrl, fromUrl, fromPage
+@docs Route, toUrl, fromUrl, fromPage, push
 
 -}
 

@@ -12,6 +12,7 @@
         "Triplet",
         "Lang",
         "Preparation.Views",
+        "Preparation.Updates",
         "Preparation.Types",
         "Ui.Graphics",
         "Ui.Elements",
