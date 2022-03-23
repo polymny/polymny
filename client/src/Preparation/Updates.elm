@@ -6,7 +6,10 @@ module Preparation.Updates exposing (update, subs)
 
 -}
 
+import Api.Capsule as Api
 import App.Types as App
+import Data.Capsule as Data
+import Dict exposing (Dict)
 import List.Extra
 import Preparation.Types as Preparation
 
@@ -21,7 +24,6 @@ update msg model =
                 Preparation.DnD sMsg ->
                     updateDnD sMsg m
                         |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
-                        |> Tuple.mapSecond (Cmd.map (\x -> App.PreparationMsg (Preparation.DnD x)))
 
         _ ->
             ( model, Cmd.none )
@@ -29,11 +31,14 @@ update msg model =
 
 {-| The update function for the DnD part of the page.
 -}
-updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd Preparation.DnDMsg )
+updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd App.Msg )
 updateDnD msg model =
     case msg of
         Preparation.SlideMoved sMsg ->
             let
+                capsule =
+                    model.capsule
+
                 pre =
                     Preparation.slideSystem.info model.slideModel
 
@@ -43,25 +48,103 @@ updateDnD msg model =
                 post =
                     Preparation.slideSystem.info slideModel
 
-                newSlides =
+                dropped =
+                    pre /= Nothing && post == Nothing
+
+                ( ( broken, newStructure ), newSlides ) =
                     case ( pre, post ) of
                         ( Just _, Nothing ) ->
-                            slides
-                                |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
-                                |> List.map (\( h, t ) -> h :: t)
-                                |> List.map (List.filterMap .slide)
-                                |> List.filter (\x -> x /= [])
-                                |> Preparation.setupSlides
+                            let
+                                extracted =
+                                    extractStructure slides
+                            in
+                            ( fixStructure model.capsule.structure extracted
+                            , extracted |> List.map .slides |> Preparation.setupSlides
+                            )
 
                         _ ->
-                            slides
+                            ( ( False, model.capsule.structure ), slides )
+
+                syncCmd =
+                    if dropped && model.capsule.structure /= newStructure then
+                        Api.updateCapsule { capsule | structure = newStructure } (\x -> App.Noop)
+
+                    else
+                        Cmd.none
             in
             ( { model | slideModel = slideModel, slides = newSlides }
-            , Preparation.slideSystem.commands slideModel
+            , Cmd.batch
+                [ syncCmd
+                , Preparation.slideSystem.commands slideModel
+                    |> Cmd.map (\x -> App.PreparationMsg (Preparation.DnD x))
+                ]
             )
 
         Preparation.GosMoved sMsg ->
             ( model, Cmd.none )
+
+
+{-| Creates a dummy capsule structure given a list of slides.
+-}
+extractStructure : List Preparation.Slide -> List Data.Gos
+extractStructure slides =
+    slides
+        |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
+        |> List.map (\( a, b ) -> a :: b)
+        |> List.map (List.filterMap .slide)
+        |> List.filter (\x -> x /= [])
+        |> List.map Data.gosFromSlides
+
+
+{-| Retrieves the information in the structure from the old structure given a structure that contains only slides.
+
+Returns the new structure as well as a boolean indicating if records have been lost.
+
+-}
+fixStructure : List Data.Gos -> List Data.Gos -> ( Bool, List Data.Gos )
+fixStructure old new =
+    let
+        -- The dict that associates the list of slides id to the gos in the previous list of gos
+        oldGos : Dict (List String) Data.Gos
+        oldGos =
+            Dict.fromList (List.map (\x -> ( List.map .uuid x.slides, x )) old)
+
+        -- The dict that associates the list of slides id to the gos in the new
+        -- list of gos, which doesn't contain any records or other stuff
+        newGos : Dict (List String) Data.Gos
+        newGos =
+            Dict.fromList (List.map (\x -> ( List.map .uuid x.slides, x )) new)
+
+        -- Retrieves the old gos from the new gos, allownig to get the record and other stuff back
+        fix : Data.Gos -> Data.Gos
+        fix gos =
+            case Dict.get (List.map .uuid gos.slides) oldGos of
+                Nothing ->
+                    gos
+
+                Just x ->
+                    x
+
+        -- Retrieves the new gos from the old gos, if not found and the old gos
+        -- has records and stuff, it will be lost
+        isBroken : Data.Gos -> Bool
+        isBroken gos =
+            case ( Dict.get (List.map .uuid gos.slides) newGos, gos.record ) of
+                -- if not found but the previous gos has a record, the record will be lost
+                ( Nothing, Just _ ) ->
+                    True
+
+                -- otherwise, everything is fine
+                _ ->
+                    False
+
+        broken =
+            List.any isBroken old
+
+        ret =
+            List.map fix new
+    in
+    ( broken, ret )
 
 
 {-| Subscriptions for the prepration view.
