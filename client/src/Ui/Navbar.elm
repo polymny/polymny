@@ -12,6 +12,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Lang
+import Route
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -29,7 +30,7 @@ navbar config user =
     in
     Element.row
         [ Background.color Colors.green1, Ui.wf, Font.color Colors.greyBackground ]
-        [ Ui.logo
+        [ Ui.navigationElement (Ui.Route Route.Home) [] Ui.logo
         , Element.row [ Font.size 20, Element.alignRight, Element.spacing 10 ]
             [ Maybe.map .username user |> Maybe.map Element.text |> Maybe.withDefault Element.none
             , Ui.secondary [ Ui.pr 10 ] { action = Ui.None, label = Strings.loginLogout lang }
