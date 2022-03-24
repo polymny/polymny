@@ -8,10 +8,13 @@ module Preparation.Updates exposing (update, subs)
 
 import Api.Capsule as Api
 import App.Types as App
+import Config exposing (Config)
 import Data.Capsule as Data
 import Dict exposing (Dict)
 import List.Extra
 import Preparation.Types as Preparation
+import RemoteData
+import Triplet
 
 
 {-| The update function of the preparation page.
@@ -22,8 +25,15 @@ update msg model =
         App.Preparation m ->
             case msg of
                 Preparation.DnD sMsg ->
-                    updateDnD sMsg m
-                        |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
+                    updateDnD sMsg m model.config
+                        |> Tuple.mapFirst (\( x, y ) -> { model | page = App.Preparation x })
+
+                Preparation.CapsuleUpdate id data ->
+                    if model.config.clientState.lastRequest == id + 1 then
+                        ( { model | page = App.Preparation { m | capsuleUpdate = data } }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -31,8 +41,8 @@ update msg model =
 
 {-| The update function for the DnD part of the page.
 -}
-updateDnD : Preparation.DnDMsg -> Preparation.Model -> ( Preparation.Model, Cmd App.Msg )
-updateDnD msg model =
+updateDnD : Preparation.DnDMsg -> Preparation.Model -> Config -> ( ( Preparation.Model, Config ), Cmd App.Msg )
+updateDnD msg model config =
     case msg of
         Preparation.SlideMoved sMsg ->
             let
@@ -65,14 +75,16 @@ updateDnD msg model =
                         _ ->
                             ( ( False, model.capsule.structure ), slides )
 
-                syncCmd =
+                ( syncCmd, newConfig ) =
                     if dropped && model.capsule.structure /= newStructure then
-                        Api.updateCapsule { capsule | structure = newStructure } (\x -> App.Noop)
+                        ( Api.updateCapsule { capsule | structure = newStructure } (\x -> App.Noop)
+                        , Config.incrementRequest config
+                        )
 
                     else
-                        Cmd.none
+                        ( Cmd.none, config )
             in
-            ( { model | slideModel = slideModel, slides = newSlides }
+            ( ( { model | slideModel = slideModel, slides = newSlides }, config )
             , Cmd.batch
                 [ syncCmd
                 , Preparation.slideSystem.commands slideModel
@@ -81,7 +93,7 @@ updateDnD msg model =
             )
 
         Preparation.GosMoved sMsg ->
-            ( model, Cmd.none )
+            ( ( model, config ), Cmd.none )
 
 
 {-| Creates a dummy capsule structure given a list of slides.

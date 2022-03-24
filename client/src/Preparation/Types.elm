@@ -12,6 +12,7 @@ quite a pain to deal with.
 import Data.Capsule as Data exposing (Capsule)
 import DnDList
 import DnDList.Groups
+import RemoteData
 
 
 {-| The type for the model of the preparation page.
@@ -21,6 +22,7 @@ type alias Model =
     , slides : List Slide
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
+    , capsuleUpdate : RemoteData.WebData ()
     }
 
 
@@ -32,6 +34,7 @@ init capsule =
     , slides = capsule.structure |> List.map .slides |> setupSlides
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model
+    , capsuleUpdate = RemoteData.NotAsked
     }
 
 
@@ -39,6 +42,7 @@ init capsule =
 -}
 type Msg
     = DnD DnDMsg
+    | CapsuleUpdate Int (RemoteData.WebData ())
 
 
 {-| The different DnD messages that can occur.

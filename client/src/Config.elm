@@ -1,5 +1,5 @@
 port module Config exposing
-    ( Config
+    ( Config, incrementRequest
     , ServerConfig, decodeServerConfig
     , ClientConfig, defaultClientConfig, encodeClientConfig, decodeClientConfig
     , ClientState, initClientState
@@ -13,7 +13,7 @@ port module Config exposing
 It defines the [`Config`](#Config) type which contain a lot of information that can be useful and that will be available
 at all times in the client.
 
-@docs Config
+@docs Config, incrementRequest
 
 
 # Server configuration
@@ -106,6 +106,7 @@ This will be stored and retrieved from the local storage.
   - `acquisitionInverted` at true means that the prompter should be on the bottom of the screen and the slide on the top
     during acquisition (useful for people who have their webcams below their screen).
   - `promptSize` is the size in pt of the text inside the prompter.
+  - `sortBy` describes how the user wants to sort their capsules.
 
 -}
 type alias ClientConfig =
@@ -167,12 +168,14 @@ It is not in the client config since it cannot be persisted, and is recreated wi
   - `lang` is the lang that will be used to display text. If the `lang` in the [`ClientConfig`](#ClientConfig) is set,
     this will mimic it, but otherwise, it will give a lang chosen either by requesting info from the browser or a
     default lang.
+  - `lastRequest` is the number of the last request sent. It allows us to ignore responses to old requests.
 
 -}
 type alias ClientState =
     { zone : Time.Zone
     , key : Browser.Navigation.Key
     , lang : Lang
+    , lastRequest : Int
     }
 
 
@@ -183,6 +186,7 @@ initClientState key lang =
     { key = key
     , zone = Time.utc
     , lang = Maybe.withDefault Lang.default lang
+    , lastRequest = 0
     }
 
 
@@ -194,6 +198,20 @@ type alias Config =
     , clientConfig : ClientConfig
     , clientState : ClientState
     }
+
+
+{-| Increments the lastRequest of the clientState easily.
+-}
+incrementRequest : Config -> Config
+incrementRequest config =
+    let
+        clientState =
+            config.clientState
+
+        newClientState =
+            { clientState | lastRequest = clientState.lastRequest + 1 }
+    in
+    { config | clientState = newClientState }
 
 
 {-| This type contains all the messages that trigger a modification of the config.
