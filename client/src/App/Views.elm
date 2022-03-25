@@ -28,6 +28,7 @@ view fullModel =
     , body =
         [ Element.layout
             [ Ui.wf
+            , Ui.hf
             , Font.size 18
             , Font.family
                 [ Font.typeface "Ubuntu"
@@ -51,23 +52,23 @@ view fullModel =
 viewContent : Result App.Error App.Model -> Element App.Msg
 viewContent fullModel =
     let
-        content =
+        ( content, popup ) =
             case fullModel of
                 Ok model ->
                     viewSuccess model
 
                 Err error ->
-                    viewError error
+                    ( viewError error, Element.none )
     in
-    Element.column [ Ui.wf, Ui.hf ]
+    Element.column [ Ui.wf, Ui.hf, Element.inFront popup ]
         [ Ui.navbar (fullModel |> Result.toMaybe |> Maybe.map .config) (fullModel |> Result.toMaybe |> Maybe.map .user)
-        , content
+        , Element.el [ Ui.wf, Ui.hf, Element.scrollbarY ] content
         ]
 
 
 {-| Returns the view if the model is correct.
 -}
-viewSuccess : App.Model -> Element App.Msg
+viewSuccess : App.Model -> ( Element App.Msg, Element App.Msg )
 viewSuccess model =
     case model.page of
         App.Home ->

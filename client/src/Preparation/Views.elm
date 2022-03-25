@@ -17,6 +17,7 @@ import Element.Background as Background
 import Element.Border as Border
 import List.Extra
 import Preparation.Types as Preparation
+import RemoteData
 import Strings
 import Ui.Colors as Colors
 import Ui.Utils as Ui
@@ -25,7 +26,7 @@ import Utils
 
 {-| The view function for the preparation page.
 -}
-view : Config -> User -> Preparation.Model -> Element App.Msg
+view : Config -> User -> Preparation.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
         inFront : Element App.Msg
@@ -33,12 +34,35 @@ view config user model =
             maybeDragSlide model.slideModel model.slides
                 |> Maybe.map (\x -> slideView config user model True x (Just x))
                 |> Maybe.withDefault Element.none
+
+        makeBorder : Element.Color -> Element App.Msg -> Element App.Msg
+        makeBorder c elt =
+            elt
+                |> Element.el [ Ui.p 10, Background.color c, Ui.r 10 ]
+                |> Element.el [ Element.alignBottom, Element.alignRight, Ui.p 10 ]
+
+        popup : Element App.Msg
+        popup =
+            case model.capsuleUpdate of
+                RemoteData.NotAsked ->
+                    Element.none
+
+                RemoteData.Loading v ->
+                    makeBorder Colors.yellow (Element.text "Saving")
+
+                RemoteData.Failure _ ->
+                    makeBorder Colors.yellow (Element.text "Error")
+
+                RemoteData.Success () ->
+                    makeBorder Colors.green1 (Element.text "Success")
     in
-    model.slides
+    ( model.slides
         |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
         |> filterConsecutiveVirtualGos
         |> List.map (gosView config user model)
         |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf, Element.inFront inFront ]
+    , popup
+    )
 
 
 {-| Displays a grain.

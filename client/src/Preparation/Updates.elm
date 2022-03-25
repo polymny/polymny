@@ -26,10 +26,14 @@ update msg model =
             case msg of
                 Preparation.DnD sMsg ->
                     updateDnD sMsg m model.config
-                        |> Tuple.mapFirst (\( x, y ) -> { model | page = App.Preparation x })
+                        |> Tuple.mapFirst (\( x, y ) -> { model | page = App.Preparation x, config = y })
 
                 Preparation.CapsuleUpdate id data ->
-                    if model.config.clientState.lastRequest == id + 1 then
+                    let
+                        _ =
+                            Debug.log "" ( model.config.clientState.lastRequest, id + 1 )
+                    in
+                    if model.config.clientState.lastRequest == id then
                         ( { model | page = App.Preparation { m | capsuleUpdate = data } }, Cmd.none )
 
                     else
@@ -77,7 +81,9 @@ updateDnD msg model config =
 
                 ( syncCmd, newConfig ) =
                     if dropped && model.capsule.structure /= newStructure then
-                        ( Api.updateCapsule { capsule | structure = newStructure } (\x -> App.Noop)
+                        ( Api.updateCapsule
+                            { capsule | structure = newStructure }
+                            (\x -> App.PreparationMsg (Preparation.CapsuleUpdate config.clientState.lastRequest x))
                         , Config.incrementRequest config
                         )
 

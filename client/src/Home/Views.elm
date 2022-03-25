@@ -30,12 +30,14 @@ import Utils
 
 {-| This function returns the view of the home page.
 -}
-view : Config -> User -> Element App.Msg
+view : Config -> User -> ( Element App.Msg, Element App.Msg )
 view config user =
-    Element.row [ Ui.wf, Ui.hf ]
+    ( Element.row [ Ui.wf, Ui.hf ]
         [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
         , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop ] (table config user)
         ]
+    , Element.none
+    )
 
 
 {-| This function returns the left colum view.

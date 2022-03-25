@@ -24,7 +24,7 @@ import Utils
 
 {-| The view function for the new capsule page.
 -}
-view : Config -> User -> NewCapsule.Model -> Element App.Msg
+view : Config -> User -> NewCapsule.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
         projectInput =
@@ -79,12 +79,14 @@ view config user model =
                 _ ->
                     Element.none
     in
-    Element.row [ Ui.wf, Ui.hf, Ui.p 10 ]
+    ( Element.row [ Ui.wf, Ui.hf, Ui.p 10 ]
         [ Element.el [ Ui.wfp 1 ] Element.none
         , Element.column [ Ui.wfp 6, Element.spacing 10, Element.alignTop ]
             [ projectInput, nameInput, pageContent, bottomBar ]
         , Element.el [ Ui.wfp 1 ] Element.none
         ]
+    , Element.none
+    )
 
 
 {-| Shows the slides with the delimiters.
