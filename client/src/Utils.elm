@@ -1,12 +1,19 @@
-module Utils exposing (andMap, tern, regroup, regroupFixed)
+module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed)
 
 {-| This module contains useful functions.
 
-@docs andMap, tern, regroup, regroupFixed
+@docs Confirmation, andMap, tern, regroup, regroupFixed
 
 -}
 
 import Json.Decode as Decode exposing (Decoder)
+
+
+{-| Type for things that require user confirmation.
+-}
+type Confirmation
+    = Request
+    | Confirm
 
 
 {-| This function allows to chain Decode.map and avoid being limited by the max map value in Decode.mapX.

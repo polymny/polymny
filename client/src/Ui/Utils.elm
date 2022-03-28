@@ -1,6 +1,7 @@
 module Ui.Utils exposing
-    ( wf, wfp, wpx, hf, hfp, hpx
-    , pl, pr, pt, pb, py, px, p
+    ( ar, al, at, ab
+    , wf, wfp, wpx, hf, hfp, hpx
+    , s, pl, pr, pt, pb, py, px, p
     , bl, br, bt, bb, by, bx, b
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
@@ -11,14 +12,19 @@ module Ui.Utils exposing
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
 
 
+# Align aliases
+
+@docs ar, al, at, ab
+
+
 # Width and height aliases
 
 @docs wf, wfp, wpx, hf, hfp, hpx
 
 
-# Padding aliases
+# Spacing and padding aliases
 
-@docs pl, pr, pt, pb, py, px, p
+@docs s, pl, pr, pt, pb, py, px, p
 
 
 # Border aliases
@@ -51,6 +57,34 @@ import Element
 import Element.Border as Border
 import Html.Attributes
 import Material.Icons.Types exposing (Icon)
+
+
+{-| An alias for align right.
+-}
+ar : Element.Attribute msg
+ar =
+    Element.alignRight
+
+
+{-| An alias for align left.
+-}
+al : Element.Attribute msg
+al =
+    Element.alignLeft
+
+
+{-| An alias for align top.
+-}
+at : Element.Attribute msg
+at =
+    Element.alignTop
+
+
+{-| An alias for align bottom.
+-}
+ab : Element.Attribute msg
+ab =
+    Element.alignBottom
 
 
 {-| An alias for `Element.width Element.fill`.
@@ -93,6 +127,13 @@ hfp x =
 hpx : Int -> Element.Attribute msg
 hpx x =
     Element.height (Element.px x)
+
+
+{-| An alias for Element.spacing.
+-}
+s : Int -> Element.Attribute msg
+s x =
+    Element.spacing x
 
 
 {-| An alias to have padding only on the left.

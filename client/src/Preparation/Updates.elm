@@ -15,6 +15,7 @@ import List.Extra
 import Preparation.Types as Preparation
 import RemoteData
 import Triplet
+import Utils
 
 
 {-| The update function of the preparation page.
@@ -38,6 +39,24 @@ update msg model =
 
                     else
                         ( model, Cmd.none )
+
+                Preparation.DeleteSlide Utils.Request slide ->
+                    ( { model | page = App.Preparation { m | deleteSlide = Just slide } }, Cmd.none )
+
+                Preparation.DeleteSlide Utils.Confirm slide ->
+                    let
+                        capsule =
+                            Data.deleteSlide slide m.capsule
+
+                        ( sync, newConfig ) =
+                            ( Api.updateCapsule capsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+                            , Config.incrementRequest model.config
+                            )
+                    in
+                    ( { model | page = App.Preparation (Preparation.init capsule), config = newConfig }
+                    , sync
+                    )
 
         _ ->
             ( model, Cmd.none )

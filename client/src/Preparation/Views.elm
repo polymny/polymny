@@ -16,10 +16,12 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import List.Extra
+import Material.Icons as Icons
 import Preparation.Types as Preparation
 import RemoteData
 import Strings
 import Ui.Colors as Colors
+import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
 
@@ -39,7 +41,7 @@ view config user model =
         makeBorder c elt =
             elt
                 |> Element.el [ Ui.p 10, Background.color c, Ui.r 10 ]
-                |> Element.el [ Element.alignBottom, Element.alignRight, Ui.p 10 ]
+                |> Element.el [ Ui.ab, Ui.ar, Ui.p 10 ]
 
         popup : Element App.Msg
         popup =
@@ -47,7 +49,7 @@ view config user model =
                 RemoteData.NotAsked ->
                     Element.none
 
-                RemoteData.Loading v ->
+                RemoteData.Loading _ ->
                     makeBorder Colors.yellow (Element.text "Saving")
 
                 RemoteData.Failure _ ->
@@ -118,7 +120,7 @@ slideView config user model ghost default s =
     case ( s, Maybe.andThen .slide s ) of
         ( Just slide, Just dataSlide ) ->
             let
-                inFront =
+                inFrontLabel =
                     Strings.dataCapsuleGrain config.clientState.lang 1
                         ++ " "
                         ++ String.fromInt (slide.gosId + 1)
@@ -129,16 +131,32 @@ slideView config user model ghost default s =
                         |> Element.text
                         |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
                         |> Utils.tern ghost Element.none
+
+                inFrontButtons =
+                    Element.row [ Ui.s 10, Ui.p 10, Ui.at, Ui.ar ]
+                        [ Ui.primaryIcon []
+                            { icon = Icons.delete
+                            , tooltip = Strings.actionsDeleteSlide config.clientState.lang
+                            , action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Confirm dataSlide))
+                            }
+                        ]
             in
             Element.el
                 (Ui.wf
                     :: Ui.pl 20
                     :: Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
-                    :: slideStyle model.slideModel slide.totalSlideId Drag
-                    ++ slideStyle model.slideModel slide.totalSlideId Drop
-                    ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
+                    :: Element.inFront inFrontButtons
+                    :: []
                 )
-                (Element.image [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Element.inFront inFront ]
+                (Element.image
+                    (Ui.wf
+                        :: Ui.b 1
+                        :: Border.color Colors.greyBorder
+                        :: Element.inFront inFrontLabel
+                        :: slideStyle model.slideModel slide.totalSlideId Drag
+                        ++ slideStyle model.slideModel slide.totalSlideId Drop
+                        ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
+                    )
                     { src = Data.slidePath model.capsule dataSlide
                     , description = ""
                     }
@@ -226,7 +244,7 @@ filterConsecutiveVirtualGosAux acc input =
 
 {-| Gets the last element of a non empty list.
 -}
-neListLast : ( a, List a ) -> a
+neListLast : NeList a -> a
 neListLast ( h, t ) =
     case t of
         [] ->

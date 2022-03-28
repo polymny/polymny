@@ -1,7 +1,7 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
     , Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..)
-    , Slide, slidePath, videoPath, gosVideoPath
+    , Slide, slidePath, videoPath, gosVideoPath, deleteSlide
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
@@ -24,7 +24,7 @@ module Data.Capsule exposing
 
 ## Slides
 
-@docs Slide, slidePath, videoPath, gosVideoPath
+@docs Slide, slidePath, videoPath, gosVideoPath, deleteSlide
 
 
 ## Records
@@ -171,6 +171,24 @@ videoPath capsule =
 gosVideoPath : Capsule -> Int -> String
 gosVideoPath capsule gos =
     assetPath capsule "tmp/gos_" ++ String.fromInt gos ++ ".mp4"
+
+
+{-| Removes a specific slide from a capsule.
+-}
+deleteSlide : Slide -> Capsule -> Capsule
+deleteSlide slide capsule =
+    let
+        gosMapper : Gos -> Gos
+        gosMapper gos =
+            { gos | slides = List.filter (\x -> x.uuid /= slide.uuid) gos.slides }
+
+        newStructure : List Gos
+        newStructure =
+            capsule.structure
+                |> List.map gosMapper
+                |> List.filter (\x -> x.slides /= [])
+    in
+    { capsule | structure = newStructure }
 
 
 {-| This type represents a record done by a webcam.

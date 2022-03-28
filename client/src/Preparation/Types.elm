@@ -13,6 +13,7 @@ import Data.Capsule as Data exposing (Capsule)
 import DnDList
 import DnDList.Groups
 import RemoteData
+import Utils
 
 
 {-| The type for the model of the preparation page.
@@ -23,6 +24,7 @@ type alias Model =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
+    , deleteSlide : Maybe Data.Slide
     }
 
 
@@ -35,6 +37,7 @@ init capsule =
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
+    , deleteSlide = Nothing
     }
 
 
@@ -43,6 +46,7 @@ init capsule =
 type Msg
     = DnD DnDMsg
     | CapsuleUpdate Int (RemoteData.WebData ())
+    | DeleteSlide Utils.Confirmation Data.Slide
 
 
 {-| The different DnD messages that can occur.
