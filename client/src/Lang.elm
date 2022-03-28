@@ -1,6 +1,6 @@
 module Lang exposing
     ( Lang(..), fromString, toString
-    , default, other
+    , default, other, question
     )
 
 {-| This module holds the lang type and the different strings represented in the different languages.
@@ -13,7 +13,7 @@ module Lang exposing
 
 # Utils functions
 
-@docs default, other
+@docs default, other, question
 
 -}
 
@@ -82,3 +82,15 @@ other lang =
 
         EnUs ->
             FrFr
+
+
+{-| Adds an interrogation mark to a string.
+-}
+question : (Lang -> String) -> Lang -> String
+question string lang =
+    case lang of
+        FrFr ->
+            string lang ++ " ?"
+
+        _ ->
+            string lang ++ "?"

@@ -1,8 +1,12 @@
-module Ui.Elements exposing (primary, primaryIcon, secondary, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin, spinner)
+module Ui.Elements exposing
+    ( primary, primaryIcon, secondary, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
+    , spinner, popup
+    )
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin, spinner
+@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin
+@docs spinner, popup
 
 -}
 
@@ -207,3 +211,21 @@ spin =
         { duration = 1000, options = [ Animation.loop, Animation.linear ] }
         [ P.rotate 0 ]
         [ P.rotate 360 ]
+
+
+{-| A popup.
+-}
+popup : Int -> String -> Element msg -> Element msg
+popup size titleText content =
+    Element.row [ Ui.wf, Ui.hf, Background.color (Element.rgba255 0 0 0 0.5) ]
+        [ Element.el [ Ui.wfp 1 ] Element.none
+        , Element.column [ Ui.hf, Ui.wfp size ]
+            [ Element.el [ Ui.hfp 1 ] Element.none
+            , Element.column [ Ui.wf, Ui.hfp size, Background.color Colors.green1 ]
+                [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)
+                , Element.el [ Ui.wf, Ui.hf, Background.color Colors.greyBackground, Ui.p 10 ] content
+                ]
+            , Element.el [ Ui.hfp 1 ] Element.none
+            ]
+        , Element.el [ Ui.wfp 1 ] Element.none
+        ]

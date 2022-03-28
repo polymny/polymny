@@ -15,6 +15,8 @@ import DnDList.Groups
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
+import Lang
 import List.Extra
 import Material.Icons as Icons
 import Preparation.Types as Preparation
@@ -45,17 +47,34 @@ view config user model =
 
         popup : Element App.Msg
         popup =
-            case model.capsuleUpdate of
-                RemoteData.NotAsked ->
+            case ( model.deleteSlide, model.capsuleUpdate ) of
+                ( Just s, _ ) ->
+                    Element.column [ Ui.wf, Ui.hf ]
+                        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                            [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide config.clientState.lang) ]
+                        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                            [ Ui.secondary []
+                                { action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Cancel s))
+                                , label = Strings.uiCancel config.clientState.lang
+                                }
+                            , Ui.primary []
+                                { action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Confirm s))
+                                , label = Strings.uiConfirm config.clientState.lang
+                                }
+                            ]
+                        ]
+                        |> Ui.popup 1 (Strings.actionsDeleteSlide config.clientState.lang)
+
+                ( _, RemoteData.NotAsked ) ->
                     Element.none
 
-                RemoteData.Loading _ ->
+                ( _, RemoteData.Loading _ ) ->
                     makeBorder Colors.yellow (Element.text "Saving")
 
-                RemoteData.Failure _ ->
+                ( _, RemoteData.Failure _ ) ->
                     makeBorder Colors.yellow (Element.text "Error")
 
-                RemoteData.Success () ->
+                ( _, RemoteData.Success () ) ->
                     makeBorder Colors.green1 (Element.text "Success")
     in
     ( model.slides
@@ -137,7 +156,7 @@ slideView config user model ghost default s =
                         [ Ui.primaryIcon []
                             { icon = Icons.delete
                             , tooltip = Strings.actionsDeleteSlide config.clientState.lang
-                            , action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Confirm dataSlide))
+                            , action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Request dataSlide))
                             }
                         ]
             in

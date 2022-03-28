@@ -14,6 +14,7 @@ import Json.Decode as Decode exposing (Decoder)
 type Confirmation
     = Request
     | Confirm
+    | Cancel
 
 
 {-| This function allows to chain Decode.map and avoid being limited by the max map value in Decode.mapX.

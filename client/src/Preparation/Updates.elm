@@ -43,6 +43,9 @@ update msg model =
                 Preparation.DeleteSlide Utils.Request slide ->
                     ( { model | page = App.Preparation { m | deleteSlide = Just slide } }, Cmd.none )
 
+                Preparation.DeleteSlide Utils.Cancel _ ->
+                    ( { model | page = App.Preparation { m | deleteSlide = Nothing } }, Cmd.none )
+
                 Preparation.DeleteSlide Utils.Confirm slide ->
                     let
                         capsule =
