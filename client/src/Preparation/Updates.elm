@@ -34,7 +34,7 @@ update msg model =
                         _ =
                             Debug.log "" ( model.config.clientState.lastRequest, id + 1 )
                     in
-                    if model.config.clientState.lastRequest == id then
+                    if model.config.clientState.lastRequest == id + 1 then
                         ( { model | page = App.Preparation { m | capsuleUpdate = data } }, Cmd.none )
 
                     else
@@ -112,7 +112,7 @@ updateDnD msg model config =
                     else
                         ( Cmd.none, config )
             in
-            ( ( { model | slideModel = slideModel, slides = newSlides }, config )
+            ( ( { model | slideModel = slideModel, slides = newSlides }, newConfig )
             , Cmd.batch
                 [ syncCmd
                 , Preparation.slideSystem.commands slideModel
