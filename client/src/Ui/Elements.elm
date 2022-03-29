@@ -51,7 +51,7 @@ primary attr { label, action } =
 addPrimaryAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
 addPrimaryAttr attr =
     Border.rounded 100
-        :: Background.color Colors.green1
+        :: Background.color Colors.green2
         :: Font.color Colors.greyBackground
         :: Ui.p 12
         :: attr
@@ -70,7 +70,7 @@ addPrimaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg
 addPrimaryIconAttr attr =
     Border.rounded 5
         :: Ui.p 2
-        :: Background.color Colors.green1
+        :: Background.color Colors.green2
         :: Font.color Colors.greyBackground
         :: attr
 
@@ -111,7 +111,7 @@ addSecondaryIconAttr attr =
     Border.rounded 5
         :: Ui.b 1
         :: Border.color Colors.greyBorder
-        :: Font.color Colors.green1
+        :: Font.color Colors.green2
         :: Ui.p 2
         :: Font.bold
         :: attr
@@ -221,7 +221,7 @@ popup size titleText content =
         [ Element.el [ Ui.wfp 1 ] Element.none
         , Element.column [ Ui.hf, Ui.wfp size ]
             [ Element.el [ Ui.hfp 1 ] Element.none
-            , Element.column [ Ui.wf, Ui.hfp size, Background.color Colors.green1 ]
+            , Element.column [ Ui.wf, Ui.hfp size, Background.color Colors.green2 ]
                 [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)
                 , Element.el [ Ui.wf, Ui.hf, Background.color Colors.greyBackground, Ui.p 10 ] content
                 ]
