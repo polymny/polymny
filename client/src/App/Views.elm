@@ -31,16 +31,12 @@ view fullModel =
             , Ui.hf
             , Font.size 18
             , Font.family
-                [ Font.typeface "Ubuntu"
+                [ Font.typeface "Omnes"
+                , Font.typeface "Ubuntu"
                 , Font.typeface "Cantarell"
                 ]
             , Background.color Colors.greyBackground
             , Font.color Colors.greyFont
-            , Font.size 18
-            , Font.family
-                [ Font.typeface "Ubuntu"
-                , Font.typeface "Cantarell"
-                ]
             ]
             (viewContent fullModel)
         ]
@@ -63,6 +59,7 @@ viewContent fullModel =
     Element.column [ Ui.wf, Ui.hf, Element.inFront popup ]
         [ Ui.navbar (fullModel |> Result.toMaybe |> Maybe.map .config) (fullModel |> Result.toMaybe |> Maybe.map .user)
         , Element.el [ Ui.wf, Ui.hf, Element.scrollbarY ] content
+        , Ui.bottombar (fullModel |> Result.toMaybe |> Maybe.map .config)
         ]
 
 

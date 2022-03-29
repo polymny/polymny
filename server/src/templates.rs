@@ -91,6 +91,22 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
                     opacity: 0;
                 }
             }
+
+            @font-face {
+                font-family: "Omnes";
+                font-weight: normal;
+                src: url('/dist/fonts/Omnes Regular.otf') format('opentype');
+            }
+
+            @font-face {
+                font-family: "Omnes";
+                font-weight: bold;
+                src: url('/dist/fonts/OmnesSemiBold.otf') format('opentype');
+            }
+
+            * {
+                font-family: "Omnes";
+            }
         </style>
     </head>
     <body>
@@ -118,6 +134,22 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
                 50% {
                     opacity: 0;
                 }
+            }
+
+            @font-face {
+                font-family: "Omnes";
+                font-weight: normal;
+                src: url('/dist/fonts/Omnes Regular.otf') format('opentype');
+            }
+
+            @font-face {
+                font-family: "Omnes";
+                font-weight: bold;
+                src: url('/dist/fonts/OmnesSemiBold.otf') format('opentype');
+            }
+
+            * {
+                font-family: "Omnes";
             }
         </style>
     </head>
