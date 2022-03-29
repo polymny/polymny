@@ -112,7 +112,7 @@ updateDnD msg model config =
                     else
                         ( Cmd.none, config )
             in
-            ( ( { model | slideModel = slideModel, slides = newSlides }, newConfig )
+            ( ( { model | slideModel = slideModel, capsule = { capsule | structure = newStructure }, slides = newSlides }, newConfig )
             , Cmd.batch
                 [ syncCmd
                 , Preparation.slideSystem.commands slideModel
