@@ -1,8 +1,8 @@
-module Ui.Colors exposing (green1, green2, green3, yellow, white, black, grey, greyBackground, greyFont, greyBorder)
+module Ui.Colors exposing (green1, green2, green3, yellow, white, black, grey, greyBackground, greyFont, greyBorder, tableBackground)
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, white, black, grey, greyBackground, greyFont, greyBorder
+@docs green1, green2, green3, yellow, white, black, grey, greyBackground, greyFont, greyBorder, tableBackground
 
 -}
 
@@ -109,3 +109,10 @@ greyFont =
 greyBorder : Element.Color
 greyBorder =
     grey 5
+
+
+{-| This color is the background of the dark lines of tables.
+-}
+tableBackground : Element.Color
+tableBackground =
+    Element.rgb 228 233 230

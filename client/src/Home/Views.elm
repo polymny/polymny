@@ -152,7 +152,7 @@ makeCell extraAttr index element =
     Element.el
         (Ui.p 10
             :: Ui.hf
-            :: (Background.color <| Utils.tern (modBy 2 index == 0) (Colors.grey 6) (Colors.grey 7))
+            :: (Background.color <| Utils.tern (modBy 2 index == 0) Colors.tableBackground Colors.greyBackground)
             :: extraAttr
         )
         (Element.el [ Ui.wf, Ui.cy ] element)
@@ -299,7 +299,11 @@ capsuleProgress lang capsule =
                 (makeText (Strings.stepsPublicationPublication lang))
 
         duration =
-            Element.el [ Ui.p 10 ] <| Element.text <| TimeUtils.formatDuration capsule.duration
+            Utils.tern (capsule.duration /= 0) (Just capsule.duration) Nothing
+                |> Maybe.map TimeUtils.formatDuration
+                |> Maybe.map Element.text
+                |> Maybe.map (Element.el [ Ui.p 10 ])
+                |> Maybe.withDefault Element.none
     in
     Element.row [ Ui.hf, Ui.wf, Element.centerY ]
         [ acquisition, production, publication, duration ]
@@ -334,9 +338,6 @@ progressIcons config poc =
 
                         _ ->
                             Element.none
-
-                x =
-                    0
             in
             Element.row [ Element.spacing 10 ]
                 [ watch ]
