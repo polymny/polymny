@@ -65,17 +65,15 @@ view config user model =
                         ]
                         |> Ui.popup 1 (Strings.actionsDeleteSlide config.clientState.lang)
 
-                ( _, RemoteData.NotAsked ) ->
+                ( _, _ ) ->
                     Element.none
 
-                ( _, RemoteData.Loading _ ) ->
-                    makeBorder Colors.yellow (Element.text "Saving")
-
-                ( _, RemoteData.Failure _ ) ->
-                    makeBorder Colors.yellow (Element.text "Error")
-
-                ( _, RemoteData.Success () ) ->
-                    makeBorder Colors.green1 (Element.text "Success")
+        -- ( _, RemoteData.Loading _ ) ->
+        --     makeBorder Colors.yellow (Element.text "Saving")
+        -- ( _, RemoteData.Failure _ ) ->
+        --     makeBorder Colors.yellow (Element.text "Error")
+        -- ( _, RemoteData.Success () ) ->
+        --     makeBorder Colors.green1 (Element.text "Success")
     in
     ( model.slides
         |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
