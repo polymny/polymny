@@ -94,40 +94,50 @@ gosView config user model ( head, gos ) =
 
         last =
             neListLast ( head, gos )
+
+        addSlide =
+            Ui.primaryIcon [ Ui.cy ]
+                { icon = Icons.add
+                , action = Ui.None
+                , tooltip = Strings.stepsPreparationAddSlide config.clientState.lang
+                }
+
+        content =
+            case ( head.slide, gos, isDragging ) of
+                ( Nothing, [], False ) ->
+                    -- Virtual gos
+                    Element.none
+                        |> Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ]
+                        |> Element.el
+                            (Ui.wf
+                                :: Ui.p 20
+                                :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
+                                :: slideStyle model.slideModel head.totalSlideId Drop
+                            )
+                        |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+
+                ( Nothing, [], True ) ->
+                    -- Virtual gos
+                    Element.none
+                        |> Element.el [ Ui.wf, Ui.p 15 ]
+                        |> Element.el [ Ui.wf, Ui.bt 1, Border.color (Colors.grey 6), Background.color (Colors.grey 6) ]
+                        |> Element.el
+                            (Ui.wf
+                                :: Ui.p 5
+                                :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
+                                :: slideStyle model.slideModel head.totalSlideId Drop
+                            )
+                        |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+
+                _ ->
+                    (head :: gos)
+                        |> List.filter (\x -> x.slide /= Nothing)
+                        |> Utils.regroupFixed config.clientConfig.zoomLevel
+                        |> List.map (List.map (slideView config user model False last))
+                        |> List.map (Element.row [ Ui.wf ])
+                        |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
     in
-    case ( head.slide, gos, isDragging ) of
-        ( Nothing, [], False ) ->
-            -- Virtual gos
-            Element.none
-                |> Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ]
-                |> Element.el
-                    (Ui.wf
-                        :: Ui.p 20
-                        :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
-                        :: slideStyle model.slideModel head.totalSlideId Drop
-                    )
-                |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
-
-        ( Nothing, [], True ) ->
-            -- Virtual gos
-            Element.none
-                |> Element.el [ Ui.wf, Ui.p 15 ]
-                |> Element.el [ Ui.wf, Ui.bt 1, Border.color (Colors.grey 6), Background.color (Colors.grey 6) ]
-                |> Element.el
-                    (Ui.wf
-                        :: Ui.p 5
-                        :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
-                        :: slideStyle model.slideModel head.totalSlideId Drop
-                    )
-                |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
-
-        _ ->
-            (head :: gos)
-                |> List.filter (\x -> x.slide /= Nothing)
-                |> Utils.regroupFixed config.clientConfig.zoomLevel
-                |> List.map (List.map (slideView config user model False last))
-                |> List.map (Element.row [ Ui.wf ])
-                |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+    Element.row [ Ui.s 10, Ui.wf ] [ content, addSlide ]
 
 
 {-| Displays a slide.
