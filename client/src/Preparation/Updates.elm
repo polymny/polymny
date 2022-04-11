@@ -15,6 +15,7 @@ import File
 import File.Select as Select
 import List.Extra
 import Preparation.Types as Preparation
+import RemoteData
 import Utils
 
 
@@ -85,24 +86,50 @@ updateExtra msg model =
                             [ "image/*", "application/pdf" ]
 
                 cmd =
-                    Select.file mimes (\x -> App.PreparationMsg (Preparation.Extra (Preparation.Selected changeSlide x)))
+                    Select.file mimes (\x -> App.PreparationMsg (Preparation.Extra (Preparation.Selected changeSlide x Nothing)))
             in
             ( model, cmd )
 
-        Preparation.Selected changeSlide file ->
-            if File.mime file == "application/pdf" then
-                ( model, Cmd.none )
+        Preparation.Selected changeSlide file page ->
+            case ( File.mime file, page ) of
+                ( "application/pdf", Nothing ) ->
+                    ( { model | changeSlideForm = Just { slide = changeSlide, file = file, page = "1" } }, Cmd.none )
 
-            else
-                case changeSlide of
-                    Preparation.AddSlide gos ->
-                        ( model, Api.addSlide model.capsule gos 0 file (\_ -> App.Noop) )
+                _ ->
+                    let
+                        p =
+                            Maybe.withDefault 0 page
 
-                    Preparation.AddGos gos ->
-                        ( model, Api.addGos model.capsule (Debug.log "gos" gos) 0 file (\_ -> App.Noop) )
+                        mkMsg x =
+                            App.PreparationMsg <| Preparation.Extra <| Preparation.ChangeSlideUpdated x
+                    in
+                    case changeSlide of
+                        Preparation.AddSlide gos ->
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide model.capsule gos p file mkMsg )
 
-                    _ ->
-                        ( model, Cmd.none )
+                        Preparation.AddGos gos ->
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos model.capsule gos p file mkMsg )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+        Preparation.PageChanged page ->
+            let
+                changeSlideForm =
+                    Maybe.map (\x -> { x | page = page }) model.changeSlideForm
+            in
+            ( { model | changeSlideForm = changeSlideForm }, Cmd.none )
+
+        Preparation.PageCancel ->
+            ( { model | changeSlideForm = Nothing }, Cmd.none )
+
+        Preparation.ChangeSlideUpdated d ->
+            case d of
+                RemoteData.Success c ->
+                    ( Preparation.init c, Cmd.none )
+
+                _ ->
+                    ( { model | changeSlide = d }, Cmd.none )
 
 
 {-| The update function for the DnD part of the page.

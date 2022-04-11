@@ -26,7 +26,8 @@ type alias Model =
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
     , deleteSlide : Maybe Data.Slide
-    , changeSlide : RemoteData.WebData ChangeSlideForm
+    , changeSlide : RemoteData.WebData Data.Capsule
+    , changeSlideForm : Maybe ChangeSlideForm
     }
 
 
@@ -58,6 +59,7 @@ init capsule =
     , capsuleUpdate = RemoteData.NotAsked
     , deleteSlide = Nothing
     , changeSlide = RemoteData.NotAsked
+    , changeSlideForm = Nothing
     }
 
 
@@ -74,7 +76,10 @@ type Msg
 -}
 type ExtraMsg
     = Select ChangeSlide
-    | Selected ChangeSlide File
+    | Selected ChangeSlide File (Maybe Int)
+    | PageChanged String
+    | PageCancel
+    | ChangeSlideUpdated (RemoteData.WebData Data.Capsule)
 
 
 {-| The different DnD messages that can occur.

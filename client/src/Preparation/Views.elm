@@ -16,6 +16,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Lang
 import List.Extra
 import Material.Icons as Icons
@@ -33,6 +34,9 @@ import Utils
 view : Config -> User -> Preparation.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
+        lang =
+            config.clientState.lang
+
         inFront : Element App.Msg
         inFront =
             maybeDragSlide model.slideModel model.slides
@@ -47,25 +51,93 @@ view config user model =
 
         popup : Element App.Msg
         popup =
-            case ( model.deleteSlide, model.capsuleUpdate ) of
-                ( Just s, _ ) ->
+            case ( model.deleteSlide, model.changeSlideForm, model.capsuleUpdate ) of
+                ( Just s, _, _ ) ->
                     Element.column [ Ui.wf, Ui.hf ]
                         [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
-                            [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide config.clientState.lang) ]
+                            [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide lang) ]
                         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
                             [ Ui.secondary []
                                 { action = mkUiMsg (Preparation.DeleteSlide Utils.Cancel s)
-                                , label = Strings.uiCancel config.clientState.lang
+                                , label = Strings.uiCancel lang
                                 }
                             , Ui.primary []
                                 { action = mkUiMsg (Preparation.DeleteSlide Utils.Confirm s)
-                                , label = Strings.uiConfirm config.clientState.lang
+                                , label = Strings.uiConfirm lang
                                 }
                             ]
                         ]
-                        |> Ui.popup 1 (Strings.actionsDeleteSlide config.clientState.lang)
+                        |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
 
-                ( _, _ ) ->
+                ( _, Just f, _ ) ->
+                    let
+                        page =
+                            case String.toInt f.page of
+                                Just x ->
+                                    if x > 0 then
+                                        Just x
+
+                                    else
+                                        Nothing
+
+                                _ ->
+                                    Nothing
+
+                        title =
+                            case f.slide of
+                                Preparation.ReplaceSlide _ ->
+                                    Strings.stepsPreparationReplaceSlideOrAddExternalResource
+
+                                Preparation.AddSlide _ ->
+                                    Strings.stepsPreparationAddSlide
+
+                                Preparation.AddGos _ ->
+                                    Strings.stepsPreparationCreateGrain
+
+                        textLabel =
+                            Lang.question Strings.stepsPreparationWhichPage lang
+
+                        textInput =
+                            Input.text [ Ui.wf, Ui.cy ]
+                                { label = Input.labelAbove [] (Element.text textLabel)
+                                , onChange = \x -> mkExtra (Preparation.PageChanged x)
+                                , placeholder = Nothing
+                                , text = f.page
+                                }
+
+                        buttonBar =
+                            Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                                (case model.changeSlide of
+                                    RemoteData.NotAsked ->
+                                        [ Ui.secondary []
+                                            { action = mkUiExtra Preparation.PageCancel
+                                            , label = Strings.uiCancel lang
+                                            }
+                                        , case page of
+                                            Just p ->
+                                                Ui.primary []
+                                                    { action = mkUiExtra (Preparation.Selected f.slide f.file (Just p))
+                                                    , label = Strings.uiConfirm lang
+                                                    }
+
+                                            _ ->
+                                                Element.text (Strings.stepsPreparationInsertNumberGreaterThanZero lang)
+                                        ]
+
+                                    RemoteData.Loading _ ->
+                                        [ Ui.primaryIcon [] { action = Ui.None, icon = Ui.spinner, tooltip = "" } ]
+
+                                    _ ->
+                                        []
+                                )
+                    in
+                    Element.column [ Ui.wf, Ui.hf ]
+                        [ textInput
+                        , buttonBar
+                        ]
+                        |> Ui.popup 1 (title lang)
+
+                ( _, _, _ ) ->
                     Element.none
 
         -- ( _, RemoteData.Loading _ ) ->
@@ -102,7 +174,7 @@ gosView config user model ( head, gos ) =
                     Ui.primaryIcon [ Ui.cy ]
                         { icon = Icons.add
                         , action = mkUiExtra (Preparation.Select (Preparation.AddGos (head.totalGosId // 2)))
-                        , tooltip = Strings.stepsPreparationAddSlide config.clientState.lang
+                        , tooltip = Strings.stepsPreparationCreateGrain config.clientState.lang
                         }
 
                 _ ->
