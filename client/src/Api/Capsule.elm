@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos
+@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide
 
 -}
 
@@ -66,6 +66,18 @@ addGos : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> 
 addGos capsule gos page file toMsg =
     Api.postWithTrackerJson "toto"
         { url = "/api/add-gos/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
+        , body = Http.fileBody file
+        , decoder = Data.decodeCapsule
+        , toMsg = toMsg
+        }
+
+
+{-| Replaces a slide.
+-}
+replaceSlide : Data.Capsule -> Data.Slide -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
+replaceSlide capsule slide page file toMsg =
+    Api.postWithTrackerJson "toto"
+        { url = "/api/replace-slide/" ++ capsule.id ++ "/" ++ slide.uuid ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
         , toMsg = toMsg

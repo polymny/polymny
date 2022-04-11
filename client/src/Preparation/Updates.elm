@@ -110,8 +110,8 @@ updateExtra msg model =
                         Preparation.AddGos gos ->
                             ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos model.capsule gos p file mkMsg )
 
-                        _ ->
-                            ( model, Cmd.none )
+                        Preparation.ReplaceSlide slide ->
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide model.capsule slide p file mkMsg )
 
         Preparation.PageChanged page ->
             let

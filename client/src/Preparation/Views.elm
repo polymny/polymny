@@ -245,6 +245,11 @@ slideView config user model ghost default s =
                 inFrontButtons =
                     Element.row [ Ui.s 10, Ui.p 10, Ui.at, Ui.ar ]
                         [ Ui.primaryIcon []
+                            { icon = Icons.image
+                            , tooltip = Strings.stepsPreparationReplaceSlideOrAddExternalResource config.clientState.lang
+                            , action = mkUiExtra (Preparation.Select (Preparation.ReplaceSlide dataSlide))
+                            }
+                        , Ui.primaryIcon []
                             { icon = Icons.delete
                             , tooltip = Strings.actionsDeleteSlide config.clientState.lang
                             , action = mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
