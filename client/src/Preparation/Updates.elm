@@ -11,10 +11,10 @@ import App.Types as App
 import Config exposing (Config)
 import Data.Capsule as Data
 import Dict exposing (Dict)
+import File
+import File.Select as Select
 import List.Extra
 import Preparation.Types as Preparation
-import RemoteData
-import Triplet
 import Utils
 
 
@@ -61,8 +61,48 @@ update msg model =
                     , sync
                     )
 
+                Preparation.Extra sMsg ->
+                    updateExtra sMsg m
+                        |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
+
         _ ->
             ( model, Cmd.none )
+
+
+{-| The update function that deals with extra resources.
+-}
+updateExtra : Preparation.ExtraMsg -> Preparation.Model -> ( Preparation.Model, Cmd App.Msg )
+updateExtra msg model =
+    case msg of
+        Preparation.Select changeSlide ->
+            let
+                mimes =
+                    case changeSlide of
+                        Preparation.ReplaceSlide _ ->
+                            [ "image/*", "application/pdf", "video/*" ]
+
+                        _ ->
+                            [ "image/*", "application/pdf" ]
+
+                cmd =
+                    Select.file mimes (\x -> App.PreparationMsg (Preparation.Extra (Preparation.Selected changeSlide x)))
+            in
+            ( model, cmd )
+
+        Preparation.Selected changeSlide file ->
+            if File.mime file == "application/pdf" then
+                ( model, Cmd.none )
+
+            else
+                case changeSlide of
+                    Preparation.AddSlide gos ->
+                        ( model, Api.addSlide model.capsule gos 0 file (\_ -> App.Noop) )
+
+                    Preparation.AddGos gos ->
+                        ( model, Api.addGos model.capsule (Debug.log "gos" gos) 0 file (\_ -> App.Noop) )
+
+                    _ ->
+                        ( model, Cmd.none )
 
 
 {-| The update function for the DnD part of the page.

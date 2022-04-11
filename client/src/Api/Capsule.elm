@@ -1,17 +1,16 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule
+@docs uploadSlideShow, updateCapsule, addSlide, addGos
 
 -}
 
 import Api.Utils as Api
 import Data.Capsule as Data
-import File
+import File exposing (File)
 import FileValue
 import Http
-import Json.Decode as Decode
 import RemoteData exposing (WebData)
 
 
@@ -45,5 +44,29 @@ updateCapsule capsule toMsg =
     Api.post
         { url = "/api/update-capsule/"
         , body = Http.jsonBody (Data.encodeCapsule capsule)
+        , toMsg = toMsg
+        }
+
+
+{-| Adds a slide to a gos.
+-}
+addSlide : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
+addSlide capsule gos page file toMsg =
+    Api.postWithTrackerJson "toto"
+        { url = "/api/add-slide/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
+        , body = Http.fileBody file
+        , decoder = Data.decodeCapsule
+        , toMsg = toMsg
+        }
+
+
+{-| Adds a gos to a structure.
+-}
+addGos : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
+addGos capsule gos page file toMsg =
+    Api.postWithTrackerJson "toto"
+        { url = "/api/add-gos/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
+        , body = Http.fileBody file
+        , decoder = Data.decodeCapsule
         , toMsg = toMsg
         }

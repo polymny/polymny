@@ -54,11 +54,11 @@ view config user model =
                             [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide config.clientState.lang) ]
                         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
                             [ Ui.secondary []
-                                { action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Cancel s))
+                                { action = mkUiMsg (Preparation.DeleteSlide Utils.Cancel s)
                                 , label = Strings.uiCancel config.clientState.lang
                                 }
                             , Ui.primary []
-                                { action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Confirm s))
+                                { action = mkUiMsg (Preparation.DeleteSlide Utils.Confirm s)
                                 , label = Strings.uiConfirm config.clientState.lang
                                 }
                             ]
@@ -96,11 +96,22 @@ gosView config user model ( head, gos ) =
             neListLast ( head, gos )
 
         addSlide =
-            Ui.primaryIcon [ Ui.cy ]
-                { icon = Icons.add
-                , action = Ui.None
-                , tooltip = Strings.stepsPreparationAddSlide config.clientState.lang
-                }
+            case ( head.slide, gos ) of
+                ( Nothing, [] ) ->
+                    -- Virtual gos, the button will create a new gos
+                    Ui.primaryIcon [ Ui.cy ]
+                        { icon = Icons.add
+                        , action = mkUiExtra (Preparation.Select (Preparation.AddGos (head.totalGosId // 2)))
+                        , tooltip = Strings.stepsPreparationAddSlide config.clientState.lang
+                        }
+
+                _ ->
+                    -- Real gos, the button will add a slide at the end of the gos
+                    Ui.primaryIcon [ Ui.cy ]
+                        { icon = Icons.add
+                        , action = mkUiExtra (Preparation.Select (Preparation.AddSlide head.gosId))
+                        , tooltip = Strings.stepsPreparationAddSlide config.clientState.lang
+                        }
 
         content =
             case ( head.slide, gos, isDragging ) of
@@ -164,17 +175,16 @@ slideView config user model ghost default s =
                         [ Ui.primaryIcon []
                             { icon = Icons.delete
                             , tooltip = Strings.actionsDeleteSlide config.clientState.lang
-                            , action = Ui.Msg (App.PreparationMsg (Preparation.DeleteSlide Utils.Request dataSlide))
+                            , action = mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
                             }
                         ]
             in
             Element.el
-                (Ui.wf
-                    :: Ui.pl 20
-                    :: Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
-                    :: Element.inFront inFrontButtons
-                    :: []
-                )
+                [ Ui.wf
+                , Ui.pl 20
+                , Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
+                , Element.inFront inFrontButtons
+                ]
                 (Element.image
                     (Ui.wf
                         :: Ui.b 1
@@ -231,7 +241,7 @@ slideStyle model totalSlideId options =
             []
     )
         |> List.map Element.htmlAttribute
-        |> List.map (Element.mapAttribute (\x -> App.PreparationMsg (Preparation.DnD x)))
+        |> List.map (Element.mapAttribute mkDnD)
 
 
 {-| An alias to easily describe non empty lists.
@@ -279,3 +289,45 @@ neListLast ( h, t ) =
 
         h1 :: t1 ->
             neListLast ( h1, t1 )
+
+
+{-| Easily creates a preparation msg.
+-}
+mkMsg : Preparation.Msg -> App.Msg
+mkMsg msg =
+    App.PreparationMsg msg
+
+
+{-| Easily creates a dnd msg.
+-}
+mkDnD : Preparation.DnDMsg -> App.Msg
+mkDnD msg =
+    App.PreparationMsg (Preparation.DnD msg)
+
+
+{-| Easily creates a extra msg.
+-}
+mkExtra : Preparation.ExtraMsg -> App.Msg
+mkExtra msg =
+    App.PreparationMsg (Preparation.Extra msg)
+
+
+{-| Easily creates the Ui.Msg for preparation msg.
+-}
+mkUiMsg : Preparation.Msg -> Ui.Action App.Msg
+mkUiMsg msg =
+    mkMsg msg |> Ui.Msg
+
+
+{-| Easily creates the Ui.Msg for dnd msg.
+-}
+mkUiDnD : Preparation.DnDMsg -> Ui.Action App.Msg
+mkUiDnD msg =
+    mkDnD msg |> Ui.Msg
+
+
+{-| Easily creates the Ui.Msg for extra msg.
+-}
+mkUiExtra : Preparation.ExtraMsg -> Ui.Action App.Msg
+mkUiExtra msg =
+    mkExtra msg |> Ui.Msg

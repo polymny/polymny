@@ -1,17 +1,18 @@
-module Preparation.Types exposing (Model, Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), DnDMsg(..), enumerate)
+module Preparation.Types exposing (Model, ChangeSlideForm, ChangeSlide(..), Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), ExtraMsg(..), DnDMsg(..), enumerate)
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
 In all the following documentation, DnD refers to Drag'n'Drop. It is necessary to have a user-friendly interface, but is
 quite a pain to deal with.
 
-@docs Model, Slide, slideSystem, gosSystem, setupSlides, init, Msg, DnDMsg, enumerate
+@docs Model, ChangeSlideForm, ChangeSlide, Slide, slideSystem, gosSystem, setupSlides, init, Msg, ExtraMsg, DnDMsg, enumerate
 
 -}
 
 import Data.Capsule as Data exposing (Capsule)
 import DnDList
 import DnDList.Groups
+import File exposing (File)
 import RemoteData
 import Utils
 
@@ -25,7 +26,25 @@ type alias Model =
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
     , deleteSlide : Maybe Data.Slide
+    , changeSlide : RemoteData.WebData ChangeSlideForm
     }
+
+
+{-| The content of the form to change or add a slide.
+-}
+type alias ChangeSlideForm =
+    { slide : ChangeSlide
+    , page : String
+    , file : File
+    }
+
+
+{-| The different possibilities for changing a slide.
+-}
+type ChangeSlide
+    = ReplaceSlide Data.Slide
+    | AddSlide Int
+    | AddGos Int
 
 
 {-| A helper function to initialiaze a model.
@@ -38,6 +57,7 @@ init capsule =
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
     , deleteSlide = Nothing
+    , changeSlide = RemoteData.NotAsked
     }
 
 
@@ -47,6 +67,14 @@ type Msg
     = DnD DnDMsg
     | CapsuleUpdate Int (RemoteData.WebData ())
     | DeleteSlide Utils.Confirmation Data.Slide
+    | Extra ExtraMsg
+
+
+{-| The type that handles all file upload.
+-}
+type ExtraMsg
+    = Select ChangeSlide
+    | Selected ChangeSlide File
 
 
 {-| The different DnD messages that can occur.

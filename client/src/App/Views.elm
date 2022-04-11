@@ -31,7 +31,8 @@ view fullModel =
             , Ui.hf
             , Font.size 18
             , Font.family
-                [ Font.typeface "Ubuntu"
+                [ Font.typeface "Urbanist"
+                , Font.typeface "Ubuntu"
                 , Font.typeface "Cantarell"
                 ]
             , Background.color Colors.greyBackground

@@ -80,7 +80,6 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
@@ -90,6 +89,17 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
                 50% {
                     opacity: 0;
                 }
+            }
+
+            @font-face {
+                font-family: "Urbanist";
+                src: url("/dist/fonts/Urbanist-Regular.woff2");
+            }
+
+            @font-face {
+                font-family: "Urbanist";
+                font-weight: bold;
+                src: url("/dist/fonts/Urbanist-Bold.woff2");
             }
         </style>
     </head>
@@ -108,7 +118,6 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
@@ -118,6 +127,17 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
                 50% {
                     opacity: 0;
                 }
+            }
+
+            @font-face {
+                font-family: "Urbanist";
+                src: url("/dist/fonts/Urbanist-Regular.woff2");
+            }
+
+            @font-face {
+                font-family: "Urbanist";
+                font-weight: bold;
+                src: url("/dist/fonts/Urbanist-Bold.woff2");
             }
         </style>
     </head>
@@ -143,7 +163,6 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
@@ -170,7 +189,6 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
