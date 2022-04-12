@@ -1,12 +1,12 @@
 module Ui.Elements exposing
-    ( primary, primaryIcon, secondary, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
-    , spinner, popup
+    ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
+    , spinner, spinningSpinner, popup
     )
 
 {-| This module contains helpers to easily make buttons.
 
-@docs primary, primaryIcon, secondary, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin
-@docs spinner, popup
+@docs primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin
+@docs spinner, spinningSpinner, popup
 
 -}
 
@@ -43,7 +43,14 @@ type Action msg
 -}
 primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 primary attr { label, action } =
-    navigationElement action (addPrimaryAttr attr) (Element.el [ Ui.cx, Font.bold ] (Element.text label))
+    primaryGeneric attr { label = Element.text label, action = action }
+
+
+{-| Creates a primary button with a generic element.
+-}
+primaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+primaryGeneric attr { label, action } =
+    navigationElement action (addPrimaryAttr attr) (Element.el [ Ui.cx, Font.bold ] label)
 
 
 {-| The attributes of a primary button.
@@ -79,8 +86,13 @@ addPrimaryIconAttr attr =
 -}
 secondary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 secondary attr { label, action } =
+    secondaryGeneric attr { label = Element.text label, action = action }
+
+
+secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+secondaryGeneric attr { label, action } =
     --navigationElement action (addSecondaryAttr attr) label
-    Element.el attr (navigationElement action (addSecondaryAttr []) (Element.text label))
+    Element.el attr (navigationElement action (addSecondaryAttr []) label)
 
 
 {-| The attributes of a secondary button.
@@ -211,6 +223,13 @@ spin =
         { duration = 1000, options = [ Animation.loop, Animation.linear ] }
         [ P.rotate 0 ]
         [ P.rotate 360 ]
+
+
+{-| A spinning spinner.
+-}
+spinningSpinner : List (Element.Attribute msg) -> Int -> Element msg
+spinningSpinner attr size =
+    animatedEl spin attr (icon size spinner)
 
 
 {-| A popup.

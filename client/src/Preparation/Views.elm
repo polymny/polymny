@@ -125,7 +125,7 @@ view config user model =
                                         ]
 
                                     RemoteData.Loading _ ->
-                                        [ Ui.primaryIcon [] { action = Ui.None, icon = Ui.spinner, tooltip = "" } ]
+                                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
 
                                     _ ->
                                         []
