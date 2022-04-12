@@ -303,6 +303,10 @@ msgstr ""
 msgid "Steps.Preparation.insertNumberGreaterThanZero"
 msgstr ""
 
+#. An error occured, maybe the page number is incorrect.
+msgid "Steps.Preparation.maybePageNumberIsIncorrect"
+msgstr ""
+
 #. Delete the extra resource.
 msgid "Steps.Preparation.deleteResource"
 msgstr ""

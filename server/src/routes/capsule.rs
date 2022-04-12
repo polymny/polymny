@@ -362,11 +362,7 @@ pub async fn replace_slide(
         slide_found.uuid = output_uuid;
     }
 
-    capsule.set_changed();
-    capsule.save(&db).await?;
-    let res = capsule.to_json(role, &db).await?;
-
-    if content_type.media_type().top() == "image" {
+    let res = if content_type.media_type().top() == "image" {
         // Not very clean but working
         run_command(&vec![
             "../scripts/psh",
@@ -376,6 +372,10 @@ pub async fn replace_slide(
             &config.pdf_target_density,
             &config.pdf_target_size,
         ])?;
+
+        capsule.set_changed();
+        capsule.save(&db).await?;
+        capsule.to_json(role, &db).await?
     } else if *content_type == ContentType::PDF {
         // Not very clean either, but should work too
         run_command(&vec![
@@ -386,7 +386,15 @@ pub async fn replace_slide(
             &config.pdf_target_density,
             &config.pdf_target_size,
         ])?;
+
+        capsule.set_changed();
+        capsule.save(&db).await?;
+        capsule.to_json(role, &db).await?
     } else if content_type.media_type().top() == "video" {
+        capsule.set_changed();
+        capsule.save(&db).await?;
+        let res = capsule.to_json(role, &db).await?;
+
         let socks = socks.inner().clone();
         let sem = sem.inner().clone();
 
@@ -495,6 +503,8 @@ pub async fn replace_slide(
                 .ok();
             };
         });
+
+        res
     } else {
         return Err(Error(Status::UnsupportedMediaType));
     };

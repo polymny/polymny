@@ -328,6 +328,12 @@ msgstr "Quelle page du PDF souhaitez-vous utiliser"
 msgid "Steps.Preparation.insertNumberGreaterThanZero"
 msgstr "Entrez un numéro de page plus grand que zéro"
 
+#. An error occured, maybe the page number is incorrect.
+msgid "Steps.Preparation.maybePageNumberIsIncorrect"
+msgstr ""
+"Une erreur est survenue lors du changement de la planche, peut-être que le "
+"numéro de page est incorrect"
+
 #. Delete the extra resource.
 msgid "Steps.Preparation.deleteResource"
 msgstr "Supprimer la ressource"
@@ -867,4 +873,3 @@ msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr ""
 "Une fois la présentation téléchargée, l'enregistrement vidéo des planches "
 "pourra débuter"
-

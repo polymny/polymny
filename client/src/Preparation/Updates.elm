@@ -121,7 +121,7 @@ updateExtra msg model =
             ( { model | changeSlideForm = changeSlideForm }, Cmd.none )
 
         Preparation.PageCancel ->
-            ( { model | changeSlideForm = Nothing }, Cmd.none )
+            ( { model | changeSlideForm = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none )
 
         Preparation.ChangeSlideUpdated d ->
             case d of

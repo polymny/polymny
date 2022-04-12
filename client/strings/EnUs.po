@@ -328,6 +328,11 @@ msgstr "Which page of the PDF do you want to use"
 msgid "Steps.Preparation.insertNumberGreaterThanZero"
 msgstr "Insert a number greater than zero"
 
+#. An error occured, maybe the page number is incorrect.
+msgid "Steps.Preparation.maybePageNumberIsIncorrect"
+msgstr ""
+"An error occured while changing the slide, maybe the page number is incorrect"
+
 #. Delete the extra resource.
 msgid "Steps.Preparation.deleteResource"
 msgstr "Delete resource"
@@ -858,4 +863,3 @@ msgstr ""
 #. Sentence to exaplin that after the slides have been uploaded, you may record.
 msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr "Once the slides have been uploaded, the recording can start"
-

@@ -105,10 +105,22 @@ view config user model =
                                 , text = f.page
                                 }
 
+                        errorMsg =
+                            case model.changeSlide of
+                                RemoteData.Failure _ ->
+                                    Element.paragraph [ Ui.wf, Ui.cy ]
+                                        [ Element.text (Lang.question Strings.stepsPreparationMaybePageNumberIsIncorrect lang) ]
+
+                                _ ->
+                                    Element.none
+
                         buttonBar =
                             Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
                                 (case model.changeSlide of
-                                    RemoteData.NotAsked ->
+                                    RemoteData.Loading _ ->
+                                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
+
+                                    _ ->
                                         [ Ui.secondary []
                                             { action = mkUiExtra Preparation.PageCancel
                                             , label = Strings.uiCancel lang
@@ -123,16 +135,11 @@ view config user model =
                                             _ ->
                                                 Element.text (Strings.stepsPreparationInsertNumberGreaterThanZero lang)
                                         ]
-
-                                    RemoteData.Loading _ ->
-                                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
-
-                                    _ ->
-                                        []
                                 )
                     in
                     Element.column [ Ui.wf, Ui.hf ]
                         [ textInput
+                        , errorMsg
                         , buttonBar
                         ]
                         |> Ui.popup 1 (title lang)
