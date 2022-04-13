@@ -17,7 +17,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Lang
+import Lang exposing (Lang)
 import List.Extra
 import Material.Icons as Icons
 import Preparation.Types as Preparation
@@ -51,100 +51,17 @@ view config user model =
 
         popup : Element App.Msg
         popup =
-            case ( model.deleteSlide, model.changeSlideForm, model.capsuleUpdate ) of
-                ( Just s, _, _ ) ->
-                    Element.column [ Ui.wf, Ui.hf ]
-                        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
-                            [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide lang) ]
-                        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
-                            [ Ui.secondary []
-                                { action = mkUiMsg (Preparation.DeleteSlide Utils.Cancel s)
-                                , label = Strings.uiCancel lang
-                                }
-                            , Ui.primary []
-                                { action = mkUiMsg (Preparation.DeleteSlide Utils.Confirm s)
-                                , label = Strings.uiConfirm lang
-                                }
-                            ]
-                        ]
-                        |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
+            case ( ( model.deleteSlide, model.changeSlideForm ), ( model.editPrompt, model.capsuleUpdate ) ) of
+                ( ( Just s, _ ), _ ) ->
+                    deleteSlideConfirmPopup lang model s
 
-                ( _, Just f, _ ) ->
-                    let
-                        page =
-                            case String.toInt f.page of
-                                Just x ->
-                                    if x > 0 then
-                                        Just x
+                ( ( _, Just f ), _ ) ->
+                    selectPageNumberPopup lang model f
 
-                                    else
-                                        Nothing
+                ( _, ( Just s, _ ) ) ->
+                    promptPopup lang model s
 
-                                _ ->
-                                    Nothing
-
-                        title =
-                            case f.slide of
-                                Preparation.ReplaceSlide _ ->
-                                    Strings.stepsPreparationReplaceSlideOrAddExternalResource
-
-                                Preparation.AddSlide _ ->
-                                    Strings.stepsPreparationAddSlide
-
-                                Preparation.AddGos _ ->
-                                    Strings.stepsPreparationCreateGrain
-
-                        textLabel =
-                            Lang.question Strings.stepsPreparationWhichPage lang
-
-                        textInput =
-                            Input.text [ Ui.wf, Ui.cy ]
-                                { label = Input.labelAbove [] (Element.text textLabel)
-                                , onChange = \x -> mkExtra (Preparation.PageChanged x)
-                                , placeholder = Nothing
-                                , text = f.page
-                                }
-
-                        errorMsg =
-                            case model.changeSlide of
-                                RemoteData.Failure _ ->
-                                    Element.paragraph [ Ui.wf, Ui.cy ]
-                                        [ Element.text (Lang.question Strings.stepsPreparationMaybePageNumberIsIncorrect lang) ]
-
-                                _ ->
-                                    Element.none
-
-                        buttonBar =
-                            Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
-                                (case model.changeSlide of
-                                    RemoteData.Loading _ ->
-                                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
-
-                                    _ ->
-                                        [ Ui.secondary []
-                                            { action = mkUiExtra Preparation.PageCancel
-                                            , label = Strings.uiCancel lang
-                                            }
-                                        , case page of
-                                            Just p ->
-                                                Ui.primary []
-                                                    { action = mkUiExtra (Preparation.Selected f.slide f.file (Just p))
-                                                    , label = Strings.uiConfirm lang
-                                                    }
-
-                                            _ ->
-                                                Element.text (Strings.stepsPreparationInsertNumberGreaterThanZero lang)
-                                        ]
-                                )
-                    in
-                    Element.column [ Ui.wf, Ui.hf ]
-                        [ textInput
-                        , errorMsg
-                        , buttonBar
-                        ]
-                        |> Ui.popup 1 (title lang)
-
-                ( _, _, _ ) ->
+                _ ->
                     Element.none
 
         -- ( _, RemoteData.Loading _ ) ->
@@ -234,15 +151,19 @@ gosView config user model ( head, gos ) =
 -}
 slideView : Config -> User -> Preparation.Model -> Bool -> Preparation.Slide -> Maybe Preparation.Slide -> Element App.Msg
 slideView config user model ghost default s =
+    let
+        lang =
+            config.clientState.lang
+    in
     case ( s, Maybe.andThen .slide s ) of
         ( Just slide, Just dataSlide ) ->
             let
                 inFrontLabel =
-                    Strings.dataCapsuleGrain config.clientState.lang 1
+                    Strings.dataCapsuleGrain lang 1
                         ++ " "
                         ++ String.fromInt (slide.gosId + 1)
                         ++ " / "
-                        ++ Strings.dataCapsuleSlide config.clientState.lang 1
+                        ++ Strings.dataCapsuleSlide lang 1
                         ++ " "
                         ++ String.fromInt (slide.slideId + 1)
                         |> Element.text
@@ -252,13 +173,18 @@ slideView config user model ghost default s =
                 inFrontButtons =
                     Element.row [ Ui.s 10, Ui.p 10, Ui.at, Ui.ar ]
                         [ Ui.primaryIcon []
+                            { icon = Icons.speaker_notes
+                            , tooltip = Strings.actionsEditPrompt lang
+                            , action = mkUiMsg (Preparation.EditPrompt dataSlide)
+                            }
+                        , Ui.primaryIcon []
                             { icon = Icons.image
-                            , tooltip = Strings.stepsPreparationReplaceSlideOrAddExternalResource config.clientState.lang
+                            , tooltip = Strings.stepsPreparationReplaceSlideOrAddExternalResource lang
                             , action = mkUiExtra (Preparation.Select (Preparation.ReplaceSlide dataSlide))
                             }
                         , Ui.primaryIcon []
                             { icon = Icons.delete
-                            , tooltip = Strings.actionsDeleteSlide config.clientState.lang
+                            , tooltip = Strings.actionsDeleteSlide lang
                             , action = mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
                             }
                         ]
@@ -288,6 +214,112 @@ slideView config user model ghost default s =
 
         _ ->
             Element.el (Ui.wf :: Ui.hf :: Ui.pl 20 :: slideStyle model.slideModel default.totalSlideId Drop) Element.none
+
+
+{-| Popup to confirm the slide deletion.
+-}
+deleteSlideConfirmPopup : Lang -> Preparation.Model -> Data.Slide -> Element App.Msg
+deleteSlideConfirmPopup lang model s =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Preparation.DeleteSlide Utils.Cancel s)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Preparation.DeleteSlide Utils.Confirm s)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
+
+
+promptPopup : Lang -> Preparation.Model -> Data.Slide -> Element App.Msg
+promptPopup lang model slide =
+    Element.none
+        |> Ui.popup 5 (Strings.actionsEditPrompt lang)
+
+
+{-| Popup to select the page number when uploading a slide.
+-}
+selectPageNumberPopup : Lang -> Preparation.Model -> Preparation.ChangeSlideForm -> Element App.Msg
+selectPageNumberPopup lang model f =
+    let
+        page =
+            case String.toInt f.page of
+                Just x ->
+                    if x > 0 then
+                        Just x
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        title =
+            case f.slide of
+                Preparation.ReplaceSlide _ ->
+                    Strings.stepsPreparationReplaceSlideOrAddExternalResource
+
+                Preparation.AddSlide _ ->
+                    Strings.stepsPreparationAddSlide
+
+                Preparation.AddGos _ ->
+                    Strings.stepsPreparationCreateGrain
+
+        textLabel =
+            Lang.question Strings.stepsPreparationWhichPage lang
+
+        textInput =
+            Input.text [ Ui.wf, Ui.cy ]
+                { label = Input.labelAbove [] (Element.text textLabel)
+                , onChange = \x -> mkExtra (Preparation.PageChanged x)
+                , placeholder = Nothing
+                , text = f.page
+                }
+
+        errorMsg =
+            case model.changeSlide of
+                RemoteData.Failure _ ->
+                    Element.paragraph [ Ui.wf, Ui.cy ]
+                        [ Element.text (Lang.question Strings.stepsPreparationMaybePageNumberIsIncorrect lang) ]
+
+                _ ->
+                    Element.none
+
+        buttonBar =
+            Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                (case model.changeSlide of
+                    RemoteData.Loading _ ->
+                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
+
+                    _ ->
+                        [ Ui.secondary []
+                            { action = mkUiExtra Preparation.PageCancel
+                            , label = Strings.uiCancel lang
+                            }
+                        , case page of
+                            Just p ->
+                                Ui.primary []
+                                    { action = mkUiExtra (Preparation.Selected f.slide f.file (Just p))
+                                    , label = Strings.uiConfirm lang
+                                    }
+
+                            _ ->
+                                Element.text (Strings.stepsPreparationInsertNumberGreaterThanZero lang)
+                        ]
+                )
+    in
+    Element.column [ Ui.wf, Ui.hf ]
+        [ textInput
+        , errorMsg
+        , buttonBar
+        ]
+        |> Ui.popup 1 (title lang)
 
 
 {-| Finds whether a slide is being dragged.

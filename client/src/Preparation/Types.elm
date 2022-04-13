@@ -28,6 +28,7 @@ type alias Model =
     , deleteSlide : Maybe Data.Slide
     , changeSlide : RemoteData.WebData Data.Capsule
     , changeSlideForm : Maybe ChangeSlideForm
+    , editPrompt : Maybe Data.Slide
     }
 
 
@@ -53,13 +54,14 @@ type ChangeSlide
 init : Capsule -> Model
 init capsule =
     { capsule = capsule
-    , slides = capsule.structure |> List.map .slides |> setupSlides
+    , slides = setupSlides capsule
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
     , deleteSlide = Nothing
     , changeSlide = RemoteData.NotAsked
     , changeSlideForm = Nothing
+    , editPrompt = Nothing
     }
 
 
@@ -70,6 +72,7 @@ type Msg
     | CapsuleUpdate Int (RemoteData.WebData ())
     | DeleteSlide Utils.Confirmation Data.Slide
     | Extra ExtraMsg
+    | EditPrompt Data.Slide
 
 
 {-| The type that handles all file upload.
@@ -122,7 +125,7 @@ makeSlide gosId totalGosId slideId totalSlideId slide =
 
 {-| A helper function to prepare the List Slide from the capsule.
 -}
-setupSlides : List (List Data.Slide) -> List Slide
+setupSlides : Data.Capsule -> List Slide
 setupSlides input =
     let
         slideMapper : Int -> ( Int, Data.Slide ) -> Slide
@@ -135,7 +138,8 @@ setupSlides input =
 
         output : List Slide
         output =
-            input
+            input.structure
+                |> List.map .slides
                 |> enumerate
                 |> List.map gosMapper
                 |> List.intersperse [ makeSlide -1 -1 -1 -1 Nothing ]

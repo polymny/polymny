@@ -66,6 +66,9 @@ update msg model =
                     updateExtra sMsg m
                         |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
 
+                Preparation.EditPrompt slide ->
+                    ( { model | page = App.Preparation { m | editPrompt = Just slide } }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -162,7 +165,7 @@ updateDnD msg model config =
                                     extractStructure slides
                             in
                             ( fixStructure model.capsule.structure extracted
-                            , extracted |> List.map .slides |> Preparation.setupSlides
+                            , Preparation.setupSlides { capsule | structure = extracted }
                             )
 
                         _ ->
