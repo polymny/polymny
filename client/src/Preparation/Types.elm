@@ -73,6 +73,7 @@ type Msg
     | DeleteSlide Utils.Confirmation Data.Slide
     | Extra ExtraMsg
     | EditPrompt Data.Slide
+    | PromptChanged Utils.Confirmation Data.Slide
 
 
 {-| The type that handles all file upload.

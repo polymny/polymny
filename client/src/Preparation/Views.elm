@@ -237,9 +237,36 @@ deleteSlideConfirmPopup lang model s =
         |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
 
 
+{-| Popup to input prompt texts.
+-}
 promptPopup : Lang -> Preparation.Model -> Data.Slide -> Element App.Msg
 promptPopup lang model slide =
-    Element.none
+    Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ Element.column [ Ui.wf, Ui.cy ]
+            [ Element.image [ Ui.wf ]
+                { description = Strings.dataCapsuleSlide lang 1
+                , src = Data.slidePath model.capsule slide
+                }
+            ]
+        , Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+            [ Input.text [ Ui.wf, Ui.hf ]
+                { label = Input.labelHidden (Strings.actionsEditPrompt lang)
+                , onChange = \x -> mkMsg (Preparation.PromptChanged Utils.Request { slide | prompt = x })
+                , placeholder = Nothing
+                , text = slide.prompt
+                }
+            , Element.row [ Ui.ar, Ui.s 10 ]
+                [ Ui.secondary []
+                    { label = Strings.uiCancel lang
+                    , action = mkUiMsg (Preparation.PromptChanged Utils.Cancel slide)
+                    }
+                , Ui.primary []
+                    { label = Strings.uiConfirm lang
+                    , action = mkUiMsg (Preparation.PromptChanged Utils.Confirm slide)
+                    }
+                ]
+            ]
+        ]
         |> Ui.popup 5 (Strings.actionsEditPrompt lang)
 
 

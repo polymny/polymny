@@ -69,6 +69,23 @@ update msg model =
                 Preparation.EditPrompt slide ->
                     ( { model | page = App.Preparation { m | editPrompt = Just slide } }, Cmd.none )
 
+                Preparation.PromptChanged Utils.Request slide ->
+                    ( { model | page = App.Preparation { m | editPrompt = Just slide } }, Cmd.none )
+
+                Preparation.PromptChanged Utils.Cancel _ ->
+                    ( { model | page = App.Preparation { m | editPrompt = Nothing } }, Cmd.none )
+
+                Preparation.PromptChanged Utils.Confirm slide ->
+                    let
+                        newCapsule =
+                            Data.updateSlide slide m.capsule
+
+                        sync =
+                            Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+                    in
+                    ( { model | page = App.Preparation (Preparation.init newCapsule) }, sync )
+
         _ ->
             ( model, Cmd.none )
 
