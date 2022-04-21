@@ -13,7 +13,7 @@ use crate::db::capsule::{Capsule, Privacy, Role};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::Plan;
 use crate::db::user::User;
-use crate::routes::Either;
+use crate::routes::{Cors, Either};
 use crate::templates::video_html;
 use crate::{Db, Error, HashId, Result};
 
@@ -47,25 +47,24 @@ pub async fn watch<'a>(
     // Check if video is on current host or other host.
 
     // If there is another host
-    if let Some(host) = &config.other_host {
+    let mut host = String::new();
+
+    if let Some(other_host) = &config.other_host {
         // Look of the owner of the capsule
         for (user, role) in capsule.users(&db).await? {
             if role == Role::Owner {
                 // If premium state doesn't match the owner plan
                 if config.premium_only != (user.plan >= Plan::PremiumLvl1) {
                     // Redirect to the other host
-                    return Ok(Either::Right(Redirect::to(format!(
-                        "{}/v/{}/",
-                        host,
-                        capsule_id.hash()
-                    ))));
+                    host = other_host.to_string();
                 }
             }
         }
     }
 
     Ok(Either::Left(Html(video_html(&format!(
-        "/v/{}/manifest.m3u8",
+        "{}/v/{}/manifest.m3u8",
+        host,
         capsule_id.hash()
     )))))
 }
@@ -73,6 +72,22 @@ pub async fn watch<'a>(
 /// The route that serves files inside published videos.
 #[get("/v/<capsule_id>/<path..>", rank = 2)]
 pub async fn watch_asset(
+    user: Option<User>,
+    capsule_id: HashId,
+    path: PathBuf,
+    config: &S<Config>,
+    db: Db,
+) -> Cors<Result<NamedFile>> {
+    Cors::new(
+        &config.home,
+        watch_asset_aux(user, capsule_id, path, config, db).await,
+    )
+}
+
+/// Helper function to the route that serves files inside published videos.
+///
+/// Makes us able to easily wrap cors.
+pub async fn watch_asset_aux(
     user: Option<User>,
     capsule_id: HashId,
     path: PathBuf,
