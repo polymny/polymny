@@ -337,7 +337,6 @@ params_pip_slide_record() {
         "disabled" )
                  echo -n -fflags \
                  +genpts \
-                 -loop 1 \
                  -i $slide \
                  -i $record \
                  -map 0:v \
@@ -893,6 +892,11 @@ compose_gos(){
     #echo $line_in_concat_file  >> $concat_file
 
     duration_ms=${transitions[-1]}
+    if [[ "$duration_ms" == 0 ]]; then
+       duration_ms=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+    fi
+
+
 
     # Step 1 / 2 :  concat slides
     video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
