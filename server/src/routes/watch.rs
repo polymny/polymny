@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::response::content::Html;
-use rocket::response::Redirect;
 use rocket::State as S;
 
 use crate::config::Config;
@@ -13,7 +12,7 @@ use crate::db::capsule::{Capsule, Privacy, Role};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::Plan;
 use crate::db::user::User;
-use crate::routes::{Cors, Either};
+use crate::routes::Cors;
 use crate::templates::video_html;
 use crate::{Db, Error, HashId, Result};
 
@@ -24,7 +23,7 @@ pub async fn watch<'a>(
     user: Option<User>,
     capsule_id: HashId,
     db: Db,
-) -> Result<Either<Html<String>, Redirect>> {
+) -> Result<Html<String>> {
     let capsule = Capsule::get_by_id(*capsule_id as i32, &db)
         .await?
         .ok_or(Error(Status::NotFound))?;
@@ -62,11 +61,11 @@ pub async fn watch<'a>(
         }
     }
 
-    Ok(Either::Left(Html(video_html(&format!(
+    Ok(Html(video_html(&format!(
         "{}/v/{}/manifest.m3u8",
         host,
         capsule_id.hash()
-    )))))
+    ))))
 }
 
 /// The route that serves files inside published videos.
