@@ -746,7 +746,7 @@ run_ffmpeg_slide(){
 
     local percent_progress="0"
     #For DEBUG of ffmpeg command
-    #echo "$cmd">&2
+    echo "$cmd">&2
 
     $cmd | while read line; do
         local percent_progress=$(show_ffmpeg_progression $line $(echo "$duration_ms*1000" |bc )  )
@@ -846,6 +846,11 @@ compose_gos(){
             line_in_concat_file="file ../assets/${uuid}.png"
             echo $line_in_concat_file  >> $concat_file
             echo "duration ${slide_duration}ms" >> $concat_file
+            # when only one lside: no concat. for ffmpeg concat: repeat "file .." line
+            # kinda bug in ffmpeg
+            if (( $len_slides == 1 )) ;then
+                echo $line_in_concat_file  >> $concat_file
+            fi
         else
             branchSlide="false"
             # FIXME: mix video resource with record
