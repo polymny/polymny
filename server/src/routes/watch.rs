@@ -1,10 +1,12 @@
 //! This module contains the route to watch videos.
 
+use std::io::Cursor;
 use std::path::PathBuf;
 
 use rocket::fs::NamedFile;
-use rocket::http::Status;
-use rocket::response::content::Html;
+use rocket::http::{ContentType, Status};
+use rocket::request::Request;
+use rocket::response::{self, Responder, Response};
 use rocket::State as S;
 
 use crate::config::Config;
@@ -16,6 +18,18 @@ use crate::routes::Cors;
 use crate::templates::video_html;
 use crate::{Db, Error, HashId, Result};
 
+/// A custom response type for allowing iframes on the watch route.
+pub struct CustomResponse(String);
+
+impl<'r, 'o: 'r> Responder<'r, 'o> for CustomResponse {
+    fn respond_to(self, _request: &'r Request<'_>) -> response::Result<'o> {
+        Ok(Response::build()
+            .sized_body(self.0.len(), Cursor::new(self.0))
+            .header(ContentType::HTML)
+            .finalize())
+    }
+}
+
 /// The route that serves HTML to watch videos.
 #[get("/v/<capsule_id>", rank = 1)]
 pub async fn watch<'a>(
@@ -23,7 +37,7 @@ pub async fn watch<'a>(
     user: Option<User>,
     capsule_id: HashId,
     db: Db,
-) -> Result<Html<String>> {
+) -> Result<CustomResponse> {
     let capsule = Capsule::get_by_id(*capsule_id as i32, &db)
         .await?
         .ok_or(Error(Status::NotFound))?;
@@ -61,7 +75,7 @@ pub async fn watch<'a>(
         }
     }
 
-    Ok(Html(video_html(&format!(
+    Ok(CustomResponse(video_html(&format!(
         "{}/v/{}/manifest.m3u8",
         host,
         capsule_id.hash()
@@ -78,7 +92,7 @@ pub async fn watch_asset(
     db: Db,
 ) -> Cors<Result<NamedFile>> {
     Cors::new(
-        &config.home,
+        &Some("*".to_string()),
         watch_asset_aux(user, capsule_id, path, config, db).await,
     )
 }

@@ -302,9 +302,10 @@ pub fn video_html(url: &str) -> String {
             PolymnyVideo.fullpage({{
                 node: document.getElementById("container"),
                 url: "{}",
-                autoplay: true,
-                enableMiniatures: true,
+                autoplay: PolymnyVideo.getArgumentFromUrl("a") !== null,
                 startTime: PolymnyVideo.getArgumentFromUrl("t"),
+                enableMiniatures: true,
+                muted: PolymnyVideo.getArgumentFromUrl("m") !== null
             }});
         </script>
     </body>

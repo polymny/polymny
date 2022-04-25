@@ -42,7 +42,6 @@ use rocket::State;
 
 use crate::command::run_command;
 use crate::config::Config;
-use crate::db::capsule;
 use crate::websockets::{websocket, WebSockets};
 
 lazy_static! {
