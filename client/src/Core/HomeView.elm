@@ -259,8 +259,7 @@ progressCapsuleView global capsule =
 
         acquisition =
             Element.el
-                [ Element.width Element.fill
-                , computeColor (tern acquired Capsule.Done Capsule.Idle)
+                [ computeColor (tern acquired Capsule.Done Capsule.Idle)
                 , Element.padding 10
                 , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
                 , Border.color Colors.black
@@ -270,8 +269,7 @@ progressCapsuleView global capsule =
 
         edition =
             Element.el
-                [ Element.width Element.fill
-                , computeColor capsule.produced
+                [ computeColor capsule.produced
                 , Element.padding 10
                 , Border.color Colors.black
                 , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
@@ -280,8 +278,7 @@ progressCapsuleView global capsule =
 
         publication =
             Element.el
-                [ Element.width Element.fill
-                , computeColor capsule.published
+                [ computeColor capsule.published
                 , Element.padding 10
                 , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
                 , Border.color Colors.black
@@ -290,7 +287,12 @@ progressCapsuleView global capsule =
                 (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
 
         duration =
-            Element.el [ Element.padding 10 ] <| Element.text <| formatTime capsule.durationMs
+            case capsule.produced of
+                Capsule.Done ->
+                    Element.el [ Element.padding 10 ] <| Element.text <| formatTime capsule.durationMs
+
+                _ ->
+                    Element.el [ Element.padding 10 ] <| Element.text "   "
     in
     { acquisition = acquisition, edition = edition, publication = publication, duration = duration }
 

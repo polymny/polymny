@@ -18,6 +18,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::fs::OpenOptions;
 use std::ops::Deref;
+use std::path::Path;
 use std::result::Result as StdResult;
 use std::sync::Arc;
 
@@ -41,6 +42,7 @@ use rocket::State;
 
 use crate::command::run_command;
 use crate::config::Config;
+use crate::db::capsule;
 use crate::websockets::{websocket, WebSockets};
 
 lazy_static! {
@@ -322,6 +324,49 @@ pub async fn user_disk_usage() {
                     }
                 }
                 Err(_) => println!("error"),
+            };
+        }
+    }
+}
+
+/// update duration of all capsules
+pub async fn update_video_duration() {
+    let config = Config::from_figment(&rocket::Config::figment());
+    let pool = ergol::pool(&config.databases.database.url, 32);
+    let db = Db::from_pool(pool).await.unwrap();
+
+    use crate::db::capsule::Capsule;
+    use ergol::prelude::*;
+
+    let capsules = Capsule::select().execute(&db).await.unwrap();
+    for mut capsule in capsules {
+        let path = &config
+            .data_path
+            .join(format!("{}", capsule.id))
+            .join("output.mp4");
+        if Path::new(path).exists() {
+            let output = run_command(&vec!["../scripts/psh", "duration", path.to_str().unwrap()]);
+
+            match &output {
+                Ok(o) => {
+                    let line = ((std::str::from_utf8(&o.stdout)
+                        .map_err(|_| Error(Status::InternalServerError))
+                        .unwrap()
+                        .trim()
+                        .parse::<f32>()
+                        .unwrap())
+                        * 1000.) as i32;
+
+                    capsule.duration_ms = line;
+                    capsule.save(&db).await.ok();
+
+                    println!(
+                        " capsule {:4} {:9.1} s",
+                        capsule.id,
+                        capsule.duration_ms as f32 / 1000.0
+                    );
+                }
+                Err(_) => error!("Impossible to get duration"),
             };
         }
     }

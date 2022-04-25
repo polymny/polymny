@@ -50,4 +50,8 @@ path = "src/harsh.rs"
 name = "user-disk_usage"
 path = "src/user_disk_usage.rs"
 
+[[bin]]
+name = "update-video-duration"
+path = "src/update_video_duration.rs"
+
 
