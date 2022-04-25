@@ -31,26 +31,6 @@ view global user model =
                             [ videoElement p
                             , Element.el [ Ui.wf ] Element.none
                             ]
-                        , Element.row [ Ui.wf ]
-                            [ videoElement p
-                            , if model.capsule.published == Capsule.Done then
-                                Element.row [ Ui.wf, Ui.hf, Element.spacing 10 ]
-                                    [ Ui.newTabLink []
-                                        { label = Element.text (Lang.watchVideo global.lang)
-                                        , route = Route.Custom (global.videoRoot ++ "/" ++ model.capsule.id ++ "/")
-                                        }
-                                    , Ui.iconButton [ Font.color Colors.navbar ]
-                                        { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just
-                                        , icon = Fa.link
-                                        , text = Nothing
-                                        , tooltip = Just (Lang.copyVideoUrl global.lang)
-                                        }
-                                    ]
-
-                              else
-                                Element.none
-                            , Element.el [ Ui.wf ] Element.none
-                            ]
                         ]
 
                     Nothing ->
@@ -91,10 +71,18 @@ view global user model =
                             }
 
                     Capsule.Done ->
-                        Ui.simpleButton
-                            { onPress = Just (Core.PublicationMsg Publication.Unpublish)
-                            , label = Element.text (Lang.unpublishVideo global.lang)
-                            }
+                        Element.row [ Element.spacing 10 ]
+                            [ Ui.iconButton [ Font.color Colors.navbar ]
+                                { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just
+                                , icon = Fa.link
+                                , text = Nothing
+                                , tooltip = Just (Lang.copyVideoUrl global.lang)
+                                }
+                            , Ui.simpleButton
+                                { onPress = Just (Core.PublicationMsg Publication.Unpublish)
+                                , label = Element.text (Lang.unpublishVideo global.lang)
+                                }
+                            ]
 
                     _ ->
                         Element.row [ Element.spacing 10 ]
