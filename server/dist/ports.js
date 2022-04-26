@@ -21,7 +21,8 @@ function setupPorts(app) {
         pointerVideo = document.createElement('video'),
         style = "Pointer",
         color = "rgb(255, 0, 0)",
-        size = 20;
+        size = 20,
+        isPremium = flags.user.plan !== 'free';
 
     tmpCanvas.width = 1920;
     tmpCanvas.height = 1080;
@@ -167,6 +168,9 @@ function setupPorts(app) {
     }
 
     function setupCanvasListeners() {
+        if (!isPremium)
+            return
+
         let canvas = document.getElementById('pointer-canvas');
         canvas.width = 1920;
         canvas.height = 1080;
@@ -320,19 +324,19 @@ function setupPorts(app) {
     }
 
     function sendRecordToElmIfReady(port = app.ports.recordArrived) {
-        if (recordArrived === null || pointerArrived === null) {
+        if (recordArrived === null || (isPremium && pointerArrived === null)) {
             return;
         }
 
         console.log({
             webcam_blob: recordArrived,
-            pointer_blob: pointerExists ? pointerArrived : null,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
             events: currentEvents,
         });
 
         port.send({
             webcam_blob: recordArrived,
-            pointer_blob: pointerExists ? pointerArrived : null,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
             events: currentEvents,
         });
 
@@ -341,6 +345,11 @@ function setupPorts(app) {
     }
 
     function bindPointer() {
+        if (!isPremium) {
+            app.ports.pointerBound.send(null);
+            return;
+        }
+
         requestAnimationFrame(() => {
             console.log("Binding pointer");
 
@@ -503,7 +512,10 @@ function setupPorts(app) {
             pointerExists = false;
             recording = true;
             recorder.start();
-            pointerRecorder.start();
+            if (isPremium) {
+                pointerRecorder.start();
+            }
+
             currentEvents = [{
                 time: Math.round(window.performance.now()),
                 ty: "start"
@@ -543,7 +555,11 @@ function setupPorts(app) {
 
             currentEvents[0].time = 0;
             recorder.stop();
-            pointerRecorder.stop();
+
+            if (isPremium) {
+                pointerRecorder.stop();
+            }
+
             recording = false;
         }
     }

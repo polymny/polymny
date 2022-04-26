@@ -132,7 +132,7 @@ view global user model =
 
 
 rightColumn : Core.Global -> User -> Maybe Acquisition.Submodel -> Element Core.Msg
-rightColumn global _ submodel =
+rightColumn global user submodel =
     let
         settingsButton =
             Ui.primaryButton
@@ -181,14 +181,18 @@ rightColumn global _ submodel =
                             |> Maybe.withDefault ""
                             |> Element.text
                         ]
-                    , Element.row [ Element.spacing 10 ]
-                        [ Input.button [] { label = Element.text "record", onPress = Just (Core.AcquisitionMsg (Acquisition.StartPointerRecording record)) }
-                        , if record.pointerBlob == Nothing then
-                            Element.text "no pointer"
+                    , if User.isPremium user then
+                        Element.row [ Element.spacing 10 ]
+                            [ Input.button [] { label = Element.text "record", onPress = Just (Core.AcquisitionMsg (Acquisition.StartPointerRecording record)) }
+                            , if record.pointerBlob == Nothing then
+                                Element.text "no pointer"
 
-                          else
-                            Element.text "pointer"
-                        ]
+                              else
+                                Element.text "pointer"
+                            ]
+
+                      else
+                        Element.none
                     ]
                 , Element.row [ Element.alignRight, Element.spacing 10, Element.centerY ]
                     [ Ui.iconButton [ Font.color Colors.navbar ]
@@ -568,105 +572,109 @@ promptElement global user model =
 
 toolbarElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
 toolbarElement global user model =
-    let
-        colorToString : Element.Color -> String
-        colorToString color =
-            let
-                { red, green, blue } =
-                    Element.toRgb color
+    if not (User.isPremium user) then
+        Element.none
 
-                r =
-                    floor (255 * red) |> String.fromInt
+    else
+        let
+            colorToString : Element.Color -> String
+            colorToString color =
+                let
+                    { red, green, blue } =
+                        Element.toRgb color
 
-                g =
-                    floor (255 * green) |> String.fromInt
+                    r =
+                        floor (255 * red) |> String.fromInt
 
-                b =
-                    floor (255 * blue) |> String.fromInt
-            in
-            "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
+                    g =
+                        floor (255 * green) |> String.fromInt
 
-        colorToButton : Element.Color -> Element Core.Msg
-        colorToButton color =
-            Input.button [ Ui.wf, Element.height (Element.px 45) ]
-                { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
-                , onPress =
-                    colorToString color
-                        |> Acquisition.ChangeColor
-                        |> Acquisition.SetCanvas
-                        |> Core.AcquisitionMsg
-                        |> Just
-                }
+                    b =
+                        floor (255 * blue) |> String.fromInt
+                in
+                "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
 
-        mkMsg : Acquisition.SetCanvas -> Maybe Core.Msg
-        mkMsg style =
-            style
-                |> Acquisition.SetCanvas
-                |> Core.AcquisitionMsg
-                |> Just
-    in
-    Element.column [ Element.centerY ]
-        [ Element.row [ Ui.wf, Element.spacing 5 ]
-            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
-                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
-                    (Ui.iconButton []
-                        { icon = Fa.bullseye
-                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Pointer)
-                        , text = Nothing
-                        , tooltip = Nothing
-                        }
+            colorToButton : Element.Color -> Element Core.Msg
+            colorToButton color =
+                Input.button [ Ui.wf, Element.height (Element.px 45) ]
+                    { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
+                    , onPress =
+                        colorToString color
+                            |> Acquisition.ChangeColor
+                            |> Acquisition.SetCanvas
+                            |> Core.AcquisitionMsg
+                            |> Just
+                    }
+
+            mkMsg : Acquisition.SetCanvas -> Maybe Core.Msg
+            mkMsg style =
+                style
+                    |> Acquisition.SetCanvas
+                    |> Core.AcquisitionMsg
+                    |> Just
+        in
+        Element.column [ Element.centerY ]
+            [ Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.bullseye
+                            , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Pointer)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
                     )
-                )
-            , Element.el [ Ui.wf, Element.height (Element.px 45) ]
-                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
-                    (Ui.iconButton []
-                        { icon = Fa.paintBrush
-                        , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Brush)
-                        , text = Nothing
-                        , tooltip = Nothing
-                        }
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.paintBrush
+                            , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Brush)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
                     )
-                )
+                ]
+            , Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.eraser
+                            , onPress = mkMsg Acquisition.Erase
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
+                ]
+            , Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.circle
+                            , onPress = mkMsg (Acquisition.ChangeSize 20)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.circle
+                            , onPress = mkMsg (Acquisition.ChangeSize 40)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                ]
+            , palette
+                |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
+                |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
             ]
-        , Element.row [ Ui.wf, Element.spacing 5 ]
-            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
-                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
-                    (Ui.iconButton []
-                        { icon = Fa.eraser
-                        , onPress = mkMsg Acquisition.Erase
-                        , text = Nothing
-                        , tooltip = Nothing
-                        }
-                    )
-                )
-            , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
-            ]
-        , Element.row [ Ui.wf, Element.spacing 5 ]
-            [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
-                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
-                    (Ui.iconButton []
-                        { icon = Fa.circle
-                        , onPress = mkMsg (Acquisition.ChangeSize 20)
-                        , text = Nothing
-                        , tooltip = Nothing
-                        }
-                    )
-                )
-            , Element.el [ Ui.wf, Element.height (Element.px 45) ]
-                (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
-                    (Ui.iconButton []
-                        { icon = Fa.circle
-                        , onPress = mkMsg (Acquisition.ChangeSize 40)
-                        , text = Nothing
-                        , tooltip = Nothing
-                        }
-                    )
-                )
-            ]
-        , palette
-            |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
-            |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
-        ]
 
 
 slideElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
