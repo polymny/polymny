@@ -306,31 +306,30 @@ leftColumn global user _ gos =
 
           else
             Element.none
-        , if User.isPremium user then
-            let
-                fade =
-                    gos.fade.vfadein /= Nothing || gos.fade.vfadeout /= Nothing || gos.fade.afadein /= Nothing || gos.fade.afadeout /= Nothing
-            in
-            Input.checkbox
-                []
-                { checked = fade
-                , icon = Input.defaultCheckbox
-                , label = Input.labelRight [] (Element.text (Lang.activateFade global.lang))
-                , onChange =
-                    \x ->
-                        Core.ProductionMsg
-                            (Production.FadeChanged
-                                (if fade then
-                                    { vfadein = Nothing, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
-
-                                 else
-                                    { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
-                                )
-                            )
-                }
-
-          else
-            Element.none
+        , -- Fading option, not available right now
+          -- if User.isPremium user then
+          --   let
+          --       fade =
+          --           gos.fade.vfadein /= Nothing || gos.fade.vfadeout /= Nothing || gos.fade.afadein /= Nothing || gos.fade.afadeout /= Nothing
+          --   in
+          --   Input.checkbox
+          --       []
+          --       { checked = fade
+          --       , icon = Input.defaultCheckbox
+          --       , label = Input.labelRight [] (Element.text (Lang.activateFade global.lang))
+          --       , onChange =
+          --           \x ->
+          --               Core.ProductionMsg
+          --                   (Production.FadeChanged
+          --                       (if fade then
+          --                           { vfadein = Nothing, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+          --                        else
+          --                           { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+          --                       )
+          --                   )
+          --       }
+          -- else
+          Element.none
 
         --Input.text []
         --  { label = Input.labelHidden ""
