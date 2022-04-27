@@ -64,14 +64,11 @@ pub async fn watch<'a>(
 
     if let Some(other_host) = &config.other_host {
         // Look of the owner of the capsule
-        for (user, role) in capsule.users(&db).await? {
-            if role == Role::Owner {
-                // If premium state doesn't match the owner plan
-                if config.premium_only != (user.plan >= Plan::PremiumLvl1) {
-                    // Redirect to the other host
-                    host = other_host.to_string();
-                }
-            }
+        let owner = capsule.owner(&db).await?;
+        // If premium state doesn't match the owner plan
+        if config.premium_only != (owner.plan >= Plan::PremiumLvl1) {
+            // Redirect to the other host
+            host = other_host.to_string();
         }
     }
 

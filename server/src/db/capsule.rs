@@ -495,4 +495,15 @@ impl Capsule {
 
         Ok(())
     }
+
+    /// Retrieves the owner of a capsule.
+    pub async fn owner(&self, db: &Db) -> Result<User> {
+        for (user, role) in self.users(db).await? {
+            if role == Role::Owner {
+                return Ok(user);
+            }
+        }
+
+        Err(Error(Status::NotFound))
+    }
 }

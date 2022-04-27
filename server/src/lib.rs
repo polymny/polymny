@@ -296,35 +296,37 @@ pub async fn user_disk_usage() {
     let pool = ergol::pool(&config.databases.database.url, 32);
     let db = Db::from_pool(pool).await.unwrap();
 
-    use crate::db::user::User;
+    use crate::db::capsule::Capsule;
+    use crate::db::user::Plan;
     use ergol::prelude::*;
 
-    let users = User::select().execute(&db).await.unwrap();
-    for user in users {
-        let capsules = user.capsules(&db).await.unwrap();
-        let mut user_disk_usage = 0;
-        for (mut capsule, _role) in capsules {
-            let path = &config.data_path.join(format!("{}", capsule.id));
+    for mut capsule in Capsule::select().execute(&db).await.unwrap() {
+        let owner = capsule.owner(&db).await.unwrap();
 
-            let output = run_command(&vec!["../scripts/psh", "du", path.to_str().unwrap()]);
-            match &output {
-                Ok(o) => {
-                    for line in std::str::from_utf8(&o.stdout)
-                        .map_err(|_| Error(Status::InternalServerError))
-                        .unwrap()
-                        .lines()
-                    {
-                        let du = line.parse::<i32>().unwrap();
-                        user_disk_usage = user_disk_usage + du;
-                        if du != capsule.disk_usage {
-                            capsule.disk_usage = du;
-                            capsule.save(&db).await.unwrap();
-                        }
+        // Skip capsule if it is stored on the other host.
+        if config.other_host.is_some() && (owner.plan >= Plan::PremiumLvl1) != config.premium_only {
+            continue;
+        }
+
+        let path = &config.data_path.join(format!("{}", capsule.id));
+
+        let output = run_command(&vec!["../scripts/psh", "du", path.to_str().unwrap()]);
+        match &output {
+            Ok(o) => {
+                for line in std::str::from_utf8(&o.stdout)
+                    .map_err(|_| Error(Status::InternalServerError))
+                    .unwrap()
+                    .lines()
+                {
+                    let du = line.parse::<i32>().unwrap();
+                    if du != capsule.disk_usage {
+                        capsule.disk_usage = du;
+                        capsule.save(&db).await.unwrap();
                     }
                 }
-                Err(_) => println!("error"),
-            };
-        }
+            }
+            Err(_) => println!("error"),
+        };
     }
 }
 
