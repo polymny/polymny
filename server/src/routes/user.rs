@@ -10,7 +10,7 @@ use tokio::fs::remove_dir_all;
 
 use rocket::form::Form;
 use rocket::http::{Cookie, CookieJar, SameSite, Status};
-use rocket::response::content::Html;
+use rocket::response::content::RawHtml as Html;
 use rocket::response::Redirect;
 use rocket::serde::json::{json, Json, Value};
 use rocket::State as S;

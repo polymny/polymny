@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Request};
-use rocket::response::content::Html;
+use rocket::response::content::RawHtml as Html;
 use rocket::response::{self, Redirect, Responder, Response};
 use rocket::serde::json::{json, Value};
 use rocket::State as S;
