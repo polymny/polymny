@@ -61,7 +61,7 @@ lazy_static! {
 
 /// The error type of this library.
 #[derive(Debug)]
-pub struct Error(Status);
+pub struct Error(pub Status);
 
 /// The result type of this library
 pub type Result<T> = StdResult<T, Error>;
