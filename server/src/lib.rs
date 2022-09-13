@@ -32,7 +32,7 @@ use tokio::sync::Semaphore;
 
 use ergol::deadpool::managed::Object;
 use ergol::tokio_postgres::Error as TpError;
-use ergol::{tokio, Ergol, Pool};
+use ergol::{tokio, Pool};
 
 use rocket::fairing::AdHoc;
 use rocket::http::Status;
@@ -100,7 +100,7 @@ impl_from_error!(std::str::Utf8Error);
 impl_from_error!(std::num::ParseIntError);
 
 /// A wrapper for a database connection extrated from a pool.
-pub struct Db(Object<Ergol, TpError>);
+pub struct Db(Object<ergol::pool::Manager>);
 
 impl Db {
     /// Extracts a database from a pool.
@@ -113,7 +113,7 @@ impl Db {
 }
 
 impl std::ops::Deref for Db {
-    type Target = Object<Ergol, TpError>;
+    type Target = Object<ergol::pool::Manager>;
     fn deref(&self) -> &Self::Target {
         &*&self.0
     }
@@ -253,7 +253,7 @@ impl<'a> FromParam<'a> for HashId {
 /// Resets the database.
 pub async fn reset_db() {
     let config = Config::from_figment(&rocket::Config::figment());
-    let pool = ergol::pool(&config.databases.database.url, 32);
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
     let db = Db::from_pool(pool).await.unwrap();
 
     remove_dir_all(&config.data_path).await.ok();
@@ -293,7 +293,7 @@ pub async fn reset_db() {
 /// Calculate disk usage for each user.
 pub async fn user_disk_usage() {
     let config = Config::from_figment(&rocket::Config::figment());
-    let pool = ergol::pool(&config.databases.database.url, 32);
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
     let db = Db::from_pool(pool).await.unwrap();
 
     use crate::db::capsule::Capsule;
@@ -333,7 +333,7 @@ pub async fn user_disk_usage() {
 /// update duration of all capsules
 pub async fn update_video_duration() {
     let config = Config::from_figment(&rocket::Config::figment());
-    let pool = ergol::pool(&config.databases.database.url, 32);
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
     let db = Db::from_pool(pool).await.unwrap();
 
     use crate::db::capsule::Capsule;
@@ -408,7 +408,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
         }))
         .attach(AdHoc::on_ignite("Database", |rocket| async move {
             let config = Config::from_rocket(&rocket);
-            let pool = ergol::pool(&config.databases.database.url, 32);
+            let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
             rocket.manage(pool)
         }))
         .attach(AdHoc::on_ignite("WebSockets", |rocket| async move {
