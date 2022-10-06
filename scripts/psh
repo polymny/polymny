@@ -60,6 +60,31 @@ generate_black_video(){
 }
 
 # USAGE:
+#   transcode_with_silent_audio_track  <input_path> <output_path>
+#
+# EXAMPLE:
+#   transcode_video  invideo.mp4   outvideo.mp4
+transcode_with_silent_audio_track() {
+
+    local input=$1
+    local output=$2
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+
+    echo "-i $input \
+        -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 \
+        -shortest \
+        -acodec $acodec  \
+        -ar $arate \
+        -ac 2 \
+        -b:a $abitrate \
+        -max_muxing_queue_size 2048 \
+        $output"
+
+}
+# USAGE:
 #   transocode_video  <input_path> <output_path>
 #
 # EXAMPLE:
@@ -745,8 +770,7 @@ run_ffmpeg_slide(){
 
 
     local percent_progress="0"
-    #For DEBUG of ffmpeg command
-    echo "$cmd">&2
+    #DEBUG echo "$cmd">&2
 
     $cmd | while read line; do
         local percent_progress=$(show_ffmpeg_progression $line $(echo "$duration_ms*1000" |bc )  )
@@ -912,8 +936,11 @@ compose_gos(){
     output_gos="gos_${gos_i}.mp4"
 
     if [[ "$record" == "null" ]] ; then
-        # No compostion to perform: output is the concatenation of files
-        cp $video_slides "${tmp_path}/$output_gos"
+        # No compostion to perform : add silent audio track to slide
+        cmd=$(header && transcode_with_silent_audio_track "$video_slides" "${tmp_path}/$output_gos")
+        #DEBUG echo $cmd >&2
+        $cmd
+
     else
         cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
         total_frames=$(echo "($slide_duration*25)/1000" | bc)
@@ -1250,8 +1277,13 @@ main() {
             generate_black_video "$@"
             ;;
 
+        "transcode")
+            cmd=$(header && transcode_video "$@")
+            $cmd
+            ;;
 
         *)
+            echo "UNKNONW OPTION "
             echo "$@"
 
     esac
