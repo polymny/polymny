@@ -38,6 +38,7 @@ use rocket::fairing::AdHoc;
 use rocket::http::Status;
 use rocket::request::{FromParam, FromRequest, Outcome, Request};
 use rocket::response::{self, Responder};
+use rocket::shield::{Frame, NoSniff, Permission, Shield};
 use rocket::{Ignite, Rocket, State};
 
 use crate::command::run_command;
@@ -401,7 +402,12 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
         rocket::build()
     };
 
+    let shield = Shield::new()
+        .enable(NoSniff::default())
+        .enable(Permission::default());
+
     let rocket = rocket
+        .attach(shield)
         .attach(AdHoc::on_ignite("Config", |rocket| async move {
             let config = Config::from_rocket(&rocket);
             rocket.manage(config)
