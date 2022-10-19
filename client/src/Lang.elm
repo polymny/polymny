@@ -1068,7 +1068,7 @@ replaceSlideOrAddExternalResource : Lang -> String
 replaceSlideOrAddExternalResource lang =
     case lang of
         FrFr ->
-            "Remplacer le slide / ajouter une resource externe"
+            "Remplacer le slide / ajouter une ressource externe"
 
         _ ->
             "Replace slide / add external resource"
