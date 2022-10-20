@@ -10,6 +10,7 @@ function setupPorts(app) {
         pointer = { x: 0, y: 0, down: false },
         ctx = null,
         recording,
+        recordingPointerForRecord = null,
         currentEvents,
         nextSlideCallbacks = [],
         onbeforeunloadvalue = false,
@@ -323,8 +324,8 @@ function setupPorts(app) {
         app.ports.webcamBound.send(null);
     }
 
-    function sendRecordToElmIfReady(port = app.ports.recordArrived) {
-        if (recordArrived === null || (isPremium && pointerArrived === null)) {
+    function sendRecordToElmIfReady() {
+        if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
             return;
         }
 
@@ -334,10 +335,12 @@ function setupPorts(app) {
             events: currentEvents,
         });
 
+        let port = recordingPointerForRecord === null ? app.ports.recordArrived : app.ports.pointerRecordArrived;
         port.send({
-            webcam_blob: recordArrived,
+            webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
             pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
-            events: currentEvents,
+            events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
+            matted: 'idle',
         });
 
         recordArrived = null;
@@ -511,6 +514,7 @@ function setupPorts(app) {
         if (recorder !== undefined && !recording) {
             pointerExists = false;
             recording = true;
+            recordingPointerForRecord = null;
             recorder.start();
             if (isPremium) {
                 pointerRecorder.start();
@@ -567,6 +571,7 @@ function setupPorts(app) {
     function startPointerRecording(record) {
         if (recorder !== undefined && !recording) {
             recording = true;
+            recordingPointerForRecord = record;
             pointerExists = false;
 
             let video = document.getElementById(videoId);
@@ -590,13 +595,6 @@ function setupPorts(app) {
                 pointerRecorder.stop();
                 recording = false;
                 app.ports.playRecordFinished.send(null);
-            };
-
-            pointerRecorder.ondataavailable = (data) => {
-                recordArrived = record.webcam_blob;
-                currentEvents = record.events;
-                pointerArrived = data.data;
-                sendRecordToElmIfReady(app.ports.pointerRecordArrived);
             };
 
             // Skip last transition which is the end of the video.
