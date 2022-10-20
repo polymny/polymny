@@ -63,7 +63,7 @@ navbar global user page =
         title =
             case capsule of
                 Just c ->
-                    Element.text (c.project ++ " / " ++ c.name)
+                    Element.text (Ui.shrink 20 c.project ++ " / " ++ Ui.shrink 20 c.name)
 
                 _ ->
                     Element.none
