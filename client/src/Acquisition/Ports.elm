@@ -51,6 +51,9 @@ port askNextSentence : () -> Cmd msg
 port playRecord : Json.Encode.Value -> Cmd msg
 
 
+port stopPlayingRecord : () -> Cmd msg
+
+
 port nextSlideReceived : (() -> msg) -> Sub msg
 
 

@@ -195,12 +195,21 @@ rightColumn global user submodel =
                         Element.none
                     ]
                 , Element.row [ Element.alignRight, Element.spacing 10, Element.centerY ]
-                    [ Ui.iconButton [ Font.color Colors.navbar ]
-                        { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
-                        , icon = Fa.play
-                        , text = Nothing
-                        , tooltip = Just (Lang.playRecord global.lang)
-                        }
+                    [ if Maybe.andThen .recordPlaying submodel /= Just record then
+                        Ui.iconButton [ Font.color Colors.navbar ]
+                            { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
+                            , icon = Fa.play
+                            , text = Nothing
+                            , tooltip = Just (Lang.playRecord global.lang)
+                            }
+
+                      else
+                        Ui.iconButton [ Font.color Colors.navbar ]
+                            { onPress = Just (Core.AcquisitionMsg Acquisition.StopPlayingRecord)
+                            , icon = Fa.stop
+                            , text = Nothing
+                            , tooltip = Just (Lang.stopRecord global.lang)
+                            }
                     , Ui.iconButton [ Font.color Colors.navbar ]
                         { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
                         , icon = Fa.check

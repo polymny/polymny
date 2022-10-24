@@ -41,6 +41,7 @@ type alias Model =
     , uploading : Maybe Float
     , state : State
     , status : Status
+    , recordPlaying : Maybe Record
     }
 
 
@@ -83,6 +84,7 @@ type alias Submodel =
     , showSettings : Bool
     , uploading : Maybe Float
     , status : Status
+    , recordPlaying : Maybe Record
     }
 
 
@@ -100,6 +102,7 @@ toSubmodel devices model =
     , showSettings = model.showSettings
     , uploading = model.uploading
     , status = model.status
+    , recordPlaying = model.recordPlaying
     }
 
 
@@ -150,6 +153,7 @@ init devices chosenDeviceIds capsule id =
                     _ ->
                         DetectingDevices
             , status = Status.NotSent
+            , recordPlaying = Nothing
             }
     in
     ( model
@@ -259,6 +263,7 @@ type Msg
     | AudioDeviceChanged AudioDevice
     | NextSentence
     | PlayRecord Record
+    | StopPlayingRecord
     | NextSlideReceived
     | PlayRecordFinished
     | UploadRecord Record

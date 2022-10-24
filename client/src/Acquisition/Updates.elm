@@ -278,8 +278,18 @@ update msg model =
         Acquisition.PlayRecord record ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 })
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recordPlaying = Just record })
                     , Ports.playRecord (Acquisition.encodeRecord record)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.StopPlayingRecord ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recordPlaying = Nothing })
+                    , Ports.stopPlayingRecord ()
                     )
 
                 _ ->
@@ -311,7 +321,7 @@ update msg model =
         Acquisition.PlayRecordFinished ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 }), Cmd.none )
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recording = False, recordPlaying = Nothing }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )

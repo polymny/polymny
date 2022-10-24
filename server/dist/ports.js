@@ -411,6 +411,26 @@ function setupPorts(app) {
         element.play();
     }
 
+    function stopPlayingRecord() {
+        playWebcam();
+        let video = document.getElementById(videoId);
+        if (video instanceof HTMLVideoElement) {
+            video.pause();
+        }
+
+        let extra = document.getElementById('extra');
+        if (extra instanceof HTMLVideoElement) {
+            extra.pause();
+            extra.currentTime = 0;
+        }
+
+        for (let id of nextSlideCallbacks) {
+            clearTimeout(id);
+        }
+
+        nextSlideCallbacks = [];
+    }
+
     async function playRecord(record) {
         let pointerCanvas;
         let video = document.getElementById(videoId);
@@ -485,6 +505,7 @@ function setupPorts(app) {
 
         function renderPointer() {
             if (video.paused || video.ended) {
+                ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
                 return;
             }
 
@@ -949,6 +970,7 @@ function setupPorts(app) {
     subscribe(app.ports.stopRecording, stopRecording);
     subscribe(app.ports.startPointerRecording, startPointerRecording);
     subscribe(app.ports.playRecord, playRecord);
+    subscribe(app.ports.stopPlayingRecord, stopPlayingRecord);
     subscribe(app.ports.askNextSlide, askNextSlide);
     subscribe(app.ports.askNextSentence, askNextSentence);
     subscribe(app.ports.uploadRecord, uploadRecord);

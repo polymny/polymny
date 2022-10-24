@@ -974,6 +974,16 @@ playRecord lang =
             "Play record"
 
 
+stopRecord : Lang -> String
+stopRecord lang =
+    case lang of
+        FrFr ->
+            "Arrêter la relecture l'enregistrement"
+
+        _ ->
+            "Stop record replay"
+
+
 dndWillBreak : Lang -> String
 dndWillBreak lang =
     case lang of
