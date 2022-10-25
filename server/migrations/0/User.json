@@ -1,0 +1,80 @@
+[
+  {
+    "type": "Table",
+    "name": "users",
+    "columns": [
+      {
+        "name": "id",
+        "ty": "Id",
+        "unique": false
+      },
+      {
+        "name": "username",
+        "ty": "String",
+        "unique": true
+      },
+      {
+        "name": "email",
+        "ty": "String",
+        "unique": true
+      },
+      {
+        "name": "secondary_email",
+        "ty": {
+          "Option": "String"
+        },
+        "unique": false
+      },
+      {
+        "name": "hashed_password",
+        "ty": "String",
+        "unique": false
+      },
+      {
+        "name": "activated",
+        "ty": "Bool",
+        "unique": false
+      },
+      {
+        "name": "activation_key",
+        "ty": {
+          "Option": "String"
+        },
+        "unique": true
+      },
+      {
+        "name": "secondary_email_key",
+        "ty": {
+          "Option": "String"
+        },
+        "unique": true
+      },
+      {
+        "name": "reset_password_key",
+        "ty": {
+          "Option": "String"
+        },
+        "unique": true
+      },
+      {
+        "name": "unsubscribe_key",
+        "ty": {
+          "Option": "String"
+        },
+        "unique": true
+      },
+      {
+        "name": "plan",
+        "ty": {
+          "Enum": "plan"
+        },
+        "unique": false
+      },
+      {
+        "name": "disk_quota",
+        "ty": "I32",
+        "unique": false
+      }
+    ]
+  }
+]

@@ -67,6 +67,14 @@ update msg model =
         Acquisition.WebcamBound ->
             case model.page of
                 Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | webcamBound = True }), Ports.bindPointer () )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PointerBound ->
+            case model.page of
+                Core.Acquisition p ->
                     ( mkModel model (Core.Acquisition { p | webcamBound = True }), Cmd.none )
 
                 _ ->
@@ -89,6 +97,16 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        Acquisition.StartPointerRecording record ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | recording = True, currentSlide = 0, currentLine = 0 })
+                    , Ports.startPointerRecording (Acquisition.encodeRecord record)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
         Acquisition.StopRecording ->
             case model.page of
                 Core.Acquisition p ->
@@ -100,7 +118,27 @@ update msg model =
         Acquisition.RecordArrived record ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Ports.stopRecording () )
+                    ( mkModel model (Core.Acquisition { p | records = record :: p.records }), Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.PointerRecordArrived record ->
+            case model.page of
+                Core.Acquisition p ->
+                    let
+                        updater : Acquisition.Record -> Acquisition.Record
+                        updater old =
+                            if old.webcamBlob == record.webcamBlob then
+                                record
+
+                            else
+                                old
+
+                        newRecords =
+                            List.map updater p.records
+                    in
+                    ( mkModel model (Core.Acquisition { p | records = newRecords }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -210,6 +248,12 @@ update msg model =
                                     0
                     in
                     case ( p.currentLine + 1 < lineNumber, nextSlide, p.recording ) of
+                        ( _, _, False ) ->
+                            -- If not recording, start recording (useful for remotes)
+                            ( mkModel model (Core.Acquisition { p | recording = True, currentSlide = 0, currentLine = 0 })
+                            , Ports.startRecording ()
+                            )
+
                         ( True, _, True ) ->
                             -- If there is another line, go to the next line
                             ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
@@ -222,25 +266,11 @@ update msg model =
                             , Ports.askNextSlide ()
                             )
 
-                        ( True, _, False ) ->
-                            ( mkModel model (Core.Acquisition { p | currentLine = p.currentLine + 1 })
-                            , Cmd.none
-                            )
-
-                        ( _, Just _, False ) ->
-                            ( mkModel model (Core.Acquisition { p | currentSlide = p.currentSlide + 1, currentLine = 0 })
-                            , Cmd.none
-                            )
-
                         ( _, _, True ) ->
                             -- If recording and end reach, stop recording
                             ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0, recording = False })
                             , Ports.stopRecording ()
                             )
-
-                        ( _, _, _ ) ->
-                            -- Otherwise, go back to begining
-                            ( mkModel model (Core.Acquisition { p | currentSlide = 0, currentLine = 0 }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -248,8 +278,18 @@ update msg model =
         Acquisition.PlayRecord record ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 })
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recordPlaying = Just record })
                     , Ports.playRecord (Acquisition.encodeRecord record)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Acquisition.StopPlayingRecord ->
+            case model.page of
+                Core.Acquisition p ->
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recordPlaying = Nothing })
+                    , Ports.stopPlayingRecord ()
                     )
 
                 _ ->
@@ -281,7 +321,7 @@ update msg model =
         Acquisition.PlayRecordFinished ->
             case model.page of
                 Core.Acquisition p ->
-                    ( mkModel model (Core.Acquisition { p | currentSlide = 0 }), Cmd.none )
+                    ( mkModel model (Core.Acquisition { p | currentSlide = 0, recording = False, recordPlaying = Nothing }), Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -359,6 +399,23 @@ update msg model =
 
         Acquisition.RefreshDevices ->
             ( { model | global = { global | devices = Nothing } }, Ports.findDevices True )
+
+        Acquisition.IncreasePromptSize ->
+            let
+                newSize =
+                    global.promptSize + 5
+            in
+            ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
+
+        Acquisition.DecreasePromptSize ->
+            let
+                newSize =
+                    global.promptSize - 5 |> max 10
+            in
+            ( { model | global = { global | promptSize = newSize } }, Ports.setPromptSize newSize )
+
+        Acquisition.SetCanvas s ->
+            ( model, Ports.setCanvas (Acquisition.encodeSetCanvas s) )
 
 
 mkModel : Core.Model -> Core.Page -> Core.Model

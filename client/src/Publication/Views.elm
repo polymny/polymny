@@ -5,7 +5,9 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
+import FontAwesome as Fa
 import Html
 import Html.Attributes
 import Html.Events
@@ -25,30 +27,14 @@ view global user model =
                 case Capsule.videoPath model.capsule of
                     Just p ->
                         [ Element.el Ui.formTitle (Element.text (Lang.currentProducedVideo global.lang))
-                        , Element.row [ Ui.wf ] [ videoElement p, Element.el [ Ui.wf ] Element.none ]
+                        , Element.row [ Ui.wf ]
+                            [ videoElement p
+                            , Element.el [ Ui.wf ] Element.none
+                            ]
                         ]
 
                     Nothing ->
                         [ Element.text (Lang.videoNotProduced global.lang) ]
-
-        privacyOption : Capsule.Privacy -> Html.Html Core.Msg
-        privacyOption privacy =
-            Html.option
-                [ Html.Attributes.value (Capsule.privacyToString privacy)
-                , Html.Attributes.selected (privacy == model.capsule.privacy)
-                ]
-                [ Html.text (Lang.privacy global.lang privacy) ]
-
-        onPrivacyChange =
-            Html.Events.onInput
-                (\x ->
-                    case Capsule.stringToPrivacy x of
-                        Just p ->
-                            Core.PublicationMsg (Publication.PrivacyChanged p)
-
-                        _ ->
-                            Core.Noop
-                )
 
         settings =
             Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ]
@@ -85,10 +71,18 @@ view global user model =
                             }
 
                     Capsule.Done ->
-                        Ui.simpleButton
-                            { onPress = Just (Core.PublicationMsg Publication.Unpublish)
-                            , label = Element.text (Lang.unpublishVideo global.lang)
-                            }
+                        Element.row [ Element.spacing 10 ]
+                            [ Ui.iconButton [ Font.color Colors.navbar ]
+                                { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just
+                                , icon = Fa.link
+                                , text = Nothing
+                                , tooltip = Just (Lang.copyVideoUrl global.lang)
+                                }
+                            , Ui.simpleButton
+                                { onPress = Just (Core.PublicationMsg Publication.Unpublish)
+                                , label = Element.text (Lang.unpublishVideo global.lang)
+                                }
+                            ]
 
                     _ ->
                         Element.row [ Element.spacing 10 ]

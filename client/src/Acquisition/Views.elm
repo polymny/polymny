@@ -18,7 +18,7 @@ import Status
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 import User exposing (User)
-import Utils exposing (tern)
+import Utils exposing (formatTime, tern)
 
 
 shortcuts : Acquisition.Model -> Keyboard.RawKey -> Core.Msg
@@ -132,7 +132,7 @@ view global user model =
 
 
 rightColumn : Core.Global -> User -> Maybe Acquisition.Submodel -> Element Core.Msg
-rightColumn global _ submodel =
+rightColumn global user submodel =
     let
         settingsButton =
             Ui.primaryButton
@@ -170,26 +170,53 @@ rightColumn global _ submodel =
 
         recordView : Int -> Acquisition.Record -> Element Core.Msg
         recordView id record =
-            Element.row [ Ui.wf, Element.spacing 10, Element.paddingXY 0 10 ]
+            Element.row [ Ui.wf, Element.spacing 20, Element.padding 10, Border.color Colors.greyLight, Border.rounded 5, Border.width 1 ]
                 [ Element.text (String.fromInt (id + 1))
-                , Ui.iconButton [ Font.color Colors.navbar ]
-                    { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
-                    , icon = Fa.play
-                    , text = Nothing
-                    , tooltip = Just (Lang.playRecord global.lang)
-                    }
-                , Ui.iconButton [ Font.color Colors.navbar ]
-                    { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
-                    , icon = Fa.check
-                    , text = Nothing
-                    , tooltip = Just (Lang.uploadRecord global.lang)
-                    }
-                , record.events
-                    |> List.reverse
-                    |> List.head
-                    |> Maybe.map (\x -> formatTime x.time)
-                    |> Maybe.withDefault ""
-                    |> Element.text
+                , Element.column [ Element.spacing 10 ]
+                    [ Element.row [ Element.spacing 10 ]
+                        [ record.events
+                            |> List.reverse
+                            |> List.head
+                            |> Maybe.map (\x -> formatTime x.time)
+                            |> Maybe.withDefault ""
+                            |> Element.text
+                        ]
+                    , if User.isPremium user then
+                        Element.row [ Element.spacing 10 ]
+                            [ Input.button [] { label = Element.text "record", onPress = Just (Core.AcquisitionMsg (Acquisition.StartPointerRecording record)) }
+                            , if record.pointerBlob == Nothing then
+                                Element.text "no pointer"
+
+                              else
+                                Element.text "pointer"
+                            ]
+
+                      else
+                        Element.none
+                    ]
+                , Element.row [ Element.alignRight, Element.spacing 10, Element.centerY ]
+                    [ if Maybe.andThen .recordPlaying submodel /= Just record then
+                        Ui.iconButton [ Font.color Colors.navbar ]
+                            { onPress = Just (Core.AcquisitionMsg (Acquisition.PlayRecord record))
+                            , icon = Fa.play
+                            , text = Nothing
+                            , tooltip = Just (Lang.playRecord global.lang)
+                            }
+
+                      else
+                        Ui.iconButton [ Font.color Colors.navbar ]
+                            { onPress = Just (Core.AcquisitionMsg Acquisition.StopPlayingRecord)
+                            , icon = Fa.stop
+                            , text = Nothing
+                            , tooltip = Just (Lang.stopRecord global.lang)
+                            }
+                    , Ui.iconButton [ Font.color Colors.navbar ]
+                        { onPress = Just (Core.AcquisitionMsg (Acquisition.UploadRecord record))
+                        , icon = Fa.check
+                        , text = Nothing
+                        , tooltip = Just (Lang.uploadRecord global.lang)
+                        }
+                    ]
                 ]
 
         records =
@@ -201,6 +228,7 @@ rightColumn global _ submodel =
                         , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
                         , Border.color Colors.greyLighter
                         , Element.padding 10
+                        , Element.spacing 10
                         ]
                         (Element.el [ Element.centerX ] (Element.text (Lang.records global.lang))
                             :: List.indexedMap recordView (List.reverse s.records)
@@ -366,7 +394,10 @@ centerElement global user model =
             promptElement global user model
 
         slide =
-            slideElement global user model
+            Element.row [ Ui.wf, Ui.hf ]
+                [ toolbarElement global user model
+                , slideElement global user model
+                ]
     in
     Element.column [ Ui.wf, Ui.hf ] (tern global.acquisitionInverted [ slide, prompt ] [ prompt, slide ])
 
@@ -429,7 +460,7 @@ promptElement global user model =
             case currentSentence of
                 Just h ->
                     Element.el
-                        (Font.size 35 :: Font.color Colors.white :: promptAttributes)
+                        (Font.size (global.promptSize + 10) :: Font.color Colors.white :: promptAttributes)
                         (Element.paragraph [] [ Element.text h ])
 
                 _ ->
@@ -439,7 +470,7 @@ promptElement global user model =
             case nextSentence of
                 Just h ->
                     Element.row
-                        (Font.size 25 :: Font.color Colors.grey :: promptAttributes)
+                        (Font.size global.promptSize :: Font.color Colors.grey :: promptAttributes)
                         [ Element.paragraph [] [ nextSlideIcon, Element.text h ] ]
 
                 _ ->
@@ -509,6 +540,18 @@ promptElement global user model =
                 , Element.el [ Element.width Element.fill ] (Element.el [ Element.centerX ] invertButton)
                 , Element.text (Lang.slide global.lang ++ " " ++ String.fromInt (model.currentSlide + 1) ++ " / " ++ String.fromInt totalSlides)
                 , Element.text (Lang.line global.lang ++ " " ++ String.fromInt currentLine ++ " / " ++ String.fromInt totalLines)
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg Acquisition.DecreasePromptSize)
+                    , text = Nothing
+                    , tooltip = Just (Lang.zoomOut global.lang)
+                    , icon = Fa.searchMinus
+                    }
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.AcquisitionMsg Acquisition.IncreasePromptSize)
+                    , text = Nothing
+                    , tooltip = Just (Lang.zoomIn global.lang)
+                    , icon = Fa.searchPlus
+                    }
                 ]
 
         fullPrompt =
@@ -534,6 +577,113 @@ promptElement global user model =
             (tern global.acquisitionInverted [ info, fullPrompt ] [ fullPrompt, info ])
         , Element.el [ Ui.wf ] Element.none
         ]
+
+
+toolbarElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
+toolbarElement global user model =
+    if not (User.isPremium user) then
+        Element.none
+
+    else
+        let
+            colorToString : Element.Color -> String
+            colorToString color =
+                let
+                    { red, green, blue } =
+                        Element.toRgb color
+
+                    r =
+                        floor (255 * red) |> String.fromInt
+
+                    g =
+                        floor (255 * green) |> String.fromInt
+
+                    b =
+                        floor (255 * blue) |> String.fromInt
+                in
+                "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
+
+            colorToButton : Element.Color -> Element Core.Msg
+            colorToButton color =
+                Input.button [ Ui.wf, Element.height (Element.px 45) ]
+                    { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
+                    , onPress =
+                        colorToString color
+                            |> Acquisition.ChangeColor
+                            |> Acquisition.SetCanvas
+                            |> Core.AcquisitionMsg
+                            |> Just
+                    }
+
+            mkMsg : Acquisition.SetCanvas -> Maybe Core.Msg
+            mkMsg style =
+                style
+                    |> Acquisition.SetCanvas
+                    |> Core.AcquisitionMsg
+                    |> Just
+        in
+        Element.column [ Element.centerY ]
+            [ Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.bullseye
+                            , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Pointer)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.paintBrush
+                            , onPress = mkMsg (Acquisition.ChangeStyle Acquisition.Brush)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                ]
+            , Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.eraser
+                            , onPress = mkMsg Acquisition.Erase
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ] Element.none
+                ]
+            , Element.row [ Ui.wf, Element.spacing 5 ]
+                [ Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.circle
+                            , onPress = mkMsg (Acquisition.ChangeSize 20)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                , Element.el [ Ui.wf, Element.height (Element.px 45) ]
+                    (Element.el [ Element.centerX, Element.centerY, Font.color Colors.navbar, Font.size 30 ]
+                        (Ui.iconButton []
+                            { icon = Fa.circle
+                            , onPress = mkMsg (Acquisition.ChangeSize 40)
+                            , text = Nothing
+                            , tooltip = Nothing
+                            }
+                        )
+                    )
+                ]
+            , palette
+                |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
+                |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
+            ]
 
 
 slideElement : Core.Global -> User -> Acquisition.Submodel -> Element Core.Msg
@@ -569,18 +719,34 @@ slideElement global user model =
                 ]
 
         ( Just s, Nothing ) ->
-            Element.el
-                [ Input.focusedOnLoad
-                , Ui.wf
-                , Ui.hfp 2
-                , ("center / contain content-box no-repeat url('" ++ Capsule.slidePath model.capsule s ++ "')")
-                    |> Html.Attributes.style "background"
-                    |> Element.htmlAttribute
+            Element.column [ Ui.wf, Ui.hfp 2 ]
+                [ Element.el [ Ui.hf ] Element.none
+                , Element.image
+                    [ Ui.wf
+                    , Ui.hf
+                    , Element.htmlAttribute (Html.Attributes.id "slideimg")
+                    , Element.inFront (Element.html (Html.canvas [ Html.Attributes.id "pointer-canvas" ] []))
+                    ]
+                    { description = "slide", src = Capsule.slidePath model.capsule s }
+                , Element.el [ Ui.hf ] Element.none
                 ]
-                Element.none
 
         _ ->
             Element.none
+
+
+palette : List ( Element.Color, Element.Color )
+palette =
+    [ ( Element.rgb255 255 0 0, Element.rgb255 128 0 0 )
+    , ( Element.rgb255 255 128 0, Element.rgb255 128 64 0 )
+    , ( Element.rgb255 255 255 0, Element.rgb255 128 128 0 )
+    , ( Element.rgb255 0 255 0, Element.rgb255 0 128 0 )
+    , ( Element.rgb255 0 255 255, Element.rgb255 0 128 128 )
+    , ( Element.rgb255 0 0 255, Element.rgb255 0 0 128 )
+    , ( Element.rgb255 255 0 255, Element.rgb255 128 0 128 )
+    , ( Element.rgb255 255 128 128, Element.rgb255 128 128 255 )
+    , ( Element.rgb255 128 255 128, Element.rgb255 255 255 128 )
+    ]
 
 
 videoId : String
@@ -601,32 +767,3 @@ videoElement attr =
 paragraph : Element Core.Msg -> Element Core.Msg
 paragraph x =
     Element.paragraph [] [ x ]
-
-
-formatTime : Int -> String
-formatTime milliseconds =
-    let
-        seconds =
-            milliseconds // 1000
-
-        minutes =
-            seconds // 60
-
-        secs =
-            modBy 60 seconds
-
-        secsString =
-            if secs < 10 then
-                "0" ++ String.fromInt secs
-
-            else
-                String.fromInt secs
-
-        minutesString =
-            if minutes < 10 then
-                "0" ++ String.fromInt minutes
-
-            else
-                String.fromInt minutes
-    in
-    minutesString ++ ":" ++ secsString

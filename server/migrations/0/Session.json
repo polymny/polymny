@@ -1,0 +1,25 @@
+[
+  {
+    "type": "Table",
+    "name": "sessions",
+    "columns": [
+      {
+        "name": "id",
+        "ty": "Id",
+        "unique": false
+      },
+      {
+        "name": "secret",
+        "ty": "String",
+        "unique": true
+      },
+      {
+        "name": "owner",
+        "ty": {
+          "Reference": "users"
+        },
+        "unique": false
+      }
+    ]
+  }
+]

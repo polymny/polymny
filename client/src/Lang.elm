@@ -974,6 +974,16 @@ playRecord lang =
             "Play record"
 
 
+stopRecord : Lang -> String
+stopRecord lang =
+    case lang of
+        FrFr ->
+            "Arrêter la relecture l'enregistrement"
+
+        _ ->
+            "Stop record replay"
+
+
 dndWillBreak : Lang -> String
 dndWillBreak lang =
     case lang of
@@ -1068,7 +1078,7 @@ replaceSlideOrAddExternalResource : Lang -> String
 replaceSlideOrAddExternalResource lang =
     case lang of
         FrFr ->
-            "Remplacer le slide / ajouter une resource externe"
+            "Remplacer le slide / ajouter une ressource externe"
 
         _ ->
             "Replace slide / add external resource"
@@ -1304,6 +1314,16 @@ produceVideo lang =
             "Produce video"
 
 
+produceGosVideo : Lang -> String -> String
+produceGosVideo lang gos =
+    case lang of
+        FrFr ->
+            "Produire le grain " ++ gos
+
+        _ ->
+            "Produce grain " ++ gos
+
+
 publish : Lang -> String
 publish lang =
     case lang of
@@ -1352,6 +1372,16 @@ watchVideo lang =
 
         _ ->
             "Watch video"
+
+
+watchGosVideo : Lang -> String -> String
+watchGosVideo lang gos =
+    case lang of
+        FrFr ->
+            "Voir le grain " ++ gos
+
+        _ ->
+            "Watch grain " ++ gos
 
 
 producing : Lang -> String
@@ -1838,6 +1868,16 @@ activateKeying lang =
             "Activate keying"
 
 
+activateFade : Lang -> String
+activateFade lang =
+    case lang of
+        FrFr ->
+            "Activer le fading"
+
+        _ ->
+            "Activate fading"
+
+
 errorUploadingPdf : Lang -> String
 errorUploadingPdf lang =
     case lang of
@@ -1856,6 +1896,16 @@ grain lang =
 
         _ ->
             "Grain"
+
+
+custom : Lang -> String
+custom lang =
+    case lang of
+        FrFr ->
+            "Personnalisé"
+
+        _ ->
+            "Custom"
 
 
 enterNewNameForCapsule : Lang -> String
@@ -1886,6 +1936,16 @@ chooseProject lang =
 
         _ ->
             "Choose project"
+
+
+recordsWillBeLost : Lang -> String
+recordsWillBeLost lang =
+    case lang of
+        FrFr ->
+            "Les enregistrements non validés seront perdus."
+
+        _ ->
+            "Non validated records will be lost."
 
 
 explainPrivate : Lang -> String
@@ -1936,3 +1996,13 @@ close lang =
 
         _ ->
             "Close"
+
+
+createGrain : Lang -> String
+createGrain lang =
+    case lang of
+        FrFr ->
+            "Créer un grain"
+
+        _ ->
+            "Create grain"

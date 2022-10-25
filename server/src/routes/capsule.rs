@@ -21,7 +21,7 @@ use rocket::{Data, State as S};
 
 use crate::command::{export_slides, run_command};
 use crate::config::Config;
-use crate::db::capsule::{Capsule, Gos, Privacy, Record, Role, Slide, WebcamSettings};
+use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::User;
 use crate::websockets::WebSockets;
@@ -92,6 +92,7 @@ pub async fn new_capsule(
             }],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
+            fade: Fade::none(),
         })
         .collect::<Vec<_>>();
 
@@ -243,10 +244,57 @@ pub async fn upload_record(
         None
     };
 
-    gos.record = Some(Record { uuid, size });
+    gos.record = Some(Record {
+        uuid,
+        size,
+        pointer_uuid: None,
+    });
+
     if size.is_none() {
         gos.webcam_settings = WebcamSettings::Disabled;
     }
+    capsule.set_changed();
+    capsule.save(&db).await?;
+
+    Ok(capsule.to_json(role, &db).await?)
+}
+
+/// The route that uploads a pointer to a capsule for a specific gos.
+#[post("/upload-pointer/<id>/<gos>", data = "<data>")]
+pub async fn upload_pointer(
+    user: User,
+    db: Db,
+    config: &S<Config>,
+    id: HashId,
+    gos: i32,
+    data: Data<'_>,
+) -> Result<Value> {
+    // Check that the user has write access to the capsule.
+    let (mut capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    let gos = capsule
+        .structure
+        .0
+        .get_mut(gos as usize)
+        .ok_or(Error(Status::BadRequest))?;
+
+    if gos.record.is_none() {
+        return Err(Error(Status::BadRequest));
+    }
+
+    let pointer_uuid = Uuid::new_v4();
+    let output = config
+        .data_path
+        .join(format!("{}", *id))
+        .join("assets")
+        .join(format!("{}.webm", pointer_uuid));
+
+    data.open(1_i32.gibibytes()).into_file(output).await?;
+
+    gos.record.as_mut().unwrap().pointer_uuid = Some(pointer_uuid);
+
     capsule.set_changed();
     capsule.save(&db).await?;
 
@@ -557,11 +605,246 @@ pub async fn add_slide(
     Ok(capsule.to_json(role, &db).await?)
 }
 
+/// Route to create a gos at a specific place in the capsule.
+#[post("/add-gos/<id>/<gos>/<page>", data = "<data>")]
+pub async fn add_gos(
+    user: User,
+    id: HashId,
+    gos: i32,
+    page: i32,
+    db: Db,
+    data: Data<'_>,
+    config: &S<Config>,
+    content_type: &ContentType,
+) -> Result<Value> {
+    let (mut capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    if gos < 0 || gos as usize > capsule.structure.0.len() {
+        return Err(Error(Status::BadRequest));
+    }
+
+    capsule.structure.0.insert(gos as usize, Gos::new());
+    let gos = capsule
+        .structure
+        .0
+        .get_mut(gos as usize)
+        .ok_or(Error(Status::BadRequest))?;
+
+    let path = config
+        .data_path
+        .join(format!("{}", capsule.id))
+        .join("assets")
+        .join(format!("{}", Uuid::new_v4()));
+
+    data.open(1_i32.gibibytes()).into_file(&path).await?;
+
+    let path = path.to_str().ok_or(Error(Status::InternalServerError))?;
+
+    let output_uuid = Uuid::new_v4();
+    let output = config
+        .data_path
+        .join(format!("{}", *id))
+        .join("assets")
+        .join(format!("{}", output_uuid));
+
+    let output = output.to_str().ok_or(Error(Status::InternalServerError))?;
+
+    let _extra = if content_type.media_type().top() == "image" {
+        // Not very clean but working
+
+        run_command(&vec![
+            "../scripts/psh",
+            "pdf-to-png",
+            &path,
+            &format!("{}.png", output),
+            &config.pdf_target_density,
+            &config.pdf_target_size,
+        ])?;
+
+        false
+    } else if *content_type == ContentType::PDF {
+        // Not very clean either, but should work too
+
+        run_command(&vec![
+            "../scripts/psh",
+            "pdf-to-png",
+            &format!("{}[{}]", path, page),
+            &format!("{}.png", output),
+            &config.pdf_target_density,
+            &config.pdf_target_size,
+        ])?;
+
+        false
+    } else if content_type.media_type().top() == "video" {
+        return Err(Error(Status::UnsupportedMediaType));
+
+        // run_command_with_output(&vec![
+        //     "../scripts/psh",
+        //     "on-video-upload",
+        //     &path,
+        //     &format!("{}.mp4", output),
+        // ])?;
+
+        // true
+    } else {
+        return Err(Error(Status::UnsupportedMediaType));
+    };
+
+    gos.slides.push(Slide {
+        uuid: output_uuid,
+        extra: None,
+        prompt: String::new(),
+    });
+
+    capsule.set_changed();
+    capsule.save(&db).await?;
+
+    Ok(capsule.to_json(role, &db).await?)
+}
+
 /// The route that triggers the production of a capsule.
 #[post("/produce/<id>")]
 pub async fn produce(
     user: User,
     id: HashId,
+    socks: &S<WebSockets>,
+    sem: &S<Arc<Semaphore>>,
+    config: &S<Config>,
+    db: Db,
+) -> Result<()> {
+    let (mut capsule, _) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    if capsule.produced == TaskStatus::Running {
+        return Err(Error(Status::Conflict));
+    }
+
+    let socks = socks.inner().clone();
+    let sem = sem.inner().clone();
+
+    let output_path = config.data_path.join(format!("{}", *id)).join("output.mp4");
+
+    tokio::spawn(async move {
+        let child = Command::new("../scripts/psh")
+            .arg("on-produce")
+            .arg(format!("{}", capsule.id))
+            .arg("-1")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn();
+
+        let succeed = if let Ok(mut child) = child {
+            capsule.produced = TaskStatus::Running;
+            capsule.published = TaskStatus::Idle;
+            capsule.production_pid = child.id().map(|x| x as i32);
+            capsule.save(&db).await.ok();
+
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin
+                    .write_all(json!(capsule.structure.0).to_string().as_bytes())
+                    .await
+                    .unwrap();
+
+                if let Ok(_) = sem.acquire().await {
+                    child.stdin.unwrap();
+                    let stdout = child.stdout.take().unwrap();
+                    let reader = BufReader::new(stdout);
+
+                    let mut lines = reader.lines();
+                    while let Some(line) = lines.next_line().await.unwrap() {
+                        capsule
+                            .notify_production_progress(
+                                &id.hash(),
+                                &format!("{}", line),
+                                &db,
+                                &socks,
+                            )
+                            .await
+                            .ok();
+                    }
+                    true
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        capsule.produced = if succeed {
+            TaskStatus::Done
+        } else {
+            TaskStatus::Idle
+        };
+
+        let output = run_command(&vec![
+            "../scripts/psh",
+            "duration",
+            output_path.to_str().unwrap(),
+        ]);
+
+        match &output {
+            Ok(o) => {
+                let line = ((std::str::from_utf8(&o.stdout)
+                    .map_err(|_| Error(Status::InternalServerError))
+                    .unwrap()
+                    .trim()
+                    .parse::<f32>()
+                    .unwrap())
+                    * 1000.) as i32;
+
+                capsule.duration_ms = line;
+                capsule.save(&db).await.ok();
+            }
+            Err(_) => error!("Impossible to get duration"),
+        };
+
+        capsule.production_pid = None;
+        capsule.save(&db).await.ok();
+
+        if succeed {
+            capsule
+                .notify_production(&id.hash(), &db, &socks)
+                .await
+                .ok();
+
+            user.notify(
+                &socks,
+                "Production terminée",
+                &format!(
+                    "La capsule \"{}\" a été correctement produite.",
+                    capsule.name
+                ),
+                &db,
+            )
+            .await
+            .ok();
+        } else {
+            user.notify(
+                &socks,
+                "Production terminée",
+                &format!("La production de la capsule \"{}\" a échoué.", capsule.name),
+                &db,
+            )
+            .await
+            .ok();
+        };
+    });
+
+    Ok(())
+}
+
+/// The route that triggers the production of one gos.
+#[post("/produce-gos/<id>/<gos>")]
+pub async fn produce_gos(
+    user: User,
+    id: HashId,
+    gos: i32,
     socks: &S<WebSockets>,
     sem: &S<Arc<Semaphore>>,
     db: Db,
@@ -581,6 +864,7 @@ pub async fn produce(
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
+            .arg(format!("{}", gos))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn();
@@ -665,7 +949,6 @@ pub async fn produce(
 
     Ok(())
 }
-
 /// The route that cancels the production of a capsule.
 #[post("/cancel-production/<id>")]
 pub async fn cancel_production(user: User, id: HashId, db: Db) -> Result<()> {

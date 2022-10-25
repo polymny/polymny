@@ -1,6 +1,6 @@
 //! This module contains everything that manage the capsule in the database.
-
 use chrono::{NaiveDateTime, Utc};
+use std::default::Default;
 
 use ergol::prelude::*;
 use ergol::tokio_postgres::types::Json;
@@ -141,6 +141,9 @@ pub struct Record {
     /// The uuid of the record.
     pub uuid: Uuid,
 
+    /// The uuid of the pointer of the record.
+    pub pointer_uuid: Option<Uuid>,
+
     /// The size of the record, if it contains video.
     pub size: Option<(u32, u32)>,
 }
@@ -182,6 +185,40 @@ pub struct Event {
     pub time: i32,
 }
 
+/// Options for audio/video fade in and fade out
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Fade {
+    /// duration of video fade in
+    vfadein: Option<i32>,
+
+    /// duration of video fade out
+    vfadeout: Option<i32>,
+
+    /// duration of audio fade in
+    afadein: Option<i32>,
+
+    /// duration of audio fade out
+    afadeout: Option<i32>,
+}
+
+impl Fade {
+    /// Returns the default fade, which is no fade at all.
+    pub fn none() -> Fade {
+        Fade {
+            vfadein: None,
+            vfadeout: None,
+            afadein: None,
+            afadeout: None,
+        }
+    }
+}
+
+impl Default for Fade {
+    fn default() -> Fade {
+        Fade::none()
+    }
+}
+
 /// The different pieces of information that we collect about a gos.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gos {
@@ -196,6 +233,10 @@ pub struct Gos {
 
     /// The webcam settings of the gos.
     pub webcam_settings: WebcamSettings,
+
+    /// Video/audio fade options
+    #[serde(default)]
+    pub fade: Fade,
 }
 
 impl Gos {
@@ -206,6 +247,7 @@ impl Gos {
             slides: vec![],
             events: vec![],
             webcam_settings: WebcamSettings::default(),
+            fade: Fade::none(),
         }
     }
 }
@@ -270,6 +312,9 @@ pub struct Capsule {
     /// Capsule disk usage (in MB)
     pub disk_usage: i32,
 
+    /// duration of produced video in ms
+    pub duration_ms: i32,
+
     /// The user that has rights on the capsule.
     #[many_to_many(capsules, Role)]
     pub users: User,
@@ -299,6 +344,7 @@ impl Capsule {
             true,
             Json(vec![]),
             Utc::now().naive_utc(),
+            0,
             0,
         )
         .save(&db)
@@ -342,6 +388,7 @@ impl Capsule {
             "users": users,
             "prompt_subtitles": self.prompt_subtitles,
             "disk_usage":self.disk_usage,
+            "duration_ms":self.duration_ms
         }))
     }
 
@@ -400,7 +447,7 @@ impl Capsule {
     ) -> Result<()> {
         let text = json!({
             "type": "capsule_production_progress",
-            "msg": msg,
+            "msg": msg.parse::<f32>().map_err(|_|Error(Status::InternalServerError))?,
             "id": id,
         });
 
@@ -447,5 +494,16 @@ impl Capsule {
         }
 
         Ok(())
+    }
+
+    /// Retrieves the owner of a capsule.
+    pub async fn owner(&self, db: &Db) -> Result<User> {
+        for (user, role) in self.users(db).await? {
+            if role == Role::Owner {
+                return Ok(user);
+            }
+        }
+
+        Err(Error(Status::NotFound))
     }
 }

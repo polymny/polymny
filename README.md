@@ -1,8 +1,9 @@
 <p align="center">
-<img src="/server/dist/fulllogo.png"
-     alt="Polymny logo"
-     width="150"
-     style="align:center" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/server/dist/fulllogo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="/server/dist/fulllogo.png">
+  <img alt="Polymny Studio" src="/server/dist/fulllogo.png">
+</picture>
 </p>
 
 <p align="center">

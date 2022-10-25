@@ -41,27 +41,33 @@ type alias Model =
     , uploading : Maybe Float
     , state : State
     , status : Status
+    , recordPlaying : Maybe Record
     }
 
 
 type alias Record =
     { events : List Capsule.Event
-    , blob : Encode.Value
+    , webcamBlob : Encode.Value
+    , pointerBlob : Maybe Encode.Value
+    , old : Bool
     }
 
 
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map2 Record
+    Decode.map4 Record
         (Decode.field "events" (Decode.list Capsule.decodeEvent))
-        (Decode.field "blob" Decode.value)
+        (Decode.field "webcam_blob" Decode.value)
+        (Decode.field "pointer_blob" (Decode.nullable Decode.value))
+        (Decode.succeed False)
 
 
 encodeRecord : Record -> Encode.Value
 encodeRecord record =
     Encode.object
         [ ( "events", Encode.list Capsule.encodeEvent record.events )
-        , ( "blob", record.blob )
+        , ( "webcam_blob", record.webcamBlob )
+        , ( "pointer_blob", record.pointerBlob |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -78,6 +84,7 @@ type alias Submodel =
     , showSettings : Bool
     , uploading : Maybe Float
     , status : Status
+    , recordPlaying : Maybe Record
     }
 
 
@@ -95,6 +102,7 @@ toSubmodel devices model =
     , showSettings = model.showSettings
     , uploading = model.uploading
     , status = model.status
+    , recordPlaying = model.recordPlaying
     }
 
 
@@ -115,8 +123,14 @@ init devices chosenDeviceIds capsule id =
                 in
                 case ( Maybe.map .record gos, gos ) of
                     ( Just (Just r), Just g ) ->
-                        [ { blob = Encode.string (Capsule.assetPath capsule (r.uuid ++ ".webm"))
+                        [ { webcamBlob = Encode.string (Capsule.assetPath capsule (r.uuid ++ ".webm"))
+                          , pointerBlob =
+                                r.pointerUuid
+                                    |> Maybe.map (\x -> x ++ ".webm")
+                                    |> Maybe.map (Capsule.assetPath capsule)
+                                    |> Maybe.map Encode.string
                           , events = g.events
+                          , old = True
                           }
                         ]
 
@@ -139,6 +153,7 @@ init devices chosenDeviceIds capsule id =
                     _ ->
                         DetectingDevices
             , status = Status.NotSent
+            , recordPlaying = Nothing
             }
     in
     ( model
@@ -199,21 +214,56 @@ type alias Device =
     }
 
 
+type SetCanvas
+    = ChangeStyle Style
+    | ChangeColor String
+    | ChangeSize Int
+    | Erase
+
+
+type Style
+    = Pointer
+    | Brush
+
+
+encodeSetCanvas : SetCanvas -> Encode.Value
+encodeSetCanvas setCanvas =
+    case setCanvas of
+        ChangeStyle Pointer ->
+            Encode.object [ ( "ty", Encode.string "ChangeStyle" ), ( "style", Encode.string "Pointer" ) ]
+
+        ChangeStyle Brush ->
+            Encode.object [ ( "ty", Encode.string "ChangeStyle" ), ( "style", Encode.string "Brush" ) ]
+
+        ChangeColor color ->
+            Encode.object [ ( "ty", Encode.string "ChangeColor" ), ( "color", Encode.string color ) ]
+
+        ChangeSize size ->
+            Encode.object [ ( "ty", Encode.string "ChangeSize" ), ( "size", Encode.int size ) ]
+
+        Erase ->
+            Encode.object [ ( "ty", Encode.string "Erase" ) ]
+
+
 type Msg
     = Noop
     | RefreshDevices
     | DevicesReceived Devices
     | WebcamBound
+    | PointerBound
     | InvertAcquisition
     | StartRecording
     | StopRecording
     | RecordArrived Record
+    | StartPointerRecording Record
+    | PointerRecordArrived Record
     | ToggleSettings
     | VideoDeviceChanged (Maybe VideoDevice)
     | ResolutionChanged Resolution
     | AudioDeviceChanged AudioDevice
     | NextSentence
     | PlayRecord Record
+    | StopPlayingRecord
     | NextSlideReceived
     | PlayRecordFinished
     | UploadRecord Record
@@ -223,6 +273,9 @@ type Msg
     | WebcamBindingFailed
     | UploadRecordFailed
     | UploadRecordFailedAck
+    | IncreasePromptSize
+    | DecreasePromptSize
+    | SetCanvas SetCanvas
 
 
 defaultDevice : Devices -> Device

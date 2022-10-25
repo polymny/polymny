@@ -79,6 +79,11 @@ pushUrl key route =
     Nav.pushUrl key (toUrl route)
 
 
+replaceUrl : Nav.Key -> Route -> Cmd msg
+replaceUrl key route =
+    Nav.replaceUrl key (toUrl route)
+
+
 toUrl : Route -> String
 toUrl route =
     case route of

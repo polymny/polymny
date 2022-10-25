@@ -18,6 +18,12 @@ port unbindWebcam : () -> Cmd msg
 port webcamBound : (() -> msg) -> Sub msg
 
 
+port bindPointer : () -> Cmd msg
+
+
+port pointerBound : (() -> msg) -> Sub msg
+
+
 port devicesReceived : (Json.Encode.Value -> msg) -> Sub msg
 
 
@@ -30,6 +36,12 @@ port stopRecording : () -> Cmd msg
 port recordArrived : (Json.Encode.Value -> msg) -> Sub msg
 
 
+port startPointerRecording : Json.Encode.Value -> Cmd msg
+
+
+port pointerRecordArrived : (Json.Encode.Value -> msg) -> Sub msg
+
+
 port askNextSlide : () -> Cmd msg
 
 
@@ -37,6 +49,9 @@ port askNextSentence : () -> Cmd msg
 
 
 port playRecord : Json.Encode.Value -> Cmd msg
+
+
+port stopPlayingRecord : () -> Cmd msg
 
 
 port nextSlideReceived : (() -> msg) -> Sub msg
@@ -61,3 +76,9 @@ port bindingWebcamFailed : (() -> msg) -> Sub msg
 
 
 port uploadRecordFailed : (() -> msg) -> Sub msg
+
+
+port setPromptSize : Int -> Cmd msg
+
+
+port setCanvas : Json.Encode.Value -> Cmd msg

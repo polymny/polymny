@@ -19,7 +19,71 @@ header_progress() {
     echo ffmpeg -nostdin -nostats -progress pipe:1 -loglevel error -hide_banner -y
 }
 
+params_black_video(){
+    duration=$1
+    output=$2
 
+    vcodec=$vcodec264
+    vcodec_opts="-crf 15"
+    fps="25"
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+    echo -n \
+        -f lavfi -i color=c=black:s=1920x1080:rate=25 \
+        -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=$arate \
+        -t $duration \
+        -vsync cfr \
+        -pix_fmt yuv420p \
+        -vcodec $vcodec $vcodec_opts\
+        -tune stillimage \
+        -acodec $acodec \
+        -ar $arate \
+        -ac 2 \
+        -b:a $abitrate \
+        -s hd1080 \
+        $output
+
+}
+
+generate_black_video(){
+    duration=$1
+    output=$2
+    command=$(header && params_black_video $duration $output)
+    $command
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return $1
+    fi
+
+}
+
+# USAGE:
+#   transcode_with_silent_audio_track  <input_path> <output_path>
+#
+# EXAMPLE:
+#   transcode_video  invideo.mp4   outvideo.mp4
+transcode_with_silent_audio_track() {
+
+    local input=$1
+    local output=$2
+
+    acodec="aac"
+    arate="48000"
+    abitrate="128k"
+
+    echo "-i $input \
+        -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 \
+        -shortest \
+        -acodec $acodec  \
+        -ar $arate \
+        -ac 2 \
+        -b:a $abitrate \
+        -max_muxing_queue_size 2048 \
+        $output"
+
+}
 # USAGE:
 #   transocode_video  <input_path> <output_path>
 #
@@ -184,12 +248,21 @@ colorkey(){
     echo "$colorkey,$despill"
 }
 
+pointerkey(){
+    colorkey_color="$1"
+    # color key params
+    colorkey_similarity="0.3"
+    colorkey_blend="0.2"
+    colorkey="colorkey=$colorkey_color:$colorkey_similarity:$colorkey_blend"
+    despill="despill=$1"
+    echo "$colorkey,$despill"
+}
 
 # USAGE:
-#   params_pip_slide_record  <slide_path> <record_path> <offset> <duration> <output_path>
+#   params_pip_slide_record  <slide_path> <record_path> <duration> <output_path>
 #
 # EXAMPLE:
-#   params  tmp/video.mp4
+# TODO
 params_pip_slide_record() {
 
     slide=$1
@@ -198,13 +271,13 @@ params_pip_slide_record() {
     record=$1
     shift
 
-    offset=$1
-    shift
-
     duration=$1
     shift
 
     webcam_settings=$1
+    shift
+
+    pointer_overlay=$1
     shift
 
     output=$1
@@ -224,24 +297,34 @@ params_pip_slide_record() {
 
     keying_filter="null"
     color=$(get_keycolor "$webcam_settings")
+
     if [[  "$color" != "null" ]]; then
         keying_filter=$(colorkey $color)
     fi
+    pointer_filter=$(colorkey black)
 
+    fade_filter=$(get_fadefilter "$gos" "$duration")
     case $composition_type in
          "pip" )
             webcam_alpha=$(get_alpha "$webcam_settings")
             size=$(echo "$webcam_settings" | jq -cr ".size[0]")
             webcam_size=$(get_webcam_size "$webcam_settings")
-            overlay=$(get_overlay "$webcam_settings")
+            webcam_overlay=$(get_overlay "$webcam_settings")
             scale_record="scale=${webcam_size},format=argb,colorchannelmixer=aa=${webcam_alpha}"
-            filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$overlay,fps=fps=$fps"
+            if [[ "$pointer_overlay" == "null" ]] ; then
+                inputs="-i $slide -i $record "
+                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[slide][record]overlay=$webcam_overlay,$fade_filter,fps=fps=$fps[vout]"
+            else
+                inputs="-i $slide -i $record -i $pointer_overlay "
+                filter_complex="[0]scale=$width_slide:$height_slide[slide];[1]$keying_filter,$scale_record[record];[2]$pointer_filter[pointer];[slide][record]overlay=$webcam_overlay[pip];[pip][pointer]overlay=0:0,$fade_filter,fps=fps=$fps[vout]"
 
+            fi
             echo -n -fflags \
-                 +genpts \
-                 -i $slide \
-                 -i $record \
-                 -filter_complex "$filter_complex"
+                     +genpts \
+                     $inputs \
+                    -filter_complex "$filter_complex" \
+                    -map [vout] \
+                    -map 1:a
             ;;
 
         "fullscreen" )
@@ -264,20 +347,21 @@ params_pip_slide_record() {
                     ;;
 
             esac
-            filter_complex="[0]scale=$width_slide:$height_slide[slide];${record_filter};[slide][record]overlay=$overlay"
+            filter_complex="[0]scale=$width_slide:$height_slide[slide];${record_filter};[slide][record]overlay=$overlay,$fade_filter,fps=fps=$fps[vout]"
 
             echo -n -fflags \
                  +genpts \
                  -i $slide \
                  -i $record \
-                 -filter_complex "$filter_complex"
+                 -filter_complex "$filter_complex"\
+                 -map [vout] \
+                 -map 1:a
             ;;
 
 
         "disabled" )
                  echo -n -fflags \
                  +genpts \
-                 -loop 1 \
                  -i $slide \
                  -i $record \
                  -map 0:v \
@@ -289,7 +373,6 @@ params_pip_slide_record() {
                  +genpts \
                  -f lavfi \
                  -i anullsrc=channel_layout=stereo:sample_rate=$arate \
-                 -loop 1 \
                  -i $slide
              ;;
 
@@ -297,9 +380,9 @@ params_pip_slide_record() {
             return 1
             ;;
     esac
-    echo " -ss $offset \
-         -t $duration \
-          -vsync cfr \
+    echo -n " "
+    echo -n -t $duration \
+         -vsync cfr \
          -pix_fmt yuv420p \
          -vcodec $vcodec $vcodec_opts\
          -acodec $acodec \
@@ -307,18 +390,116 @@ params_pip_slide_record() {
          -ac 2 \
          -b:a $abitrate \
          -s hd1080 \
-         $output"
+         $output
 
 
 }
 
 
+
 # USAGE:
-#   concat_records <path to list of file to conat> <output>
+#   concat_slides  concat slides
 #
 # EXAMPLE:
-#   concat_records  tmp/seq_file.txt  tmp/capsule.mp4
-concat_records() {
+#   concat_slides  tmp/concat_file_gos1.txt  tmp/slides.mp4
+concat_slides() {
+    cid=$1
+    input=$2
+    output=$3
+    sameCodec=$4
+
+    capsule_path=$(get_config "data_path")"/$cid"
+    assets_path="${capsule_path}/assets"
+
+    arate="48000"
+
+    if [[ "$sameCodec" == "true" ]]; then
+        echo -f concat \
+             -safe 0 \
+            -i $input \
+            -movflags \
+            +faststart \
+            -vsync cfr \
+            -pix_fmt yuv420p \
+            -s hd1080 \
+            -r 25 \
+            $output
+    else
+
+
+         echo -n " "
+         echo -f lavfi -t 0.1 -i anullsrc=channel_layout=stereo:sample_rate=48000 \
+
+         asset="null"
+         extension="png"
+         count_slide=1
+
+         local filter_complex1
+         local filter_complex2
+         local pad
+         while read -ra line
+         do
+             case "${line[0]}" in
+                 "file" )
+                    filename=$(basename -- "${line[1]}")
+                    extension="${filename##*.}"
+                    filename="${filename%.*}"
+                    asset=$filename
+
+                    ;;
+                "pad")
+                    pad=${line[1]}
+                    ;;
+                 "duration")
+                    if [[ "$extension" = "mp4" ]] ; then
+                        ffmpeg_cmd=$(printf " -t %s -i %s " "${line[1]}" "$assets_path/$asset.$extension")
+                        if [[ $pad ]] ; then
+                            pad_filter="[$count_slide:v]tpad=stop_mode=clone:stop_duration=$pad[video$count_slide]"
+                        else
+                            pad_filter="[$count_slide]null[video$count_slide];"
+                        fi
+                            filter_complex1="${filter_complex1}${pad_filter};"
+                            pad=''
+
+                        concat_filter="[video$count_slide][$count_slide:a]"
+                        filter_complex2="${filter_complex2}${concat_filter}"
+                    else
+                        ffmpeg_cmd=$(printf " -loop 1 -framerate 25 -t %s -i %s " "${line[1]}" "$assets_path/$asset.$extension")
+                        sar_filter="[$count_slide:v]setsar=1/1[video$count_slide];"
+                        filter_complex1="${filter_complex1}${sar_filter}"
+                        concat_filter="[video$count_slide][0:a]"
+                        filter_complex2="${filter_complex2}${concat_filter}"
+                    fi
+                    echo $ffmpeg_cmd
+
+                    count_slide=$((count_slide+1))
+                    ;;
+
+                *)
+                    ;;
+             esac
+         done <"$input"
+
+        count_slide=$((count_slide-1))
+         #filter_complex="[0:v]setsar=1/1[sar0];[2:v]setsar=1/1[sar2];[3:v]setsar=1/1[sar3];[sar0][4:a][1:v][1:a][sar2][4:a][sar3][4:a]concat=n=4:v=1:a=1"
+         #filter_complex="${filter_complex1}[4:a]acopy[silence];${filter_complex2}concat=n=${count_slide}:v=1:a=1"
+         filter_complex="${filter_complex1}${filter_complex2}concat=n=${count_slide}:v=1:a=1"
+
+         echo -n " "
+         echo -filter_complex "$filter_complex" \
+            -pix_fmt yuv420p \
+            -s hd1080 \
+            $output
+    fi
+
+}
+
+# USAGE:
+#   concat_goss <path to list of file to conat> <output>
+#
+# EXAMPLE:
+#   concat_goss  tmp/seq_file.txt  tmp/capsule.mp4
+concat_goss() {
 
     input=$1
     shift
@@ -333,6 +514,73 @@ concat_records() {
          +faststart \
          $output
 
+}
+
+
+
+# USAGE:
+#   Returns audio and video fadea filters
+#   filter_complex syntax
+#
+# EXAMPLE
+# get_fadefilter $gos "12456ms"
+#
+get_fadefilter() {
+
+    local gos=$1
+    local duration_s=$(echo "scale=3; ${2::-2}/1000" |bc)
+
+    afadein=$(echo "$gos"  | jq -cr ".fade.afadein")
+    afadeout=$(echo "$gos" | jq -cr ".fade.afadeout")
+    vfadein=$(echo "$gos"  | jq -cr ".fade.vfadein")
+    vfadeout=$(echo "$gos" | jq -cr ".fade.vfadeout")
+
+    if [[ $afadeout != "null" ]] ; then
+        st=$(echo "$duration_s -$afadeout" |bc)
+        aoutfitler="afade=t=out:st=$st:d=$afadeout"
+        if [[ $afadein != "null" ]] ; then
+            ainfitler="afade=t=in:st=0:d=$afadein"
+            afilter="$ainfitler,$aoutfitler"
+        else
+            afilter="$aoutfitler"
+        fi
+    else
+        if [[ $afadein != "null" ]] ; then
+            ainfitler="afade=t=in:st=0:d=$afadein"
+            afilter="$ainfitler"
+        fi
+    fi
+
+    if [[ $vfadeout != "null" ]] ; then
+        st=$(echo "$duration_s -$vfadeout" |bc)
+        voutfitler="fade=t=out:st=$st:d=$vfadeout"
+        if [[ $vfadein != "null" ]] ; then
+            vinfitler="fade=t=in:st=0:d=$vfadein"
+            vfilter="$vinfitler,$voutfitler"
+        else
+            vfilter="$voutfitler"
+        fi
+    else
+         if [[ $vfadein != "null" ]] ; then
+            vinfitler="fade=t=in:st=0:d=$vfadein"
+            vfilter="$vinfitler"
+         fi
+    fi
+    if [[ -n $afilter ]] ; then
+        if [[ -n $vfilter ]] ; then
+            filter="$afilter;$vfilter"
+        else
+            filter="$afilter"
+        fi
+    else
+        if [[ -n $vfilter ]] ; then
+            filter="$vfilter"
+        else
+            filter="null"
+        fi
+    fi
+
+    echo $filter
 }
 
 
@@ -486,155 +734,271 @@ transcode_records(){
 
 }
 
+show_ffmpeg_progression(){
+    local line=$1
+    local duration_ms=$2
+    IFS='=' read -ra progress <<< $line
+    case "${progress[0]}" in
+        "out_time_us" )
+            ts="${progress[1]}"
+            percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
+            is_great=$(echo "$percent_progress > 1" | bc)
+            if [ $is_great -eq 1 ]; then
+                percent_progress="1"
+            fi
+            ;;
+        "progress" )
+            if [[ "${progress[1]}" == "end" ]] ; then
+                percent_progress="1"
+            fi
+            ;;
+        *)
+            ;;
+    esac
+    echo $percent_progress
+}
 
-run_ffmpeg_command(){
-    cmd=$1
-    duration_ms=$(echo "$2*1000000" | bc -l )
-    echo $duration_us>&2
-    echo "$cmd">&2
 
-    percent_progress="0"
+
+run_ffmpeg_slide(){
+    local cmd=$1
+    local duration_ms=$2
+    local gos_i=$3
+    local nb_gos=$4
+    local step_i=$5
+    local nb_step=$6
+
+
+    local percent_progress="0"
+    #DEBUG echo "$cmd">&2
+
     $cmd | while read line; do
-        IFS='=' read -ra progress <<< $line
-        case "${progress[0]}" in
-            "out_time_us" )
-                ts="${progress[1]}"
-                percent_progress=$(echo "scale=6; $ts/$duration_ms" | bc -l)
-                is_great=$(echo "$percent_progress > 1" | bc)
-                if [ $is_great -eq 1 ]; then
-                    percent_progress="1"
-                fi
-                ;;
-            "progress" )
-                if [[ "${progress[1]}" == "end" ]] ; then
-                    percent_progress="1"
-                fi
-                ;;
-            *)
-                ;;
-        esac
+        local percent_progress=$(show_ffmpeg_progression $line $(echo "$duration_ms*1000" |bc )  )
+        slide_progress=$(echo "scale=3; $step_i/$nb_step + (1/$nb_step)*$percent_progress " |bc -l)
 
-        if [ -z "$3" ]; then
-            echo -en "\n$percent_progress"
+        if (( $nb_gos == -1 )) ; then
+            # case of one GoS production
+            progress=$slide_progress
         else
-            echo -en "\n$3;$percent_progress"
+            # case of complete productuin (GoS by GoS)
+            progress=$(echo "scale=3; $gos_i/$nb_gos +  (1/$nb_gos)*($slide_progress) " |bc -l)
         fi
+        echo -en "\n$progress"
     done
+
 
     if (( $? != 0 )); then
         echo "error with $1" >&2
         return 1
     fi
 
+
+}
+
+compose_gos(){
+    local cid=$1
+    local gos_i=$2
+    local nb_gos=$3
+    local seq_file_gos=$4
+    SLIDE_DEFAULT_DURATION="3"
+
+
+    capsule_path=$(get_config "data_path")"/$cid"
+    assets_path="${capsule_path}/assets"
+    tmp_path="${capsule_path}/tmp"
+
+    gos=$(echo "$capsule_structure" | jq .[$gos_i])
+    record=$(echo "$gos" | jq -cr ".record.uuid")
+
+    len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
+    if [[ "$record" == "null" ]] ; then
+        webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
+        transitions=( 0 )
+        input_record="${assets_path}/null.webm"
+    else
+        transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
+        webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
+        input_record="${assets_path}/$record.webm"
+    fi
+
+    pointer=$(echo "$gos" | jq -cr ".record.pointer_uuid")
+    if [[ "$pointer" == "null" ]] ; then
+            input_pointer="null"
+    else
+        input_pointer="${assets_path}/$pointer.webm"
+    fi
+
+    concat_file="$tmp_path/slides_gos$gos_i.txt"
+    echo "ffconcat version 1.0" > $concat_file
+
+
+    # used to check if GoS in composed of same kind of content
+    # for instance onnly slide(s) or extra video(s)
+    branchSlide="true"
+    branchExtra="true"
+    for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
+    do
+        slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
+        uuid=$(echo $slide |  jq  -rc ".uuid")
+        input_slide="${assets_path}/${uuid}.png"
+
+        extra=$(echo "$slide" |  jq  -rc ".extra")
+        echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+        # DEBUG echo $echo_header >&2
+
+
+        if [[ "$extra" == "null" ]] ; then
+            branchExtra="false"
+            # No extra resource : compose slide with record
+             input_slide="${assets_path}/${uuid}.png"
+
+            if [[ "$record" == "null" ]] ; then
+                # Only slide no records
+                #TODO check behavior of GoS with multiple empty slides
+                slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+            else
+                if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                    # the slide have a transition and a record
+                    slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+                else
+                    # Robustness in case of missing event or transition
+                    slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+                fi
+            fi
+
+            output="slide_${gos_i}_${slide_i}.mp4"
+            line_in_concat_file="file ../assets/${uuid}.png"
+            echo $line_in_concat_file  >> $concat_file
+            echo "duration ${slide_duration}ms" >> $concat_file
+            # when only one lside: no concat. for ffmpeg concat: repeat "file .." line
+            # kinda bug in ffmpeg
+            if (( $len_slides == 1 )) ;then
+                echo $line_in_concat_file  >> $concat_file
+            fi
+        else
+            branchSlide="false"
+            # FIXME: mix video resource with record
+            printf '\n%s %3s %%' "$echo_header" "100"
+            line_in_concat_file="file ../assets/${extra}.mp4"
+            echo $line_in_concat_file  >> $concat_file
+
+            extra_duration=$(get_duration "$assets_path/${extra}.mp4")
+            extra_duration=$(echo "($extra_duration*1000)/1" |bc)
+            if (( $slide_i +1 < ${#transitions[@]} )) ; then
+                # the slide have a transition and a record
+
+                slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
+                if (( $slide_duration > $extra_duration )); then
+                    # record is longer then extra video duration
+                    # pad with last frame extra
+                    pad=$(($slide_duration - $extra_duration))
+                    echo "pad ${pad}ms" >> $concat_file
+                fi
+                echo "duration ${slide_duration}ms" >> $concat_file
+            else
+                # manage case of all slides transitions not done in GOS record
+                # add empty slides
+                #TODO check behavior of GoS with multiple empty slides
+                transitions+=( "$extra_duration" )
+                echo "duration ${extra_duration}ms" >> $concat_file
+            fi
+        fi
+
+        extra=$(echo "$slide" |  jq  -rc ".extra")
+        echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
+        echo "$echo_header" >&2
+
+    done
+
+    if [ "$branchSlide" == "true" ] || [ "$branchExtra" == "true" ]; then
+        sameCodec="true"
+    else
+        sameCodec="false"
+    fi
+
+
+    # repeat last entry (FFMPEG required kinda end of file)
+    #echo $line_in_concat_file  >> $concat_file
+
+    duration_ms=${transitions[-1]}
+    if [[ "$duration_ms" == 0 ]]; then
+       duration_ms=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
+    fi
+
+
+
+    # Step 1 / 2 :  concat slides
+    video_slides="$capsule_path/tmp/slides_gos${gos_i}.mp4"
+    cmd=$(header_progress && concat_slides  $cid $concat_file $video_slides $sameCodec)
+    run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 0 2
+
+    # Step 2 / 2: ovelay slides / webcam record /pointer
+    output_gos="gos_${gos_i}.mp4"
+
+    if [[ "$record" == "null" ]] ; then
+        # No compostion to perform : add silent audio track to slide
+        cmd=$(header && transcode_with_silent_audio_track "$video_slides" "${tmp_path}/$output_gos")
+        #DEBUG echo $cmd >&2
+        $cmd
+
+    else
+        cmd=$(header_progress && params_pip_slide_record $video_slides $input_record "${duration_ms}ms" "$webcam_settings" $input_pointer "${tmp_path}/$output_gos")
+        total_frames=$(echo "($slide_duration*25)/1000" | bc)
+
+        run_ffmpeg_slide "$cmd" "$duration_ms" $gos_i $nb_gos 1 2
+    fi
+    echo "file '$output_gos'" >> $seq_file
 }
 
 # combine slide and records
 # USAGE:
-#   compose_goss <capsule id>
+#   compose_goss <capsule id> <gos id>
 # EXAMPLE:
-#   compose_goss 42
+#   compose_goss 42 -1 for all gos
+#   compose_goss 42 2 for gos 2 only
+
 compose_goss(){
-    cid=$1
-    SLIDE_DEFAULT_DURATION="3"
+    local cid=$1
+    local gosid=$2
+
+    local start=`date +%s`
     capsule_path=$(get_config "data_path")"/$cid"
-    assets_path="${capsule_path}/assets"
     tmp_path="${capsule_path}/tmp"
     fps="25"
     if [ ! -d $tmp_path ]; then
         mkdir $tmp_path
     fi
 
-
     seq_file="$tmp_path/seq_file.txt"
-    if [ -f $seq_file ]; then
-        rm $seq_file
-    fi
-    touch $seq_file
-    # GOS loop
+    echo "ffconcat version 1.0" > $seq_file
+    if (( $gosid == -1 )) ; then
+        # GOS loop
+        len=$(echo $capsule_structure | jq  '.|length')
+        for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
+        do
+            compose_gos $cid $gos_i $len $seq_file
+        done
+        output="$capsule_path/output.mp4"
+        command=$(header && concat_goss $seq_file $output)
+        $command
+        if (( $? != 0 )); then
+            echo "error with $1" >&2
+            echo $command >&2
 
-    len=$(echo $capsule_structure | jq  '.|length')
-    for (( gos_i = 0 ; gos_i < $len ; gos_i++ ));
-    do
-        gos=$(echo "$capsule_structure" | jq .[$gos_i])
-        record=$(echo "$gos" | jq -cr ".record.uuid")
-
-         if [[ $record = "null" ]] ; then
-            webcam_settings=$( echo '{"type" :"slide"}' | jq  ".")
-            transitions=( 0 $(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc) )
-            input_record="${assets_path}/null.webm"
-        else
-            transitions=( 0 $(echo "$gos" | jq -cr ".events[] | select(.ty==\"next_slide\" or .ty==\"end\") | .time") )
-            webcam_settings=$(echo "$gos" | jq  ".webcam_settings")
-            input_record="${assets_path}/$record.webm"
+            return 1
         fi
 
-
-       len_slides=$(echo "$capsule_structure" | jq ".[$gos_i].slides|length" )
-       for (( slide_i = 0 ; slide_i < $len_slides ; slide_i++ ));
-       do
-            slide=$(echo "$capsule_structure" | jq .[$gos_i].slides[$slide_i])
-            uuid=$(echo $slide |  jq  -rc ".uuid")
-            input_slide="${assets_path}/${uuid}.png"
-
-            extra=$(echo "$slide" |  jq  -rc ".extra")
-            echo_header=$(printf "GOS %3s slide %3s "   "$(( $gos_i+1 ))" "$(( $slide_i+1 ))" )
-            echo $echo_header >&2
-
-
-            if [ $extra = "null" ] ; then
-                # No extra resource : compose slide with record
-                input_slide="${assets_path}/${uuid}.png"
-
-                if (( $slide_i +1 < ${#transitions[@]} )) ; then
-                    # the slide have a transition and a record
-                    slide_duration=$(( ${transitions[(($slide_i+1))]} -1 -${transitions[$slide_i]} ))
-
-                    slide_offset=${transitions[$slide_i]}
-                else
-                    # manage case of all slides transitions not done in GOS record
-                    # add empty slides
-                    slide_offset=0
-                    slide_duration=$(echo "($SLIDE_DEFAULT_DURATION*1000)/1" | bc)
-                fi
-
-                output="slide_${gos_i}_${slide_i}.mp4"
-
-                cmd=$(header_progress && params_pip_slide_record $input_slide $input_record "${slide_offset}ms" "${slide_duration}ms" "$webcam_settings" "${tmp_path}/$output")
-
-                total_frames=$(echo "($slide_duration*25)/1000" | bc)
-
-                run_ffmpeg_command "$cmd" "$total_frames" "$echo_header"
-            else
-
-                if [[ $record = "null" ]] ; then
-                     # if no record , add extra resource instead of slide
-
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                else
-                    # FIXME: mix video resource with record
-                    # no slide is dislpayed.
-                    # until fix only extra is displayed
-                    printf '\n%s %3s %%' "$echo_header" "100"
-                    output="../assets/${extra}.mp4"
-                fi
-
-            fi
-
-            echo "file '$output'" >> $seq_file
-        done
-
-    done
-    output="$capsule_path/output.mp4"
-    command=$(header && concat_records $seq_file $output)
-    $command
-    if (( $? != 0 )); then
-        echo "error with $1" >&2
-        echo $command
-        return 1
+        local end=`date +%s`
+        duration=$(get_duration $output)
+        runtime=$( echo "$end - $start" | bc -l )
+        compute_ratio=$( echo "scale=3; $runtime / $duration" |bc -l)
+        compute_ratio_by_min=$( echo "scale=1; $compute_ratio*60" |bc -l)
+        echo "runtime = $runtime s -- video duration = $duration s"  >&2
+        echo "compute_ratio $compute_ratio -- Time passed to produced 1 min of video $compute_ratio_by_min s" >&2
     else
-        echo "Composition done"
+        compose_gos $cid $gosid -1 $seq_file
     fi
+
 
 
 }
@@ -686,11 +1050,12 @@ on-record() {
 #
 on-produce() {
     local cid=$1
+    local gosid=$2
 
     #transcode_records $cid
-    echo "Composition start for capsule $cid" >&2
-    compose_goss $cid
-    echo "Composition end for capsule $cid" >&2
+    echo "Composition start for capsule $cid and gos $gosid" >&2
+    compose_goss $cid $gosid
+    echo "Composition end for capsule $cid and gos $gosid" >&2
 }
 
 # USAGE:
@@ -712,11 +1077,22 @@ on-video-upload() {
             ;;
     esac
 
-    duration_s=$(get_duration $input)
-    run_ffmpeg_command "$cmd" "$duration_s" ""
+    duration_ms=$(echo "$(get_duration $input)*1000000" | bc -l )
+
+    local percent_progress="0"
+
+    echo "$cmd">&2
+    $cmd | while read line; do
+        local percent_progress=$(show_ffmpeg_progression $line $duration_ms)
+        echo -en "\n$percent_progress"
+    done
+
+    if (( $? != 0 )); then
+        echo "error with $1" >&2
+        return 1
+    fi
 
 }
-
 # USAGE:
 #  format_time <time in milliseconds>
 #
@@ -819,15 +1195,15 @@ pdf-to-png() {
     cmd=$(
         echo "convert \
         -density $density \
-        $input \
         -colorspace $colorspace \
         -resize $size \
         -background white \
         -gravity center \
         -extent $size \
+        $input \
         $output"
     )
-    echo $cmd >&2
+    #DEBUG: echo $cmd >&2
     $cmd
     if (( $? != 0 )); then
        echo "error with $1" >&2
@@ -871,7 +1247,7 @@ main() {
             ;;
         "on-produce")
             read -r capsule_structure
-            echo "$capsule_structure" | jq . >&2
+            #DEBUG echo "$capsule_structure" | jq . >&2
             on-produce "$@"
             ;;
         "on-publish")
@@ -897,8 +1273,17 @@ main() {
             disk-usage "$@"
             ;;
 
+        "black")
+            generate_black_video "$@"
+            ;;
+
+        "transcode")
+            cmd=$(header && transcode_video "$@")
+            $cmd
+            ;;
 
         *)
+            echo "UNKNONW OPTION "
             echo "$@"
 
     esac

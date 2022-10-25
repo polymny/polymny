@@ -56,12 +56,8 @@ bottomBar langMsg global user =
                 { route = Route.Custom "https://github.com/polymny/polymny/"
                 , label = Element.text (Lang.source global.lang)
                 }
-            , if Maybe.map User.isPremium user |> Maybe.withDefault False then
-                linkButton []
-                    { onPress = Just (langMsg (Lang.other global.lang)), label = Element.text (Lang.view global.lang) }
-
-              else
-                Element.none
+            , linkButton []
+                { onPress = Just (langMsg (Lang.other global.lang)), label = Element.text (Lang.view global.lang) }
             , Lang.version global.lang ++ " " ++ global.version |> Element.text
             , case global.commit of
                 Just c ->
