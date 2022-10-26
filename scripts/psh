@@ -640,12 +640,12 @@ get_config_raw() {
 #   get_duration  tmp/video.mp4
 get_duration() {
     input=$1
-    duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_format_entry duration $input)
+    duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_entries format=duration $input)
 
     if [[ "$duration" == "N/A" ]]; then
         dir=$(mktemp -d)
         ffmpeg -i $input -vcodec copy -acodec copy $dir/tmp.webm > /dev/null 2>&1
-        duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_format_entry duration $dir/tmp.webm)
+        duration=$(ffprobe -loglevel quiet -of 'compact=nokey=1:print_section=0' -show_entries format=duration $dir/tmp.webm)
         rm -r $dir
     fi
 
@@ -1111,9 +1111,9 @@ format_time() {
 #  on-publish <input> <output> <generate_subtitles>
 on-publish() {
     echo $@ >&2
-    ../../hls/hls $1 $2 360p 480p 720p
 
     if [[ "$3" == "true" ]]; then
+        ../../hls/hls --subtitles subtitles.webvtt $1 $2 360p 480p 720p
         len=$(echo $capsule_structure | jq -cr '.|length')
         slide_time=0
         vtt_output="$2/subtitles.webvtt"
@@ -1167,21 +1167,9 @@ on-publish() {
             fi
         done
 
-        # Generate m3u8 file
-        duration_int=$((($slide_time)/1000+1))
-        duration=$(echo "scale=6; $(($slide_time))/1000" | bc)
-        echo "#EXTM3U" > $m3u8_output
-        echo "#EXT-X-TARGETDURATION:$duration_int" >> $m3u8_output
-        echo "#EXT-X-VERSION:3" >> $m3u8_output
-        echo "#EXT-X-MEDIA-SEQUENCE:0" >> $m3u8_output
-        echo "#EXT-X-PLAYLIST-TYPE:VOD" >> $m3u8_output
-        echo "#EXTINF:$duration," >> $m3u8_output
-        basename $vtt_output >> $m3u8_output
-        echo "#EXT-X-ENDLIST" >> $m3u8_output
-
-        # Extend hls manifest
-        echo '#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog",NAME="Transcription",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,URI="subtitles.m3u8"' >> $2/manifest.m3u8
         echo "done" >&2
+    else
+        ../../hls/hls $1 $2 360p 480p 720p
     fi
 }
 
