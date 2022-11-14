@@ -382,6 +382,8 @@ params_pip_slide_record() {
     esac
     echo -n " "
     echo -n -t $duration \
+         -movflags \
+         +faststart \
          -vsync cfr \
          -pix_fmt yuv420p \
          -vcodec $vcodec $vcodec_opts\
