@@ -38,7 +38,7 @@ use rocket::fairing::AdHoc;
 use rocket::http::Status;
 use rocket::request::{FromParam, FromRequest, Outcome, Request};
 use rocket::response::{self, Responder};
-use rocket::shield::{Frame, NoSniff, Permission, Shield};
+use rocket::shield::{NoSniff, Permission, Shield};
 use rocket::{Ignite, Rocket, State};
 
 use crate::command::run_command;
