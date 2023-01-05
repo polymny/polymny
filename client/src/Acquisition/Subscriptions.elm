@@ -7,19 +7,38 @@ import Capsule
 import Core.Types as Core
 import Json.Decode as Decode
 import Keyboard
+import Log
 
 
 subscriptions : Acquisition.Model -> Sub Core.Msg
 subscriptions model =
     Sub.batch
         [ Ports.webcamBound (\_ -> Core.AcquisitionMsg Acquisition.WebcamBound)
+        , Ports.pointerBound (\_ -> Core.AcquisitionMsg Acquisition.PointerBound)
         , Ports.recordArrived
             (\x ->
                 case Decode.decodeValue Acquisition.decodeRecord x of
                     Ok o ->
                         Core.AcquisitionMsg (Acquisition.RecordArrived o)
 
-                    _ ->
+                    Err e ->
+                        let
+                            _ =
+                                Log.debug "error decoding record arrived" e
+                        in
+                        Core.Noop
+            )
+        , Ports.pointerRecordArrived
+            (\x ->
+                case Decode.decodeValue Acquisition.decodeRecord x of
+                    Ok o ->
+                        Core.AcquisitionMsg (Acquisition.PointerRecordArrived o)
+
+                    Err e ->
+                        let
+                            _ =
+                                Log.debug "error decoding pointer record arrived" e
+                        in
                         Core.Noop
             )
         , Keyboard.ups (Acquisition.shortcuts model)

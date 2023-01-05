@@ -1,0 +1,35 @@
+[
+  {
+    "type": "Table",
+    "name": "notifications",
+    "columns": [
+      {
+        "name": "id",
+        "ty": "Id",
+        "unique": false
+      },
+      {
+        "name": "title",
+        "ty": "String",
+        "unique": false
+      },
+      {
+        "name": "content",
+        "ty": "String",
+        "unique": false
+      },
+      {
+        "name": "read",
+        "ty": "Bool",
+        "unique": false
+      },
+      {
+        "name": "owner",
+        "ty": {
+          "Reference": "users"
+        },
+        "unique": false
+      }
+    ]
+  }
+]

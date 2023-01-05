@@ -4,9 +4,39 @@ function setupPorts(app) {
         bindingWebcam = false,
         unbindRequested = false,
         recorder,
+        pointerRecorder,
+        pointerStream = null,
+        oldPointer = null,
+        pointer = { x: 0, y: 0, down: false },
+        ctx = null,
         recording,
+        recordingPointerForRecord = null,
         currentEvents,
-        nextSlideCallbacks = [];
+        nextSlideCallbacks = [],
+        onbeforeunloadvalue = false,
+        recordArrived = null,
+        pointerArrived = null,
+        pointerExists = false,
+        tmpCanvas = document.createElement('canvas'),
+        tmpCtx = tmpCanvas.getContext('2d'),
+        pointerVideo = document.createElement('video'),
+        style = "Pointer",
+        color = "rgb(255, 0, 0)",
+        size = 20,
+        isPremium = flags.user.plan !== 'free';
+
+    tmpCanvas.width = 1920;
+    tmpCanvas.height = 1080;
+
+
+    window.addEventListener('beforeunload', function(event) {
+        if (onbeforeunloadvalue) {
+            event.preventDefault();
+            event.returnValue = '';
+        } else {
+            delete event["returnValue"];
+        }
+    });
 
     var socket;
     if (flags.user) {
@@ -37,6 +67,33 @@ function setupPorts(app) {
         }
     }
 
+    function makeRequest(method, url, data, onprogress) {
+        return new Promise(function (resolve, reject) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url, true);
+            xhr.onload = function () {
+                if (this.status >= 200 && this.status < 300) {
+                    resolve(xhr);
+                } else {
+                    reject({
+                        status: this.status,
+                        statusText: xhr.statusText
+                    });
+                }
+            };
+            xhr.onerror = function () {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
+            };
+            if (typeof onprogress === 'function') {
+                xhr.upload.onprogress = onprogress;
+            }
+            xhr.send(data);
+        });
+    }
+
     function setLanguage(arg) {
         localStorage.setItem('language', arg);
     }
@@ -63,6 +120,85 @@ function setupPorts(app) {
 
     function setSortBy(arg) {
         localStorage.setItem('sortBy', JSON.stringify(arg));
+    }
+
+    function setPromptSize(arg) {
+        localStorage.setItem('promptSize', arg);
+    }
+
+    function setOnBeforeUnloadValue(arg) {
+        onbeforeunloadvalue = arg;
+    }
+
+    function refresh(canvas) {
+        if (style === "Pointer") {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (pointer.down) {
+            pointerExists = true;
+            // let gradient = ctx.createRadialGradient(
+            //     pointer.x, pointer.y, 3,
+            //     pointer.x, pointer.y, 10
+            // );
+            // gradient.addColorStop(0, color);
+            // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+
+            ctx.beginPath();
+            ctx.arc(pointer.x, pointer.y, size, 0, 2 * Math.PI);
+            ctx.fill();
+
+            if (style === "Brush") {
+                ctx.lineWidth = 2 * size;
+
+                if (oldPointer === null) {
+                    oldPointer = pointer;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(oldPointer.x, oldPointer.y);
+                ctx.lineTo(pointer.x, pointer.y);
+                ctx.stroke();
+            }
+
+            oldPointer = { x: pointer.x, y: pointer.y };
+        } else {
+            oldPointer = null;
+        }
+    }
+
+    function setupCanvasListeners() {
+        if (!isPremium)
+            return
+
+        let canvas = document.getElementById('pointer-canvas');
+        canvas.width = 1920;
+        canvas.height = 1080;
+        ctx = canvas.getContext('2d');
+
+        pointerStream = canvas.captureStream(30);
+
+        canvas.addEventListener('pointerdown', function(event) {
+            pointer.down = true;
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas);
+            canvas.setPointerCapture(event.pointerId);
+        });
+
+        canvas.addEventListener('pointerup', function(event) {
+            pointer.down = false;
+            refresh(canvas);
+            canvas.releasePointerCapture(event.pointerId);
+        });
+
+        canvas.addEventListener('pointermove', function(event) {
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas);
+        });
+
     }
 
     async function findDevices(force) {
@@ -158,6 +294,7 @@ function setupPorts(app) {
 
         console.log("Binding webcam");
         bindingWebcam = true;
+
         try {
             stream = await navigator.mediaDevices.getUserMedia(cameraOptions);
         } catch (e) {
@@ -173,11 +310,10 @@ function setupPorts(app) {
 
         recorder = new MediaRecorder(stream, recorderOptions);
         recorder.ondataavailable = (data) => {
-            app.ports.recordArrived.send({
-                blob: data.data,
-                events: currentEvents,
-            });
+            recordArrived = data.data;
+            sendRecordToElmIfReady();
         };
+
         recorder.onerror = (err) => {
             console.log(err);
         };
@@ -186,6 +322,60 @@ function setupPorts(app) {
 
         console.log("Webcam bound");
         app.ports.webcamBound.send(null);
+    }
+
+    function sendRecordToElmIfReady() {
+        if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
+            return;
+        }
+
+        console.log({
+            webcam_blob: recordArrived,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+            events: currentEvents,
+        });
+
+        let port = recordingPointerForRecord === null ? app.ports.recordArrived : app.ports.pointerRecordArrived;
+        port.send({
+            webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+            events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
+            matted: 'idle',
+        });
+
+        recordArrived = null;
+        pointerArrived = null;
+    }
+
+    function bindPointer() {
+        if (!isPremium) {
+            app.ports.pointerBound.send(null);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            console.log("Binding pointer");
+
+            setupCanvasListeners();
+
+            let pointerOptions = {
+                videoBitsPerSecond : 2500000,
+                mimeType : 'video/webm;codecs=vp8'
+            };
+
+            pointerRecorder = new MediaRecorder(pointerStream, pointerOptions);
+            pointerRecorder.ondataavailable = (data) => {
+                pointerArrived = data.data;
+                sendRecordToElmIfReady();
+            };
+
+            pointerRecorder.onerror = (err) => {
+                console.log(err);
+            };
+
+            console.log("Pointer bound");
+            app.ports.pointerBound.send(null);
+        });
     }
 
     async function unbindWebcam() {
@@ -221,17 +411,38 @@ function setupPorts(app) {
         element.play();
     }
 
+    function stopPlayingRecord() {
+        playWebcam();
+        let video = document.getElementById(videoId);
+        if (video instanceof HTMLVideoElement) {
+            video.pause();
+        }
+
+        let extra = document.getElementById('extra');
+        if (extra instanceof HTMLVideoElement) {
+            extra.pause();
+            extra.currentTime = 0;
+        }
+
+        for (let id of nextSlideCallbacks) {
+            clearTimeout(id);
+        }
+
+        nextSlideCallbacks = [];
+    }
+
     async function playRecord(record) {
+        let pointerCanvas;
         let video = document.getElementById(videoId);
         video.srcObject = null;
 
-        if (typeof record.blob === "string" || record.blob instanceof String) {
-            video.src = record.blob;
-        } else {
-            video.src = URL.createObjectURL(record.blob);
-        }
-
         video.muted = false;
+
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+            video.src = record.webcam_blob;
+        } else {
+            video.src = URL.createObjectURL(record.webcam_blob);
+        }
 
         video.onended = () => {
             playWebcam();
@@ -243,6 +454,16 @@ function setupPorts(app) {
             app.ports.playRecordFinished.send(null);
         };
 
+        if (record.pointer_blob !== null) {
+            pointerCanvas = document.getElementById('pointer-canvas');
+
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
+                pointerVideo.src = record.pointer_blob;
+            } else {
+                pointerVideo.src = URL.createObjectURL(record.pointer_blob);
+            }
+        }
+
         // Skip last transition which is the end of the video.
         for (let i = 0; i < record.events.length - 1; i++) {
             let event = record.events[i];
@@ -251,6 +472,7 @@ function setupPorts(app) {
                 case "next_slide":
                     callback = () => app.ports.nextSlideReceived.send(null);
                     break;
+
                 case "play":
                     callback = () => {
                         let extra = document.getElementById('extra');
@@ -259,6 +481,7 @@ function setupPorts(app) {
                         extra.play();
                     };
                     break;
+
                 case "stop":
                     callback = () => {
                         let extra = document.getElementById('extra');
@@ -274,12 +497,50 @@ function setupPorts(app) {
         }
 
         video.play();
+
+        if (pointerCanvas !== undefined) {
+            pointerVideo.play();
+            renderPointer();
+        }
+
+        function renderPointer() {
+            if (video.paused || video.ended) {
+                ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+                return;
+            }
+
+            tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+            tmpCtx.drawImage(pointerVideo, 0, 0);
+            let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+            let length = frame.data.length;
+            let data = frame.data;
+
+            for (let i = 0; i < length; i += 4) {
+                let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
+                let threshold = channelAvg > 50;
+                if (!threshold) {
+                    data[i+3] = 0;
+                }
+            }
+
+            ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+            ctx.putImageData(frame, 0, 0);
+
+            requestAnimationFrame(renderPointer);
+
+        }
     }
 
     function startRecording() {
         if (recorder !== undefined && !recording) {
+            pointerExists = false;
             recording = true;
+            recordingPointerForRecord = null;
             recorder.start();
+            if (isPremium) {
+                pointerRecorder.start();
+            }
+
             currentEvents = [{
                 time: Math.round(window.performance.now()),
                 ty: "start"
@@ -319,58 +580,147 @@ function setupPorts(app) {
 
             currentEvents[0].time = 0;
             recorder.stop();
+
+            if (isPremium) {
+                pointerRecorder.stop();
+            }
+
             recording = false;
         }
     }
 
-    function uploadRecord(args) {
+    function startPointerRecording(record) {
+        if (recorder !== undefined && !recording) {
+            recording = true;
+            recordingPointerForRecord = record;
+            pointerExists = false;
+
+            let video = document.getElementById(videoId);
+            video.srcObject = null;
+
+            video.muted = false;
+
+            if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+                video.src = record.webcam_blob;
+            } else {
+                video.src = URL.createObjectURL(record.webcam_blob);
+            }
+
+            video.onended = () => {
+                playWebcam();
+                let extra = document.getElementById('extra');
+                if (extra instanceof HTMLVideoElement) {
+                    extra.pause();
+                    extra.currentTime = 0;
+                }
+                pointerRecorder.stop();
+                recording = false;
+                app.ports.playRecordFinished.send(null);
+            };
+
+            // Skip last transition which is the end of the video.
+            for (let i = 0; i < record.events.length - 1; i++) {
+                let event = record.events[i];
+                let callback;
+                switch (event.ty) {
+                    case "next_slide":
+                        callback = () => app.ports.nextSlideReceived.send(null);
+                        break;
+
+                    case "play":
+                        callback = () => {
+                            let extra = document.getElementById('extra');
+                            extra.muted = true;
+                            extra.currentTime = 0;
+                            extra.play();
+                        };
+                        break;
+
+                    case "stop":
+                        callback = () => {
+                            let extra = document.getElementById('extra');
+                            extra.currentTime = 0;
+                            extra.stop();
+                        };
+                        break;
+                }
+
+                if (callback !== undefined) {
+                    nextSlideCallbacks.push(setTimeout(callback, event.time));
+                }
+
+            }
+
+            video.play();
+            pointerRecorder.start();
+
+            let extra = document.getElementById('extra');
+            if (extra instanceof HTMLVideoElement) {
+                extra.muted = true;
+                extra.currentTime = 0;
+                extra.play();
+            }
+        }
+    }
+
+    async function uploadRecord(args) {
         let capsuleId = args[0];
         let gos = args[1];
         let record = args[2];
 
-        if (typeof record.blob === "string" || record.blob instanceof String) {
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
 
-            // User wants to validate the old record, don't need to do anything,
-            // just send the message to let them know it's done
-            app.ports.capsuleUpdated.send(null);
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
 
-        } else {
+                // User wants to validate the old record, don't need to do anything,
+                // just send the message to let them know it's done
+                app.ports.capsuleUpdated.send(null);
 
-            let xhr = new XMLHttpRequest();
-            xhr.open("POST", "/api/upload-record/" + capsuleId + "/" + gos, true);
+            } else {
 
-            xhr.upload.onprogress = (e) => {
-                app.ports.progressReceived.send(e.loaded / e.total);
-            };
-
-            xhr.onreadystatechange = () => {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
+                // User just want to send the pointer blob
+                if (record.pointer_blob !== null) {
+                    try{
+                        xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                            app.ports.progressReceived.send(e.loaded / e.total);
+                        });
                         let capsule = JSON.parse(xhr.responseText);
-                        capsule.structure[gos].events = record.events;
-
-                        let xhr2 = new XMLHttpRequest();
-                        xhr2.open("POST", "/api/update-capsule/", true);
-
-                        xhr2.onreadystatechange = () => {
-                            if (xhr2.readyState === 4) {
-                                if (xhr2.status === 200) {
-                                    app.ports.capsuleUpdated.send(capsule);
-                                } else {
-                                    app.ports.uploadRecordFailed.send(null);
-                                }
-                            };
-                        }
-
-                        xhr2.send(JSON.stringify(capsule));
-                    } else {
+                        app.ports.capsuleUpdated.send(capsule);
+                    } catch (e) {
+                        console.log(e)
                         app.ports.uploadRecordFailed.send(null);
                     }
                 }
+
             }
 
-            xhr.send(record.blob);
+        } else {
+
+            try {
+                let factor = record.pointer_blob === null ? 1 : 2;
+                let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+                    app.ports.progressReceived.send(e.loaded / (factor * e.total));
+                });
+
+                if (record.pointer_blob !== null) {
+                    xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                        app.ports.progressReceived.send(0.5 + e.loaded / e.total);
+                    });
+                }
+
+                let capsule = JSON.parse(xhr.responseText);
+                capsule.structure[gos].events = record.events;
+
+                await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
+                app.ports.capsuleUpdated.send(capsule);
+            } catch (e) {
+                console.log(e)
+                app.ports.uploadRecordFailed.send(null);
+            }
+
         }
+
     }
 
     function askNextSlide() {
@@ -434,7 +784,15 @@ function setupPorts(app) {
 
         zip.file("structure.json", JSON.stringify(capsule, null, 4));
 
-        let content = await zip.generateAsync({type: "blob"});
+        let content = await zip.generateAsync({type: "blob"},
+            function updateCallback(metadata) {
+                console.log("progression: " + metadata.percent.toFixed(2) + " %");
+                if(metadata.currentFile) {
+                    console.log("current file = " + metadata.currentFile);
+                }
+            }
+        );
+
         saveAs(content, capsule.id + ".zip");
     }
 
@@ -553,6 +911,47 @@ function setupPorts(app) {
         input.click();
     }
 
+    function setPointerCapture(args) {
+        let id = args[0];
+        let pointerId = args[1];
+        let element = document.getElementById(id);
+        if (element === null) {
+            console.error("Cannot set pointer capture of null element");
+            return;
+        }
+
+        element.setPointerCapture(pointerId);
+    }
+
+    function setCanvas(arg) {
+        switch (arg.ty) {
+            case "ChangeStyle":
+                style = arg.style;
+                break;
+
+            case "ChangeColor":
+                color = arg.color;
+                break;
+
+            case "ChangeSize":
+                size = arg.size;
+                break;
+
+            case "Erase":
+                if (ctx !== null) {
+                    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                }
+                break;
+
+            default:
+                throw new Error("Unknown SetCanvas command: " + arg.ty);
+        }
+
+        if (ctx !== null) {
+            refresh(ctx.canvas);
+        }
+    }
+
     subscribe(app.ports.setLanguage, setLanguage);
     subscribe(app.ports.setZoomLevel, setZoomLevel);
     subscribe(app.ports.setAcquisitionInverted, setAcquisitionInverted);
@@ -560,13 +959,18 @@ function setupPorts(app) {
     subscribe(app.ports.setResolution, setResolution);
     subscribe(app.ports.setAudioDeviceId, setAudioDeviceId);
     subscribe(app.ports.setSortBy, setSortBy);
+    subscribe(app.ports.setPromptSize, setPromptSize);
+    subscribe(app.ports.setOnBeforeUnloadValue, setOnBeforeUnloadValue);
     subscribe(app.ports.findDevices, findDevices);
     subscribe(app.ports.playWebcam, playWebcam);
     subscribe(app.ports.bindWebcam, bindWebcam);
     subscribe(app.ports.unbindWebcam, unbindWebcam);
+    subscribe(app.ports.bindPointer, bindPointer);
     subscribe(app.ports.startRecording, startRecording);
     subscribe(app.ports.stopRecording, stopRecording);
+    subscribe(app.ports.startPointerRecording, startPointerRecording);
     subscribe(app.ports.playRecord, playRecord);
+    subscribe(app.ports.stopPlayingRecord, stopPlayingRecord);
     subscribe(app.ports.askNextSlide, askNextSlide);
     subscribe(app.ports.askNextSentence, askNextSentence);
     subscribe(app.ports.uploadRecord, uploadRecord);
@@ -575,6 +979,8 @@ function setupPorts(app) {
     subscribe(app.ports.exportCapsule, exportCapsule);
     subscribe(app.ports.importCapsule, importCapsule);
     subscribe(app.ports.select, select);
+    subscribe(app.ports.setPointerCapture, setPointerCapture);
+    subscribe(app.ports.setCanvas, setCanvas);
 
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },

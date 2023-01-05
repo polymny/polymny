@@ -18,7 +18,7 @@ import TimeUtils
 import Ui.Colors as Colors
 import Ui.Utils as Ui
 import User exposing (User)
-import Utils exposing (tern)
+import Utils exposing (formatTime, tern)
 
 
 type ProjectOrCapsule
@@ -82,6 +82,10 @@ view global user model mkToggleFold =
                         , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.lastModified global.lang))
                           , width = Element.shrink
                           , view = lastModifiedView global
+                          }
+                        , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.diskUsage global.lang))
+                          , width = Element.shrink
+                          , view = diskUsageView global
                           }
                         , { header = Element.el [ Element.padding 10, Font.bold ] (Element.text (Lang.actions global.lang))
                           , width = Element.shrink
@@ -225,6 +229,74 @@ titleView _ mkToggleFold projectOrCapsule =
     Element.el [ Element.padding 10, Element.centerY ] text
 
 
+progressCapsuleView :
+    Core.Global
+    -> Capsule
+    ->
+        { acquisition : Element Core.Msg
+        , edition : Element Core.Msg
+        , publication : Element Core.Msg
+        , duration : Element Core.Msg
+        }
+progressCapsuleView global capsule =
+    let
+        computeColor : Capsule.TaskStatus -> Element.Attribute msg
+        computeColor status =
+            Background.color <|
+                case status of
+                    Capsule.Idle ->
+                        Colors.light
+
+                    _ ->
+                        Colors.navbar
+
+        acquired =
+            capsule.structure
+                |> List.filterMap .record
+                |> List.isEmpty
+                |> not
+                |> (||) (capsule.produced /= Capsule.Idle)
+
+        acquisition =
+            Element.el
+                [ computeColor (tern acquired Capsule.Done Capsule.Idle)
+                , Element.padding 10
+                , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.acquisition global.lang)))
+
+        edition =
+            Element.el
+                [ computeColor capsule.produced
+                , Element.padding 10
+                , Border.color Colors.black
+                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.production global.lang)))
+
+        publication =
+            Element.el
+                [ computeColor capsule.published
+                , Element.padding 10
+                , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
+                , Border.color Colors.black
+                , Border.width 1
+                ]
+                (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
+
+        duration =
+            case capsule.produced of
+                Capsule.Done ->
+                    Element.el [ Element.padding 10 ] <| Element.text <| formatTime capsule.durationMs
+
+                _ ->
+                    Element.el [ Element.padding 10 ] <| Element.text "   "
+    in
+    { acquisition = acquisition, edition = edition, publication = publication, duration = duration }
+
+
 progressView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
 progressView global projectOrCapsule =
     case projectOrCapsule of
@@ -258,57 +330,67 @@ progressView global projectOrCapsule =
 
         Capsule capsule ->
             let
-                computeColor : Capsule.TaskStatus -> Element.Attribute msg
-                computeColor status =
-                    Background.color <|
-                        case status of
-                            Capsule.Idle ->
-                                Colors.light
-
-                            _ ->
-                                Colors.navbar
-
-                acquired =
-                    capsule.structure
-                        |> List.filterMap .record
-                        |> List.isEmpty
-                        |> not
-                        |> (||) (capsule.produced /= Capsule.Idle)
-
-                acquisition =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor (tern acquired Capsule.Done Capsule.Idle)
-                        , Element.padding 10
-                        , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
-                        , Border.color Colors.black
-                        , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.acquisition global.lang)))
-
-                edition =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor capsule.produced
-                        , Element.padding 10
-                        , Border.color Colors.black
-                        , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.production global.lang)))
-
-                publication =
-                    Element.el
-                        [ Element.width Element.fill
-                        , computeColor capsule.published
-                        , Element.padding 10
-                        , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
-                        , Border.color Colors.black
-                        , Border.width 1
-                        ]
-                        (Element.el [ Element.centerX, Element.centerY ] (Element.text (Lang.publication global.lang)))
+                progress =
+                    progressCapsuleView global capsule
             in
             Element.row [ Ui.hf, Ui.wf, Element.centerY, Element.padding 5 ]
-                [ acquisition, edition, publication ]
+                [ progress.acquisition, progress.edition, progress.publication, progress.duration ]
+
+
+progressCapsuleIconsView : Core.Global -> Capsule -> ( Element Core.Msg, Element Core.Msg, Element Core.Msg )
+progressCapsuleIconsView global c =
+    let
+        attr =
+            [ Font.color Colors.navbar ]
+
+        watchButton =
+            case ( c.published, Capsule.videoPath c ) of
+                ( Capsule.Done, _ ) ->
+                    Ui.newTabIconLink attr
+                        { route = Route.Custom (global.videoRoot ++ "/" ++ c.id ++ "/")
+                        , icon = Fa.film
+                        , text = Nothing
+                        , tooltip = Just (Lang.watchVideo global.lang)
+                        }
+
+                ( _, Just url ) ->
+                    Ui.newTabIconLink attr
+                        { route = Route.Custom url
+                        , icon = Fa.film
+                        , text = Nothing
+                        , tooltip = Just (Lang.watchVideo global.lang)
+                        }
+
+                _ ->
+                    Element.none
+
+        downloadButton =
+            case Capsule.videoPath c of
+                Just url ->
+                    Ui.downloadIconLink attr
+                        { route = Route.Custom url
+                        , icon = Fa.download
+                        , text = Nothing
+                        , tooltip = Just (Lang.downloadVideo global.lang)
+                        }
+
+                _ ->
+                    Element.none
+
+        copyUrlButton =
+            case c.published of
+                Capsule.Done ->
+                    Ui.iconButton attr
+                        { onPress = Core.Copy (global.videoRoot ++ "/" ++ c.id ++ "/") |> Just
+                        , icon = Fa.link
+                        , text = Nothing
+                        , tooltip = Just (Lang.copyVideoUrl global.lang)
+                        }
+
+                _ ->
+                    Element.none
+    in
+    ( watchButton, downloadButton, copyUrlButton )
 
 
 progressIconsView : Core.Global -> ProjectOrCapsule -> Element Core.Msg
@@ -316,55 +398,8 @@ progressIconsView global projectOrCapsule =
     case projectOrCapsule of
         Capsule c ->
             let
-                attr =
-                    [ Font.color Colors.navbar ]
-
-                watchButton =
-                    case ( c.published, Capsule.videoPath c ) of
-                        ( Capsule.Done, _ ) ->
-                            Ui.newTabIconLink attr
-                                { route = Route.Custom (global.videoRoot ++ "/" ++ c.id ++ "/")
-                                , icon = Fa.film
-                                , text = Nothing
-                                , tooltip = Just (Lang.watchVideo global.lang)
-                                }
-
-                        ( _, Just url ) ->
-                            Ui.newTabIconLink attr
-                                { route = Route.Custom url
-                                , icon = Fa.film
-                                , text = Nothing
-                                , tooltip = Just (Lang.watchVideo global.lang)
-                                }
-
-                        _ ->
-                            Element.none
-
-                downloadButton =
-                    case Capsule.videoPath c of
-                        Just url ->
-                            Ui.downloadIconLink attr
-                                { route = Route.Custom url
-                                , icon = Fa.download
-                                , text = Nothing
-                                , tooltip = Just (Lang.downloadVideo global.lang)
-                                }
-
-                        _ ->
-                            Element.none
-
-                copyUrlButton =
-                    case c.published of
-                        Capsule.Done ->
-                            Ui.iconButton attr
-                                { onPress = Core.Copy (global.videoRoot ++ "/" ++ c.id ++ "/") |> Just
-                                , icon = Fa.link
-                                , text = Nothing
-                                , tooltip = Just (Lang.copyVideoUrl global.lang)
-                                }
-
-                        _ ->
-                            Element.none
+                ( watchButton, downloadButton, copyUrlButton ) =
+                    progressCapsuleIconsView global c
             in
             Element.row [ Element.spacing 10, Element.centerY ]
                 [ watchButton, downloadButton, copyUrlButton ]

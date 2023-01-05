@@ -269,18 +269,26 @@ viewGosGeneric global model offset index slides ty =
                 |> Element.column [ Element.spacing 10, Ui.wf ]
     in
     case slides of
-        [ Preparation.GosId _ ] ->
-            Element.el
-                [ Ui.id gosId, Ui.wf ]
-                (Element.el
-                    (Ui.id slideId :: Element.paddingXY 0 20 :: Ui.wf :: slideDropAttributes)
-                    (Element.el [ Element.centerY, Ui.wf ]
-                        (Element.el
-                            [ Ui.wf, Border.color Colors.greyLighter, Ui.borderBottom 1 ]
-                            Element.none
+        [ Preparation.GosId insideId ] ->
+            Element.row [ Ui.wf, Element.spacing 10 ]
+                [ Element.el
+                    [ Ui.id gosId, Ui.wf ]
+                    (Element.el
+                        (Ui.id slideId :: Element.paddingXY 0 20 :: Ui.wf :: slideDropAttributes)
+                        (Element.el [ Element.centerY, Ui.wf ]
+                            (Element.el
+                                [ Ui.wf, Border.color Colors.greyLighter, Ui.borderBottom 1 ]
+                                Element.none
+                            )
                         )
                     )
-                )
+                , Ui.iconButton [ Font.color Colors.navbar ]
+                    { onPress = Just (Core.PreparationMsg (Preparation.ExtraResourceSelect (Preparation.AddGos (insideId // 2))))
+                    , icon = Fa.plusSquare
+                    , text = Nothing
+                    , tooltip = Just (Lang.createGrain global.lang)
+                    }
+                ]
 
         _ ->
             Element.row [ Ui.wf, Element.spacing 10 ]

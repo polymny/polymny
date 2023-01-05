@@ -5,10 +5,12 @@ import Core.Types as Core
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Input as Input
 import Html
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import Lang
 import Production.Types as Production
 import Route
@@ -143,6 +145,17 @@ leftColumn global user _ gos =
 
                 _ ->
                     Nothing
+
+        width =
+            case gos.webcamSettings of
+                Capsule.Disabled ->
+                    Nothing
+
+                Capsule.Pip { size } ->
+                    Just (Tuple.first size)
+
+                Capsule.Fullscreen _ ->
+                    Nothing
     in
     Element.column [ Ui.wf, Element.centerY, Element.spacing 30 ]
         [ Input.checkbox []
@@ -155,22 +168,38 @@ leftColumn global user _ gos =
         , Input.radio (Element.spacing 10 :: disabledAttr)
             { onChange = \s -> Core.ProductionMsg (Production.WebcamSizeChanged s) |> disableMsg
             , selected =
-                (case gos.webcamSettings of
+                case gos.webcamSettings of
                     Capsule.Fullscreen { opacity } ->
                         Just Production.Fullscreen
 
                     _ ->
-                        Production.intToSize webcamSettings.size
-                )
-                    |> disableSelected
+                        Just (Production.intToSize webcamSettings.size)
             , label =
                 Input.labelAbove
-                    (Element.paddingXY 0 10 :: disabledAttr ++ Ui.formTitle)
-                    (Element.text (Lang.webcamSize global.lang))
+                    (Element.paddingXY 0 10 :: disabledAttr)
+                    (Element.column [ Element.spacing 10 ]
+                        [ Element.el Ui.formTitle (Element.text (Lang.webcamSize global.lang))
+                        , Input.text
+                            [ Element.htmlAttribute (Html.Attributes.type_ "number") ]
+                            { label = Input.labelHidden (Lang.custom global.lang)
+                            , onChange =
+                                \v ->
+                                    case String.toInt v of
+                                        Just val ->
+                                            Core.ProductionMsg (Production.WebcamSizeChanged (Production.Custom val))
+
+                                        _ ->
+                                            Core.Noop
+                            , placeholder = Nothing
+                            , text = String.fromInt (Maybe.withDefault 0 width)
+                            }
+                        ]
+                    )
             , options =
                 [ Input.option Production.Small (Element.text (Lang.small global.lang))
                 , Input.option Production.Medium (Element.text (Lang.medium global.lang))
                 , Input.option Production.Large (Element.text (Lang.large global.lang))
+                , Input.option (Production.Custom (Maybe.withDefault 300 width)) (Element.text (Lang.custom global.lang))
                 , Input.option Production.Fullscreen (Element.text (Lang.fullscreen global.lang))
                 ]
             }
@@ -224,8 +253,7 @@ leftColumn global user _ gos =
           else
             Element.none
         , if User.isPremium user then
-            Input.checkbox
-                disabledAttr
+            Input.checkbox disabledAttr
                 { checked = isJust currentKeyColor
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight forceDisabledAttr (Element.text (Lang.activateKeying global.lang))
@@ -278,6 +306,30 @@ leftColumn global user _ gos =
 
           else
             Element.none
+        , -- Fading option, not available right now
+          -- if User.isPremium user then
+          --   let
+          --       fade =
+          --           gos.fade.vfadein /= Nothing || gos.fade.vfadeout /= Nothing || gos.fade.afadein /= Nothing || gos.fade.afadeout /= Nothing
+          --   in
+          --   Input.checkbox
+          --       []
+          --       { checked = fade
+          --       , icon = Input.defaultCheckbox
+          --       , label = Input.labelRight [] (Element.text (Lang.activateFade global.lang))
+          --       , onChange =
+          --           \x ->
+          --               Core.ProductionMsg
+          --                   (Production.FadeChanged
+          --                       (if fade then
+          --                           { vfadein = Nothing, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+          --                        else
+          --                           { vfadein = Just 2, vfadeout = Nothing, afadein = Nothing, afadeout = Nothing }
+          --                       )
+          --                   )
+          --       }
+          -- else
+          Element.none
 
         --Input.text []
         --  { label = Input.labelHidden ""
@@ -322,25 +374,66 @@ mainView global user model gos slide =
             case ( gos.webcamSettings, gos.record ) of
                 ( Capsule.Pip s, Just r ) ->
                     let
-                        align =
+                        ( ( marginX, marginY ), ( w, h ) ) =
+                            ( model.webcamPosition, ( toFloat (Tuple.first s.size), toFloat (Tuple.second s.size) ) )
+
+                        ( x, y ) =
                             case s.anchor of
                                 Capsule.TopLeft ->
-                                    [ Element.alignTop, Element.alignLeft ]
+                                    ( marginX, marginY )
 
                                 Capsule.TopRight ->
-                                    [ Element.alignTop, Element.alignRight ]
+                                    ( 1920 - w - marginX, marginY )
 
                                 Capsule.BottomLeft ->
-                                    [ Element.alignBottom, Element.alignLeft ]
+                                    ( marginX, 1080 - h - marginY )
 
                                 Capsule.BottomRight ->
-                                    [ Element.alignBottom, Element.alignRight ]
+                                    ( 1920 - w - marginX, 1080 - h - marginY )
 
-                        percentage =
-                            (Tuple.first s.size * 100 // 1920 |> String.fromInt) ++ "%"
+                        tp =
+                            100 * y / 1080
+
+                        lp =
+                            100 * x / 1920
+
+                        bp =
+                            100 * (1080 - y - h) / 1080
+
+                        rp =
+                            100 * (1920 - x - w) / 1920
                     in
-                    Element.el (Element.htmlAttribute (Html.Attributes.style "width" percentage) :: align)
-                        (Element.image [ Element.alpha s.opacity, Ui.wf, Ui.hf ]
+                    Element.el
+                        [ Element.htmlAttribute (Html.Attributes.style "position" "absolute")
+                        , Element.htmlAttribute (Html.Attributes.style "top" (String.fromFloat tp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "left" (String.fromFloat lp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "right" (String.fromFloat rp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "bottom" (String.fromFloat bp ++ "%"))
+                        ]
+                        (Element.image
+                            [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                            , Element.alpha s.opacity
+                            , Ui.wf
+                            , Ui.hf
+                            , Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                                (Decode.field "pointerId" Decode.int)
+                                (Decode.field "pageX" Decode.float)
+                                (Decode.field "pageY" Decode.float)
+                                |> Html.Events.on "pointerdown"
+                                |> Element.htmlAttribute
+                            , Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
+                                |> Html.Events.on "pointerup"
+                                |> Element.htmlAttribute
+                            , Element.htmlAttribute
+                                (Html.Events.custom "dragstart"
+                                    (Decode.succeed
+                                        { message = Core.Noop
+                                        , preventDefault = True
+                                        , stopPropagation = True
+                                        }
+                                    )
+                                )
+                            ]
                             { src = Capsule.assetPath model.capsule (r.uuid ++ ".png")
                             , description = ""
                             }
@@ -362,8 +455,31 @@ mainView global user model gos slide =
 
                 _ ->
                     Element.none
+
+        gosIdString =
+            String.fromInt <| model.gos + 1
+
+        produceInfo =
+            case ( model.capsule.published, Capsule.videoGosPath model.capsule model.gos ) of
+                ( _, Just path ) ->
+                    Ui.newTabLink []
+                        { label = Element.text (Lang.watchGosVideo global.lang gosIdString)
+                        , route = Route.Custom path
+                        }
+
+                _ ->
+                    Element.none
+
+        produceButton =
+            Ui.primaryButton
+                { label = Element.text (Lang.produceGosVideo global.lang gosIdString)
+                , onPress = Just (Core.ProductionMsg <| Production.ProduceGos model.gos)
+                }
     in
-    Element.el [ Ui.wf, Element.centerY, Element.inFront overlay ] image
+    Element.column []
+        [ Element.el [ Ui.wf, Element.centerY, Element.inFront overlay, Element.clip ] image
+        , Element.row [ Element.alignRight, Element.spacing 10, Element.padding 10 ] [ produceInfo, produceButton ]
+        ]
 
 
 bottomBar : Core.Global -> User -> Production.Model -> Element Core.Msg
@@ -389,7 +505,7 @@ bottomBar global user model =
         produceButton =
             case model.capsule.produced of
                 Capsule.Running msg ->
-                    Element.row []
+                    Element.column []
                         [ Element.row [ Element.spacing 10 ]
                             [ Ui.primaryButton
                                 { label =
@@ -407,7 +523,7 @@ bottomBar global user model =
                             ]
                         , case msg of
                             Just m ->
-                                Element.el [] <| Element.text m
+                                Element.el [ Element.padding 10, Element.width Element.fill, Ui.hf ] (Ui.progressBar m)
 
                             Nothing ->
                                 Element.none

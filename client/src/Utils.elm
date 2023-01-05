@@ -1,4 +1,4 @@
-module Utils exposing (andMap, checkEmail, isJust, tern)
+module Utils exposing (andMap, checkEmail, formatTime, isJust, tern)
 
 import Json.Decode as Decode exposing (Decoder)
 
@@ -42,3 +42,32 @@ isJust maybe =
 
         _ ->
             False
+
+
+formatTime : Int -> String
+formatTime milliseconds =
+    let
+        seconds =
+            milliseconds // 1000
+
+        minutes =
+            seconds // 60
+
+        secs =
+            modBy 60 seconds
+
+        secsString =
+            if secs < 10 then
+                "0" ++ String.fromInt secs
+
+            else
+                String.fromInt secs
+
+        minutesString =
+            if minutes < 10 then
+                "0" ++ String.fromInt minutes
+
+            else
+                String.fromInt minutes
+    in
+    minutesString ++ ":" ++ secsString

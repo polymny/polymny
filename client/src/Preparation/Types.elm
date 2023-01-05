@@ -26,6 +26,7 @@ type alias Model =
 type ChangeSlide
     = ReplaceSlide Capsule.Slide
     | AddSlide Int
+    | AddGos Int
 
 
 type alias ChangeSlideForm =

@@ -57,7 +57,7 @@ decodeRole =
 
 type TaskStatus
     = Idle
-    | Running (Maybe String)
+    | Running (Maybe Float)
     | Done
 
 
@@ -214,16 +214,27 @@ videoPath capsule =
         Nothing
 
 
+videoGosPath : Capsule -> Int -> Maybe String
+videoGosPath capsule gosId =
+    if capsule.produced == Done then
+        Just ("/data/" ++ capsule.id ++ "/tmp/gos_" ++ String.fromInt gosId ++ ".mp4")
+
+    else
+        Nothing
+
+
 type alias Record =
     { uuid : String
+    , pointerUuid : Maybe String
     , size : Maybe ( Int, Int )
     }
 
 
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map2 Record
+    Decode.map3 Record
         (Decode.field "uuid" Decode.string)
+        (Decode.maybe (Decode.field "pointer_uuid" Decode.string))
         (Decode.maybe (Decode.field "size" decodeIntPair))
 
 
@@ -233,6 +244,7 @@ encodeRecord record =
         Just r ->
             Encode.object
                 [ ( "uuid", Encode.string r.uuid )
+                , ( "pointer_uuid", r.pointerUuid |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
                 , case r.size of
                     Just ( w, h ) ->
                         ( "size", Encode.list Encode.int [ w, h ] )
@@ -342,6 +354,7 @@ type alias Gos =
     , slides : List Slide
     , events : List Event
     , webcamSettings : WebcamSettings
+    , fade : Fade
     }
 
 
@@ -502,13 +515,41 @@ encodeWebcamSettings settings =
                 ]
 
 
+type alias Fade =
+    { vfadein : Maybe Int
+    , vfadeout : Maybe Int
+    , afadein : Maybe Int
+    , afadeout : Maybe Int
+    }
+
+
+decodeFade : Decoder Fade
+decodeFade =
+    Decode.map4 Fade
+        (Decode.maybe (Decode.field "vfadein" Decode.int))
+        (Decode.maybe (Decode.field "vfadeout" Decode.int))
+        (Decode.maybe (Decode.field "afadein" Decode.int))
+        (Decode.maybe (Decode.field "afadeout" Decode.int))
+
+
+encodeFade : Fade -> Encode.Value
+encodeFade f =
+    Encode.object
+        [ ( "vfadein", Maybe.withDefault Encode.null (Maybe.map Encode.int f.vfadein) )
+        , ( "vfadeout", Maybe.withDefault Encode.null (Maybe.map Encode.int f.vfadeout) )
+        , ( "afadein", Maybe.withDefault Encode.null (Maybe.map Encode.int f.afadein) )
+        , ( "afadeout", Maybe.withDefault Encode.null (Maybe.map Encode.int f.afadeout) )
+        ]
+
+
 decodeGos : Decoder Gos
 decodeGos =
-    Decode.map4 Gos
+    Decode.map5 Gos
         (Decode.maybe (Decode.field "record" decodeRecord))
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "events" (Decode.list decodeEvent))
         (Decode.field "webcam_settings" decodeWebcamSettings)
+        (Decode.field "fade" decodeFade)
 
 
 type alias User =
@@ -536,6 +577,7 @@ type alias Capsule =
     , users : List User
     , promptSubtitles : Bool
     , diskUsage : Int
+    , durationMs : Int
     }
 
 
@@ -555,6 +597,7 @@ decode =
         |> andMap (Decode.field "users" (Decode.list decodeUser))
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
         |> andMap (Decode.field "disk_usage" Decode.int)
+        |> andMap (Decode.field "duration_ms" Decode.int)
 
 
 encodeGos : Gos -> Encode.Value
@@ -564,6 +607,7 @@ encodeGos gos =
         , ( "slides", Encode.list encodeSlide gos.slides )
         , ( "events", Encode.list encodeEvent gos.events )
         , ( "webcam_settings", encodeWebcamSettings gos.webcamSettings )
+        , ( "fade", encodeFade gos.fade )
         ]
 
 

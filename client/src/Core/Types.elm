@@ -38,6 +38,7 @@ type alias Flags =
     , resolution : Maybe String
     , audioDeviceId : Maybe String
     , sortBy : ( User.SortBy, Bool )
+    , promptSize : Int
     }
 
 
@@ -60,6 +61,7 @@ type alias Global =
     , resolution : Maybe String
     , audioDeviceId : Maybe String
     , sortBy : ( User.SortBy, Bool )
+    , promptSize : Int
     }
 
 
@@ -95,6 +97,7 @@ flagsToGlobal key flags =
     , resolution = flags.resolution
     , audioDeviceId = flags.audioDeviceId
     , sortBy = flags.sortBy
+    , promptSize = flags.promptSize
     }
 
 
@@ -260,7 +263,7 @@ type Msg
     | NotificationReceived User.Notification
     | VideoUploadProgress String Float
     | VideoUploadFinished String
-    | ProductionProgress String String
+    | ProductionProgress String Float
     | ProductionFinished String
     | PublicationFinished String
     | ExportCapsule Capsule
@@ -270,3 +273,4 @@ type Msg
     | AdminUsers (List Admin.User) Int
     | AdminUser Admin.User
     | AdminCapsules (List Capsule) Int
+    | Update Model (Cmd Msg)

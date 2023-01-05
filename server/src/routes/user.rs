@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 use tokio::fs::remove_dir_all;
 
 use rocket::form::Form;
-use rocket::http::{Cookie, CookieJar, Status};
-use rocket::response::content::Html;
+use rocket::http::{Cookie, CookieJar, SameSite, Status};
+use rocket::response::content::RawHtml as Html;
 use rocket::response::Redirect;
 use rocket::serde::json::{json, Json, Value};
 use rocket::State as S;
@@ -31,6 +31,7 @@ fn add_cookies(value: &str, config: &Config, cookies: &CookieJar) {
     let v = Cow::into_owned(value.into());
     let mut cookie = Cookie::new("EXAUTH", v);
     cookie.set_max_age(Some(max_age));
+    cookie.set_same_site(SameSite::Lax);
     if let Some(domain) = config.cookie_domain.as_ref() {
         cookie.set_domain(Cow::into_owned(domain.into()));
     }

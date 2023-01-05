@@ -1,6 +1,6 @@
 [package]
 name = "polymny"
-version = "1.0.0"
+version = "1.1.2"
 authors = ["Thomas Forgione <thomas@polymny.studio>", "Nicolas Bertrand <nicolas@polymny.studio>"]
 edition = "2018"
 default-run = "server"
@@ -13,11 +13,11 @@ git = ["compile-time-run"]
 
 [dependencies]
 bcrypt = "0.9.0"
-ergol = { version = "0.1.1", features = ["with-serde_json-1", "with-chrono-0_4", "with-rocket" ] }
-ergol_cli = "0.1.1"
+ergol = { version = "0.1.2", features = ["with-serde_json-1", "with-chrono-0_4", "with-rocket" ] }
+ergol_cli = "0.1.2"
 rand = "0.7.3"
 serde = { version = "1.0.117", features = ["derive"] }
-rocket = { version = "0.5.0-rc.1", features = ["json", "secrets" ] }
+rocket = { version = "0.5.0-rc.2", features = ["json", "secrets" ] }
 lettre = "0.9.5"
 lettre_email = "0.9.4"
 tokio = { version = "1.6.1", features = ["fs"] }
@@ -27,7 +27,7 @@ rayon = "1.5.0"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 compile-time-run = { version = "0.2.11", optional = true }
 chrono = "0.4.19"
-time = "0.2.26"
+time = "0.3.9"
 tokio-tungstenite = "0.14.0"
 tungstenite = "0.13.0"
 futures-sink = "0.3.13"
@@ -49,5 +49,9 @@ path = "src/harsh.rs"
 [[bin]]
 name = "user-disk_usage"
 path = "src/user_disk_usage.rs"
+
+[[bin]]
+name = "update-video-duration"
+path = "src/update_video_duration.rs"
 
 

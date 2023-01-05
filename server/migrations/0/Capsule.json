@@ -1,0 +1,124 @@
+[
+  {
+    "type": "Table",
+    "name": "capsules",
+    "columns": [
+      {
+        "name": "id",
+        "ty": "Id",
+        "unique": false
+      },
+      {
+        "name": "project",
+        "ty": "String",
+        "unique": false
+      },
+      {
+        "name": "name",
+        "ty": "String",
+        "unique": false
+      },
+      {
+        "name": "video_uploaded",
+        "ty": {
+          "Enum": "task_status"
+        },
+        "unique": false
+      },
+      {
+        "name": "video_uploaded_pid",
+        "ty": {
+          "Option": "I32"
+        },
+        "unique": false
+      },
+      {
+        "name": "produced",
+        "ty": {
+          "Enum": "task_status"
+        },
+        "unique": false
+      },
+      {
+        "name": "production_pid",
+        "ty": {
+          "Option": "I32"
+        },
+        "unique": false
+      },
+      {
+        "name": "published",
+        "ty": {
+          "Enum": "task_status"
+        },
+        "unique": false
+      },
+      {
+        "name": "publication_pid",
+        "ty": {
+          "Option": "I32"
+        },
+        "unique": false
+      },
+      {
+        "name": "privacy",
+        "ty": {
+          "Enum": "privacy"
+        },
+        "unique": false
+      },
+      {
+        "name": "prompt_subtitles",
+        "ty": "Bool",
+        "unique": false
+      },
+      {
+        "name": "structure",
+        "ty": "Json",
+        "unique": false
+      },
+      {
+        "name": "last_modified",
+        "ty": "NaiveDateTime",
+        "unique": false
+      },
+      {
+        "name": "disk_usage",
+        "ty": "I32",
+        "unique": false
+      }
+    ]
+  },
+  {
+    "type": "Table",
+    "name": "capsules_users_join",
+    "columns": [
+      {
+        "name": "id",
+        "ty": "Id",
+        "unique": false
+      },
+      {
+        "name": "capsules_id",
+        "ty": {
+          "Reference": "capsules"
+        },
+        "unique": false
+      },
+      {
+        "name": "users_id",
+        "ty": {
+          "Reference": "users"
+        },
+        "unique": false
+      },
+      {
+        "name": "role",
+        "ty": {
+          "Enum": "role"
+        },
+        "unique": false
+      }
+    ]
+  }
+]

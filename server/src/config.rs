@@ -9,6 +9,14 @@ use rocket::Phase;
 
 use crate::mailer::Mailer;
 
+fn default_premium_only() -> bool {
+    false
+}
+
+fn default_other_host() -> Option<String> {
+    None
+}
+
 fn default_data_path() -> PathBuf {
     PathBuf::from("data")
 }
@@ -114,6 +122,15 @@ pub struct Config {
 
     /// The homepage.
     pub home: Option<String>,
+
+    /// Whether the instance should treat only premium requests or all requests.
+    #[serde(default = "default_premium_only")]
+    pub premium_only: bool,
+
+    /// The other instance treating the other types of request (premium if premium_only is false or
+    /// non premium).
+    #[serde(default = "default_other_host")]
+    pub other_host: Option<String>,
 
     /// The path where the data should be saved.
     #[serde(default = "default_data_path")]

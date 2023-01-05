@@ -79,7 +79,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
@@ -107,7 +107,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
@@ -143,6 +143,7 @@ const INDEX_HTML_AFTER_FLAGS: &str = r#";
             flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
             flags.global.resolution = localStorage.getItem('resolution');
             flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
+            flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
             var app = Elm.Main.init({
                 flags: flags,
                 node: document.getElementById('root')
@@ -159,7 +160,7 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
@@ -186,7 +187,7 @@ const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
@@ -213,6 +214,7 @@ const UNLOGGED_HTML_AFTER_FLAGS: &str = r#";
             flags.global.height = window.innerHeight;
             flags.global.language = localStorage.getItem('language');
             flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
+            flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
             var app = Elm.Unlogged.init({
                 flags: flags,
                 node: document.getElementById('root')
@@ -222,12 +224,13 @@ const UNLOGGED_HTML_AFTER_FLAGS: &str = r#";
     </body>
 </html>
 "#;
+
 #[cfg(debug_assertions)]
 const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
         <title>Preparaption - Setup</title>
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <meta charset="utf-8">
     </head>
     <body>
@@ -247,7 +250,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
         <title>Preparaption - Setup</title>
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <meta charset="utf-8">
     </head>
     <body>
@@ -299,9 +302,10 @@ pub fn video_html(url: &str) -> String {
             PolymnyVideo.fullpage({{
                 node: document.getElementById("container"),
                 url: "{}",
-                autoplay: true,
-                enableMiniatures: true,
+                autoplay: PolymnyVideo.getArgumentFromUrl("a") !== null,
                 startTime: PolymnyVideo.getArgumentFromUrl("t"),
+                enableMiniatures: true,
+                muted: PolymnyVideo.getArgumentFromUrl("m") !== null
             }});
         </script>
     </body>

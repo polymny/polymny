@@ -18,6 +18,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::fs::OpenOptions;
 use std::ops::Deref;
+use std::path::Path;
 use std::result::Result as StdResult;
 use std::sync::Arc;
 
@@ -31,13 +32,14 @@ use tokio::sync::Semaphore;
 
 use ergol::deadpool::managed::Object;
 use ergol::tokio_postgres::Error as TpError;
-use ergol::{tokio, Ergol, Pool};
+use ergol::{tokio, Pool};
 
 use rocket::fairing::AdHoc;
 use rocket::http::Status;
 use rocket::request::{FromParam, FromRequest, Outcome, Request};
 use rocket::response::{self, Responder};
-use rocket::State;
+use rocket::shield::{NoSniff, Permission, Shield};
+use rocket::{Ignite, Rocket, State};
 
 use crate::command::run_command;
 use crate::config::Config;
@@ -60,7 +62,7 @@ lazy_static! {
 
 /// The error type of this library.
 #[derive(Debug)]
-pub struct Error(Status);
+pub struct Error(pub Status);
 
 /// The result type of this library
 pub type Result<T> = StdResult<T, Error>;
@@ -99,7 +101,7 @@ impl_from_error!(std::str::Utf8Error);
 impl_from_error!(std::num::ParseIntError);
 
 /// A wrapper for a database connection extrated from a pool.
-pub struct Db(Object<Ergol, TpError>);
+pub struct Db(Object<ergol::pool::Manager>);
 
 impl Db {
     /// Extracts a database from a pool.
@@ -112,7 +114,7 @@ impl Db {
 }
 
 impl std::ops::Deref for Db {
-    type Target = Object<Ergol, TpError>;
+    type Target = Object<ergol::pool::Manager>;
     fn deref(&self) -> &Self::Target {
         &*&self.0
     }
@@ -252,7 +254,7 @@ impl<'a> FromParam<'a> for HashId {
 /// Resets the database.
 pub async fn reset_db() {
     let config = Config::from_figment(&rocket::Config::figment());
-    let pool = ergol::pool(&config.databases.database.url, 32);
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
     let db = Db::from_pool(pool).await.unwrap();
 
     remove_dir_all(&config.data_path).await.ok();
@@ -292,43 +294,88 @@ pub async fn reset_db() {
 /// Calculate disk usage for each user.
 pub async fn user_disk_usage() {
     let config = Config::from_figment(&rocket::Config::figment());
-    let pool = ergol::pool(&config.databases.database.url, 32);
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
     let db = Db::from_pool(pool).await.unwrap();
 
-    use crate::db::user::User;
+    use crate::db::capsule::Capsule;
+    use crate::db::user::Plan;
     use ergol::prelude::*;
 
-    let users = User::select().execute(&db).await.unwrap();
-    for user in users {
-        let capsules = user.capsules(&db).await.unwrap();
-        let mut user_disk_usage = 0;
-        for (mut capsule, _role) in capsules {
-            let path = &config.data_path.join(format!("{}", capsule.id));
+    for mut capsule in Capsule::select().execute(&db).await.unwrap() {
+        let owner = capsule.owner(&db).await.unwrap();
 
-            let output = run_command(&vec!["../scripts/psh", "du", path.to_str().unwrap()]);
-            match &output {
-                Ok(o) => {
-                    for line in std::str::from_utf8(&o.stdout)
-                        .map_err(|_| Error(Status::InternalServerError))
-                        .unwrap()
-                        .lines()
-                    {
-                        let du = line.parse::<i32>().unwrap();
-                        user_disk_usage = user_disk_usage + du;
-                        if du != capsule.disk_usage {
-                            capsule.disk_usage = du;
-                            capsule.save(&db).await.unwrap();
-                        }
+        // Skip capsule if it is stored on the other host.
+        if config.other_host.is_some() && (owner.plan >= Plan::PremiumLvl1) != config.premium_only {
+            continue;
+        }
+
+        let path = &config.data_path.join(format!("{}", capsule.id));
+
+        let output = run_command(&vec!["../scripts/psh", "du", path.to_str().unwrap()]);
+        match &output {
+            Ok(o) => {
+                for line in std::str::from_utf8(&o.stdout)
+                    .map_err(|_| Error(Status::InternalServerError))
+                    .unwrap()
+                    .lines()
+                {
+                    let du = line.parse::<i32>().unwrap();
+                    if du != capsule.disk_usage {
+                        capsule.disk_usage = du;
+                        capsule.save(&db).await.unwrap();
                     }
                 }
-                Err(_) => println!("error"),
+            }
+            Err(_) => println!("error"),
+        };
+    }
+}
+
+/// update duration of all capsules
+pub async fn update_video_duration() {
+    let config = Config::from_figment(&rocket::Config::figment());
+    let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
+    let db = Db::from_pool(pool).await.unwrap();
+
+    use crate::db::capsule::Capsule;
+    use ergol::prelude::*;
+
+    let capsules = Capsule::select().execute(&db).await.unwrap();
+    for mut capsule in capsules {
+        let path = &config
+            .data_path
+            .join(format!("{}", capsule.id))
+            .join("output.mp4");
+        if Path::new(path).exists() {
+            let output = run_command(&vec!["../scripts/psh", "duration", path.to_str().unwrap()]);
+
+            match &output {
+                Ok(o) => {
+                    let line = ((std::str::from_utf8(&o.stdout)
+                        .map_err(|_| Error(Status::InternalServerError))
+                        .unwrap()
+                        .trim()
+                        .parse::<f32>()
+                        .unwrap())
+                        * 1000.) as i32;
+
+                    capsule.duration_ms = line;
+                    capsule.save(&db).await.ok();
+
+                    println!(
+                        " capsule {:4} {:9.1} s",
+                        capsule.id,
+                        capsule.duration_ms as f32 / 1000.0
+                    );
+                }
+                Err(_) => error!("Impossible to get duration"),
             };
         }
     }
 }
 
 /// Starts the rocket server.
-pub async fn rocket() -> StdResult<(), rocket::Error> {
+pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
     let figment = rocket::Config::figment();
     let config = Config::from_figment(&figment);
 
@@ -355,14 +402,19 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
         rocket::build()
     };
 
+    let shield = Shield::new()
+        .enable(NoSniff::default())
+        .enable(Permission::default());
+
     let rocket = rocket
+        .attach(shield)
         .attach(AdHoc::on_ignite("Config", |rocket| async move {
             let config = Config::from_rocket(&rocket);
             rocket.manage(config)
         }))
         .attach(AdHoc::on_ignite("Database", |rocket| async move {
             let config = Config::from_rocket(&rocket);
-            let pool = ergol::pool(&config.databases.database.url, 32);
+            let pool = ergol::pool(&config.databases.database.url, 32).unwrap();
             rocket.manage(pool)
         }))
         .attach(AdHoc::on_ignite("WebSockets", |rocket| async move {
@@ -400,7 +452,10 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
             ],
         )
         .mount("/dist", routes![routes::dist])
-        .mount("/data", routes![routes::assets, routes::produced_video])
+        .mount(
+            "/data",
+            routes![routes::assets, routes::tmp, routes::produced_video],
+        )
         .mount(
             "/api",
             if config.registration_disabled {
@@ -427,9 +482,12 @@ pub async fn rocket() -> StdResult<(), rocket::Error> {
                 routes::capsule::delete_capsule,
                 routes::capsule::delete_project,
                 routes::capsule::upload_record,
+                routes::capsule::upload_pointer,
                 routes::capsule::replace_slide,
                 routes::capsule::add_slide,
+                routes::capsule::add_gos,
                 routes::capsule::produce,
+                routes::capsule::produce_gos,
                 routes::capsule::cancel_production,
                 routes::capsule::publish,
                 routes::capsule::cancel_publication,
