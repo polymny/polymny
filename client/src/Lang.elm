@@ -1354,6 +1354,16 @@ videoNotProduced lang =
             "Video has not been produced yet"
 
 
+cantPublishBecauseNotProduced : Lang -> String
+cantPublishBecauseNotProduced lang =
+    case lang of
+        FrFr ->
+            "Pour publier la vidéo, vous devez d'abord la produire"
+
+        _ ->
+            "To publish the video, you must first produce it"
+
+
 publishVideo : Lang -> String
 publishVideo lang =
     case lang of

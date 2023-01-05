@@ -63,14 +63,17 @@ view global user model =
 
                   else
                     Element.none
-                , case model.capsule.published of
-                    Capsule.Idle ->
+                , case ( model.capsule.published, model.capsule.produced ) of
+                    ( Capsule.Idle, Capsule.Done ) ->
                         Ui.primaryButton
                             { onPress = Just (Core.PublicationMsg Publication.Publish)
                             , label = Element.text (Lang.publishVideo global.lang)
                             }
 
-                    Capsule.Done ->
+                    ( Capsule.Idle, _ ) ->
+                        Element.text (Lang.cantPublishBecauseNotProduced global.lang)
+
+                    ( Capsule.Done, _ ) ->
                         Element.row [ Element.spacing 10 ]
                             [ Ui.iconButton [ Font.color Colors.navbar ]
                                 { onPress = Core.Copy (global.videoRoot ++ "/" ++ model.capsule.id ++ "/") |> Just

@@ -130,7 +130,7 @@ pub async fn index<'a>(
     let (json, redirect) = match user {
         Some(ref user) => (
             Some(user.to_json(&db).await),
-            config.premium_only != (user.plan >= Plan::PremiumLvl1),
+            (config.premium_only != (user.plan >= Plan::PremiumLvl1)) && user.plan != Plan::Admin,
         ),
         None => (None, false),
     };
@@ -162,7 +162,7 @@ pub async fn index_without_cors(
     let (json, redirect) = match user {
         Some(ref user) => (
             Some(user.to_json(&db).await),
-            config.premium_only != (user.plan >= Plan::PremiumLvl1),
+            (config.premium_only != (user.plan >= Plan::PremiumLvl1)) && user.plan != Plan::Admin,
         ),
         None => (None, false),
     };

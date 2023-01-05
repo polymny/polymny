@@ -20,8 +20,10 @@ This project consists in a backend written in
 [rust](https://www.rust-lang.org/) and a front end in
 [elm](https://elm-lang.org/).
 
+
 ## Table of contents
 
+  - [Fonctionnalités](#Fonctionnalités)
   - [Building](#building)
     - [Getting the source code](#getting-the-source-code)
     - [Building the client](#client)
@@ -31,6 +33,44 @@ This project consists in a backend written in
       - [Configuring the server](#configuration)
   - [Running](#running)
   - [Developping](#developping)
+
+## Fonctionnalités
+
+Se concentrer sur le fond de son discours plutôt que de se perdre dans la technique. 100 % en ligne, le logiciel libre Polymny Studio permet – dès sa version gratuite – de créer, modifier et diffuser rapidement et facilement des vidéos informatives ou formatives sans aucune compétence particulière en montage vidéo ou en hébergement web. Il suffit de charger une présentation pdf sur la plateforme et de se lancer. Un véritable jeu d’enfant. Des fonctionnalités complémentaires (stylet et fond vert virtuels, approche collaborative…) sont disponibles dans sa version pro.
+
+### Préparer capsule
+
+L'application permet de télécharger un support au format pdf et de l'organiser en séquences d'enregistrement appelé "grain".
+Pour dynamiser la vidéo: l'application permet de remplacer une planche par vidéo externe (jingle, capture d'écran, animations, ...).
+L'édition d'un prompteur permettra de bien adapté le discours au support de cours
+
+### Enregistrer depuis une caméra
+
+Pour chaque grain, il est facile de  faire (et refaire) un enregistrement vidéo (ou audio seul). Le prompteur est affiché pour vous guider.
+Si vous avez plusieurs caméra, webcam ou micros vous pouvez choisir celui qui convient le mieux.
+
+### Produire une capsule vidéo
+
+Une fois les enregistrements terminés, quelques options simples de montage (ajustable grain par grain):
+- Réglage (taille, position et transparence) de  l'enregistrement caméra a dessus du support de cours.
+- mode audio seul (pas de caméra).
+
+La vidéo produite peut être téléchargée. Nous vous recommandons, néanmoins, de passer par la publication de la vidéo afin de ne pas multiplier le stockage de vidéo
+
+### Publication d'une capsule vidéo
+
+Publier une vidéo, consiste à générer une URL de partage  de la vidéo. Cette URL est adaptée eu besoin de partage et de diffusion d'une vidéo. Exemple [https://polymny.studio/v/3ML6p/](https://polymny.studio/v/3ML6p/).
+Pour chaque vidéo publié la confidentialité est paramétrable, par exemple une diffusion restreinte à quelques utilisateurs ou bien publique.
+
+### Modifier des capsules existantes
+Chaque capsule (même publiée) peut-être rapidement corrigée ou modifiée comme par exemple refaire un enregistrement, modifier une planche, ou ajouter du contenu.
+Toutes les données d'une capsule (planches, enregistrements,  texte de prompteur) sont exportables sous forme d'archive ZIP.
+
+
+
+
+
+
 
 ## Building
 
