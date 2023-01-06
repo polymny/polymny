@@ -57,7 +57,10 @@ viewContent fullModel =
                     ( viewError error, Element.none )
     in
     Element.column [ Ui.wf, Ui.hf, Element.inFront popup ]
-        [ Ui.navbar (fullModel |> Result.toMaybe |> Maybe.map .config) (fullModel |> Result.toMaybe |> Maybe.map .user)
+        [ Ui.navbar
+            (fullModel |> Result.toMaybe |> Maybe.map .config)
+            (fullModel |> Result.toMaybe |> Maybe.map .page)
+            (fullModel |> Result.toMaybe |> Maybe.map .user)
         , Element.el [ Ui.wf, Ui.hf, Element.scrollbarY ] content
         , Ui.bottombar (fullModel |> Result.toMaybe |> Maybe.map .config)
         ]

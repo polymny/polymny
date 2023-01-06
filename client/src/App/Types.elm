@@ -1,5 +1,5 @@
 module App.Types exposing
-    ( Model, Page(..), Msg(..), onUrlRequest
+    ( Model, Page(..), getCapsule, Msg(..), onUrlRequest
     , Error(..), errorToString
     )
 
@@ -8,7 +8,7 @@ module App.Types exposing
 
 # The model
 
-@docs Model, Page, Msg, onUrlRequest
+@docs Model, Page, getCapsule, Msg, onUrlRequest
 
 
 # Error management
@@ -19,6 +19,7 @@ module App.Types exposing
 
 import Browser
 import Config exposing (Config)
+import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
@@ -42,6 +43,19 @@ type Page
     = Home
     | NewCapsule NewCapsule.Model
     | Preparation Preparation.Model
+
+
+{-| Tries to get the capsule from a specific page. Returns nothing if the page does not correspond to a specific
+capsule.
+-}
+getCapsule : Page -> Maybe Capsule
+getCapsule page =
+    case page of
+        Preparation m ->
+            Just m.capsule
+
+        _ ->
+            Nothing
 
 
 {-| This type represents the errors that can occur when the page starts.

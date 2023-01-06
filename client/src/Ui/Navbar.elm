@@ -6,13 +6,15 @@ module Ui.Navbar exposing (navbar, bottombar)
 
 -}
 
+import App.Types as App
 import Config exposing (Config)
+import Data.Capsule exposing (Capsule)
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
-import Lang
-import Route
+import Lang exposing (Lang)
+import Route exposing (Route)
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -22,19 +24,53 @@ import Ui.Utils as Ui
 
 {-| This function creates the navbar of the application.
 -}
-navbar : Maybe Config -> Maybe User -> Element msg
-navbar config user =
+navbar : Maybe Config -> Maybe App.Page -> Maybe User -> Element msg
+navbar config page user =
     let
         lang =
             Maybe.map .clientState config |> Maybe.map .lang |> Maybe.withDefault Lang.default
+
+        capsule =
+            Maybe.andThen App.getCapsule page
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
-        [ Ui.navigationElement (Ui.Route Route.Home) [] Ui.logo
+        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] Ui.logo
+        , case ( capsule, page ) of
+            ( Just c, Just p ) ->
+                navButtons lang c p
+
+            _ ->
+                Element.none
         , Element.row [ Font.size 20, Element.alignRight, Element.spacing 10 ]
             [ Maybe.map .username user |> Maybe.map Element.text |> Maybe.withDefault Element.none
             , Ui.secondary [ Ui.pr 10 ] { action = Ui.None, label = Strings.loginLogout lang }
             ]
+        ]
+
+
+{-| This function creates a row with the navigation buttons of the different tabs of a capsule.
+-}
+navButtons : Lang -> Capsule -> App.Page -> Element msg
+navButtons lang capsule page =
+    let
+        makeButton : Route -> (Lang -> String) -> Element msg
+        makeButton route label =
+            let
+                attr =
+                    if route == Route.fromPage page then
+                        [ Background.color Colors.greyBackground ]
+
+                    else
+                        []
+            in
+            Ui.navigationElement (Ui.Route route) (Ui.hf :: Ui.p 12 :: Font.bold :: attr) (Element.el [ Element.centerY ] (Element.text (label lang)))
+    in
+    Element.row [ Ui.s 10, Ui.hf ]
+        [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
+        , makeButton (Route.Custom "todo") Strings.stepsAcquisitionRecord
+        , makeButton (Route.Custom "todo") Strings.stepsProductionProduce
+        , makeButton (Route.Custom "todo") Strings.stepsPublicationPublish
         ]
 
 
