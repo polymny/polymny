@@ -144,7 +144,7 @@ gosView config user model ( head, gos ) =
                         |> List.map (Element.row [ Ui.wf ])
                         |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
     in
-    Element.row [ Ui.s 10, Ui.wf ] [ content, addSlide ]
+    Element.row [ Ui.s 10, Ui.wf, Ui.pr 20 ] [ content, addSlide ]
 
 
 {-| Displays a slide.
