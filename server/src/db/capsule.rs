@@ -1,6 +1,6 @@
 //! This module contains everything that manage the capsule in the database.
-
 use chrono::{NaiveDateTime, Utc};
+use std::default::Default;
 
 use ergol::prelude::*;
 use ergol::tokio_postgres::types::Json;
@@ -213,6 +213,12 @@ impl Fade {
     }
 }
 
+impl Default for Fade {
+    fn default() -> Fade {
+        Fade::none()
+    }
+}
+
 /// The different pieces of information that we collect about a gos.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Gos {
@@ -229,6 +235,7 @@ pub struct Gos {
     pub webcam_settings: WebcamSettings,
 
     /// Video/audio fade options
+    #[serde(default)]
     pub fade: Fade,
 }
 
@@ -487,5 +494,16 @@ impl Capsule {
         }
 
         Ok(())
+    }
+
+    /// Retrieves the owner of a capsule.
+    pub async fn owner(&self, db: &Db) -> Result<User> {
+        for (user, role) in self.users(db).await? {
+            if role == Role::Owner {
+                return Ok(user);
+            }
+        }
+
+        Err(Error(Status::NotFound))
     }
 }

@@ -224,7 +224,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
         <title>Preparaption - Setup</title>
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <meta charset="utf-8">
     </head>
     <body>
@@ -244,7 +244,7 @@ const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
         <title>Preparaption - Setup</title>
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="icon" href="/dist/favicon.ico"/>
         <meta charset="utf-8">
     </head>
     <body>
@@ -296,9 +296,10 @@ pub fn video_html(url: &str) -> String {
             PolymnyVideo.fullpage({{
                 node: document.getElementById("container"),
                 url: "{}",
-                autoplay: true,
-                enableMiniatures: true,
+                autoplay: PolymnyVideo.getArgumentFromUrl("a") !== null,
                 startTime: PolymnyVideo.getArgumentFromUrl("t"),
+                enableMiniatures: true,
+                muted: PolymnyVideo.getArgumentFromUrl("m") !== null
             }});
         </script>
     </body>

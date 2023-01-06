@@ -85,6 +85,7 @@ function init(node, flags) {
         pointer = { x: 0, y: 0, down: false },
         ctx = null,
         recording,
+        recordingPointerForRecord = null,
         currentEvents,
         nextSlideCallbacks = [],
         onbeforeunloadvalue = false,
@@ -96,7 +97,8 @@ function init(node, flags) {
         pointerVideo = document.createElement('video'),
         style = "Pointer",
         color = "rgb(255, 0, 0)",
-        size = 20;
+        size = 20,
+        isPremium = flags.user.plan !== 'free';
 
     tmpCanvas.width = 1920;
     tmpCanvas.height = 1080;
@@ -236,6 +238,9 @@ function init(node, flags) {
     }
 
     function setupCanvasListeners() {
+        if (!isPremium)
+            return
+
         let canvas = document.getElementById('pointer-canvas');
         canvas.width = 1920;
         canvas.height = 1080;
@@ -388,21 +393,23 @@ function init(node, flags) {
         app.ports.webcamBound.send(null);
     }
 
-    function sendRecordToElmIfReady(port = app.ports.recordArrived) {
-        if (recordArrived === null || pointerArrived === null) {
+    function sendRecordToElmIfReady() {
+        if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
             return;
         }
 
         console.log({
             webcam_blob: recordArrived,
-            pointer_blob: pointerExists ? pointerArrived : null,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
             events: currentEvents,
         });
 
+        let port = recordingPointerForRecord === null ? app.ports.recordArrived : app.ports.pointerRecordArrived;
         port.send({
-            webcam_blob: recordArrived,
-            pointer_blob: pointerExists ? pointerArrived : null,
-            events: currentEvents,
+            webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+            events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
+            matted: 'idle',
         });
 
         recordArrived = null;
@@ -410,6 +417,11 @@ function init(node, flags) {
     }
 
     function bindPointer() {
+        if (!isPremium) {
+            app.ports.pointerBound.send(null);
+            return;
+        }
+
         requestAnimationFrame(() => {
             console.log("Binding pointer");
 
@@ -466,6 +478,26 @@ function init(node, flags) {
         element.src = null;
         element.muted = true;
         element.play();
+    }
+
+    function stopPlayingRecord() {
+        playWebcam();
+        let video = document.getElementById(videoId);
+        if (video instanceof HTMLVideoElement) {
+            video.pause();
+        }
+
+        let extra = document.getElementById('extra');
+        if (extra instanceof HTMLVideoElement) {
+            extra.pause();
+            extra.currentTime = 0;
+        }
+
+        for (let id of nextSlideCallbacks) {
+            clearTimeout(id);
+        }
+
+        nextSlideCallbacks = [];
     }
 
     async function playRecord(record) {
@@ -542,6 +574,7 @@ function init(node, flags) {
 
         function renderPointer() {
             if (video.paused || video.ended) {
+                ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
                 return;
             }
 
@@ -571,8 +604,12 @@ function init(node, flags) {
         if (recorder !== undefined && !recording) {
             pointerExists = false;
             recording = true;
+            recordingPointerForRecord = null;
             recorder.start();
-            pointerRecorder.start();
+            if (isPremium) {
+                pointerRecorder.start();
+            }
+
             currentEvents = [{
                 time: Math.round(window.performance.now()),
                 ty: "start"
@@ -612,7 +649,11 @@ function init(node, flags) {
 
             currentEvents[0].time = 0;
             recorder.stop();
-            pointerRecorder.stop();
+
+            if (isPremium) {
+                pointerRecorder.stop();
+            }
+
             recording = false;
         }
     }
@@ -620,6 +661,7 @@ function init(node, flags) {
     function startPointerRecording(record) {
         if (recorder !== undefined && !recording) {
             recording = true;
+            recordingPointerForRecord = record;
             pointerExists = false;
 
             let video = document.getElementById(videoId);
@@ -643,13 +685,6 @@ function init(node, flags) {
                 pointerRecorder.stop();
                 recording = false;
                 app.ports.playRecordFinished.send(null);
-            };
-
-            pointerRecorder.ondataavailable = (data) => {
-                recordArrived = record.webcam_blob;
-                currentEvents = record.events;
-                pointerArrived = data.data;
-                sendRecordToElmIfReady(app.ports.pointerRecordArrived);
             };
 
             // Skip last transition which is the end of the video.
@@ -1004,6 +1039,7 @@ function init(node, flags) {
     subscribe(app.ports.stopRecording, stopRecording);
     subscribe(app.ports.startPointerRecording, startPointerRecording);
     subscribe(app.ports.playRecord, playRecord);
+    subscribe(app.ports.stopPlayingRecord, stopPlayingRecord);
     subscribe(app.ports.askNextSlide, askNextSlide);
     subscribe(app.ports.askNextSentence, askNextSentence);
     subscribe(app.ports.uploadRecord, uploadRecord);

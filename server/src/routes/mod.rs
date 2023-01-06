@@ -5,14 +5,14 @@ use std::path::PathBuf;
 use rocket::fs::NamedFile;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Request};
-use rocket::response::content::Html;
-use rocket::response::{self, Responder, Response};
+use rocket::response::content::RawHtml as Html;
+use rocket::response::{self, Redirect, Responder, Response};
 use rocket::serde::json::{json, Value};
 use rocket::State as S;
 
 use crate::config::Config;
 use crate::db::capsule::Role;
-use crate::db::user::User;
+use crate::db::user::{Plan, User};
 use crate::templates::{index_html, unlogged_html};
 use crate::{Db, Error, HashId, Lang, Result};
 
@@ -29,6 +29,28 @@ pub struct Cors<R> {
 
     /// The inner response.
     r: R,
+}
+
+/// A struct that can be two types of responders.
+pub enum Either<L, R> {
+    /// The first variant.
+    Left(L),
+
+    /// The second variant.
+    Right(R),
+}
+
+impl<'r, 'o: 'r, L, R> Responder<'r, 'o> for Either<L, R>
+where
+    L: Responder<'r, 'o>,
+    R: Responder<'r, 'o>,
+{
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'o> {
+        match self {
+            Either::Left(l) => l.respond_to(request),
+            Either::Right(r) => r.respond_to(request),
+        }
+    }
 }
 
 impl<R> Cors<R> {
@@ -106,10 +128,20 @@ pub async fn index<'a>(
     db: Db,
     user: Option<User>,
     lang: Lang,
-) -> Cors<Html<String>> {
-    let json = match user {
-        Some(user) => Some(user.to_json(&db).await),
-        None => None,
+) -> Cors<Either<Html<String>, Redirect>> {
+    let (json, redirect) = match user {
+        Some(ref user) => (
+            Some(user.to_json(&db).await),
+            (config.premium_only != (user.plan >= Plan::PremiumLvl1)) && user.plan != Plan::Admin,
+        ),
+        None => (None, false),
+    };
+
+    match (redirect, config.other_host.as_ref()) {
+        (true, Some(host)) => {
+            return Cors::new(&config.home, Either::Right(Redirect::to(host.clone())));
+        }
+        _ => (),
     };
 
     let body = match json {
@@ -119,7 +151,7 @@ pub async fn index<'a>(
         _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
     };
 
-    Cors::new(&config.home, Html(body))
+    Cors::new(&config.home, Either::Left(Html(body)))
 }
 
 /// Returns the same content as the async page, but without cors headers.
@@ -128,10 +160,20 @@ pub async fn index_without_cors(
     db: Db,
     user: Option<User>,
     lang: Lang,
-) -> Html<String> {
-    let json = match user {
-        Some(user) => Some(user.to_json(&db).await),
-        None => None,
+) -> Either<Html<String>, Redirect> {
+    let (json, redirect) = match user {
+        Some(ref user) => (
+            Some(user.to_json(&db).await),
+            (config.premium_only != (user.plan >= Plan::PremiumLvl1)) && user.plan != Plan::Admin,
+        ),
+        None => (None, false),
+    };
+
+    match (redirect, config.other_host.as_ref()) {
+        (true, Some(host)) => {
+            return Either::Right(Redirect::to(host.clone()));
+        }
+        _ => (),
     };
 
     let body = match json {
@@ -141,7 +183,7 @@ pub async fn index_without_cors(
         _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
     };
 
-    Html(body)
+    Either::Left(Html(body))
 }
 
 /// The route to the preparation of a capsule.
@@ -152,7 +194,7 @@ pub async fn preparation(
     user: Option<User>,
     _id: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -165,7 +207,7 @@ pub async fn acquisition(
     _id: String,
     _gos_id: u64,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -178,7 +220,7 @@ pub async fn production(
     _id: String,
     _gos_id: u64,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -190,13 +232,18 @@ pub async fn publication(
     user: Option<User>,
     _id: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
 /// The route to the settings page.
 #[get("/settings")]
-pub async fn settings(config: &S<Config>, db: Db, user: Option<User>, lang: Lang) -> Html<String> {
+pub async fn settings(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    lang: Lang,
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -207,7 +254,7 @@ pub async fn admin_dashboard(
     db: Db,
     user: Option<User>,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -219,7 +266,7 @@ pub async fn admin_users(
     user: Option<User>,
     _page: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -231,7 +278,7 @@ pub async fn admin_user(
     user: Option<User>,
     _id: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -243,7 +290,7 @@ pub async fn admin_capsules(
     user: Option<User>,
     _page: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
@@ -255,13 +302,13 @@ pub async fn capsule_settings(
     user: Option<User>,
     _id: String,
     lang: Lang,
-) -> Html<String> {
+) -> Either<Html<String>, Redirect> {
     index_without_cors(config, db, user, lang).await
 }
 
 /// The 404 catcher.
 #[catch(404)]
-pub async fn not_found<'a>(request: &'_ Request<'a>) -> Html<String> {
+pub async fn not_found<'a>(request: &'_ Request<'a>) -> Either<Html<String>, Redirect> {
     let db = Db::from_request(request).await.unwrap();
     let config = request.guard::<&S<Config>>().await.unwrap();
     let user = Option::<User>::from_request(request).await.unwrap();
