@@ -1,17 +1,18 @@
-module Ui.Navbar exposing (navbar, bottombar)
+module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn)
 
 {-| This module contains the definition for the nav bar of the polymny app.
 
-@docs navbar, bottombar
+@docs navbar, bottombar, leftColumn, addLeftColumn
 
 -}
 
 import App.Types as App
 import Config exposing (Config)
-import Data.Capsule exposing (Capsule)
+import Data.Capsule as Data exposing (Capsule)
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Lang exposing (Lang)
 import Route exposing (Route)
@@ -119,3 +120,38 @@ bottombar config =
             |> Maybe.map (\x -> Element.text ("Commit " ++ x))
             |> Maybe.withDefault Element.none
         ]
+
+
+{-| This function creates the left column of the capsule pages, which presents the grains.
+-}
+leftColumn : Lang -> Capsule -> Element msg
+leftColumn lang capsule =
+    let
+        gosView : Int -> Data.Gos -> Element msg
+        gosView id gos =
+            let
+                inFrontLabel =
+                    Strings.dataCapsuleGrain lang 1
+                        ++ " "
+                        ++ String.fromInt (id + 1)
+                        |> Element.text
+                        |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
+            in
+            Element.el [ Ui.wf ]
+                (Element.image
+                    [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Element.inFront inFrontLabel ]
+                    { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
+                    , description = ""
+                    }
+                )
+    in
+    Element.column
+        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 20, Ui.br 1, Border.color Colors.greyBorder, Ui.s 20, Ui.wf ]
+        (List.indexedMap gosView capsule.structure)
+
+
+{-| Adds the left column to an already existing element.
+-}
+addLeftColumn : Lang -> Capsule -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftColumn lang capsule ( element, popup ) =
+    ( Element.row [ Ui.hf, Ui.wf ] [ leftColumn lang capsule, Element.el [ Ui.hf, Ui.wfp 7 ] element ], popup )

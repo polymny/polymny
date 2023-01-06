@@ -78,7 +78,7 @@ viewSuccess model =
             NewCapsule.view model.config model.user m
 
         App.Preparation m ->
-            Preparation.view model.config model.user m
+            Preparation.view model.config model.user m |> Ui.addLeftColumn model.config.clientState.lang m.capsule
 
 
 {-| Returns the view if the model is in error.
