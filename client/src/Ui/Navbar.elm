@@ -153,7 +153,7 @@ leftColumn lang capsule selectedGos =
                 )
     in
     Element.column
-        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 10, Ui.br 1, Border.color Colors.greyBorder, Ui.s 10, Ui.wf ]
+        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 10, Ui.br 1, Border.color (Colors.grey 6), Ui.s 10, Ui.wf ]
         (List.indexedMap gosView capsule.structure)
 
 

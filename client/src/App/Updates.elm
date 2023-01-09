@@ -6,11 +6,14 @@ module App.Updates exposing (update, updateModel, subs)
 
 -}
 
+import Acquisition.Updates as Acquisition
 import App.Types as App
 import App.Utils as App
 import Browser.Navigation
 import Config
+import Device
 import Home.Updates as Home
+import Json.Decode as Decode
 import NewCapsule.Updates as NewCapsule
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
@@ -53,8 +56,15 @@ updateModel msg model =
         App.PreparationMsg sMsg ->
             Preparation.update sMsg model
 
+        App.AcquisitionMsg aMsg ->
+            Acquisition.update aMsg model
+
         App.OnUrlChange url ->
-            ( { model | page = App.pageFromRoute model.config model.user (Route.fromUrl url) }, Cmd.none )
+            let
+                ( page, cmd ) =
+                    App.pageFromRoute model.config model.user (Route.fromUrl url)
+            in
+            ( { model | page = page }, cmd )
 
         App.InternalUrl url ->
             ( model, Browser.Navigation.pushUrl model.config.clientState.key url.path )
@@ -72,15 +82,26 @@ subs m =
             Sub.none
 
         Ok model ->
-            case model.page of
-                App.Home ->
-                    Home.subs
+            Sub.batch
+                [ Device.detectDevicesResponse
+                    (\x ->
+                        case Decode.decodeValue Device.decodeDevices x of
+                            Ok devices ->
+                                App.ConfigMsg (Config.DetectDevicesResponse devices)
 
-                App.NewCapsule _ ->
-                    Sub.none
+                            _ ->
+                                App.Noop
+                    )
+                , case model.page of
+                    App.Home ->
+                        Home.subs
 
-                App.Preparation x ->
-                    Preparation.subs x
+                    App.NewCapsule _ ->
+                        Sub.none
 
-                App.Acquisition _ ->
-                    Sub.none
+                    App.Preparation x ->
+                        Preparation.subs x
+
+                    App.Acquisition _ ->
+                        Sub.none
+                ]

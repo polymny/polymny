@@ -7,6 +7,7 @@ module Acquisition.Types exposing (Model, init, Msg(..))
 -}
 
 import Data.Capsule as Data exposing (Capsule)
+import Device
 
 
 {-| The type for the model of the acquisition page.
@@ -22,10 +23,11 @@ type alias Model =
 It returns Nothing if the grain is not in the capsule.
 
 -}
-init : Int -> Capsule -> Maybe Model
+init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
 init gos capsule =
     if gos < List.length capsule.structure && gos >= 0 then
-        Just { capsule = capsule, gos = gos }
+        Just <|
+            ( { capsule = capsule, gos = gos }, Device.detectDevices )
 
     else
         Nothing

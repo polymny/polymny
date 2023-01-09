@@ -85,6 +85,7 @@ type Msg
     | HomeMsg Home.Msg
     | NewCapsuleMsg NewCapsule.Msg
     | PreparationMsg Preparation.Msg
+    | AcquisitionMsg Acquisition.Msg
     | ConfigMsg Config.Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url

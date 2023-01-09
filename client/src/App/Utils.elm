@@ -43,46 +43,54 @@ init flags url key =
         route =
             Route.fromUrl url
 
-        model =
+        ( model, cmd ) =
             case ( serverConfig, clientConfig, user ) of
                 ( Ok s, Ok c, Ok u ) ->
-                    Ok
+                    let
+                        ( page, cm ) =
+                            pageFromRoute { serverConfig = s, clientConfig = c, clientState = clientState } u route
+                    in
+                    ( Ok
                         { config = { serverConfig = s, clientConfig = c, clientState = clientState }
                         , user = u
-                        , page = pageFromRoute { serverConfig = s, clientConfig = c, clientState = clientState } u route
+                        , page = page
                         }
+                    , cm
+                    )
 
                 ( Err s, _, _ ) ->
-                    Err (App.DecodeError s)
+                    ( Err (App.DecodeError s), Cmd.none )
 
                 ( _, Err c, _ ) ->
-                    Err (App.DecodeError c)
+                    ( Err (App.DecodeError c), Cmd.none )
 
                 ( _, _, Err u ) ->
-                    Err (App.DecodeError u)
+                    ( Err (App.DecodeError u), Cmd.none )
     in
-    ( model, Cmd.none )
+    ( model, cmd )
 
 
 {-| Finds a page from the route and the context.
 -}
-pageFromRoute : Config -> User -> Route -> App.Page
+pageFromRoute : Config -> User -> Route -> ( App.Page, Cmd App.Msg )
 pageFromRoute config user route =
     case route of
         Route.Home ->
-            App.Home
+            ( App.Home, Cmd.none )
 
         Route.Preparation id ->
-            Data.getCapsuleById id user
+            ( Data.getCapsuleById id user
                 |> Maybe.map Preparation.init
                 |> Maybe.map App.Preparation
                 |> Maybe.withDefault App.Home
+            , Cmd.none
+            )
 
         Route.Acquisition id gos ->
             Data.getCapsuleById id user
                 |> Maybe.andThen (Acquisition.init gos)
-                |> Maybe.map App.Acquisition
-                |> Maybe.withDefault App.Home
+                |> Maybe.map (\( a, b ) -> ( App.Acquisition a, Cmd.map App.AcquisitionMsg b ))
+                |> Maybe.withDefault ( App.Home, Cmd.none )
 
         _ ->
-            App.Home
+            ( App.Home, Cmd.none )

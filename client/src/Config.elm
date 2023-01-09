@@ -49,6 +49,7 @@ at all times in the client.
 
 import Browser.Navigation
 import Data.Types as Data
+import Device
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Lang exposing (Lang)
@@ -107,6 +108,8 @@ This will be stored and retrieved from the local storage.
     during acquisition (useful for people who have their webcams below their screen).
   - `promptSize` is the size in pt of the text inside the prompter.
   - `sortBy` describes how the user wants to sort their capsules.
+  - `devices` are the devices that have been detected in a previous session a stored so that we don't have to detect
+    them again. It does not mean that they're currently available (they could be unplugged).
 
 -}
 type alias ClientConfig =
@@ -114,6 +117,7 @@ type alias ClientConfig =
     , zoomLevel : Int
     , promptSize : Int
     , sortBy : Data.SortBy
+    , devices : Device.Devices
     }
 
 
@@ -125,6 +129,7 @@ defaultClientConfig =
     , zoomLevel = 4
     , promptSize = 20
     , sortBy = { key = Data.LastModified, ascending = False }
+    , devices = { audio = [], video = [] }
     }
 
 
@@ -137,6 +142,7 @@ encodeClientConfig config =
         , ( "zoomLevel", Encode.int config.zoomLevel )
         , ( "promptSize", Encode.int config.promptSize )
         , ( "sortBy", Data.encodeSortBy config.sortBy )
+        , ( "devices", Device.encodeDevices config.devices )
         ]
 
 
@@ -151,11 +157,12 @@ makeDefault default arg =
 -}
 decodeClientConfig : Decoder ClientConfig
 decodeClientConfig =
-    Decode.map4 ClientConfig
+    Decode.map5 ClientConfig
         (Decode.field "lang" Decode.string |> Decode.map Lang.fromString |> makeDefault defaultClientConfig.lang)
         (Decode.field "zoomLevel" Decode.int |> makeDefault defaultClientConfig.zoomLevel)
         (Decode.field "promptSize" Decode.int |> makeDefault defaultClientConfig.promptSize)
         (Decode.field "sortBy" Data.decodeSortBy |> makeDefault defaultClientConfig.sortBy)
+        (Decode.field "devices" Device.decodeDevices |> makeDefault defaultClientConfig.devices)
 
 
 {-| This type holds the client global state.
@@ -222,6 +229,7 @@ type Msg
     | ZoomLevelChanged Int
     | PromptSizeChanged Int
     | SortByChanged Data.SortBy
+    | DetectDevicesResponse Device.Devices
 
 
 {-| This functions updates the config.
@@ -269,6 +277,14 @@ update msg { serverConfig, clientConfig, clientState } =
                 SortByChanged sortBy ->
                     ( { serverConfig = serverConfig
                       , clientConfig = { clientConfig | sortBy = sortBy }
+                      , clientState = clientState
+                      }
+                    , True
+                    )
+
+                DetectDevicesResponse devices ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = { clientConfig | devices = Device.mergeDevices clientConfig.devices devices }
                       , clientState = clientState
                       }
                     , True
