@@ -7,6 +7,7 @@ doesn't allow circular module imports...
 
 -}
 
+import Acquisition.Types as Acquisition
 import App.Types as App
 import Browser.Navigation
 import Config exposing (Config)
@@ -75,6 +76,12 @@ pageFromRoute config user route =
             Data.getCapsuleById id user
                 |> Maybe.map Preparation.init
                 |> Maybe.map App.Preparation
+                |> Maybe.withDefault App.Home
+
+        Route.Acquisition id gos ->
+            Data.getCapsuleById id user
+                |> Maybe.andThen (Acquisition.init gos)
+                |> Maybe.map App.Acquisition
                 |> Maybe.withDefault App.Home
 
         _ ->

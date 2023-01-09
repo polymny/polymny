@@ -6,6 +6,7 @@ module App.Views exposing (view, viewSuccess, viewError)
 
 -}
 
+import Acquisition.Views as Acquisition
 import App.Types as App
 import Browser
 import Element exposing (Element)
@@ -78,7 +79,12 @@ viewSuccess model =
             NewCapsule.view model.config model.user m
 
         App.Preparation m ->
-            Preparation.view model.config model.user m |> Ui.addLeftColumn model.config.clientState.lang m.capsule
+            Preparation.view model.config model.user m
+                |> Ui.addLeftColumn model.config.clientState.lang m.capsule Nothing
+
+        App.Acquisition m ->
+            Acquisition.view model.config model.user m
+                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gos)
 
 
 {-| Returns the view if the model is in error.

@@ -16,6 +16,7 @@ import Url
 type Route
     = Home
     | Preparation String
+    | Acquisition String Int
     | NotFound
     | Custom String
 
@@ -30,6 +31,9 @@ toUrl route =
 
         Preparation s ->
             "/capsule/preparation/" ++ s
+
+        Acquisition s i ->
+            "/capsule/acquisition/" ++ s ++ "/" ++ String.fromInt (i + 1)
 
         NotFound ->
             "/"
@@ -69,6 +73,11 @@ fromUrl url =
         "capsule" :: "preparation" :: id :: [] ->
             Preparation id
 
+        "capsule" :: "acquisition" :: id :: gos :: [] ->
+            String.toInt gos
+                |> Maybe.map (\gosId -> Acquisition id (gosId - 1))
+                |> Maybe.withDefault NotFound
+
         _ ->
             NotFound
 
@@ -86,6 +95,9 @@ fromPage page =
 
         App.Preparation m ->
             Preparation m.capsule.id
+
+        App.Acquisition m ->
+            Acquisition m.capsule.id m.gos
 
 
 {-| Go to the corresponding page.

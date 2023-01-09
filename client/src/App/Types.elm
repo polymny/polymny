@@ -17,6 +17,7 @@ module App.Types exposing
 
 -}
 
+import Acquisition.Types as Acquisition
 import Browser
 import Config exposing (Config)
 import Data.Capsule as Data exposing (Capsule)
@@ -43,6 +44,7 @@ type Page
     = Home
     | NewCapsule NewCapsule.Model
     | Preparation Preparation.Model
+    | Acquisition Acquisition.Model
 
 
 {-| Tries to get the capsule from a specific page. Returns nothing if the page does not correspond to a specific
@@ -52,6 +54,9 @@ getCapsule : Page -> Maybe Capsule
 getCapsule page =
     case page of
         Preparation m ->
+            Just m.capsule
+
+        Acquisition m ->
             Just m.capsule
 
         _ ->

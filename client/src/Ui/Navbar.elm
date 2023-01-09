@@ -69,7 +69,7 @@ navButtons lang capsule page =
     in
     Element.row [ Ui.s 10, Ui.hf ]
         [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
-        , makeButton (Route.Custom "todo") Strings.stepsAcquisitionRecord
+        , makeButton (Route.Acquisition capsule.id 0) Strings.stepsAcquisitionRecord
         , makeButton (Route.Custom "todo") Strings.stepsProductionProduce
         , makeButton (Route.Custom "todo") Strings.stepsPublicationPublish
         ]
@@ -124,8 +124,8 @@ bottombar config =
 
 {-| This function creates the left column of the capsule pages, which presents the grains.
 -}
-leftColumn : Lang -> Capsule -> Element msg
-leftColumn lang capsule =
+leftColumn : Lang -> Capsule -> Maybe Int -> Element msg
+leftColumn lang capsule selectedGos =
     let
         gosView : Int -> Data.Gos -> Element msg
         gosView id gos =
@@ -136,22 +136,29 @@ leftColumn lang capsule =
                         ++ String.fromInt (id + 1)
                         |> Element.text
                         |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
+
+                borderColor =
+                    if selectedGos == Just id then
+                        Colors.green1
+
+                    else
+                        Colors.greyBorder
             in
             Element.el [ Ui.wf ]
                 (Element.image
-                    [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Element.inFront inFrontLabel ]
+                    [ Ui.wf, Ui.b 5, Border.color borderColor, Element.inFront inFrontLabel ]
                     { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
                     , description = ""
                     }
                 )
     in
     Element.column
-        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 20, Ui.br 1, Border.color Colors.greyBorder, Ui.s 20, Ui.wf ]
+        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 10, Ui.br 1, Border.color Colors.greyBorder, Ui.s 10, Ui.wf ]
         (List.indexedMap gosView capsule.structure)
 
 
 {-| Adds the left column to an already existing element.
 -}
-addLeftColumn : Lang -> Capsule -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
-addLeftColumn lang capsule ( element, popup ) =
-    ( Element.row [ Ui.hf, Ui.wf ] [ leftColumn lang capsule, Element.el [ Ui.hf, Ui.wfp 7 ] element ], popup )
+addLeftColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftColumn lang capsule selectedGos ( element, popup ) =
+    ( Element.row [ Ui.hf, Ui.wf ] [ leftColumn lang capsule selectedGos, Element.el [ Ui.hf, Ui.wfp 7 ] element ], popup )
