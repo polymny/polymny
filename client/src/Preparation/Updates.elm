@@ -31,10 +31,6 @@ update msg model =
                         |> Tuple.mapFirst (\( x, y ) -> { model | page = App.Preparation x, config = y })
 
                 Preparation.CapsuleUpdate id data ->
-                    let
-                        _ =
-                            Debug.log "" ( model.config.clientState.lastRequest, id + 1 )
-                    in
                     if model.config.clientState.lastRequest == id + 1 then
                         ( { model | page = App.Preparation { m | capsuleUpdate = data } }, Cmd.none )
 

@@ -24,7 +24,7 @@ It returns Nothing if the grain is not in the capsule.
 -}
 init : Int -> Capsule -> Maybe Model
 init gos capsule =
-    if gos < List.length capsule.structure && Debug.log "gos" gos >= 0 then
+    if gos < List.length capsule.structure && gos >= 0 then
         Just { capsule = capsule, gos = gos }
 
     else
