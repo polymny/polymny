@@ -2,7 +2,7 @@ module Acquisition.Updates exposing (update)
 
 {-| This module contains the update function for the preparation page.
 
-@docs update, subs
+@docs update
 
 -}
 

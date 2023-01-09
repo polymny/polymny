@@ -89,6 +89,8 @@ secondary attr { label, action } =
     secondaryGeneric attr { label = Element.text label, action = action }
 
 
+{-| Creates a secondary button with a generic element.
+-}
 secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
 secondaryGeneric attr { label, action } =
     --navigationElement action (addSecondaryAttr attr) label
