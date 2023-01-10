@@ -61,6 +61,8 @@ addPrimaryAttr attr =
         :: Background.color Colors.green2
         :: Font.color Colors.greyBackground
         :: Ui.p 12
+        :: Border.color Colors.greyBorder
+        :: Ui.b 1
         :: attr
 
 
@@ -77,6 +79,8 @@ addPrimaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg
 addPrimaryIconAttr attr =
     Border.rounded 5
         :: Ui.p 2
+        :: Border.color Colors.greyBorder
+        :: Ui.b 1
         :: Background.color Colors.green2
         :: Font.color Colors.greyBackground
         :: attr
@@ -105,7 +109,7 @@ addSecondaryAttr attr =
         :: Background.color Colors.white
         :: Border.color Colors.greyBorder
         :: Ui.b 1
-        :: Font.color Colors.greyFont
+        -- :: Font.color Colors.greyFont
         :: Ui.p 12
         :: Font.bold
         :: attr
@@ -157,7 +161,12 @@ navigationElement action attr label =
             Input.button attr { onPress = Just msg, label = label }
 
         None ->
-            Element.el attr label
+            Element.el
+                (Element.htmlAttribute (Html.Attributes.style "cursor" "not-allowed")
+                    :: Font.color Colors.greyBorder
+                    :: attr
+                )
+                label
 
 
 {-| Transforms an icon into an elm-ui element.
