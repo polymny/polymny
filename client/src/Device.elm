@@ -51,6 +51,13 @@ type alias Resolution =
     }
 
 
+{-| Formats a resolution as a string, e.g. 1920x1080.
+-}
+formatResolution : Resolution -> String
+formatResolution resolution =
+    String.fromInt resolution.width ++ "x" ++ String.fromInt resolution.height
+
+
 {-| Encodes a resolution of a video device.
 -}
 encodeResolution : Resolution -> Encode.Value
@@ -109,6 +116,41 @@ type alias Device =
     { video : Maybe ( Video, Resolution )
     , audio : Maybe Audio
     }
+
+
+{-| Encodes a tuple (Video, Resolution) into a JSON array.
+-}
+encodeVideoAndResolution : ( Video, Resolution ) -> Encode.Value
+encodeVideoAndResolution ( video, resolution ) =
+    Encode.list (\x -> x) [ encodeVideo video, encodeResolution resolution ]
+
+
+{-| Decodes an array of size two giving a video and a resolution.
+-}
+decodeVideoAndResolution : Decoder ( Video, Resolution )
+decodeVideoAndResolution =
+    Decode.map2 Tuple.pair
+        (Decode.index 0 decodeVideo)
+        (Decode.index 1 decodeResolution)
+
+
+{-| Encodes a device, with audio and video.
+-}
+encodeDevice : Device -> Encode.Value
+encodeDevice device =
+    Encode.object
+        [ ( "audio", Maybe.map encodeAudio device.audio |> Maybe.withDefault Encode.null )
+        , ( "video", Maybe.map encodeVideoAndResolution device.video |> Maybe.withDefault Encode.null )
+        ]
+
+
+{-| Decodes a device, with audio and video.
+-}
+decodeDevice : Decoder Device
+decodeDevice =
+    Decode.map2 Device
+        (Decode.field "video" (Decode.nullable decodeVideoAndResolution))
+        (Decode.field "audio" (Decode.nullable decodeAudio))
 
 
 {-| Every existing device on the client.
@@ -192,6 +234,37 @@ mergeDevices old new =
     { video = oldVideos ++ newVideos
     , audio = oldAudios ++ newAudios
     }
+
+
+{-| Finds the right device to use given a device configuration.
+-}
+getDevice : Devices -> Maybe Device -> Device
+getDevice devices preferredDevice =
+    case preferredDevice of
+        Just d ->
+            d
+
+        Nothing ->
+            let
+                audio : Maybe Audio
+                audio =
+                    devices.audio
+                        |> List.filter .available
+                        |> List.head
+
+                -- Finds the resolution of a video if a resolution is avaible, returns Nothing otherwise.
+                findResolution : Video -> Maybe ( Video, Resolution )
+                findResolution inputVideo =
+                    List.head inputVideo.resolutions |> Maybe.map (\resolution -> ( inputVideo, resolution ))
+
+                video : Maybe ( Video, Resolution )
+                video =
+                    devices.video
+                        |> List.filter .available
+                        |> List.head
+                        |> Maybe.andThen findResolution
+            in
+            { audio = audio, video = video }
 
 
 {-| Triggers a full detection of every device.

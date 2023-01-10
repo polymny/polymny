@@ -118,6 +118,7 @@ type alias ClientConfig =
     , promptSize : Int
     , sortBy : Data.SortBy
     , devices : Device.Devices
+    , preferredDevice : Maybe Device.Device
     }
 
 
@@ -130,6 +131,7 @@ defaultClientConfig =
     , promptSize = 20
     , sortBy = { key = Data.LastModified, ascending = False }
     , devices = { audio = [], video = [] }
+    , preferredDevice = Nothing
     }
 
 
@@ -143,6 +145,7 @@ encodeClientConfig config =
         , ( "promptSize", Encode.int config.promptSize )
         , ( "sortBy", Data.encodeSortBy config.sortBy )
         , ( "devices", Device.encodeDevices config.devices )
+        , ( "preferredDevice", Maybe.map Device.encodeDevice config.preferredDevice |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -157,12 +160,13 @@ makeDefault default arg =
 -}
 decodeClientConfig : Decoder ClientConfig
 decodeClientConfig =
-    Decode.map5 ClientConfig
+    Decode.map6 ClientConfig
         (Decode.field "lang" Decode.string |> Decode.map Lang.fromString |> makeDefault defaultClientConfig.lang)
         (Decode.field "zoomLevel" Decode.int |> makeDefault defaultClientConfig.zoomLevel)
         (Decode.field "promptSize" Decode.int |> makeDefault defaultClientConfig.promptSize)
         (Decode.field "sortBy" Data.decodeSortBy |> makeDefault defaultClientConfig.sortBy)
         (Decode.field "devices" Device.decodeDevices |> makeDefault defaultClientConfig.devices)
+        (Decode.field "preferredDevice" (Decode.nullable Device.decodeDevice))
 
 
 {-| This type holds the client global state.
@@ -230,6 +234,8 @@ type Msg
     | PromptSizeChanged Int
     | SortByChanged Data.SortBy
     | DetectDevicesResponse Device.Devices
+    | SetAudio Device.Audio
+    | SetVideo Device.Video Device.Resolution
 
 
 {-| This functions updates the config.
@@ -285,6 +291,36 @@ update msg { serverConfig, clientConfig, clientState } =
                 DetectDevicesResponse devices ->
                     ( { serverConfig = serverConfig
                       , clientConfig = { clientConfig | devices = Device.mergeDevices clientConfig.devices devices }
+                      , clientState = clientState
+                      }
+                    , True
+                    )
+
+                SetAudio audio ->
+                    let
+                        preferredDevice =
+                            clientConfig.preferredDevice
+                                |> Maybe.map (\device -> { device | audio = Just audio })
+                                |> Maybe.withDefault { audio = Just audio, video = Nothing }
+                                |> Just
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = { clientConfig | preferredDevice = preferredDevice }
+                      , clientState = clientState
+                      }
+                    , True
+                    )
+
+                SetVideo video resolution ->
+                    let
+                        preferredDevice =
+                            clientConfig.preferredDevice
+                                |> Maybe.map (\device -> { device | video = Just ( video, resolution ) })
+                                |> Maybe.withDefault { audio = Nothing, video = Just ( video, resolution ) }
+                                |> Just
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = { clientConfig | preferredDevice = preferredDevice }
                       , clientState = clientState
                       }
                     , True
