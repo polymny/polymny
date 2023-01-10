@@ -142,7 +142,7 @@ gosView config user model ( head, gos ) =
                         |> Utils.regroupFixed config.clientConfig.zoomLevel
                         |> List.map (List.map (slideView config user model False last))
                         |> List.map (Element.row [ Ui.wf ])
-                        |> Element.row [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+                        |> Element.column [ Ui.wf, Ui.s 10, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
     in
     Element.row [ Ui.s 10, Ui.wf, Ui.pr 20 ] [ content, addSlide ]
 

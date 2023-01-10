@@ -13,6 +13,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Home.Views as Home
+import Html.Attributes
 import NewCapsule.Views as NewCapsule
 import Preparation.Views as Preparation
 import Ui.Colors as Colors

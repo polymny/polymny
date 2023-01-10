@@ -153,7 +153,15 @@ leftColumn lang capsule selectedGos =
                 )
     in
     Element.column
-        [ Background.color Colors.greyBackground, Ui.hf, Ui.p 10, Ui.br 1, Border.color (Colors.grey 6), Ui.s 10, Ui.wf ]
+        [ Background.color Colors.greyBackground
+        , Ui.p 10
+        , Ui.br 1
+        , Border.color (Colors.grey 6)
+        , Ui.s 10
+        , Ui.wf
+        , Ui.hf
+        , Element.scrollbarY
+        ]
         (List.indexedMap gosView capsule.structure)
 
 
@@ -161,4 +169,9 @@ leftColumn lang capsule selectedGos =
 -}
 addLeftColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
 addLeftColumn lang capsule selectedGos ( element, popup ) =
-    ( Element.row [ Ui.hf, Ui.wf ] [ leftColumn lang capsule selectedGos, Element.el [ Ui.hf, Ui.wfp 7 ] element ], popup )
+    ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
+        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang capsule selectedGos)
+        , Element.el [ Ui.wfp 7, Ui.hf, Element.scrollbarY ] element
+        ]
+    , popup
+    )
