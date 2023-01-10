@@ -101,7 +101,7 @@ function init(node, flags) {
             if (d.kind === 'videoinput') {
                 // Try to see if the device has already been detected before.
                 let oldDevice = oldDevices.video.filter(x => x.deviceId === d.deviceId)[0];
-                if (oldDevice !== null) {
+                if (oldDevice !== undefined) {
                     // If it were, no need to retry every possible resolution.
                     console.log("Fetching parameters for webcam " + d.label + " from cache");
                     response.video.push(oldDevice);
