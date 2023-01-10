@@ -52,47 +52,13 @@ function init(node, flags) {
         stream = null;
     }
 
-
-
-    // Ports definitions
-    function makePort(name, fn) {
-        if (app.ports === undefined) {
-            console.warn("app.ports is undefined, not mounting port...");
-            return;
-        }
-
-        if (app.ports[name + "Port"] === undefined) {
-            console.log("app.ports." + name + " is undefined, not mounting port...");
-            return;
-        }
-
-        app.ports[name + "Port"].subscribe(fn);
-    }
-
-    // Saves the client config into the local storage.
-    makePort("saveStorage", function(clientConfig) {
-        localStorage.setItem('clientConfig', JSON.stringify(clientConfig));
-    });
-
-    // Open the file select popup.
-    makePort("select", function(args) {
-        let project = args[0];
-        let mimes = args[1];
-        let input = document.createElement('input');
-        input.type = 'file';
-        input.accept = mimes.join(',');
-        input.onchange = function(e) {
-            app.ports.selected.send([project, e.target.files[0]]);
-        };
-        input.click();
-    });
-
-    // Detect video and audio devices.
-    makePort("detectDevices", async function(args) {
-        let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices;
+    // Detect the devices
+    async function detectDevices(args) {
+        let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices || { audio: [], video: [] };
 
         console.log("Detect devices");
         let devices = await navigator.mediaDevices.enumerateDevices();
+
         let response = {audio: [], video: []};
 
         for(let i = 0; i < devices.length; i ++) {
@@ -102,9 +68,26 @@ function init(node, flags) {
                 // Try to see if the device has already been detected before.
                 let oldDevice = oldDevices.video.filter(x => x.deviceId === d.deviceId)[0];
                 if (oldDevice !== undefined) {
+
                     // If it were, no need to retry every possible resolution.
                     console.log("Fetching parameters for webcam " + d.label + " from cache");
                     response.video.push(oldDevice);
+
+                    // Setup the listener for changes in devices
+                    if (navigator.mediaDevices.ondevicechange === null) {
+                        // If getUserMedia has never been called, the listener is never changed for safety reasons.
+                        // This is why we try an easy getUserMedia right here, before setting up the listener.
+                        let options = {
+                            audio: false,
+                            video: {
+                                deviceId: { exact: oldDevice.deviceId },
+                            },
+                        };
+
+                        await navigator.mediaDevices.getUserMedia(options);
+                        navigator.mediaDevices.ondevicechange = detectDevices;
+                    }
+
                     continue;
                 }
 
@@ -154,7 +137,43 @@ function init(node, flags) {
 
         console.log("Detection finished");
         app.ports.detectDevicesResponse.send(response);
+    }
+
+    // Ports definitions
+    function makePort(name, fn) {
+        if (app.ports === undefined) {
+            console.warn("app.ports is undefined, not mounting port...");
+            return;
+        }
+
+        if (app.ports[name + "Port"] === undefined) {
+            console.log("app.ports." + name + " is undefined, not mounting port...");
+            return;
+        }
+
+        app.ports[name + "Port"].subscribe(fn);
+    }
+
+    // Saves the client config into the local storage.
+    makePort("saveStorage", function(clientConfig) {
+        localStorage.setItem('clientConfig', JSON.stringify(clientConfig));
     });
+
+    // Open the file select popup.
+    makePort("select", function(args) {
+        let project = args[0];
+        let mimes = args[1];
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = mimes.join(',');
+        input.onchange = function(e) {
+            app.ports.selected.send([project, e.target.files[0]]);
+        };
+        input.click();
+    });
+
+    // Detect video and audio devices.
+    makePort("detectDevices", detectDevices);
 
     /*
     flags.global = flags.global || {};

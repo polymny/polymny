@@ -239,32 +239,91 @@ mergeDevices old new =
 {-| Finds the right device to use given a device configuration.
 -}
 getDevice : Devices -> Maybe Device -> Device
-getDevice devices preferredDevice =
-    case preferredDevice of
-        Just d ->
-            d
+getDevice devices untrustedPreferredDevice =
+    let
+        preferredDevice =
+            Maybe.map (updateAvailable devices) untrustedPreferredDevice
 
-        Nothing ->
-            let
-                audio : Maybe Audio
-                audio =
+        audio : Maybe Audio
+        audio =
+            case Maybe.map .audio preferredDevice of
+                Just (Just a) ->
+                    if a.available then
+                        Just a
+
+                    else
+                        devices.audio
+                            |> List.filter .available
+                            |> List.head
+
+                Just Nothing ->
+                    Nothing
+
+                _ ->
                     devices.audio
                         |> List.filter .available
                         |> List.head
 
-                -- Finds the resolution of a video if a resolution is avaible, returns Nothing otherwise.
-                findResolution : Video -> Maybe ( Video, Resolution )
-                findResolution inputVideo =
-                    List.head inputVideo.resolutions |> Maybe.map (\resolution -> ( inputVideo, resolution ))
+        -- Finds the resolution of a video if a resolution is avaible, returns Nothing otherwise.
+        findResolution : Video -> Maybe ( Video, Resolution )
+        findResolution inputVideo =
+            List.head inputVideo.resolutions |> Maybe.map (\resolution -> ( inputVideo, resolution ))
 
-                video : Maybe ( Video, Resolution )
-                video =
+        video : Maybe ( Video, Resolution )
+        video =
+            case Maybe.map .video preferredDevice of
+                Just (Just ( v, r )) ->
+                    if Debug.log "available" v.available then
+                        Just ( v, r )
+
+                    else
+                        devices.video
+                            |> List.filter .available
+                            |> List.head
+                            |> Maybe.andThen findResolution
+
+                Just Nothing ->
+                    Nothing
+
+                _ ->
                     devices.video
                         |> List.filter .available
                         |> List.head
                         |> Maybe.andThen findResolution
-            in
-            { audio = audio, video = video }
+    in
+    { audio = audio, video = video }
+
+
+updateAvailable : Devices -> Device -> Device
+updateAvailable devices device =
+    let
+        a =
+            case device.audio of
+                Just audio ->
+                    case List.filter (\x -> x.deviceId == audio.deviceId) devices.audio of
+                        [] ->
+                            Just { audio | available = False }
+
+                        h :: _ ->
+                            Just h
+
+                Nothing ->
+                    Nothing
+
+        v =
+            case device.video of
+                Just ( video, resolution ) ->
+                    case List.filter (\x -> x.deviceId == video.deviceId) devices.video of
+                        [] ->
+                            Just ( { video | available = False }, resolution )
+
+                        h :: _ ->
+                            Just ( { video | available = h.available }, resolution )
+
+                Nothing ->
+                    Nothing
+    in
+    { audio = a, video = v }
 
 
 {-| Triggers a full detection of every device.

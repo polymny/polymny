@@ -166,7 +166,7 @@ decodeClientConfig =
         (Decode.field "promptSize" Decode.int |> makeDefault defaultClientConfig.promptSize)
         (Decode.field "sortBy" Data.decodeSortBy |> makeDefault defaultClientConfig.sortBy)
         (Decode.field "devices" Device.decodeDevices |> makeDefault defaultClientConfig.devices)
-        (Decode.field "preferredDevice" (Decode.nullable Device.decodeDevice))
+        (Decode.maybe (Decode.field "preferredDevice" Device.decodeDevice))
 
 
 {-| This type holds the client global state.
@@ -235,7 +235,7 @@ type Msg
     | SortByChanged Data.SortBy
     | DetectDevicesResponse Device.Devices
     | SetAudio Device.Audio
-    | SetVideo Device.Video Device.Resolution
+    | SetVideo (Maybe ( Device.Video, Device.Resolution ))
 
 
 {-| This functions updates the config.
@@ -289,8 +289,15 @@ update msg { serverConfig, clientConfig, clientState } =
                     )
 
                 DetectDevicesResponse devices ->
+                    let
+                        newDevices =
+                            Device.mergeDevices clientConfig.devices devices
+
+                        newPreferredDevice =
+                            Device.getDevice newDevices clientConfig.preferredDevice
+                    in
                     ( { serverConfig = serverConfig
-                      , clientConfig = { clientConfig | devices = Device.mergeDevices clientConfig.devices devices }
+                      , clientConfig = { clientConfig | devices = newDevices, preferredDevice = Just newPreferredDevice }
                       , clientState = clientState
                       }
                     , True
@@ -311,12 +318,12 @@ update msg { serverConfig, clientConfig, clientState } =
                     , True
                     )
 
-                SetVideo video resolution ->
+                SetVideo video ->
                     let
                         preferredDevice =
                             clientConfig.preferredDevice
-                                |> Maybe.map (\device -> { device | video = Just ( video, resolution ) })
-                                |> Maybe.withDefault { audio = Nothing, video = Just ( video, resolution ) }
+                                |> Maybe.map (\device -> { device | video = video })
+                                |> Maybe.withDefault { audio = Nothing, video = video }
                                 |> Just
                     in
                     ( { serverConfig = serverConfig

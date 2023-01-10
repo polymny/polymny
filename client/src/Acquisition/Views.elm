@@ -26,8 +26,14 @@ view config user model =
         videoTitle =
             Element.el [ Font.bold ] (Element.text "Video devices")
 
+        preferredVideo =
+            Maybe.andThen .video config.clientConfig.preferredDevice
+
+        disableVideo =
+            videoResolutionView preferredVideo Nothing
+
         video =
-            List.map (videoView (Maybe.andThen .video config.clientConfig.preferredDevice)) config.clientConfig.devices.video
+            (disableVideo :: List.map (videoView preferredVideo) config.clientConfig.devices.video)
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
         audioTitle =
@@ -46,22 +52,22 @@ view config user model =
 videoView : Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
 videoView preferredVideo video =
     Element.row [ Ui.s 10 ]
-        (Element.text video.label :: List.map (videoResolutionView preferredVideo video) video.resolutions)
+        (Element.text video.label :: List.map (\x -> videoResolutionView preferredVideo (Just ( video, x ))) video.resolutions)
 
 
-videoResolutionView : Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Device.Resolution -> Element App.Msg
-videoResolutionView preferredVideo video resolution =
+videoResolutionView : Maybe ( Device.Video, Device.Resolution ) -> Maybe ( Device.Video, Device.Resolution ) -> Element App.Msg
+videoResolutionView preferredVideo video =
     let
         isPreferredVideo =
             preferredVideo
                 |> Maybe.map Tuple.first
                 |> Maybe.map .deviceId
-                |> (==) (Just video.deviceId)
+                |> (==) (Maybe.map .deviceId <| Maybe.map Tuple.first video)
 
         isPreferredVideoAndResolution =
             preferredVideo
                 |> Maybe.map Tuple.second
-                |> (==) (Just resolution)
+                |> (==) (Maybe.map Tuple.second video)
                 |> (&&) isPreferredVideo
 
         makeButton =
@@ -72,13 +78,16 @@ videoResolutionView preferredVideo video resolution =
                 Ui.secondary
 
         action =
-            if video.available then
-                Ui.Msg <| App.ConfigMsg <| Config.SetVideo video resolution
+            if Maybe.map .available (Maybe.map Tuple.first video) |> Maybe.withDefault True then
+                Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| video
 
             else
                 Ui.None
     in
-    makeButton [] { label = Device.formatResolution resolution, action = action }
+    makeButton []
+        { label = Maybe.map Tuple.second video |> Maybe.map Device.formatResolution |> Maybe.withDefault "Désactivé"
+        , action = action
+        }
 
 
 audioView : Maybe Device.Audio -> Device.Audio -> Element App.Msg

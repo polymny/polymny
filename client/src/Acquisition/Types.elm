@@ -10,11 +10,18 @@ import Data.Capsule as Data exposing (Capsule)
 import Device
 
 
+{-| The different state of loading in which the acquisition page can be.
+-}
+type State
+    = DetectingDevices
+
+
 {-| The type for the model of the acquisition page.
 -}
 type alias Model =
     { capsule : Capsule
     , gos : Int
+    , state : State
     }
 
 
@@ -27,7 +34,12 @@ init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
 init gos capsule =
     if gos < List.length capsule.structure && gos >= 0 then
         Just <|
-            ( { capsule = capsule, gos = gos }, Device.detectDevices )
+            ( { capsule = capsule
+              , gos = gos
+              , state = DetectingDevices
+              }
+            , Device.detectDevices
+            )
 
     else
         Nothing
