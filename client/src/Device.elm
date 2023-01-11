@@ -273,7 +273,7 @@ getDevice devices untrustedPreferredDevice =
         video =
             case Maybe.map .video preferredDevice of
                 Just (Just ( v, r )) ->
-                    if Debug.log "available" v.available then
+                    if v.available then
                         Just ( v, r )
 
                     else

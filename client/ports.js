@@ -13,6 +13,12 @@ function init(node, flags) {
     // Whether the user asked to unbind the camera while it was not unbindable.
     let unbindRequested = false;
 
+    // The recorder we will be using when recording the camera / microphone of the user.
+    let recorder = null;
+
+    // The video that was recorded by the user's camera / microphone is available.
+    let recordArrived = null;
+
     // List of possible resolutions for webcams.
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },
@@ -57,6 +63,16 @@ function init(node, flags) {
         stream = null;
     }
 
+    // Wrapper for the getUserMedia function.
+    // We want to detect device changes, and we can't do that before we asked for permissions with getUserMedia.
+    // This function triggers getUserMedia, and checks if the listener for device changes is correctly set, and set it
+    // correctly if not.
+    async function getUserMedia(args) {
+        let response = await navigator.mediaDevices.getUserMedia(args);
+        navigator.mediaDevices.ondevicechange = detectDevices;
+        return response;
+    }
+
     // Detect the devices
     async function detectDevices(args) {
         let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices || { audio: [], video: [] };
@@ -77,22 +93,6 @@ function init(node, flags) {
                     // If it were, no need to retry every possible resolution.
                     console.log("Fetching parameters for webcam " + d.label + " from cache");
                     response.video.push(oldDevice);
-
-                    // Setup the listener for changes in devices
-                    if (navigator.mediaDevices.ondevicechange === null) {
-                        // If getUserMedia has never been called, the listener is never changed for safety reasons.
-                        // This is why we try an easy getUserMedia right here, before setting up the listener.
-                        let options = {
-                            audio: false,
-                            video: {
-                                deviceId: { exact: oldDevice.deviceId },
-                            },
-                        };
-
-                        await navigator.mediaDevices.getUserMedia(options);
-                        navigator.mediaDevices.ondevicechange = detectDevices;
-                    }
-
                     continue;
                 }
 
@@ -118,7 +118,7 @@ function init(node, flags) {
 
                     try {
                         console.log("Trying resolution " + res.width + "x" + res.height);
-                        stream = await navigator.mediaDevices.getUserMedia(options);
+                        stream = await getUserMedia(options);
                         unbindWebcam();
                         console.log("Resolution " + res.width + "x" + res.height + " is working");
                         device.resolutions.push(res);
@@ -127,12 +127,6 @@ function init(node, flags) {
                         console.log("Resolution " + res.width + "x" + res.height + " is not working");
                         // Just don't add it
                     }
-
-                    // Setup the listener for changes in devices
-                    if (navigator.mediaDevices.ondevicechange === null) {
-                        navigator.mediaDevices.ondevicechange = detectDevices;
-                    }
-
                 }
 
                 console.log("Detection of parameters for webcam " + d.label + " is finished");
@@ -170,7 +164,7 @@ function init(node, flags) {
         bindingWebcam = true;
 
         try {
-            stream = await navigator.mediaDevices.getUserMedia(settings.device);
+            stream = await getUserMedia(settings.device);
         } catch (e) {
             app.ports.bindingWebcamFailed.send(null);
             return;
@@ -182,6 +176,18 @@ function init(node, flags) {
 
         await playCurrentStream(true);
 
+        recorder = new MediaRecorder(stream, settings.recording);
+        recorder.ondataavailable = (data) => {
+            recordArrived = data.data;
+            // sendRecordToElmIfReady();
+        };
+
+        recorder.onerror = (err) => {
+            console.log(err);
+        };
+
+        bindingWebcam = false;
+        console.log("Webcam bound");
     }
 
     // Plays whathever is in stream in the video element.

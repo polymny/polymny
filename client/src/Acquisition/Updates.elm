@@ -25,6 +25,9 @@ update msg model =
     case model.page of
         App.Acquisition m ->
             case msg of
+                Acquisition.DeviceChanged ->
+                    ( model, Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice) )
+
                 Acquisition.DetectDevicesFinished ->
                     ( model, Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice) )
 

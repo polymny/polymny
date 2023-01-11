@@ -49,4 +49,5 @@ init gos capsule =
 {-| The message type of the module.
 -}
 type Msg
-    = DetectDevicesFinished
+    = DeviceChanged
+    | DetectDevicesFinished

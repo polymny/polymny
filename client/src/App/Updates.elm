@@ -6,6 +6,7 @@ module App.Updates exposing (update, updateModel, subs)
 
 -}
 
+import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
 import App.Types as App
 import App.Utils as App
@@ -42,10 +43,25 @@ updateModel msg model =
 
         App.ConfigMsg sMsg ->
             let
-                ( newConfig, newMsg ) =
+                oldPreferredDevice =
+                    model.config.clientConfig.preferredDevice
+
+                ( nextConfig, nextCmd ) =
                     Config.update sMsg model.config
+
+                ( newModel, newCmd ) =
+                    if oldPreferredDevice /= nextConfig.clientConfig.preferredDevice then
+                        -- We need to tell the acquisition page that the device changed
+                        let
+                            ( tmpModel, tmpCmd ) =
+                                updateModel (App.AcquisitionMsg Acquisition.DeviceChanged) { model | config = nextConfig }
+                        in
+                        ( tmpModel, Cmd.batch [ tmpCmd, nextCmd ] )
+
+                    else
+                        ( { model | config = nextConfig }, nextCmd )
             in
-            ( { model | config = newConfig }, newMsg )
+            ( newModel, newCmd )
 
         App.HomeMsg sMsg ->
             Home.update sMsg model
