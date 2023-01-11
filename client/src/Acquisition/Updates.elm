@@ -41,6 +41,11 @@ update msg model =
                 Acquisition.DeviceLevel x ->
                     ( { model | page = App.Acquisition { m | deviceLevel = Just x } }, Cmd.none )
 
+                Acquisition.ToggleSettings ->
+                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, showSettings = not m.showSettings } }
+                    , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
+                    )
+
         _ ->
             ( model, Cmd.none )
 

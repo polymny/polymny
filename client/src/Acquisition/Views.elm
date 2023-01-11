@@ -42,7 +42,7 @@ view config user model =
             config.clientState.lang
 
         videoTitle =
-            Element.el [ Font.bold ] (Element.text "Video devices")
+            Element.el [ Font.bold ] <| Element.text <| Strings.deviceWebcam lang
 
         preferredVideo =
             Maybe.andThen .video config.clientConfig.preferredDevice
@@ -58,7 +58,7 @@ view config user model =
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
         audioTitle =
-            Element.el [ Font.bold ] (Element.text "Audio devices")
+            Element.el [ Font.bold ] <| Element.text <| Strings.deviceMicrophone lang
 
         audio =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
@@ -66,11 +66,6 @@ view config user model =
 
         settings =
             Element.column [ Ui.wf, Ui.at, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
-
-        content =
-            Element.row [ Ui.wf, Ui.s 10, Ui.p 10 ]
-                [ settings
-                ]
 
         deviceInfo =
             Element.column [ Ui.wf, Ui.p 10, Ui.s 5, Ui.at ]
@@ -98,48 +93,75 @@ view config user model =
                     |> (\x -> Element.paragraph [] [ x ])
                 ]
 
+        devicePlayer =
+            Element.el
+                [ Ui.wf
+                , Ui.at
+                , Element.inFront <|
+                    case ( model.state /= Acquisition.Ready, preferredVideo ) of
+                        ( True, _ ) ->
+                            [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                            , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
+                            ]
+                                |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                        ( _, Nothing ) ->
+                            [ Ui.icon 50 Material.Icons.videocam_off ]
+                                |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                        _ ->
+                            Element.none
+                , Element.inFront <|
+                    case ( model.state == Acquisition.Ready, model.deviceLevel ) of
+                        ( True, Just level ) ->
+                            vumeter level
+
+                        _ ->
+                            Element.none
+                , Element.inFront <|
+                    if model.state == Acquisition.Ready && not model.showSettings then
+                        Ui.navigationElement
+                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
+                            [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 5 ]
+                            (Ui.icon 25 Material.Icons.settings)
+
+                    else
+                        Element.none
+                ]
+                videoElement
+
         rightColumn =
             Element.column
                 [ Ui.bl 1, Border.color Colors.greyBorder, Ui.hf, Ui.wf ]
-                [ Element.el
-                    [ Ui.wf
-                    , Ui.at
-                    , Element.inFront <|
-                        case ( model.state /= Acquisition.Ready, preferredVideo ) of
-                            ( True, _ ) ->
-                                [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                                , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
-                                ]
-                                    |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                    |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+                [ if not model.showSettings then
+                    devicePlayer
 
-                            ( _, Nothing ) ->
-                                [ Ui.icon 50 Material.Icons.videocam_off ]
-                                    |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                    |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-
-                            _ ->
-                                Element.none
-                    , Element.inFront <|
-                        case ( model.state == Acquisition.Ready, model.deviceLevel ) of
-                            ( True, Just level ) ->
-                                vumeter level
-
-                            _ ->
-                                Element.none
-                    , Element.inFront <|
-                        if model.state == Acquisition.Ready then
-                            Element.el [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 5 ] (Ui.icon 25 Material.Icons.settings)
-
-                        else
-                            Element.none
-                    ]
-                    videoElement
+                  else
+                    Element.none
                 , deviceInfo
                 , Element.el [ Ui.hf ] Element.none
                 ]
+
+        settingsPopup =
+            if model.showSettings then
+                Element.column [ Ui.wf, Ui.hf ]
+                    [ Element.row [ Ui.wf, Ui.hf ]
+                        [ Element.el [ Ui.wf ] settings
+                        , Element.el [ Ui.wf ] devicePlayer
+                        ]
+                    , Ui.primary [ Ui.ab, Ui.ar ]
+                        { label = Strings.uiConfirm lang
+                        , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
+                        }
+                    ]
+                    |> Ui.popup 5 (Strings.navigationSettings lang)
+
+            else
+                Element.none
     in
-    ( content, rightColumn, Element.none )
+    ( Element.none, rightColumn, settingsPopup )
 
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg

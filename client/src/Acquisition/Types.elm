@@ -28,6 +28,7 @@ type alias Model =
     , gos : Int
     , state : State
     , deviceLevel : Maybe Float
+    , showSettings : Bool
     }
 
 
@@ -44,6 +45,7 @@ init gos capsule =
               , gos = gos
               , state = DetectingDevices
               , deviceLevel = Nothing
+              , showSettings = False
               }
             , Device.detectDevices
             )
@@ -59,3 +61,4 @@ type Msg
     | DetectDevicesFinished
     | DeviceBound
     | DeviceLevel Float
+    | ToggleSettings
