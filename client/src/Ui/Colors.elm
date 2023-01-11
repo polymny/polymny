@@ -1,8 +1,8 @@
-module Ui.Colors exposing (green1, green2, green3, yellow, white, black, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground)
+module Ui.Colors exposing (green1, green2, green3, yellow, red, white, black, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground)
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, white, black, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
+@docs green1, green2, green3, yellow, red, white, black, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
 
 -}
 
@@ -35,6 +35,13 @@ green3 =
 yellow : Element.Color
 yellow =
     Element.rgb255 253 210 40
+
+
+{-| Pure red.
+-}
+red : Element.Color
+red =
+    Element.rgb255 255 0 0
 
 
 {-| A pure white.

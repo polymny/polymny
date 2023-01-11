@@ -13,6 +13,7 @@ import Data.User exposing (User)
 import Device
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Html
 import Html.Attributes
@@ -62,23 +63,27 @@ view config user model =
                     [ Ui.wf
                     , Ui.hf
                     , Element.inFront
-                        (if model.state /= Acquisition.Ready then
-                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-                                (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                                    , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
-                                    ]
-                                )
+                        (case ( model.state /= Acquisition.Ready, preferredVideo, model.deviceLevel ) of
+                            ( True, _, _ ) ->
+                                Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+                                    (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                        [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                                        , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
+                                        ]
+                                    )
 
-                         else if preferredVideo == Nothing then
-                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-                                (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                    [ Ui.icon 50 Material.Icons.videocam_off
-                                    ]
-                                )
+                            ( _, Nothing, _ ) ->
+                                Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+                                    (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                        [ Ui.icon 50 Material.Icons.videocam_off
+                                        ]
+                                    )
 
-                         else
-                            Element.none
+                            ( _, _, Just level ) ->
+                                vumeter level
+
+                            _ ->
+                                Element.none
                         )
                     ]
                     videoElement
@@ -157,3 +162,33 @@ audioView preferredAudio audio =
 videoElement : Element App.Msg
 videoElement =
     Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] [])
+
+
+vumeter : Float -> Element App.Msg
+vumeter value =
+    let
+        maxLeds =
+            10
+
+        leds =
+            round (value / 75.0 * toFloat maxLeds)
+
+        led : Int -> Element App.Msg
+        led index =
+            let
+                color =
+                    if index < leds then
+                        Colors.green2
+
+                    else
+                        Colors.transparent
+            in
+            Element.el [ Ui.ab, Ui.wf, Ui.hf, Ui.b 1, Background.color color ] Element.none
+    in
+    [ Element.el [ Ui.hfp 3 ] Element.none
+    , List.range 0 maxLeds
+        |> List.reverse
+        |> List.map led
+        |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
+    ]
+        |> Element.column [ Ui.ar, Ui.ab, Ui.p 10, Ui.hf ]

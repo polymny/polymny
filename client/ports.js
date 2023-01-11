@@ -25,6 +25,12 @@ function init(node, flags) {
     // The video that was recorded by the user's camera / microphone is available.
     let recordArrived = null;
 
+    // The audio context helps us show how much sound the microphone is capturing.
+    let audioContext = null;
+
+    // The microphone vu meter.
+    let vuMeter = null;
+
     // List of possible resolutions for devices.
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },
@@ -55,6 +61,44 @@ function init(node, flags) {
     ///////////////////////////////////////////////// UTIL FUNCTIONS //////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // The class that holds all the necessary elements for measuring sound input level.
+    class VuMeter {
+        constructor(stream) {
+            this.context = new AudioContext();
+            this.microphone = this.context.createMediaStreamSource(stream);
+            this.node = this.context.createScriptProcessor(2048, 1, 1);
+
+            this.analyser = this.context.createAnalyser();
+            this.analyser.smoothingTimeConstant = 0.8;
+            this.analyser.fftSize = 1024;
+
+            this.microphone.connect(this.analyser);
+            this.analyser.connect(this.node);
+            this.node.connect(this.context.destination);
+
+            this.node.onaudioprocess = () => {
+                let array = new Uint8Array(this.analyser.frequencyBinCount);
+                this.analyser.getByteFrequencyData(array);
+                let average = array.reduce((a, b) => a + b, 0) / array.length;
+                app.ports.deviceLevel.send(average);
+            }
+        }
+
+        disconnect() {
+            this.analyser.disconnect();
+            this.node.disconnect();
+            this.microphone.disconnect();
+        }
+    }
+
+    // Starts the vumeter on a stream, eventually destroying any previous vumeters.
+    function startVuMeter(stream) {
+        if (vuMeter !== null) {
+            vuMeter.disconnect();
+        }
+        vuMeter = new VuMeter(stream);
+    }
+
     // Unbinds the device if the camera is bound.
     function unbindDevice() {
         if (stream === null || bindingDevice) {
@@ -76,6 +120,7 @@ function init(node, flags) {
     async function getUserMedia(args) {
         let response = await navigator.mediaDevices.getUserMedia(args);
         navigator.mediaDevices.ondevicechange = detectDevices;
+        startVuMeter(response);
         return response;
     }
 
@@ -187,6 +232,7 @@ function init(node, flags) {
         try {
             stream = await getUserMedia(settings.device);
         } catch (e) {
+            console.log(e);
             app.ports.bindingDeviceFailed.send(null);
             return;
         }

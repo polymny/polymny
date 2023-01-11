@@ -26,17 +26,20 @@ update msg model =
         App.Acquisition m ->
             case msg of
                 Acquisition.DeviceChanged ->
-                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam } }
+                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, deviceLevel = Nothing } }
                     , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
                     )
 
                 Acquisition.DetectDevicesFinished ->
-                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam } }
+                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, deviceLevel = Nothing } }
                     , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
                     )
 
                 Acquisition.DeviceBound ->
                     ( { model | page = App.Acquisition { m | state = Acquisition.Ready } }, Cmd.none )
+
+                Acquisition.DeviceLevel x ->
+                    ( { model | page = App.Acquisition { m | deviceLevel = Just x } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -49,6 +52,7 @@ subs model =
     Sub.batch
         [ detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
         , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)
+        , deviceLevel (\x -> App.AcquisitionMsg (Acquisition.DeviceLevel x))
         ]
 
 
@@ -60,3 +64,8 @@ port detectDevicesFinished : (() -> msg) -> Sub msg
 {-| The device binding is finished.
 -}
 port deviceBound : (() -> msg) -> Sub msg
+
+
+{-| The device make a specific amount of sound.
+-}
+port deviceLevel : (Float -> msg) -> Sub msg

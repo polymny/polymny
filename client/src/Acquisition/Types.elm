@@ -27,6 +27,7 @@ type alias Model =
     { capsule : Capsule
     , gos : Int
     , state : State
+    , deviceLevel : Maybe Float
     }
 
 
@@ -42,6 +43,7 @@ init gos capsule =
             ( { capsule = capsule
               , gos = gos
               , state = DetectingDevices
+              , deviceLevel = Nothing
               }
             , Device.detectDevices
             )
@@ -56,3 +58,4 @@ type Msg
     = DeviceChanged
     | DetectDevicesFinished
     | DeviceBound
+    | DeviceLevel Float
