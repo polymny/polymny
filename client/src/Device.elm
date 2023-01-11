@@ -430,6 +430,18 @@ bindDevice device =
     bindDevicePort (encodeSettings device)
 
 
+{-| Unbinds any bound device.
+-}
+unbindDevice : Cmd msg
+unbindDevice =
+    unbindDevicePort ()
+
+
 {-| Port where the device is bound.
 -}
 port bindDevicePort : Encode.Value -> Cmd msg
+
+
+{-| Port to unbind any bound device.
+-}
+port unbindDevicePort : () -> Cmd msg

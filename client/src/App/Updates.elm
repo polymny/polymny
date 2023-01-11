@@ -37,56 +37,73 @@ update msg model =
 -}
 updateModel : App.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 updateModel msg model =
-    case msg of
-        App.Noop ->
-            ( model, Cmd.none )
+    let
+        -- We check if the user exited the acqusition page, in that case, we unbind the device to turn off the webcam
+        -- light.
+        unbindDevice =
+            case ( model.page, updatedModel.page ) of
+                ( _, App.Acquisition _ ) ->
+                    Cmd.none
 
-        App.ConfigMsg sMsg ->
-            let
-                oldPreferredDevice =
-                    model.config.clientConfig.preferredDevice
+                ( App.Acquisition _, _ ) ->
+                    Device.unbindDevice
 
-                ( nextConfig, nextCmd ) =
-                    Config.update sMsg model.config
+                _ ->
+                    Cmd.none
 
-                ( newModel, newCmd ) =
-                    if oldPreferredDevice /= nextConfig.clientConfig.preferredDevice then
-                        -- We need to tell the acquisition page that the device changed
-                        let
-                            ( tmpModel, tmpCmd ) =
-                                updateModel (App.AcquisitionMsg Acquisition.DeviceChanged) { model | config = nextConfig }
-                        in
-                        ( tmpModel, Cmd.batch [ tmpCmd, nextCmd ] )
+        ( updatedModel, updatedCmd ) =
+            case msg of
+                App.Noop ->
+                    ( model, Cmd.none )
 
-                    else
-                        ( { model | config = nextConfig }, nextCmd )
-            in
-            ( newModel, newCmd )
+                App.ConfigMsg sMsg ->
+                    let
+                        oldPreferredDevice =
+                            model.config.clientConfig.preferredDevice
 
-        App.HomeMsg sMsg ->
-            Home.update sMsg model
+                        ( nextConfig, nextCmd ) =
+                            Config.update sMsg model.config
 
-        App.NewCapsuleMsg sMsg ->
-            NewCapsule.update sMsg model
+                        ( newModel, newCmd ) =
+                            if oldPreferredDevice /= nextConfig.clientConfig.preferredDevice then
+                                -- We need to tell the acquisition page that the device changed
+                                let
+                                    ( tmpModel, tmpCmd ) =
+                                        updateModel (App.AcquisitionMsg Acquisition.DeviceChanged) { model | config = nextConfig }
+                                in
+                                ( tmpModel, Cmd.batch [ tmpCmd, nextCmd ] )
 
-        App.PreparationMsg sMsg ->
-            Preparation.update sMsg model
+                            else
+                                ( { model | config = nextConfig }, nextCmd )
+                    in
+                    ( newModel, newCmd )
 
-        App.AcquisitionMsg aMsg ->
-            Acquisition.update aMsg model
+                App.HomeMsg sMsg ->
+                    Home.update sMsg model
 
-        App.OnUrlChange url ->
-            let
-                ( page, cmd ) =
-                    App.pageFromRoute model.config model.user (Route.fromUrl url)
-            in
-            ( { model | page = page }, cmd )
+                App.NewCapsuleMsg sMsg ->
+                    NewCapsule.update sMsg model
 
-        App.InternalUrl url ->
-            ( model, Browser.Navigation.pushUrl model.config.clientState.key url.path )
+                App.PreparationMsg sMsg ->
+                    Preparation.update sMsg model
 
-        App.ExternalUrl url ->
-            ( model, Browser.Navigation.load url )
+                App.AcquisitionMsg aMsg ->
+                    Acquisition.update aMsg model
+
+                App.OnUrlChange url ->
+                    let
+                        ( page, cmd ) =
+                            App.pageFromRoute model.config model.user (Route.fromUrl url)
+                    in
+                    ( { model | page = page }, cmd )
+
+                App.InternalUrl url ->
+                    ( model, Browser.Navigation.pushUrl model.config.clientState.key url.path )
+
+                App.ExternalUrl url ->
+                    ( model, Browser.Navigation.load url )
+    in
+    ( updatedModel, Cmd.batch [ updatedCmd, unbindDevice ] )
 
 
 {-| Returns the subscriptions of the app.

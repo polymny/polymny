@@ -16,6 +16,9 @@ function init(node, flags) {
     // Wether the camera is currently being bound.
     let bindingDevice = false;
 
+    // What device we should rebind the device because it was changed.
+    let shouldRebindDevice = null;
+
     // Whether the user asked to unbind the camera while it was not unbindable.
     let unbindRequested = false;
 
@@ -218,6 +221,7 @@ function init(node, flags) {
         }
 
         if (bindingDevice) {
+            shouldRebindDevice = settings;
             return;
         }
 
@@ -241,7 +245,12 @@ function init(node, flags) {
             await unbindDevice();
         }
 
-        await playCurrentStream(true);
+        try {
+            await playCurrentStream(true);
+        } catch (e) {
+            // Maybe the user left the page before this function was done.
+            // In that case, the elm client should request itself an unbindDevice, so we don't need to do a lot here.
+        }
 
         recorder = new MediaRecorder(stream, settings.recording);
         recorder.ondataavailable = (data) => {
@@ -254,6 +263,16 @@ function init(node, flags) {
         };
 
         bindingDevice = false;
+
+        if (shouldRebindDevice) {
+            let newDevice = shouldRebindDevice;
+            shouldRebindDevice = null;
+            await bindDevice(newDevice);
+
+            // Early return because the client was already notified by the recursive call.
+            return;
+        }
+
         console.log("Device bound");
         app.ports.deviceBound.send(null);
     }
@@ -318,4 +337,5 @@ function init(node, flags) {
     // Detect video and audio devices.
     makePort("detectDevices", () => detectDevices(true));
     makePort("bindDevice", bindDevice);
+    makePort("unbindDevice", unbindDevice);
 }
