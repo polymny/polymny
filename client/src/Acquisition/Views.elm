@@ -47,6 +47,9 @@ view config user model =
         preferredVideo =
             Maybe.andThen .video config.clientConfig.preferredDevice
 
+        preferredAudio =
+            Maybe.andThen .audio config.clientConfig.preferredDevice
+
         disableVideo =
             videoResolutionView lang preferredVideo Nothing
 
@@ -69,37 +72,71 @@ view config user model =
                 [ settings
                 ]
 
+        deviceInfo =
+            Element.column [ Ui.wf, Ui.p 10, Ui.s 5, Ui.at ]
+                [ Ui.title (Strings.deviceWebcam lang)
+                , preferredVideo
+                    |> Maybe.map Tuple.first
+                    |> Maybe.map .label
+                    |> Maybe.withDefault (Strings.deviceDisabled lang)
+                    |> Element.text
+                    |> (\x -> Element.paragraph [] [ x ])
+                , preferredVideo
+                    |> Maybe.map (\_ -> Ui.title (Strings.deviceResolution lang))
+                    |> Maybe.withDefault Element.none
+                , preferredVideo
+                    |> Maybe.map Tuple.second
+                    |> Maybe.map (\r -> String.fromInt r.width ++ "x" ++ String.fromInt r.height)
+                    |> Maybe.map Element.text
+                    |> Maybe.map (\x -> Element.paragraph [] [ x ])
+                    |> Maybe.withDefault Element.none
+                , Ui.title (Strings.deviceMicrophone lang)
+                , preferredAudio
+                    |> Maybe.map .label
+                    |> Maybe.withDefault (Strings.deviceDisabled lang)
+                    |> Element.text
+                    |> (\x -> Element.paragraph [] [ x ])
+                ]
+
         rightColumn =
             Element.column
                 [ Ui.bl 1, Border.color Colors.greyBorder, Ui.hf, Ui.wf ]
                 [ Element.el
                     [ Ui.wf
                     , Ui.at
-                    , Element.inFront
-                        (case ( model.state /= Acquisition.Ready, preferredVideo, model.deviceLevel ) of
-                            ( True, _, _ ) ->
-                                Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-                                    (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                        [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                                        , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
-                                        ]
-                                    )
+                    , Element.inFront <|
+                        case ( model.state /= Acquisition.Ready, preferredVideo ) of
+                            ( True, _ ) ->
+                                [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                                , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
+                                ]
+                                    |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                    |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
 
-                            ( _, Nothing, _ ) ->
-                                Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-                                    (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                        [ Ui.icon 50 Material.Icons.videocam_off
-                                        ]
-                                    )
+                            ( _, Nothing ) ->
+                                [ Ui.icon 50 Material.Icons.videocam_off ]
+                                    |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                    |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
 
-                            ( _, _, Just level ) ->
+                            _ ->
+                                Element.none
+                    , Element.inFront <|
+                        case ( model.state == Acquisition.Ready, model.deviceLevel ) of
+                            ( True, Just level ) ->
                                 vumeter level
 
                             _ ->
                                 Element.none
-                        )
+                    , Element.inFront <|
+                        if model.state == Acquisition.Ready then
+                            Element.el [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 5 ] (Ui.icon 25 Material.Icons.settings)
+
+                        else
+                            Element.none
                     ]
                     videoElement
+                , deviceInfo
+                , Element.el [ Ui.hf ] Element.none
                 ]
     in
     ( content, rightColumn, Element.none )
