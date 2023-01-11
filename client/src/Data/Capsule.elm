@@ -1,6 +1,6 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
-    , Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..)
+    , Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..), eventTypeToString
     , Slide, slidePath, videoPath, gosVideoPath, deleteSlide, updateSlide
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
@@ -19,7 +19,7 @@ module Data.Capsule exposing
 
 # The GoS (Group of Slides) type
 
-@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType
+@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType, eventTypeToString
 
 
 ## Slides
@@ -266,35 +266,38 @@ type EventType
     | End
 
 
+{-| Converts the event type to a string.
+-}
+eventTypeToString : EventType -> String
+eventTypeToString e =
+    case e of
+        Start ->
+            "start"
+
+        NextSlide ->
+            "next_slide"
+
+        PreviousSlide ->
+            "previous_slide"
+
+        NextSentence ->
+            "next_sentence"
+
+        Play ->
+            "play"
+
+        Stop ->
+            "stop"
+
+        End ->
+            "end"
+
+
 {-| JSON encoder for event types.
 -}
 encodeEventType : EventType -> Encode.Value
 encodeEventType e =
-    let
-        s =
-            case e of
-                Start ->
-                    "start"
-
-                NextSlide ->
-                    "next_slide"
-
-                PreviousSlide ->
-                    "previous_slide"
-
-                NextSentence ->
-                    "next_sentence"
-
-                Play ->
-                    "play"
-
-                Stop ->
-                    "stop"
-
-                End ->
-                    "end"
-    in
-    Encode.string s
+    Encode.string (eventTypeToString e)
 
 
 {-| JSON decoder for event types.

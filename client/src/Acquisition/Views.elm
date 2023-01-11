@@ -20,6 +20,7 @@ import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons
 import Strings
+import TimeUtils
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -68,7 +69,7 @@ view config user model =
             Element.column [ Ui.wf, Ui.at, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
 
         deviceInfo =
-            Element.column [ Ui.wf, Ui.p 10, Ui.s 5, Ui.at ]
+            Element.column [ Ui.wf, Ui.px 10, Ui.s 10, Ui.at ]
                 [ Ui.title (Strings.deviceWebcam lang)
                 , preferredVideo
                     |> Maybe.map Tuple.first
@@ -124,7 +125,7 @@ view config user model =
                     if model.state == Acquisition.Ready && not model.showSettings then
                         Ui.navigationElement
                             (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
-                            [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 5 ]
+                            [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]
                             (Ui.icon 25 Material.Icons.settings)
 
                     else
@@ -132,17 +133,36 @@ view config user model =
                 ]
                 videoElement
 
-        rightColumn =
-            Element.column
-                [ Ui.bl 1, Border.color Colors.greyBorder, Ui.hf, Ui.wf ]
-                [ if not model.showSettings then
-                    devicePlayer
+        recordView : Int -> Acquisition.Record -> Element App.Msg
+        recordView index record =
+            Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
+                Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
+                    Element.row [ Ui.wf, Ui.s 10 ]
+                        [ Element.text (String.fromInt (index + 1))
+                        , Element.column [ Ui.wf ]
+                            [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
+                        ]
 
-                  else
-                    Element.none
-                , deviceInfo
-                , Element.el [ Ui.hf ] Element.none
-                ]
+        rightColumn =
+            Element.el [ Ui.wf, Ui.hf, Ui.bl 1, Border.color Colors.greyBorder ] <|
+                Element.column
+                    [ Ui.wf, Ui.s 10 ]
+                    ((if not model.showSettings then
+                        devicePlayer
+
+                      else
+                        Element.none
+                     )
+                        :: deviceInfo
+                        :: Element.el
+                            [ Ui.wf
+                            , Element.paddingEach { top = 10, bottom = 0, left = 10, right = 10 }
+                            , Ui.bt 1
+                            , Border.color Colors.greyBorder
+                            ]
+                            (Ui.title (Strings.stepsAcquisitionRecordList lang 2))
+                        :: List.indexedMap recordView (List.reverse model.records)
+                    )
 
         settingsPopup =
             if model.showSettings then
@@ -166,7 +186,7 @@ view config user model =
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
 videoView lang preferredVideo video =
-    Element.row [ Ui.s 10 ]
+    Element.row [ Ui.s 5 ]
         (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
 
 

@@ -25,6 +25,12 @@ function init(node, flags) {
     // The recorder we will be using when recording the camera / microphone of the user.
     let recorder = null;
 
+    // Tells whether we are currently recording or not.
+    let recording = false;
+
+    // The events that occur during the record (next sentence, next slide, etc...)
+    let currentEvents = [];
+
     // The video that was recorded by the user's camera / microphone is available.
     let recordArrived = null;
 
@@ -255,7 +261,7 @@ function init(node, flags) {
         recorder = new MediaRecorder(stream, settings.recording);
         recorder.ondataavailable = (data) => {
             recordArrived = data.data;
-            // sendRecordToElmIfReady();
+            sendRecordToElmIfReady();
         };
 
         recorder.onerror = (err) => {
@@ -298,6 +304,103 @@ function init(node, flags) {
         await element.play();
     }
 
+    // Starts the recording.
+    function startRecording() {
+        if (recorder !== undefined && !recording) {
+
+            // pointerExists = false;
+            // recordingPointerForRecord = null;
+
+            recording = true;
+            recorder.start();
+
+            // if (isPremium) {
+            //     pointerRecorder.start();
+            // }
+
+            currentEvents = [{
+                time: Math.round(window.performance.now()),
+                ty: "start"
+            }];
+
+            // let extra = document.getElementById('extra');
+            // if (extra instanceof HTMLVideoElement) {
+            //     extra.muted = true;
+            //     extra.currentTime = 0;
+            //     extra.play();
+            //     currentEvents.push({
+            //         time: 0,
+            //         ty: "play"
+            //     });
+            // }
+        }
+    }
+
+    // Stops the recording.
+    function stopRecording() {
+        if (recording) {
+            let time = Math.round(window.performance.now()) - currentEvents[0].time;
+
+            // let extra = document.getElementById('extra');
+            // if (extra instanceof HTMLVideoElement) {
+            //     extra.muted = true;
+            //     extra.pause();
+            //     extra.currentTime = 0;
+            //     currentEvents.push({
+            //         ty: "stop",
+            //         time: time
+            //     });
+            // }
+
+            currentEvents.push({
+                time: time,
+                ty: "end",
+            });
+
+            currentEvents[0].time = 0;
+            recorder.stop();
+
+            // if (isPremium) {
+            //     pointerRecorder.stop();
+            // }
+
+            recording = false;
+        }
+    }
+
+    // Sends the record and all the information so that elm can manage it.
+    function sendRecordToElmIfReady() {
+        // if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
+        //     return;
+        // }
+
+        // let port = recordingPointerForRecord === null ? app.ports.recordArrived : app.ports.pointerRecordArrived;
+        // port.send({
+        //     webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
+        //     pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+        //     events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
+        //     matted: 'idle',
+        // });
+
+        let port = app.ports.recordArrived;
+        port.send({
+            webcam_blob: recordArrived,
+            events: currentEvents,
+            matted: 'idle',
+        });
+
+        recordArrived = null;
+        // pointerArrived = null;
+    }
+
+    // Registers an event in the currentEvents array.
+    function registerEvent(eventType) {
+        currentEvents.push({
+            ty: eventType,
+            time: Math.round(window.performance.now() - currentEvents[0].time),
+        });
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -338,4 +441,7 @@ function init(node, flags) {
     makePort("detectDevices", () => detectDevices(true));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);
+    makePort("registerEvent", registerEvent);
+    makePort("startRecording", startRecording);
+    makePort("stopRecording", stopRecording);
 }
