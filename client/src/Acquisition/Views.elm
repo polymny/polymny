@@ -13,6 +13,8 @@ import Data.User exposing (User)
 import Device
 import Element exposing (Element)
 import Element.Font as Font
+import Html
+import Html.Attributes
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
@@ -43,8 +45,14 @@ view config user model =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        settings =
+            Element.column [ Ui.wf, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
+
         content =
-            Element.column [ Ui.p 10, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
+            Element.row [ Ui.wf, Ui.s 10, Ui.p 10 ]
+                [ Element.el [ Ui.wf, Ui.hf ] videoElement
+                , settings
+                ]
     in
     ( content, Element.none )
 
@@ -113,3 +121,8 @@ audioView preferredAudio audio =
                 Ui.None
     in
     makeButton [] { label = audio.label, action = action }
+
+
+videoElement : Element App.Msg
+videoElement =
+    Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] [])

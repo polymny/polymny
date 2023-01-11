@@ -148,6 +148,61 @@ function init(node, flags) {
 
         console.log("Detection finished");
         app.ports.detectDevicesResponse.send(response);
+        app.ports.detectDevicesFinished.send(null);
+    }
+
+    // Binds a device to the video.
+    async function bindDevice(settings) {
+        if (unbindRequested) {
+            unbindRequested = false;
+        }
+
+        if (bindingWebcam) {
+            return;
+        }
+
+        // Unbind webcam before rebinding it.
+        if (stream !== null) {
+            await unbindWebcam();
+        }
+
+        console.log("Binding webcam");
+        bindingWebcam = true;
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(settings.device);
+        } catch (e) {
+            app.ports.bindingWebcamFailed.send(null);
+            return;
+        }
+
+        if (unbindRequested) {
+            await unbindWebcam();
+        }
+
+        await playCurrentStream(true);
+
+    }
+
+    // Plays whathever is in stream in the video element.
+    async function playCurrentStream(muted = false) {
+        if (stream === null) {
+            return;
+        }
+
+        await new Promise(requestAnimationFrame);
+
+        let element = document.getElementById("video");
+
+        if (element == null) {
+            return;
+        }
+
+        element.focus();
+        element.srcObject = stream;
+        element.src = null;
+        element.muted = muted;
+        element.play();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -188,4 +243,5 @@ function init(node, flags) {
 
     // Detect video and audio devices.
     makePort("detectDevices", detectDevices);
+    makePort("bindDevice", bindDevice);
 }

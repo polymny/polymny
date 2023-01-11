@@ -102,6 +102,6 @@ subs m =
                     App.Preparation x ->
                         Preparation.subs x
 
-                    App.Acquisition _ ->
-                        Sub.none
+                    App.Acquisition x ->
+                        Acquisition.subs x
                 ]

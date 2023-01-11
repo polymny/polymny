@@ -294,6 +294,88 @@ getDevice devices untrustedPreferredDevice =
     { audio = audio, video = video }
 
 
+{-| Encodes the video device as an object representing the attributes that can be given to JavaScript in order to bind
+the device.
+-}
+encodeVideoSettings : Maybe ( Video, Resolution ) -> Encode.Value
+encodeVideoSettings video =
+    case video of
+        Just ( v, r ) ->
+            Encode.object
+                [ ( "deviceId", Encode.object [ ( "exact", Encode.string v.deviceId ) ] )
+                , ( "width", Encode.object [ ( "exact", Encode.int r.width ) ] )
+                , ( "height", Encode.object [ ( "exact", Encode.int r.height ) ] )
+                ]
+
+        _ ->
+            Encode.bool False
+
+
+{-| Encodes the audio device as an object representing the attributes that can be given to JavaScript in order to bind
+the device.
+-}
+encodeAudioSettings : Maybe Audio -> Encode.Value
+encodeAudioSettings audio =
+    case audio of
+        Just a ->
+            Encode.object [ ( "deviceId", Encode.object [ ( "exact", Encode.string a.deviceId ) ] ) ]
+
+        _ ->
+            Encode.bool False
+
+
+{-| Encodes the device as an object representing the attributes that can be given to JavaScript in order to bind the
+device.
+-}
+encodeDeviceSettings : Device -> Encode.Value
+encodeDeviceSettings device =
+    Encode.object
+        [ ( "video", encodeVideoSettings device.video )
+        , ( "audio", encodeAudioSettings device.audio )
+        ]
+
+
+{-| Encode the recording settings of the device as an object that can be given to JavaScript in order to record the
+device.
+-}
+encodeRecordingSettings : Device -> Encode.Value
+encodeRecordingSettings device =
+    case ( device.video, device.audio ) of
+        ( Just _, Just _ ) ->
+            Encode.object
+                [ ( "videoBitsPerSecond", Encode.int 2500000 )
+                , ( "audioBitsPerSecond", Encode.int 128000 )
+                , ( "mimeType", Encode.string "video/webm;codecs=opus,vp8" )
+                ]
+
+        ( Nothing, Just _ ) ->
+            Encode.object
+                [ ( "audioBitsPerSecond", Encode.int 128000 )
+                , ( "mimeType", Encode.string "video/webm;codecs=opus" )
+                ]
+
+        ( Just _, Nothing ) ->
+            Encode.object
+                [ ( "videoBitsPerSecond", Encode.int 2500000 )
+                , ( "mimeType", Encode.string "video/webm;codecs=vp8" )
+                ]
+
+        _ ->
+            Encode.object []
+
+
+{-| Encodes the full settings that can be given to JavaScript in order to bind the device and setup the recording.
+-}
+encodeSettings : Device -> Encode.Value
+encodeSettings device =
+    Encode.object
+        [ ( "device", encodeDeviceSettings device )
+        , ( "recording", encodeRecordingSettings device )
+        ]
+
+
+{-| Changes the available flag of the device depending on whether or not it is detected in the devices list.
+-}
 updateAvailable : Devices -> Device -> Device
 updateAvailable devices device =
     let
@@ -339,3 +421,15 @@ detectDevices =
 {-| Port where the javascript send the detected devices after detectDevices.
 -}
 port detectDevicesResponse : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Binds a device.
+-}
+bindDevice : Device -> Cmd msg
+bindDevice device =
+    bindDevicePort (encodeSettings device)
+
+
+{-| Port where the device is bound.
+-}
+port bindDevicePort : Encode.Value -> Cmd msg

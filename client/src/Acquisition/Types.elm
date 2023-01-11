@@ -14,6 +14,7 @@ import Device
 -}
 type State
     = DetectingDevices
+    | BindingWebcam
 
 
 {-| The type for the model of the acquisition page.
@@ -48,4 +49,4 @@ init gos capsule =
 {-| The message type of the module.
 -}
 type Msg
-    = None
+    = DetectDevicesFinished
