@@ -115,9 +115,12 @@ view config user model =
                         _ ->
                             Element.none
                 , Element.inFront <|
-                    case ( model.state == Acquisition.Ready, model.deviceLevel ) of
-                        ( True, Just level ) ->
-                            vumeter level
+                    case ( model.state == Acquisition.Ready, model.deviceLevel, model.showSettings ) of
+                        ( True, Just level, False ) ->
+                            vumeter 2 level
+
+                        ( True, Just level, True ) ->
+                            vumeter 4 level
 
                         _ ->
                             Element.none
@@ -255,8 +258,8 @@ videoElement =
     Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] [])
 
 
-vumeter : Float -> Element App.Msg
-vumeter value =
+vumeter : Int -> Float -> Element App.Msg
+vumeter ratio value =
     let
         maxLeds =
             10
@@ -276,10 +279,10 @@ vumeter value =
             in
             Element.el [ Ui.ab, Ui.wf, Ui.hf, Ui.b 1, Background.color color ] Element.none
     in
-    [ Element.el [ Ui.hf ] Element.none
+    [ Element.el [ Ui.hfp (ratio - 1) ] Element.none
     , List.range 0 maxLeds
         |> List.reverse
         |> List.map led
-        |> Element.column [ Ui.hf, Ui.s 2, Ui.wpx 20, Ui.ab ]
+        |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
