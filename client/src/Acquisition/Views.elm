@@ -69,7 +69,7 @@ view config user model =
             Element.column [ Ui.wf, Ui.at, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
 
         deviceInfo =
-            Element.column [ Ui.wf, Ui.px 10, Ui.s 10, Ui.at ]
+            Element.column [ Ui.wf, Ui.px 10, Ui.s 5, Ui.at ]
                 [ Ui.title (Strings.deviceWebcam lang)
                 , preferredVideo
                     |> Maybe.map Tuple.first
