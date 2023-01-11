@@ -16,6 +16,8 @@ import Element.Background as Background
 import Element.Font as Font
 import Html
 import Html.Attributes
+import Lang exposing (Lang)
+import Material.Icons
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -28,6 +30,9 @@ import Ui.Utils as Ui
 view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
+        lang =
+            config.clientState.lang
+
         videoTitle =
             Element.el [ Font.bold ] (Element.text "Video devices")
 
@@ -35,10 +40,10 @@ view config user model =
             Maybe.andThen .video config.clientConfig.preferredDevice
 
         disableVideo =
-            videoResolutionView preferredVideo Nothing
+            videoResolutionView lang preferredVideo Nothing
 
         video =
-            (disableVideo :: List.map (videoView preferredVideo) config.clientConfig.devices.video)
+            (disableVideo :: List.map (videoView lang preferredVideo) config.clientConfig.devices.video)
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
         audioTitle =
@@ -65,9 +70,15 @@ view config user model =
                                     ]
                                 )
 
+                         else if preferredVideo == Nothing then
+                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+                                (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                    [ Ui.icon 50 Material.Icons.videocam_off
+                                    ]
+                                )
+
                          else
-                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.transparent ]
-                                Element.none
+                            Element.none
                         )
                     ]
                     videoElement
@@ -77,14 +88,14 @@ view config user model =
     ( content, Element.none )
 
 
-videoView : Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
-videoView preferredVideo video =
+videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
+videoView lang preferredVideo video =
     Element.row [ Ui.s 10 ]
-        (Element.text video.label :: List.map (\x -> videoResolutionView preferredVideo (Just ( video, x ))) video.resolutions)
+        (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
 
 
-videoResolutionView : Maybe ( Device.Video, Device.Resolution ) -> Maybe ( Device.Video, Device.Resolution ) -> Element App.Msg
-videoResolutionView preferredVideo video =
+videoResolutionView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe ( Device.Video, Device.Resolution ) -> Element App.Msg
+videoResolutionView lang preferredVideo video =
     let
         isPreferredVideo =
             preferredVideo
@@ -113,7 +124,7 @@ videoResolutionView preferredVideo video =
                 Ui.None
     in
     makeButton []
-        { label = Maybe.map Tuple.second video |> Maybe.map Device.formatResolution |> Maybe.withDefault "Désactivé"
+        { label = Maybe.map Tuple.second video |> Maybe.map Device.formatResolution |> Maybe.withDefault (Strings.deviceDisabled lang)
         , action = action
         }
 
