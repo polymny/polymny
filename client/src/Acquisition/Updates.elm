@@ -26,10 +26,17 @@ update msg model =
         App.Acquisition m ->
             case msg of
                 Acquisition.DeviceChanged ->
-                    ( model, Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice) )
+                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam } }
+                    , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
+                    )
 
                 Acquisition.DetectDevicesFinished ->
-                    ( model, Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice) )
+                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam } }
+                    , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
+                    )
+
+                Acquisition.DeviceBound ->
+                    ( { model | page = App.Acquisition { m | state = Acquisition.Ready } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -39,7 +46,17 @@ update msg model =
 -}
 subs : Acquisition.Model -> Sub App.Msg
 subs model =
-    detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
+    Sub.batch
+        [ detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
+        , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)
+        ]
 
 
+{-| The detection of devices asked by elm is finished.
+-}
 port detectDevicesFinished : (() -> msg) -> Sub msg
+
+
+{-| The device binding is finished.
+-}
+port deviceBound : (() -> msg) -> Sub msg

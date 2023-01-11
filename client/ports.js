@@ -4,11 +4,17 @@ function init(node, flags) {
     //////////////////////////////////// GLOBAL VARIABLES FOR THE ACQUISITION PHASE ////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // The stream of the webcam.
+    // The stream of the device.
     let stream = null;
 
+    // Whether we are currently trying to detect the devices.
+    let detectingDevices = false;
+
+    // Whether we should redetect the devices when we're done because we've received an event stating that it changed.
+    let shouldRedetectDevices = false;
+
     // Wether the camera is currently being bound.
-    let bindingWebcam = false;
+    let bindingDevice = false;
 
     // Whether the user asked to unbind the camera while it was not unbindable.
     let unbindRequested = false;
@@ -19,7 +25,7 @@ function init(node, flags) {
     // The video that was recorded by the user's camera / microphone is available.
     let recordArrived = null;
 
-    // List of possible resolutions for webcams.
+    // List of possible resolutions for devices.
     const quickScan = [
         { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },
         { "width": 1280, "height":  720 }, { "width":  800, "height":  600 }, { "width":  640, "height":  480 },
@@ -49,14 +55,14 @@ function init(node, flags) {
     ///////////////////////////////////////////////// UTIL FUNCTIONS //////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Unbinds the webcam if the camera is bound.
-    function unbindWebcam() {
-        if (stream === null || bindingWebcam) {
+    // Unbinds the device if the camera is bound.
+    function unbindDevice() {
+        if (stream === null || bindingDevice) {
             unbindRequested = true;
             return;
         }
 
-        console.log("Unbinding webcam");
+        console.log("Unbinding device");
         stream.getTracks().forEach(function(track) {
             track.stop();
         });
@@ -74,7 +80,12 @@ function init(node, flags) {
     }
 
     // Detect the devices
-    async function detectDevices(args) {
+    async function detectDevices(elmAskedToDetectDevices = false) {
+        if (detectingDevices === true) {
+            shouldRedetectDevices = true;
+            return;
+        }
+
         let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices || { audio: [], video: [] };
 
         console.log("Detect devices");
@@ -91,12 +102,12 @@ function init(node, flags) {
                 if (oldDevice !== undefined) {
 
                     // If it were, no need to retry every possible resolution.
-                    console.log("Fetching parameters for webcam " + d.label + " from cache");
+                    console.log("Fetching parameters for device " + d.label + " from cache");
                     response.video.push(oldDevice);
                     continue;
                 }
 
-                console.log("Detecting parameters for webcam " + d.label);
+                console.log("Detecting parameters for device " + d.label);
                 let device = {
                     deviceId: d.deviceId,
                     groupId: d.groupId,
@@ -119,7 +130,7 @@ function init(node, flags) {
                     try {
                         console.log("Trying resolution " + res.width + "x" + res.height);
                         stream = await getUserMedia(options);
-                        unbindWebcam();
+                        unbindDevice();
                         console.log("Resolution " + res.width + "x" + res.height + " is working");
                         device.resolutions.push(res);
 
@@ -129,7 +140,7 @@ function init(node, flags) {
                     }
                 }
 
-                console.log("Detection of parameters for webcam " + d.label + " is finished");
+                console.log("Detection of parameters for device " + d.label + " is finished");
 
                 response.video.push(device);
 
@@ -142,7 +153,17 @@ function init(node, flags) {
 
         console.log("Detection finished");
         app.ports.detectDevicesResponse.send(response);
-        app.ports.detectDevicesFinished.send(null);
+
+        if (elmAskedToDetectDevices === true) {
+            app.ports.detectDevicesFinished.send(null);
+        }
+
+        if (shouldRedetectDevices) {
+            shouldRedetectDevices = false;
+            await detectDevices(false);
+        }
+
+        detectingDevices = false;
     }
 
     // Binds a device to the video.
@@ -151,27 +172,27 @@ function init(node, flags) {
             unbindRequested = false;
         }
 
-        if (bindingWebcam) {
+        if (bindingDevice) {
             return;
         }
 
-        // Unbind webcam before rebinding it.
+        // Unbind device before rebinding it.
         if (stream !== null) {
-            await unbindWebcam();
+            await unbindDevice();
         }
 
-        console.log("Binding webcam");
-        bindingWebcam = true;
+        console.log("Binding device");
+        bindingDevice = true;
 
         try {
             stream = await getUserMedia(settings.device);
         } catch (e) {
-            app.ports.bindingWebcamFailed.send(null);
+            app.ports.bindingDeviceFailed.send(null);
             return;
         }
 
         if (unbindRequested) {
-            await unbindWebcam();
+            await unbindDevice();
         }
 
         await playCurrentStream(true);
@@ -186,8 +207,9 @@ function init(node, flags) {
             console.log(err);
         };
 
-        bindingWebcam = false;
-        console.log("Webcam bound");
+        bindingDevice = false;
+        console.log("Device bound");
+        app.ports.deviceBound.send(null);
     }
 
     // Plays whathever is in stream in the video element.
@@ -208,7 +230,7 @@ function init(node, flags) {
         element.srcObject = stream;
         element.src = null;
         element.muted = muted;
-        element.play();
+        await element.play();
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,6 +270,6 @@ function init(node, flags) {
     });
 
     // Detect video and audio devices.
-    makePort("detectDevices", detectDevices);
+    makePort("detectDevices", () => detectDevices(true));
     makePort("bindDevice", bindDevice);
 }

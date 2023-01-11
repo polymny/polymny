@@ -1,4 +1,7 @@
-module Acquisition.Types exposing (Model, init, Msg(..))
+module Acquisition.Types exposing
+    ( Model, init, Msg(..)
+    , State(..)
+    )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
 
@@ -15,6 +18,7 @@ import Device
 type State
     = DetectingDevices
     | BindingWebcam
+    | Ready
 
 
 {-| The type for the model of the acquisition page.
@@ -51,3 +55,4 @@ init gos capsule =
 type Msg
     = DeviceChanged
     | DetectDevicesFinished
+    | DeviceBound

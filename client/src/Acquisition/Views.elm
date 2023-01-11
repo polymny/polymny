@@ -12,9 +12,12 @@ import Config exposing (Config)
 import Data.User exposing (User)
 import Device
 import Element exposing (Element)
+import Element.Background as Background
 import Element.Font as Font
 import Html
 import Html.Attributes
+import Strings
+import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
@@ -50,7 +53,24 @@ view config user model =
 
         content =
             Element.row [ Ui.wf, Ui.s 10, Ui.p 10 ]
-                [ Element.el [ Ui.wf, Ui.hf ] videoElement
+                [ Element.el
+                    [ Ui.wf
+                    , Ui.hf
+                    , Element.inFront
+                        (if model.state /= Acquisition.Ready then
+                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+                                (Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                                    , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
+                                    ]
+                                )
+
+                         else
+                            Element.el [ Ui.wf, Ui.hf, Background.color Colors.transparent ]
+                                Element.none
+                        )
+                    ]
+                    videoElement
                 , settings
                 ]
     in
