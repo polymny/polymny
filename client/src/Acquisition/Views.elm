@@ -27,8 +27,15 @@ import Ui.Utils as Ui
 
 
 {-| The view function for the preparation page.
+
+The first element of the tuple is the main content, the second element is the right column and the last element is an
+optional popup.
+
+We need to send the right column outside the content so that the parent caller can make the right column the same size
+as the left column.
+
 -}
-view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg )
+view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg, Element App.Msg )
 view config user model =
     let
         lang =
@@ -55,13 +62,19 @@ view config user model =
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
         settings =
-            Element.column [ Ui.wf, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
+            Element.column [ Ui.wf, Ui.at, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
 
         content =
             Element.row [ Ui.wf, Ui.s 10, Ui.p 10 ]
+                [ settings
+                ]
+
+        rightColumn =
+            Element.column
+                [ Ui.bl 1, Border.color Colors.greyBorder, Ui.hf, Ui.wf ]
                 [ Element.el
                     [ Ui.wf
-                    , Ui.hf
+                    , Ui.at
                     , Element.inFront
                         (case ( model.state /= Acquisition.Ready, preferredVideo, model.deviceLevel ) of
                             ( True, _, _ ) ->
@@ -87,10 +100,9 @@ view config user model =
                         )
                     ]
                     videoElement
-                , settings
                 ]
     in
-    ( content, Element.none )
+    ( content, rightColumn, Element.none )
 
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
@@ -181,14 +193,14 @@ vumeter value =
                         Colors.green2
 
                     else
-                        Colors.transparent
+                        Colors.white
             in
             Element.el [ Ui.ab, Ui.wf, Ui.hf, Ui.b 1, Background.color color ] Element.none
     in
-    [ Element.el [ Ui.hfp 3 ] Element.none
+    [ Element.el [ Ui.hf ] Element.none
     , List.range 0 maxLeds
         |> List.reverse
         |> List.map led
-        |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
+        |> Element.column [ Ui.hf, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
-        |> Element.column [ Ui.ar, Ui.ab, Ui.p 10, Ui.hf ]
+        |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]

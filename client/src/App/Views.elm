@@ -85,7 +85,7 @@ viewSuccess model =
 
         App.Acquisition m ->
             Acquisition.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gos)
+                |> Ui.addLeftAndRightColumn model.config.clientState.lang m.capsule (Just m.gos)
 
 
 {-| Returns the view if the model is in error.

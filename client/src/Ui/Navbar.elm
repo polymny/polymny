@@ -1,8 +1,8 @@
-module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn)
+module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeftAndRightColumn)
 
 {-| This module contains the definition for the nav bar of the polymny app.
 
-@docs navbar, bottombar, leftColumn, addLeftColumn
+@docs navbar, bottombar, leftColumn, addLeftColumn, addLeftAndRightColumn
 
 -}
 
@@ -171,7 +171,20 @@ addLeftColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> 
 addLeftColumn lang capsule selectedGos ( element, popup ) =
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
         [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang capsule selectedGos)
-        , Element.el [ Ui.wfp 7, Ui.hf, Element.scrollbarY ] element
+        , Element.el [ Ui.wfp 5, Ui.hf, Element.scrollbarY ] element
+        ]
+    , popup
+    )
+
+
+{-| Adds the left column to an already existing element with its own right column.
+-}
+addLeftAndRightColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftAndRightColumn lang capsule selectedGos ( element, rightColumn, popup ) =
+    ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
+        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang capsule selectedGos)
+        , Element.el [ Ui.wfp 4, Ui.hf, Element.scrollbarY ] element
+        , Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] rightColumn
         ]
     , popup
     )
