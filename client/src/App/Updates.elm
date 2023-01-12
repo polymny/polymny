@@ -118,9 +118,9 @@ subs m =
             Sub.batch
                 [ Device.detectDevicesResponse
                     (\x ->
-                        case Decode.decodeValue Device.decodeDevices x of
-                            Ok devices ->
-                                App.ConfigMsg (Config.DetectDevicesResponse devices)
+                        case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
+                            Ok ( devices, preferredDevice ) ->
+                                App.ConfigMsg (Config.DetectDevicesResponse devices preferredDevice)
 
                             _ ->
                                 App.Noop

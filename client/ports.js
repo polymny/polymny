@@ -42,10 +42,8 @@ function init(node, flags) {
 
     // List of possible resolutions for devices.
     const quickScan = [
-        { "width": 3840, "height": 2160 }, { "width": 1920, "height": 1080 }, { "width": 1600, "height": 1200 },
-        { "width": 1280, "height":  720 }, { "width":  800, "height":  600 }, { "width":  640, "height":  480 },
-        { "width":  640, "height":  360 }, { "width":  352, "height":  288 }, { "width":  320, "height":  240 },
-        { "width":  176, "height":  144 }, { "width":  160, "height":  120 }
+        { "width": 1920, "height": 1080 }, { "width": 1280, "height":  720 }, { "width":  800, "height":  600 },
+        { "width":  640, "height":  480 }, { "width":  640, "height":  360 }, { "width":  320, "height":  240 },
     ];
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,9 +114,7 @@ function init(node, flags) {
         }
 
         console.log("Unbinding device");
-        stream.getTracks().forEach(function(track) {
-            track.stop();
-        });
+        stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
 
@@ -129,12 +125,11 @@ function init(node, flags) {
     async function getUserMedia(args) {
         let response = await navigator.mediaDevices.getUserMedia(args);
         navigator.mediaDevices.ondevicechange = detectDevices;
-        startVuMeter(response);
         return response;
     }
 
     // Detect the devices
-    async function detectDevices(elmAskedToDetectDevices = false) {
+    async function detectDevices(elmAskedToDetectDevices = false, cameraDeviceId = null) {
         if (detectingDevices === true) {
             shouldRedetectDevices = true;
             return;
@@ -143,7 +138,26 @@ function init(node, flags) {
         let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices || { audio: [], video: [] };
 
         console.log("Detect devices");
+
         let devices = await navigator.mediaDevices.enumerateDevices();
+        let audioDeviceId = null;
+        let videoDeviceId = null;
+
+        if (devices.reduce((x, y) => x || y.label === "", false) || cameraDeviceId !== null) {
+            // We don't have authorization to the media devices, so we can't read the labels.
+            // This is not good at all, so we will ask for the media device permission.
+            let tmp = await getUserMedia({
+                video: cameraDeviceId === null ? true : { deviceId: { exact: cameraDeviceId } },
+                audio: cameraDeviceId === null,
+            });
+
+            audioDeviceId = cameraDeviceId === null ? tmp.getAudioTracks()[0].getSettings().deviceId : null;
+            videoDeviceId = tmp.getVideoTracks()[0].getSettings().deviceId;
+
+            devices = await navigator.mediaDevices.enumerateDevices();
+
+            tmp.getTracks().forEach(track => track.stop());
+        }
 
         let response = {audio: [], video: []};
 
@@ -153,10 +167,11 @@ function init(node, flags) {
             if (d.kind === 'videoinput') {
                 // Try to see if the device has already been detected before.
                 let oldDevice = oldDevices.video.filter(x => x.deviceId === d.deviceId)[0];
-                if (oldDevice !== undefined) {
+                if (oldDevice !== undefined && oldDevice.resolutions.length !== 0) {
 
                     // If it were, no need to retry every possible resolution.
                     console.log("Fetching parameters for device " + d.label + " from cache");
+                    oldDevice.label = d.label;
                     response.video.push(oldDevice);
                     continue;
                 }
@@ -170,28 +185,33 @@ function init(node, flags) {
                     available: true,
                 };
 
-                // Check all available resolutions for the video device.
-                for (let res of quickScan) {
-                    let options = {
-                        audio: false,
-                        video: {
-                            deviceId: { exact: d.deviceId },
-                            width: { exact: res.width },
-                            height: { exact: res.height },
-                        },
-                    };
+                if (d.deviceId === videoDeviceId) {
 
-                    try {
-                        console.log("Trying resolution " + res.width + "x" + res.height);
-                        stream = await getUserMedia(options);
-                        unbindDevice();
-                        console.log("Resolution " + res.width + "x" + res.height + " is working");
-                        device.resolutions.push(res);
+                    // Check all available resolutions for the video device.
+                    for (let res of quickScan) {
+                        let options = {
+                            audio: false,
+                            video: {
+                                deviceId: { exact: d.deviceId },
+                                width: { exact: res.width },
+                                height: { exact: res.height },
+                            },
+                        };
 
-                    } catch (err) {
-                        console.log("Resolution " + res.width + "x" + res.height + " is not working");
-                        // Just don't add it
+                        try {
+                            console.log("Trying resolution " + res.width + "x" + res.height);
+                            stream = await getUserMedia(options);
+                            unbindDevice();
+                            console.log("Resolution " + res.width + "x" + res.height + " is working");
+                            device.resolutions.push(res);
+
+                        } catch (err) {
+                            console.log("Resolution " + res.width + "x" + res.height + " is not working");
+                            console.log(err);
+                            // Just don't add it
+                        }
                     }
+
                 }
 
                 console.log("Detection of parameters for device " + d.label + " is finished");
@@ -206,7 +226,22 @@ function init(node, flags) {
         }
 
         console.log("Detection finished");
-        app.ports.detectDevicesResponse.send(response);
+
+        let audioDevice = response.audio.find(x => x.deviceId === audioDeviceId);
+        let videoDevice = response.video.find(x => x.deviceId === videoDeviceId);
+
+        console.log((videoDeviceId === null && cameraDeviceId === null) ? null : {
+            audio: audioDevice || null,
+            video: videoDevice ? [videoDevice, videoDevice.resolutions[0]] : null,
+        });
+
+        app.ports.detectDevicesResponse.send({
+            devices: response,
+            preferredDevice: (videoDeviceId === null && cameraDeviceId === null) ? null : {
+                audio: audioDevice || null,
+                video: videoDevice ? [videoDevice, videoDevice.resolutions[0]] : null,
+            }
+        });
 
         if (elmAskedToDetectDevices === true) {
             app.ports.detectDevicesFinished.send(null);
@@ -257,6 +292,8 @@ function init(node, flags) {
             // Maybe the user left the page before this function was done.
             // In that case, the elm client should request itself an unbindDevice, so we don't need to do a lot here.
         }
+
+        startVuMeter(stream);
 
         recorder = new MediaRecorder(stream, settings.recording);
         recorder.ondataavailable = (data) => {
@@ -438,7 +475,7 @@ function init(node, flags) {
     });
 
     // Detect video and audio devices.
-    makePort("detectDevices", () => detectDevices(true));
+    makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);
     makePort("registerEvent", registerEvent);

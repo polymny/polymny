@@ -180,6 +180,15 @@ decodeDevices =
         (Decode.field "audio" (Decode.list decodeAudio))
 
 
+{-| Decodes the devices as well as the preferred device.
+-}
+decodeDevicesAndPreferredDevice : Decoder ( Devices, Maybe Device )
+decodeDevicesAndPreferredDevice =
+    Decode.map2 Tuple.pair
+        (Decode.field "devices" decodeDevices)
+        (Decode.field "preferredDevice" (Decode.nullable decodeDevice))
+
+
 {-| Merges two sets of devices.
 
 The first set needs to be the set that has been detected previously, the second set is the set detected currently.
@@ -196,8 +205,8 @@ mergeDevices old new =
                 [] ->
                     { video | available = False }
 
-                _ ->
-                    { video | available = True }
+                h :: _ ->
+                    { h | available = True }
 
         -- Same thing with audio
         updateAudio : Audio -> Audio
@@ -206,8 +215,8 @@ mergeDevices old new =
                 [] ->
                     { audio | available = False }
 
-                _ ->
-                    { audio | available = True }
+                h :: _ ->
+                    { h | available = True }
 
         oldVideos =
             List.map updateVideo old.video
@@ -410,12 +419,12 @@ updateAvailable devices device =
 
 {-| Triggers a full detection of every device.
 -}
-port detectDevicesPort : () -> Cmd msg
+port detectDevicesPort : Maybe String -> Cmd msg
 
 
-detectDevices : Cmd msg
-detectDevices =
-    detectDevicesPort ()
+detectDevices : Maybe String -> Cmd msg
+detectDevices deviceId =
+    detectDevicesPort deviceId
 
 
 {-| Port where the javascript send the detected devices after detectDevices.

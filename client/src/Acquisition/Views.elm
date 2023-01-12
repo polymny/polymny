@@ -189,8 +189,15 @@ view config user model =
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
 videoView lang preferredVideo video =
-    Element.row [ Ui.s 5 ]
-        (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
+    if List.isEmpty video.resolutions then
+        Ui.secondary []
+            { label = video.label
+            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission video.deviceId
+            }
+
+    else
+        Element.row [ Ui.s 5 ]
+            (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
 
 
 videoResolutionView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe ( Device.Video, Device.Resolution ) -> Element App.Msg

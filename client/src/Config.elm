@@ -233,7 +233,7 @@ type Msg
     | ZoomLevelChanged Int
     | PromptSizeChanged Int
     | SortByChanged Data.SortBy
-    | DetectDevicesResponse Device.Devices
+    | DetectDevicesResponse Device.Devices (Maybe Device.Device)
     | SetAudio Device.Audio
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
 
@@ -288,13 +288,29 @@ update msg { serverConfig, clientConfig, clientState } =
                     , True
                     )
 
-                DetectDevicesResponse devices ->
+                DetectDevicesResponse devices preferredDevice ->
                     let
+                        currentPreferredDevice =
+                            Device.getDevice newDevices clientConfig.preferredDevice
+
                         newDevices =
                             Device.mergeDevices clientConfig.devices devices
 
                         newPreferredDevice =
-                            Device.getDevice newDevices clientConfig.preferredDevice
+                            preferredDevice
+                                |> Debug.log "preferredDevice"
+                                |> Maybe.withDefault currentPreferredDevice
+                                |> (\x ->
+                                        { x
+                                            | audio =
+                                                case x.audio of
+                                                    Nothing ->
+                                                        currentPreferredDevice.audio
+
+                                                    Just y ->
+                                                        Just y
+                                        }
+                                   )
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = { clientConfig | devices = newDevices, preferredDevice = Just newPreferredDevice }

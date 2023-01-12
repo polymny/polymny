@@ -97,7 +97,7 @@ init gos capsule =
               , currentSentence = 0
               , records = []
               }
-            , Device.detectDevices
+            , Device.detectDevices Nothing
             )
 
     else
@@ -116,3 +116,4 @@ type Msg
     | StopRecording
     | NextSentence
     | RecordArrived Record
+    | RequestCameraPermission String

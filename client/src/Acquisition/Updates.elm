@@ -28,6 +28,9 @@ update msg model =
     case model.page of
         App.Acquisition m ->
             case msg of
+                Acquisition.RequestCameraPermission deviceId ->
+                    ( { model | page = App.Acquisition { m | state = Acquisition.DetectingDevices } }, Device.detectDevices (Just deviceId) )
+
                 Acquisition.DeviceChanged ->
                     ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, deviceLevel = Nothing } }
                     , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
