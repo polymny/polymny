@@ -135,7 +135,8 @@ function init(node, flags) {
             return;
         }
 
-        let oldDevices = JSON.parse(localStorage.getItem('clientConfig')).devices || { audio: [], video: [] };
+        let clientConfig = JSON.parse(localStorage.getItem('clientConfig'));
+        let oldDevices = clientConfig.devices || { audio: [], video: [] };
 
         console.log("Detect devices");
 
@@ -143,11 +144,29 @@ function init(node, flags) {
         let audioDeviceId = null;
         let videoDeviceId = null;
 
-        if (devices.reduce((x, y) => x || y.label === "", false) || cameraDeviceId !== null) {
+        // Check if we already know these devices in the storage (oldDevices).
+        // let unkownDeviceExists = false;
+        // for (let availableDevice of devices) {
+        //     let key;
+
+        //     switch (availableDevice.kind) {
+        //         case "videoinput": key = "video"; break;
+        //         case "audioinput": key = "audio"; break;
+        //         default: console.warn("Unkown device kind: " + availableDevice.kind); continue;
+        //     }
+
+        //     let isKnown = oldDevices[key].find(knownDevice => availableDevice.deviceId === knownDevice.deviceId) === undefined;
+        //     if (!isKnown) {
+        //         unkownDeviceExists = true;
+        //         break;
+        //     }
+        // }
+
+        if (clientConfig.preferredDevice === undefined || cameraDeviceId !== null) {
             // We don't have authorization to the media devices, so we can't read the labels.
             // This is not good at all, so we will ask for the media device permission.
             let tmp = await getUserMedia({
-                video: cameraDeviceId === null ? true : { deviceId: { exact: cameraDeviceId } },
+                video: cameraDeviceId === null ? devices.filter(d => d.audiokind = "videoinput").length > 0 : { deviceId: { exact: cameraDeviceId } },
                 audio: cameraDeviceId === null,
             });
 
@@ -177,6 +196,7 @@ function init(node, flags) {
                 }
 
                 console.log("Detecting parameters for device " + d.label);
+
                 let device = {
                     deviceId: d.deviceId,
                     groupId: d.groupId,
@@ -229,11 +249,6 @@ function init(node, flags) {
 
         let audioDevice = response.audio.find(x => x.deviceId === audioDeviceId);
         let videoDevice = response.video.find(x => x.deviceId === videoDeviceId);
-
-        console.log((videoDeviceId === null && cameraDeviceId === null) ? null : {
-            audio: audioDevice || null,
-            video: videoDevice ? [videoDevice, videoDevice.resolutions[0]] : null,
-        });
 
         app.ports.detectDevicesResponse.send({
             devices: response,

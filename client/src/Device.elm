@@ -197,6 +197,24 @@ The first set needs to be the set that has been detected previously, the second 
 mergeDevices : Devices -> Devices -> Devices
 mergeDevices old new =
     let
+        -- Returns the strings that is not empty between the two.
+        notEmptyString : String -> String -> String
+        notEmptyString s1 s2 =
+            if String.isEmpty s1 then
+                s2
+
+            else
+                s1
+
+        -- Returns the list that is not empty between the two.
+        notEmptyList : List a -> List a -> List a
+        notEmptyList l1 l2 =
+            if List.isEmpty l1 then
+                l2
+
+            else
+                l1
+
         -- Updates the state of the video device (sets the available flag depending on if its has been currently
         -- detected).
         updateVideo : Video -> Video
@@ -206,7 +224,11 @@ mergeDevices old new =
                     { video | available = False }
 
                 h :: _ ->
-                    { h | available = True }
+                    { video
+                        | available = True
+                        , label = notEmptyString h.label video.label
+                        , resolutions = notEmptyList h.resolutions video.resolutions
+                    }
 
         -- Same thing with audio
         updateAudio : Audio -> Audio
@@ -216,7 +238,7 @@ mergeDevices old new =
                     { audio | available = False }
 
                 h :: _ ->
-                    { h | available = True }
+                    { audio | available = True, label = notEmptyString h.label audio.label }
 
         oldVideos =
             List.map updateVideo old.video

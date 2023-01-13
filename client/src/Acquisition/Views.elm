@@ -42,9 +42,6 @@ view config user model =
         lang =
             config.clientState.lang
 
-        videoTitle =
-            Element.el [ Font.bold ] <| Element.text <| Strings.deviceWebcam lang
-
         preferredVideo =
             Maybe.andThen .video config.clientConfig.preferredDevice
 
@@ -52,21 +49,47 @@ view config user model =
             Maybe.andThen .audio config.clientConfig.preferredDevice
 
         disableVideo =
-            videoResolutionView lang preferredVideo Nothing
+            videoView lang preferredVideo Nothing
+
+        videoTitle =
+            Ui.title (Strings.deviceWebcam lang)
 
         video =
-            (disableVideo :: List.map (videoView lang preferredVideo) config.clientConfig.devices.video)
+            (disableVideo :: List.map (\x -> videoView lang preferredVideo (Just x)) config.clientConfig.devices.video)
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        resolutionTitle =
+            if preferredVideo == Nothing then
+                Element.none
+
+            else
+                Ui.title (Strings.deviceResolution lang)
+
+        resolution =
+            case preferredVideo of
+                Just ( v, r ) ->
+                    List.map (videoResolutionView lang ( v, r )) v.resolutions
+                        |> Element.column [ Ui.s 10, Ui.pb 10 ]
+
+                _ ->
+                    Element.none
+
         audioTitle =
-            Element.el [ Font.bold ] <| Element.text <| Strings.deviceMicrophone lang
+            Ui.title (Strings.deviceMicrophone lang)
 
         audio =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
         settings =
-            Element.column [ Ui.wf, Ui.at, Ui.s 10 ] [ videoTitle, video, audioTitle, audio ]
+            Element.column [ Ui.wf, Ui.at, Ui.s 10 ]
+                [ videoTitle
+                , video
+                , resolutionTitle
+                , resolution
+                , audioTitle
+                , audio
+                ]
 
         deviceInfo =
             Element.column [ Ui.wf, Ui.px 10, Ui.s 5, Ui.at ]
@@ -187,50 +210,81 @@ view config user model =
     ( Element.none, rightColumn, settingsPopup )
 
 
-videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Device.Video -> Element App.Msg
+videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe Device.Video -> Element App.Msg
 videoView lang preferredVideo video =
-    if List.isEmpty video.resolutions then
-        Ui.secondary []
-            { label = video.label
-            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission video.deviceId
-            }
-
-    else
-        Element.row [ Ui.s 5 ]
-            (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
-
-
-videoResolutionView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe ( Device.Video, Device.Resolution ) -> Element App.Msg
-videoResolutionView lang preferredVideo video =
     let
-        isPreferredVideo =
-            preferredVideo
-                |> Maybe.map Tuple.first
-                |> Maybe.map .deviceId
-                |> (==) (Maybe.map .deviceId <| Maybe.map Tuple.first video)
-
-        isPreferredVideoAndResolution =
-            preferredVideo
-                |> Maybe.map Tuple.second
-                |> (==) (Maybe.map Tuple.second video)
-                |> (&&) isPreferredVideo
-
-        makeButton =
-            if isPreferredVideoAndResolution then
+        mkButton =
+            if Maybe.map .deviceId video == (preferredVideo |> Maybe.map Tuple.first |> Maybe.map .deviceId) then
                 Ui.primary
 
             else
                 Ui.secondary
 
         action =
-            if Maybe.map .available (Maybe.map Tuple.first video) |> Maybe.withDefault True then
-                Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| video
+            case Maybe.map (\x -> ( x, x.resolutions )) video of
+                Nothing ->
+                    Ui.Msg <| App.ConfigMsg <| Config.SetVideo Nothing
+
+                Just ( v, [] ) ->
+                    Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission v.deviceId
+
+                Just ( v, r :: _ ) ->
+                    Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( v, r )
+
+        button =
+            mkButton []
+                { label = Maybe.map .label video |> Maybe.withDefault (Strings.deviceDisabled lang)
+                , action = action
+                }
+    in
+    button
+
+
+
+--case Maybe.map .resolutions video of
+--    Just (h :: _) ->
+--        (if (preferredVideo |> Maybe.map Tuple.first |> Maybe.map .deviceId) == Maybe.map .deviceId video then
+--            Ui.primary
+--         else
+--            Ui.secondary
+--        )
+--            []
+--            { label = video |> Maybe.map .label |> Maybe.withDefault (Strings.deviceDisabled lang)
+--            , action =
+--                if video.available then
+--                    Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( video, h )
+--                else
+--                    Ui.None
+--            }
+--    _ ->
+--        Ui.secondary []
+--            { label = video.label
+--            , action =
+--                if video.available then
+--                    Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission video.deviceId
+--                else
+--                    Ui.None
+--            }
+-- else
+--     Element.row [ Ui.s 5 ]
+--         (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
+
+
+videoResolutionView : Lang -> ( Device.Video, Device.Resolution ) -> Device.Resolution -> Element App.Msg
+videoResolutionView lang ( preferredVideo, preferredResolution ) resolution =
+    let
+        makeButton =
+            if preferredResolution == resolution then
+                Ui.primary
 
             else
-                Ui.None
+                Ui.secondary
+
+        action =
+            Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( preferredVideo, resolution )
     in
     makeButton []
-        { label = Maybe.map Tuple.second video |> Maybe.map Device.formatResolution |> Maybe.withDefault (Strings.deviceDisabled lang)
+        { label = Device.formatResolution resolution
         , action = action
         }
 
