@@ -14,6 +14,7 @@ import App.Types as App
 import Data.Capsule as Data
 import Device
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Keyboard
 
 
@@ -60,6 +61,25 @@ update msg model =
                 Acquisition.StopRecording ->
                     ( { model | page = App.Acquisition { m | recording = False, currentSlide = 0, currentSentence = 0 } }
                     , stopRecording
+                    )
+
+                Acquisition.PlayRecord record ->
+                    ( { model | page = App.Acquisition { m | recordPlaying = Just record, currentSlide = 0, currentSentence = 0 } }
+                    , playRecord record
+                    )
+
+                Acquisition.PlayRecordFinished ->
+                    ( { model
+                        | page =
+                            App.Acquisition
+                                { m
+                                    | state = Acquisition.BindingWebcam
+                                    , recordPlaying = Nothing
+                                    , currentSlide = 0
+                                    , currentSentence = 0
+                                }
+                      }
+                    , Cmd.none
                     )
 
                 Acquisition.NextSentence ->
@@ -140,6 +160,7 @@ subs model =
         [ detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
         , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)
         , deviceLevel (\x -> App.AcquisitionMsg (Acquisition.DeviceLevel x))
+        , playRecordFinished (\_ -> App.AcquisitionMsg Acquisition.PlayRecordFinished)
         , recordArrived <|
             \x ->
                 case Decode.decodeValue Acquisition.decodeRecord x of
@@ -209,3 +230,20 @@ port stopRecordingPort : () -> Cmd msg
 {-| Receives the record when they're finished.
 -}
 port recordArrived : (Decode.Value -> msg) -> Sub msg
+
+
+{-| Asks to play a specific record.
+-}
+playRecord : Acquisition.Record -> Cmd msg
+playRecord record =
+    playRecordPort (Acquisition.encodeRecord record)
+
+
+{-| Port that starts the playing of a record.
+-}
+port playRecordPort : Encode.Value -> Cmd msg
+
+
+{-| Sub to know when the playing of a record is finished.
+-}
+port playRecordFinished : (() -> msg) -> Sub msg

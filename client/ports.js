@@ -7,6 +7,9 @@ function init(node, flags) {
     // The stream of the device.
     let stream = null;
 
+    // The device the stream is using.
+    let currentSettings = null;
+
     // Whether we are currently trying to detect the devices.
     let detectingDevices = false;
 
@@ -39,6 +42,9 @@ function init(node, flags) {
 
     // The microphone vu meter.
     let vuMeter = null;
+
+    // The id of the video element.
+    const videoId = "video";
 
     // List of possible resolutions for devices.
     const quickScan = [
@@ -116,6 +122,7 @@ function init(node, flags) {
         console.log("Unbinding device");
         stream.getTracks().forEach(track => track.stop());
         stream = null;
+        currentSettings = null;
     }
 
     // Wrapper for the getUserMedia function.
@@ -281,20 +288,23 @@ function init(node, flags) {
             return;
         }
 
-        // Unbind device before rebinding it.
-        if (stream !== null) {
-            await unbindDevice();
-        }
+        // If device changed, unbind previous device before binding the new one.
+        if (JSON.stringify(settings) !== JSON.stringify(currentSettings)) {
+            if (stream !== null) {
+                await unbindDevice();
+            }
 
-        console.log("Binding device");
-        bindingDevice = true;
+            console.log("Binding device");
+            bindingDevice = true;
 
-        try {
-            stream = await getUserMedia(settings.device);
-        } catch (e) {
-            console.log(e);
-            app.ports.bindingDeviceFailed.send(null);
-            return;
+            try {
+                stream = await getUserMedia(settings.device);
+                currentSettings = settings;
+            } catch (e) {
+                console.log(e);
+                app.ports.bindingDeviceFailed.send(null);
+                return;
+            }
         }
 
         if (unbindRequested) {
@@ -343,7 +353,7 @@ function init(node, flags) {
 
         await new Promise(requestAnimationFrame);
 
-        let element = document.getElementById("video");
+        let element = document.getElementById(videoId);
 
         if (element == null) {
             return;
@@ -453,6 +463,110 @@ function init(node, flags) {
         });
     }
 
+    // Plays a specific record.
+    async function playRecord(record) {
+        // let pointerCanvas;
+        let video = document.getElementById(videoId);
+        video.srcObject = null;
+        video.muted = false;
+
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+            video.src = record.webcam_blob;
+        } else {
+            video.src = URL.createObjectURL(record.webcam_blob);
+        }
+
+        video.onended = () => {
+            app.ports.playRecordFinished.send(null);
+            bindDevice(currentSettings);
+            // let extra = document.getElementById('extra');
+            // if (extra instanceof HTMLVideoElement) {
+            //     extra.pause();
+            //     extra.currentTime = 0;
+            // }
+            // app.ports.playRecordFinished.send(null);
+        };
+
+        // Manage pointer
+        // if (record.pointer_blob !== null) {
+        //     pointerCanvas = document.getElementById('pointer-canvas');
+
+        //     if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
+        //         pointerVideo.src = record.pointer_blob;
+        //     } else {
+        //         pointerVideo.src = URL.createObjectURL(record.pointer_blob);
+        //     }
+        // }
+
+        // Manage slides
+        // // Skip last transition which is the end of the video.
+        // for (let i = 0; i < record.events.length - 1; i++) {
+        //     let event = record.events[i];
+        //     let callback;
+        //     switch (event.ty) {
+        //         case "next_slide":
+        //             callback = () => app.ports.nextSlideReceived.send(null);
+        //             break;
+
+        //         case "play":
+        //             callback = () => {
+        //                 let extra = document.getElementById('extra');
+        //                 extra.muted = true;
+        //                 extra.currentTime = 0;
+        //                 extra.play();
+        //             };
+        //             break;
+
+        //         case "stop":
+        //             callback = () => {
+        //                 let extra = document.getElementById('extra');
+        //                 extra.currentTime = 0;
+        //                 extra.stop();
+        //             };
+        //             break;
+        //     }
+
+        //     if (callback !== undefined) {
+        //         nextSlideCallbacks.push(setTimeout(callback, event.time));
+        //     }
+        // }
+
+        video.play();
+
+        // Render pointer
+        // if (pointerCanvas !== undefined) {
+        //     pointerVideo.play();
+        //     renderPointer();
+        // }
+
+        // function renderPointer() {
+        //     if (video.paused || video.ended) {
+        //         ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+        //         return;
+        //     }
+
+        //     tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+        //     tmpCtx.drawImage(pointerVideo, 0, 0);
+        //     let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+        //     let length = frame.data.length;
+        //     let data = frame.data;
+
+        //     for (let i = 0; i < length; i += 4) {
+        //         let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
+        //         let threshold = channelAvg > 50;
+        //         if (!threshold) {
+        //             data[i+3] = 0;
+        //         }
+        //     }
+
+        //     ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+        //     ctx.putImageData(frame, 0, 0);
+
+        //     requestAnimationFrame(renderPointer);
+
+        // }
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -496,4 +610,5 @@ function init(node, flags) {
     makePort("registerEvent", registerEvent);
     makePort("startRecording", startRecording);
     makePort("stopRecording", stopRecording);
+    makePort("playRecord", playRecord);
 }

@@ -167,6 +167,16 @@ view config user model =
                         [ Element.text (String.fromInt (index + 1))
                         , Element.column [ Ui.wf ]
                             [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
+                        , Ui.primaryIcon []
+                            { icon =
+                                if model.recordPlaying == Just record then
+                                    Material.Icons.stop
+
+                                else
+                                    Material.Icons.play_arrow
+                            , tooltip = ""
+                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
+                            }
                         ]
 
         rightColumn =

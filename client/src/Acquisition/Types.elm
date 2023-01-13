@@ -32,6 +32,7 @@ type alias Model =
     , currentSlide : Int
     , currentSentence : Int
     , records : List Record
+    , recordPlaying : Maybe Record
     }
 
 
@@ -96,6 +97,7 @@ init gos capsule =
               , currentSlide = 0
               , currentSentence = 0
               , records = []
+              , recordPlaying = Nothing
               }
             , Device.detectDevices Nothing
             )
@@ -116,4 +118,6 @@ type Msg
     | StopRecording
     | NextSentence
     | RecordArrived Record
+    | PlayRecordFinished
+    | PlayRecord Record
     | RequestCameraPermission String
