@@ -125,6 +125,15 @@ subs m =
                             _ ->
                                 App.Noop
                     )
+                , Config.taskProgress
+                    (\x ->
+                        case Decode.decodeValue Config.decodeTaskStatus x of
+                            Ok task ->
+                                App.ConfigMsg (Config.UpdateTaskStatus task)
+
+                            _ ->
+                                App.Noop
+                    )
                 , case model.page of
                     App.Home ->
                         Home.subs

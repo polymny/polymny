@@ -11,7 +11,8 @@ port module Acquisition.Updates exposing
 
 import Acquisition.Types as Acquisition
 import App.Types as App
-import Data.Capsule as Data
+import Config
+import Data.Capsule as Data exposing (Capsule)
 import Device
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -136,6 +137,18 @@ update msg model =
                 Acquisition.RecordArrived record ->
                     ( { model | page = App.Acquisition { m | records = record :: m.records } }, Cmd.none )
 
+                Acquisition.UploadRecord record ->
+                    ( { model
+                        | config =
+                            Config.addTask
+                                { task = Config.UploadRecord m.capsule.id m.gos (Acquisition.encodeRecord record)
+                                , progress = Just 0.0
+                                }
+                                model.config
+                      }
+                    , uploadRecord m.capsule m.gos record
+                    )
+
         _ ->
             ( model, Cmd.none )
 
@@ -247,3 +260,15 @@ port playRecordPort : Encode.Value -> Cmd msg
 {-| Sub to know when the playing of a record is finished.
 -}
 port playRecordFinished : (() -> msg) -> Sub msg
+
+
+{-| Uploadds a record to the server.
+-}
+uploadRecord : Capsule -> Int -> Acquisition.Record -> Cmd msg
+uploadRecord capsule gos record =
+    uploadRecordPort ( capsule.id, gos, Acquisition.encodeRecord record )
+
+
+{-| Port to upload a record.
+-}
+port uploadRecordPort : ( String, Int, Encode.Value ) -> Cmd msg

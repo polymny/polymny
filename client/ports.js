@@ -74,6 +74,47 @@ function init(node, flags) {
     ///////////////////////////////////////////////// UTIL FUNCTIONS //////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // dbg! like in rust (logs and returns the value).
+    function dbg(arg) {
+        console.log(arg);
+        return arg;
+    }
+
+    // Make setTimeout with async/await.
+    function sleep(duration) {
+        return new Promise(function(resolve, reject) {
+            setTimeout(resolve, duration);
+        })
+    }
+
+    // Make XML HTTP requests with async/await.
+    function makeRequest(method, url, data, onprogress) {
+        return new Promise(function (resolve, reject) {
+            let xhr = new XMLHttpRequest();
+            xhr.open(method, url, true);
+            xhr.onload = function () {
+                if (this.status >= 200 && this.status < 300) {
+                    resolve(xhr);
+                } else {
+                    reject({
+                        status: this.status,
+                        statusText: xhr.statusText
+                    });
+                }
+            };
+            xhr.onerror = function () {
+                reject({
+                    status: this.status,
+                    statusText: xhr.statusText
+                });
+            };
+            if (typeof onprogress === 'function') {
+                xhr.upload.onprogress = onprogress;
+            }
+            xhr.send(data);
+        });
+    }
+
     // The class that holds all the necessary elements for measuring sound input level.
     class VuMeter {
         constructor(stream) {
@@ -567,6 +608,44 @@ function init(node, flags) {
         // }
     }
 
+    // Uploads a record to the server.
+    async function uploadRecord(args) {
+        console.log(args);
+        let capsuleId = args[0];
+        let gos = args[1];
+        let record = args[2];
+
+        console.log("upload record");
+        let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+            app.ports.taskProgress.send({
+                "task": {
+                    "type": "UploadRecord",
+                    "capsuleId": capsuleId,
+                    "gos": gos,
+                    "value": record,
+                },
+                "progress": 0.01 // e.loaded / e.total
+            });
+        });
+
+        // Debug thingy where we pretend the request is slow.
+        for (let i = 1; i <= 10; i++) {
+            await sleep(200);
+            app.ports.taskProgress.send({
+                "task": {
+                    "type": "UploadRecord",
+                    "capsuleId": capsuleId,
+                    "gos": gos,
+                    "value": record,
+                },
+                "progress": i / 10,
+            });
+        }
+
+        let capsule = JSON.parse(xhr.responseText);
+        // app.ports.capsuleUpdated.send(capsule);
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,4 +690,5 @@ function init(node, flags) {
     makePort("startRecording", startRecording);
     makePort("stopRecording", stopRecording);
     makePort("playRecord", playRecord);
+    makePort("uploadRecord", uploadRecord);
 }

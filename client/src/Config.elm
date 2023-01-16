@@ -1,11 +1,12 @@
 port module Config exposing
-    ( Config, incrementRequest
+    ( Config, incrementRequest, addTask
     , ServerConfig, decodeServerConfig
     , ClientConfig, defaultClientConfig, encodeClientConfig, decodeClientConfig
-    , ClientState, initClientState
+    , ClientState, initClientState, Task(..), TaskStatus
     , Msg(..)
     , update
     , saveStorage
+    , decodeTaskStatus, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -13,7 +14,7 @@ port module Config exposing
 It defines the [`Config`](#Config) type which contain a lot of information that can be useful and that will be available
 at all times in the client.
 
-@docs Config, incrementRequest
+@docs Config, incrementRequest, addTask
 
 
 # Server configuration
@@ -28,7 +29,7 @@ at all times in the client.
 
 # Client state
 
-@docs ClientState, initClientState
+@docs ClientState, initClientState, Task, TaskStatus
 
 
 # Messages
@@ -187,7 +188,53 @@ type alias ClientState =
     , key : Browser.Navigation.Key
     , lang : Lang
     , lastRequest : Int
+    , tasks : List TaskStatus
     }
+
+
+{-| The tasks that are running in the background while the user is using the app.
+
+  - `UploadRecord` means that the user is uploading a record on a specific gos of a specific capsule.
+
+-}
+type Task
+    = UploadRecord String Int Encode.Value
+
+
+{-| Decodes a task.
+-}
+decodeTask : Decoder Task
+decodeTask =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\x ->
+                case x of
+                    "UploadRecord" ->
+                        Decode.map3 UploadRecord
+                            (Decode.field "capsuleId" Decode.string)
+                            (Decode.field "gos" Decode.int)
+                            (Decode.field "value" Decode.value)
+
+                    _ ->
+                        Decode.fail <| "type " ++ x ++ " not recognized as task type"
+            )
+
+
+{-| The status of a task, containing the task and its progress if available.
+-}
+type alias TaskStatus =
+    { task : Task
+    , progress : Maybe Float
+    }
+
+
+{-| Decodes a task status.
+-}
+decodeTaskStatus : Decoder TaskStatus
+decodeTaskStatus =
+    Decode.map2 TaskStatus
+        (Decode.field "task" decodeTask)
+        (Decode.maybe (Decode.field "progress" Decode.float))
 
 
 {-| Initializes a client state.
@@ -198,6 +245,7 @@ initClientState key lang =
     , zone = Time.utc
     , lang = Maybe.withDefault Lang.default lang
     , lastRequest = 0
+    , tasks = []
     }
 
 
@@ -225,6 +273,25 @@ incrementRequest config =
     { config | clientState = newClientState }
 
 
+{-| Adds an task to the config.
+-}
+addTask : TaskStatus -> Config -> Config
+addTask task { serverConfig, clientConfig, clientState } =
+    { serverConfig = serverConfig
+    , clientConfig = clientConfig
+    , clientState = { clientState | tasks = task :: clientState.tasks }
+    }
+
+
+{-| Returns true if the tasks correspond to the same task.
+-}
+compareTasks : Task -> Task -> Bool
+compareTasks t1 t2 =
+    case ( t1, t2 ) of
+        ( UploadRecord c1 g1 _, UploadRecord c2 g2 _ ) ->
+            c1 == c2 && g1 == g2
+
+
 {-| This type contains all the messages that trigger a modification of the config.
 -}
 type Msg
@@ -236,6 +303,7 @@ type Msg
     | DetectDevicesResponse Device.Devices (Maybe Device.Device)
     | SetAudio Device.Audio
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
+    | UpdateTaskStatus TaskStatus
 
 
 {-| This functions updates the config.
@@ -298,7 +366,6 @@ update msg { serverConfig, clientConfig, clientState } =
 
                         newPreferredDevice =
                             preferredDevice
-                                |> Debug.log "preferredDevice"
                                 |> Maybe.withDefault currentPreferredDevice
                                 |> (\x ->
                                         { x
@@ -349,6 +416,23 @@ update msg { serverConfig, clientConfig, clientState } =
                     , True
                     )
 
+                UpdateTaskStatus task ->
+                    let
+                        updateTask : TaskStatus -> TaskStatus -> TaskStatus
+                        updateTask t input =
+                            if compareTasks t.task input.task then
+                                t
+
+                            else
+                                input
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks }
+                      }
+                    , False
+                    )
+
         saveCmd =
             if saveRequired then
                 saveStorage newConfig.clientConfig
@@ -369,3 +453,8 @@ saveStorage clientConfig =
 {-| Port that sends the client config to javascript for saving in localstorage.
 -}
 port saveStoragePort : Encode.Value -> Cmd msg
+
+
+{-| Subscription that received progress on tasks.
+-}
+port taskProgress : (Encode.Value -> msg) -> Sub msg

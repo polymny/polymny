@@ -121,3 +121,4 @@ type Msg
     | PlayRecordFinished
     | PlayRecord Record
     | RequestCameraPermission String
+    | UploadRecord Record

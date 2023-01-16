@@ -178,6 +178,11 @@ view config user model =
                             , tooltip = ""
                             , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
                             }
+                        , Ui.primaryIcon []
+                            { icon = Material.Icons.done
+                            , tooltip = ""
+                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.UploadRecord record
+                            }
                         ]
 
         rightColumn =
@@ -269,7 +274,7 @@ view config user model =
         promptElement =
             case currentSentence of
                 Just s ->
-                    Element.column [ Ui.hf, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
+                    Element.column [ Ui.hfp 1, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
                         [ Element.paragraph [ Font.center, Font.size 40 ] [ Element.text s ]
                         , case nextSentence of
                             Just s2 ->
@@ -287,15 +292,21 @@ view config user model =
         slideElement =
             case currentSlide of
                 Just s ->
-                    Element.el [ Ui.wf, Ui.hf ] <|
-                        Element.image [ Ui.wf, Ui.cy, Border.color Colors.greyBorder, Ui.by 1 ]
-                            { description = "slide", src = Data.slidePath model.capsule s }
+                    Element.el
+                        [ Ui.wf
+                        , Ui.hfp 2
+                        , Border.color Colors.greyBorder
+                        , Ui.by 1
+                        , Background.uncropped
+                            (Data.slidePath model.capsule s)
+                        ]
+                        Element.none
 
                 _ ->
                     Element.none
 
         content =
-            Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+            Element.column [ Ui.wf, Ui.hf ]
                 [ promptElement, slideElement ]
     in
     ( content, rightColumn, settingsPopup )
