@@ -9,6 +9,7 @@ module Acquisition.Views exposing (view)
 import Acquisition.Types as Acquisition
 import App.Types as App
 import Config exposing (Config)
+import Data.Capsule as Data
 import Data.User exposing (User)
 import Device
 import Element exposing (Element)
@@ -216,8 +217,88 @@ view config user model =
 
             else
                 Element.none
+
+        slides : List Data.Slide
+        slides =
+            List.drop model.gos model.capsule.structure |> List.head |> Maybe.map .slides |> Maybe.withDefault []
+
+        currentSlide : Maybe Data.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide slides)
+
+        nextSlide : Maybe Data.Slide
+        nextSlide =
+            List.head (List.drop (model.currentSlide + 1) slides)
+
+        getLine : Int -> Data.Slide -> Maybe String
+        getLine n x =
+            List.head (List.drop n (String.split "\n" x.prompt))
+
+        currentSentence : Maybe String
+        currentSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
+
+        nextSentenceCurrentSlide : Maybe String
+        nextSentenceCurrentSlide =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence + 1)) currentSlide)
+
+        nextSentence : Maybe String
+        nextSentence =
+            let
+                tmp =
+                    nextSlide
+                        |> Maybe.map (\x -> List.head (String.split "\n" x.prompt))
+                        |> Maybe.withDefault Nothing
+            in
+            case nextSentenceCurrentSlide of
+                Nothing ->
+                    tmp
+
+                x ->
+                    x
+
+        nextSlideIcon =
+            if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
+                Ui.icon 40 Material.Icons.arrow_circle_right
+                    |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
+
+            else
+                Element.none
+
+        promptElement : Element App.Msg
+        promptElement =
+            case currentSentence of
+                Just s ->
+                    Element.column [ Ui.hf, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
+                        [ Element.paragraph [ Font.center, Font.size 40 ] [ Element.text s ]
+                        , case nextSentence of
+                            Just s2 ->
+                                Element.paragraph [ Font.center, Font.size 40, Font.color (Colors.grey 5) ]
+                                    [ nextSlideIcon, Element.text s2 ]
+
+                            _ ->
+                                Element.none
+                        ]
+
+                _ ->
+                    Element.none
+
+        slideElement : Element App.Msg
+        slideElement =
+            case currentSlide of
+                Just s ->
+                    Element.el [ Ui.wf, Ui.hf ] <|
+                        Element.image [ Ui.wf, Ui.cy, Border.color Colors.greyBorder, Ui.by 1 ]
+                            { description = "slide", src = Data.slidePath model.capsule s }
+
+                _ ->
+                    Element.none
+
+        content =
+            Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+                [ promptElement, slideElement ]
     in
-    ( Element.none, rightColumn, settingsPopup )
+    ( content, rightColumn, settingsPopup )
 
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe Device.Video -> Element App.Msg

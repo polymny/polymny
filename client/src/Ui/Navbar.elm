@@ -156,7 +156,7 @@ leftColumn lang capsule selectedGos =
         [ Background.color Colors.greyBackground
         , Ui.p 10
         , Ui.br 1
-        , Border.color (Colors.grey 6)
+        , Border.color Colors.greyBorder
         , Ui.s 10
         , Ui.wf
         , Ui.hf
