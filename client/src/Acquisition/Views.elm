@@ -239,7 +239,11 @@ videoView lang preferredVideo video =
                     Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission v.deviceId
 
                 Just ( v, r :: _ ) ->
-                    Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( v, r )
+                    if v.available then
+                        Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( v, r )
+
+                    else
+                        Ui.None
 
         button =
             mkButton []
@@ -248,36 +252,6 @@ videoView lang preferredVideo video =
                 }
     in
     button
-
-
-
---case Maybe.map .resolutions video of
---    Just (h :: _) ->
---        (if (preferredVideo |> Maybe.map Tuple.first |> Maybe.map .deviceId) == Maybe.map .deviceId video then
---            Ui.primary
---         else
---            Ui.secondary
---        )
---            []
---            { label = video |> Maybe.map .label |> Maybe.withDefault (Strings.deviceDisabled lang)
---            , action =
---                if video.available then
---                    Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( video, h )
---                else
---                    Ui.None
---            }
---    _ ->
---        Ui.secondary []
---            { label = video.label
---            , action =
---                if video.available then
---                    Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission video.deviceId
---                else
---                    Ui.None
---            }
--- else
---     Element.row [ Ui.s 5 ]
---         (Element.text video.label :: List.map (\x -> videoResolutionView lang preferredVideo (Just ( video, x ))) video.resolutions)
 
 
 videoResolutionView : Lang -> ( Device.Video, Device.Resolution ) -> Device.Resolution -> Element App.Msg

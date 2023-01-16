@@ -249,11 +249,12 @@ promptPopup lang model slide =
                 }
             ]
         , Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
-            [ Input.text [ Ui.wf, Ui.hf ]
+            [ Input.multiline [ Ui.wf, Ui.hf ]
                 { label = Input.labelHidden (Strings.actionsEditPrompt lang)
                 , onChange = \x -> mkMsg (Preparation.PromptChanged Utils.Request { slide | prompt = x })
                 , placeholder = Nothing
                 , text = slide.prompt
+                , spellcheck = False
                 }
             , Element.row [ Ui.ar, Ui.s 10 ]
                 [ Ui.secondary []
