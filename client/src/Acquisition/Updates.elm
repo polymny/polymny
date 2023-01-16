@@ -26,6 +26,9 @@ update msg model =
     let
         clientConfig =
             model.config.clientConfig
+
+        clientState =
+            model.config.clientState
     in
     case model.page of
         App.Acquisition m ->
@@ -55,12 +58,16 @@ update msg model =
                     )
 
                 Acquisition.StartRecording ->
-                    ( { model | page = App.Acquisition { m | recording = True, currentSlide = 0, currentSentence = 0 } }
-                    , startRecording
-                    )
+                    if m.state == Acquisition.Ready then
+                        ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
+                        , startRecording
+                        )
+
+                    else
+                        ( model, Cmd.none )
 
                 Acquisition.StopRecording ->
-                    ( { model | page = App.Acquisition { m | recording = False, currentSlide = 0, currentSentence = 0 } }
+                    ( { model | page = App.Acquisition { m | recording = Nothing, currentSlide = 0, currentSentence = 0 } }
                     , stopRecording
                     )
 
@@ -102,35 +109,38 @@ update msg model =
 
                         lineNumber : Int
                         lineNumber =
-                            case currentSlide of
-                                Just j ->
-                                    List.length (String.split "\n" j.prompt)
-
-                                _ ->
-                                    0
+                            currentSlide
+                                |> Maybe.map .prompt
+                                |> Maybe.map (String.split "\n")
+                                |> Maybe.map List.length
+                                |> Maybe.withDefault 0
                     in
-                    case ( m.currentSentence + 1 < lineNumber, nextSlide, m.recording ) of
-                        ( _, _, False ) ->
+                    case ( ( m.currentSentence + 1 < lineNumber, nextSlide ), ( m.recording, m.state ) ) of
+                        ( ( _, _ ), ( Nothing, Acquisition.Ready ) ) ->
                             -- If not recording, start recording (useful for remotes)
-                            ( { model | page = App.Acquisition { m | recording = True, currentSlide = 0, currentSentence = 0 } }
+                            ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
                             , startRecording
                             )
 
-                        ( True, _, True ) ->
+                        ( ( _, _ ), ( Nothing, _ ) ) ->
+                            -- If not recording but device is not ready, do nothing
+                            ( model, Cmd.none )
+
+                        ( ( True, _ ), ( Just _, _ ) ) ->
                             -- If there is another line, go to the next line
                             ( { model | page = App.Acquisition { m | currentSentence = m.currentSentence + 1 } }
                             , registerEvent Data.NextSentence
                             )
 
-                        ( _, Just _, True ) ->
+                        ( ( _, Just _ ), ( Just _, _ ) ) ->
                             -- If there is no other line but a next slide, go to the next slide
                             ( { model | page = App.Acquisition { m | currentSlide = m.currentSlide + 1, currentSentence = 0 } }
                             , registerEvent Data.NextSlide
                             )
 
-                        ( _, _, True ) ->
+                        ( ( _, _ ), ( Just _, _ ) ) ->
                             -- If recording and end reach, stop recording
-                            ( { model | page = App.Acquisition { m | currentSlide = 0, currentSentence = 0, recording = False } }
+                            ( { model | page = App.Acquisition { m | currentSlide = 0, currentSentence = 0, recording = Nothing } }
                             , stopRecording
                             )
 

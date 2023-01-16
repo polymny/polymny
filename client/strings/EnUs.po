@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.0.1\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #. Verb to connect to the server.
 msgid "Login.login"
@@ -368,6 +368,14 @@ msgstr "Start recording"
 #. Action to record a video.
 msgid "Steps.Acquisition.record"
 msgstr "Record"
+
+#. The system is ready for recording.
+msgid "Steps.Acquisition.readyForRecording"
+msgstr "Ready for recording"
+
+#. The system is currently recording
+msgid "Steps.Acquisition.recording"
+msgstr "Recording"
 
 #. The recording is stopped.
 msgid "Steps.Acquisition.recordingStopped"

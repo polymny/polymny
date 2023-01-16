@@ -4,7 +4,7 @@ port module Config exposing
     , ClientConfig, defaultClientConfig, encodeClientConfig, decodeClientConfig
     , ClientState, initClientState, Task(..), TaskStatus
     , Msg(..)
-    , update
+    , update, subs
     , saveStorage
     , decodeTaskStatus, taskProgress
     )
@@ -39,7 +39,7 @@ at all times in the client.
 
 # Updates
 
-@docs update
+@docs update, subs
 
 
 # Ports
@@ -185,6 +185,7 @@ It is not in the client config since it cannot be persisted, and is recreated wi
 -}
 type alias ClientState =
     { zone : Time.Zone
+    , time : Time.Posix
     , key : Browser.Navigation.Key
     , lang : Lang
     , lastRequest : Int
@@ -243,6 +244,7 @@ initClientState : Browser.Navigation.Key -> Maybe Lang -> ClientState
 initClientState key lang =
     { key = key
     , zone = Time.utc
+    , time = Time.millisToPosix 0
     , lang = Maybe.withDefault Lang.default lang
     , lastRequest = 0
     , tasks = []
@@ -295,7 +297,9 @@ compareTasks t1 t2 =
 {-| This type contains all the messages that trigger a modification of the config.
 -}
 type Msg
-    = ZoneChanged Time.Zone
+    = Noop
+    | Time Time.Posix
+    | ZoneChanged Time.Zone
     | LangChanged Lang
     | ZoomLevelChanged Int
     | PromptSizeChanged Int
@@ -316,6 +320,22 @@ update msg { serverConfig, clientConfig, clientState } =
     let
         ( newConfig, saveRequired ) =
             case msg of
+                Noop ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = clientState
+                      }
+                    , False
+                    )
+
+                Time time ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | time = time }
+                      }
+                    , False
+                    )
+
                 ZoneChanged zone ->
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
@@ -441,6 +461,33 @@ update msg { serverConfig, clientConfig, clientState } =
                 Cmd.none
     in
     ( newConfig, saveCmd )
+
+
+{-| The subscriptions for the config.
+-}
+subs : Sub Msg
+subs =
+    Sub.batch
+        [ Time.every 500 Time
+        , Device.detectDevicesResponse
+            (\x ->
+                case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
+                    Ok ( devices, preferredDevice ) ->
+                        DetectDevicesResponse devices preferredDevice
+
+                    _ ->
+                        Noop
+            )
+        , taskProgress
+            (\x ->
+                case Decode.decodeValue decodeTaskStatus x of
+                    Ok task ->
+                        UpdateTaskStatus task
+
+                    _ ->
+                        Noop
+            )
+        ]
 
 
 {-| Port that sends the client config to javascript for saving in localstorage.

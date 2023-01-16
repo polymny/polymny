@@ -343,6 +343,14 @@ msgstr ""
 msgid "Steps.Acquisition.record"
 msgstr ""
 
+#. The system is ready for recording.
+msgid "Steps.Acquisition.readyForRecording"
+msgstr ""
+
+#. The system is currently recording
+msgid "Steps.Acquisition.recording"
+msgstr ""
+
 #. The recording is stopped.
 msgid "Steps.Acquisition.recordingStopped"
 msgstr ""

@@ -21,6 +21,7 @@ import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons
 import Strings
+import Time
 import TimeUtils
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -126,7 +127,7 @@ view config user model =
                     case ( model.state /= Acquisition.Ready, preferredVideo ) of
                         ( True, _ ) ->
                             [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                            , Element.text (Strings.stepsAcquisitionBindingWebcam config.clientState.lang)
+                            , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
                             ]
                                 |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
                                 |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
@@ -139,7 +140,7 @@ view config user model =
                         _ ->
                             Element.none
                 , Element.inFront <|
-                    case ( model.state == Acquisition.Ready, model.deviceLevel, model.showSettings ) of
+                    case ( model.state == Acquisition.Ready && model.recordPlaying == Nothing, model.deviceLevel, model.showSettings ) of
                         ( True, Just level, False ) ->
                             vumeter 2 level
 
@@ -288,6 +289,22 @@ view config user model =
                 _ ->
                     Element.none
 
+        statusElement : Element App.Msg
+        statusElement =
+            Element.row [ Ui.wf, Ui.p 10 ]
+                [ Element.el [ Ui.cx ] <|
+                    case model.recording of
+                        Just t ->
+                            Element.row [ Ui.s 10 ]
+                                [ Element.el [ Ui.class "blink", Font.color Colors.red ] (Element.text "⬤ REC")
+                                , Element.text (Lang.dots Strings.stepsAcquisitionRecording lang)
+                                , Element.text (TimeUtils.formatDuration (Time.posixToMillis config.clientState.time - Time.posixToMillis t))
+                                ]
+
+                        Nothing ->
+                            Element.text (Strings.stepsAcquisitionReadyForRecording lang)
+                ]
+
         slideElement : Element App.Msg
         slideElement =
             case currentSlide of
@@ -295,8 +312,6 @@ view config user model =
                     Element.el
                         [ Ui.wf
                         , Ui.hfp 2
-                        , Border.color Colors.greyBorder
-                        , Ui.by 1
                         , Background.uncropped
                             (Data.slidePath model.capsule s)
                         ]
@@ -307,7 +322,7 @@ view config user model =
 
         content =
             Element.column [ Ui.wf, Ui.hf ]
-                [ promptElement, slideElement ]
+                [ promptElement, statusElement, slideElement ]
     in
     ( content, rightColumn, settingsPopup )
 

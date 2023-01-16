@@ -6,7 +6,7 @@ module Ui.Utils exposing
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink
-    , id
+    , id, class
     )
 
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
@@ -49,7 +49,7 @@ module Ui.Utils exposing
 
 # HTML utilities
 
-@docs id
+@docs id, class
 
 -}
 
@@ -327,3 +327,10 @@ shrink length string =
 id : String -> Element.Attribute msg
 id name =
     Element.htmlAttribute (Html.Attributes.id name)
+
+
+{-| An alias for an HTML class.
+-}
+class : String -> Element.Attribute msg
+class name =
+    Element.htmlAttribute (Html.Attributes.class name)

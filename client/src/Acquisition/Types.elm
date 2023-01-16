@@ -10,6 +10,7 @@ import Data.Capsule as Data exposing (Capsule)
 import Device
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Time
 
 
 {-| The different state of loading in which the acquisition page can be.
@@ -28,7 +29,7 @@ type alias Model =
     , state : State
     , deviceLevel : Maybe Float
     , showSettings : Bool
-    , recording : Bool
+    , recording : Maybe Time.Posix
     , currentSlide : Int
     , currentSentence : Int
     , records : List Record
@@ -93,7 +94,7 @@ init gos capsule =
               , state = DetectingDevices
               , deviceLevel = Nothing
               , showSettings = False
-              , recording = False
+              , recording = Nothing
               , currentSlide = 0
               , currentSentence = 0
               , records = []

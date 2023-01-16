@@ -1,6 +1,6 @@
 module Lang exposing
     ( Lang(..), fromString, toString
-    , default, other, question
+    , default, other, question, dots
     )
 
 {-| This module holds the lang type and the different strings represented in the different languages.
@@ -13,7 +13,7 @@ module Lang exposing
 
 # Utils functions
 
-@docs default, other, question
+@docs default, other, question, dots
 
 -}
 
@@ -94,3 +94,12 @@ question string lang =
 
         _ ->
             string lang ++ "?"
+
+
+{-| Adds three dots at the end of a string.
+-}
+dots : (Lang -> String) -> Lang -> String
+dots string lang =
+    case lang of
+        _ ->
+            string lang ++ "..."

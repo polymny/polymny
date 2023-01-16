@@ -116,24 +116,7 @@ subs m =
 
         Ok model ->
             Sub.batch
-                [ Device.detectDevicesResponse
-                    (\x ->
-                        case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
-                            Ok ( devices, preferredDevice ) ->
-                                App.ConfigMsg (Config.DetectDevicesResponse devices preferredDevice)
-
-                            _ ->
-                                App.Noop
-                    )
-                , Config.taskProgress
-                    (\x ->
-                        case Decode.decodeValue Config.decodeTaskStatus x of
-                            Ok task ->
-                                App.ConfigMsg (Config.UpdateTaskStatus task)
-
-                            _ ->
-                                App.Noop
-                    )
+                [ Sub.map App.ConfigMsg Config.subs
                 , case model.page of
                     App.Home ->
                         Home.subs
