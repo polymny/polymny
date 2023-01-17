@@ -448,7 +448,7 @@ update msg { serverConfig, clientConfig, clientState } =
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
-                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks }
+                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks |> Debug.log "tasks" }
                       }
                     , False
                     )

@@ -1,8 +1,11 @@
-module Ui.Colors exposing (green1, green2, green3, yellow, red, white, black, alpha, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground)
+module Ui.Colors exposing
+    ( green1, green2, green3, yellow, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
+    , redLight
+    )
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, red, white, black, alpha, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
+@docs green1, green2, green3, yellow, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
 
 -}
 
@@ -44,6 +47,34 @@ red =
     Element.rgb255 255 0 0
 
 
+{-| A lightened red.
+-}
+redLight : Element.Color
+redLight =
+    Element.rgb255 255 204 204
+
+
+{-| An orange color.
+-}
+orange : Element.Color
+orange =
+    Element.rgb255 255 165 0
+
+
+{-| A lightened orange.
+-}
+orangeLight : Element.Color
+orangeLight =
+    Element.rgb255 255 237 204
+
+
+{-| A lightened green 2.
+-}
+greenLight : Element.Color
+greenLight =
+    Element.rgb255 201 245 204
+
+
 {-| A pure white.
 -}
 white : Element.Color
@@ -70,6 +101,13 @@ transparent =
 alpha : Float -> Element.Color
 alpha value =
     Element.rgba 0 0 0 value
+
+
+{-| Changes the alpha on a color.
+-}
+alphaColor : Float -> Element.Color -> Element.Color
+alphaColor value color =
+    color |> Element.toRgb |> (\x -> { x | alpha = value }) |> Element.fromRgb
 
 
 {-| This function gives shades of grey.

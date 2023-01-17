@@ -417,22 +417,35 @@ vumeter ratio value =
             10
 
         leds =
-            round (value / 75.0 * toFloat maxLeds)
+            round (value / 80.0 * toFloat maxLeds)
 
         led : Int -> Element App.Msg
         led index =
             let
                 color =
-                    if index < leds then
-                        Colors.green2
+                    case ( index > maxLeds - 3, index > maxLeds - 5, index >= leds ) of
+                        ( True, _, True ) ->
+                            Colors.redLight
 
-                    else
-                        Colors.white
+                        ( True, _, False ) ->
+                            Colors.red
+
+                        ( False, True, True ) ->
+                            Colors.orangeLight
+
+                        ( False, True, False ) ->
+                            Colors.orange
+
+                        ( _, _, True ) ->
+                            Colors.greenLight
+
+                        _ ->
+                            Colors.green2
             in
             Element.el [ Ui.ab, Ui.wf, Ui.hf, Ui.b 1, Background.color color ] Element.none
     in
     [ Element.el [ Ui.hfp (ratio - 1) ] Element.none
-    , List.range 0 maxLeds
+    , List.range 0 (maxLeds - 1)
         |> List.reverse
         |> List.map led
         |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
