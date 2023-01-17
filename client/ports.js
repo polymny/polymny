@@ -192,34 +192,16 @@ function init(node, flags) {
         let audioDeviceId = null;
         let videoDeviceId = null;
 
-        // Check if we already know these devices in the storage (oldDevices).
-        // let unkownDeviceExists = false;
-        // for (let availableDevice of devices) {
-        //     let key;
-
-        //     switch (availableDevice.kind) {
-        //         case "videoinput": key = "video"; break;
-        //         case "audioinput": key = "audio"; break;
-        //         default: console.warn("Unkown device kind: " + availableDevice.kind); continue;
-        //     }
-
-        //     let isKnown = oldDevices[key].find(knownDevice => availableDevice.deviceId === knownDevice.deviceId) === undefined;
-        //     if (!isKnown) {
-        //         unkownDeviceExists = true;
-        //         break;
-        //     }
-        // }
-
         if (clientConfig.preferredDevice === undefined || cameraDeviceId !== null) {
             // We don't have authorization to the media devices, so we can't read the labels.
             // This is not good at all, so we will ask for the media device permission.
             let tmp = await getUserMedia({
-                video: cameraDeviceId === null ? devices.filter(d => d.audiokind = "videoinput").length > 0 : { deviceId: { exact: cameraDeviceId } },
+                video: cameraDeviceId === null ? devices.filter(d => d.kind === "videoinput").length > 0 : { deviceId: { exact: cameraDeviceId } },
                 audio: cameraDeviceId === null,
             });
 
             audioDeviceId = cameraDeviceId === null ? tmp.getAudioTracks()[0].getSettings().deviceId : null;
-            videoDeviceId = tmp.getVideoTracks()[0].getSettings().deviceId;
+            videoDeviceId = devices.filter(d => d.kind === "videoinput").length > 0 ? tmp.getVideoTracks()[0].getSettings().deviceId : null;
 
             devices = await navigator.mediaDevices.enumerateDevices();
 
