@@ -35,6 +35,7 @@ trigger.
 -}
 type Action msg
     = Route Route
+    | NewTab String
     | Msg msg
     | None
 
@@ -156,6 +157,9 @@ navigationElement action attr label =
     case action of
         Route route ->
             Element.link attr { url = Route.toUrl route, label = label }
+
+        NewTab url ->
+            Element.newTabLink attr { url = url, label = label }
 
         Msg msg ->
             Input.button attr { onPress = Just msg, label = label }

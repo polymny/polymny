@@ -15,6 +15,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Lang exposing (Lang)
+import Material.Icons
 import Route exposing (Route)
 import Strings
 import Ui.Colors as Colors
@@ -137,6 +138,25 @@ leftColumn lang capsule selectedGos =
                         |> Element.text
                         |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
 
+                inFrontButtons =
+                    [ case Data.recordPath capsule gos of
+                        Just url ->
+                            Ui.primaryIcon []
+                                { action = Ui.NewTab url
+                                , icon = Material.Icons.theaters
+                                , tooltip = ""
+                                }
+
+                        _ ->
+                            Element.none
+                    , Ui.primaryIcon []
+                        { action = Ui.Route (Route.Acquisition capsule.id id)
+                        , icon = Material.Icons.videocam
+                        , tooltip = ""
+                        }
+                    ]
+                        |> Element.row [ Ui.p 5, Ui.ar, Ui.at, Ui.s 5 ]
+
                 borderColor =
                     if selectedGos == Just id then
                         Colors.green1
@@ -146,7 +166,12 @@ leftColumn lang capsule selectedGos =
             in
             Element.el [ Ui.wf ]
                 (Element.image
-                    [ Ui.wf, Ui.b 5, Border.color borderColor, Element.inFront inFrontLabel ]
+                    [ Ui.wf
+                    , Ui.b 5
+                    , Border.color borderColor
+                    , Element.inFront inFrontLabel
+                    , Element.inFront inFrontButtons
+                    ]
                     { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
                     , description = ""
                     }

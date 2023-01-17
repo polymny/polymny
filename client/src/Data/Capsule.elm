@@ -1,7 +1,7 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
     , Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..), eventTypeToString
-    , Slide, slidePath, videoPath, gosVideoPath, deleteSlide, updateSlide
+    , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
@@ -24,7 +24,7 @@ module Data.Capsule exposing
 
 ## Slides
 
-@docs Slide, slidePath, videoPath, gosVideoPath, deleteSlide, updateSlide
+@docs Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
 
 
 ## Records
@@ -150,6 +150,18 @@ decodeSlide =
 slidePath : Capsule -> Slide -> String
 slidePath capsule slide =
     assetPath capsule (slide.uuid ++ ".png")
+
+
+{-| Returns the path the the video record of a gos.
+-}
+recordPath : Capsule -> Gos -> Maybe String
+recordPath capsule gos =
+    case gos.record of
+        Just r ->
+            Just <| assetPath capsule (r.uuid ++ ".webm")
+
+        _ ->
+            Nothing
 
 
 {-| Returns the path to the video file of a produced capsule.
