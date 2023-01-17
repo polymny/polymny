@@ -287,7 +287,7 @@ view config user model =
                         [ Element.el [ Ui.cx, Font.center, Font.size 40 ]
                             (Input.multiline [ Background.color Colors.black, Ui.b 0 ]
                                 { label = Input.labelHidden ""
-                                , onChange = \_ -> App.Noop
+                                , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)
                                 , placeholder = Nothing
                                 , spellcheck = False
                                 , text = s

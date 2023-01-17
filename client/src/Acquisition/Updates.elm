@@ -10,6 +10,7 @@ port module Acquisition.Updates exposing
 -}
 
 import Acquisition.Types as Acquisition
+import Api.Capsule as Api
 import App.Types as App
 import Config
 import Data.Capsule as Data exposing (Capsule)
@@ -90,6 +91,49 @@ update msg model =
                                 }
                       }
                     , Cmd.none
+                    )
+
+                Acquisition.CurrentSentenceChanged sentence ->
+                    let
+                        slides : List Data.Slide
+                        slides =
+                            List.drop m.gos m.capsule.structure
+                                |> List.head
+                                |> Maybe.map .slides
+                                |> Maybe.withDefault []
+
+                        currentSlide : Maybe Data.Slide
+                        currentSlide =
+                            List.head (List.drop m.currentSlide slides)
+
+                        newPrompt : Maybe String
+                        newPrompt =
+                            case currentSlide of
+                                Just s ->
+                                    let
+                                        split =
+                                            String.split "\n" s.prompt
+
+                                        splitReplaced =
+                                            List.take m.currentSentence split
+                                                ++ (sentence :: List.drop (m.currentSentence + 1) split)
+                                    in
+                                    Just <| String.join "\n" splitReplaced
+
+                                _ ->
+                                    Nothing
+
+                        newCapsule : Capsule
+                        newCapsule =
+                            case ( currentSlide, newPrompt ) of
+                                ( Just s, Just p ) ->
+                                    Data.updateSlide { s | prompt = p } m.capsule
+
+                                _ ->
+                                    m.capsule
+                    in
+                    ( { model | page = App.Acquisition { m | capsule = newCapsule } }
+                    , Api.updateCapsule newCapsule (\_ -> App.Noop)
                     )
 
                 Acquisition.NextSentence shouldRecord ->

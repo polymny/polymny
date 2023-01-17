@@ -111,6 +111,7 @@ init gos capsule =
 -}
 type Msg
     = DeviceChanged
+    | CurrentSentenceChanged String
     | DetectDevicesFinished
     | DeviceBound
     | DeviceLevel Float
