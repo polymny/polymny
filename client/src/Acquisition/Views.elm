@@ -16,6 +16,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html
 import Html.Attributes
 import Lang exposing (Lang)
@@ -240,6 +241,10 @@ view config user model =
         getLine n x =
             List.head (List.drop n (String.split "\n" x.prompt))
 
+        previousSentence : Maybe String
+        previousSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence - 1)) currentSlide)
+
         currentSentence : Maybe String
         currentSentence =
             Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
@@ -279,14 +284,57 @@ view config user model =
 
                 ( _, Just s ) ->
                     Element.column [ Ui.hfp 1, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
-                        [ Element.paragraph [ Font.center, Font.size 40 ] [ Element.text s ]
+                        [ Element.el [ Ui.cx, Font.center, Font.size 40 ]
+                            (Input.multiline [ Background.color Colors.black, Ui.b 0 ]
+                                { label = Input.labelHidden ""
+                                , onChange = \_ -> App.Noop
+                                , placeholder = Nothing
+                                , spellcheck = False
+                                , text = s
+                                }
+                            )
                         , case nextSentence of
                             Just s2 ->
-                                Element.paragraph [ Font.center, Font.size 40, Font.color (Colors.grey 5) ]
-                                    [ nextSlideIcon, Element.text s2 ]
+                                Element.el [ Ui.cx, Font.center, Font.size 40, Font.color (Colors.grey 5) ]
+                                    (Input.multiline [ Font.center, Background.color Colors.black, Ui.b 0 ]
+                                        { label = Input.labelHidden ""
+                                        , onChange = \_ -> App.Noop
+                                        , placeholder = Nothing
+                                        , spellcheck = False
+                                        , text = s2
+                                        }
+                                    )
 
+                            -- [ nextSlideIcon, Element.text s2 ]
                             _ ->
                                 Element.none
+                        , Element.row
+                            [ Ui.ab
+                            , Ui.wf
+                            ]
+                            [ case ( model.recording, model.currentSentence > 0 ) of
+                                ( Nothing, True ) ->
+                                    Ui.navigationElement
+                                        (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                                        [ Ui.al ]
+                                        (Ui.icon 25 Material.Icons.navigate_before)
+
+                                _ ->
+                                    Element.none
+                            , if model.recording == Nothing then
+                                Ui.navigationElement
+                                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                                    [ Ui.ar ]
+                                    (if nextSentence /= Nothing then
+                                        Ui.icon 25 Material.Icons.navigate_next
+
+                                     else
+                                        Ui.icon 25 Material.Icons.replay
+                                    )
+
+                              else
+                                Element.none
+                            ]
                         ]
 
                 _ ->

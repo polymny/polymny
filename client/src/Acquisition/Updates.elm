@@ -18,6 +18,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Keyboard
 import Route
+import Time
 
 
 {-| The update function of the preparation page.
@@ -91,8 +92,24 @@ update msg model =
                     , Cmd.none
                     )
 
-                Acquisition.NextSentence ->
+                Acquisition.NextSentence shouldRecord ->
                     let
+                        cancelCommand : Cmd msg -> Cmd msg
+                        cancelCommand cmd =
+                            if shouldRecord then
+                                cmd
+
+                            else
+                                Cmd.none
+
+                        cancelRecording : Maybe Time.Posix -> Maybe Time.Posix
+                        cancelRecording input =
+                            if shouldRecord then
+                                input
+
+                            else
+                                m.recording
+
                         slides : List Data.Slide
                         slides =
                             List.drop m.gos m.capsule.structure
@@ -116,33 +133,49 @@ update msg model =
                                 |> Maybe.map List.length
                                 |> Maybe.withDefault 0
                     in
-                    case ( ( m.currentSentence + 1 < lineNumber, nextSlide ), ( m.recording, m.state ) ) of
-                        ( ( _, _ ), ( Nothing, Acquisition.Ready ) ) ->
+                    case ( ( m.currentSentence + 1 < lineNumber, nextSlide ), ( m.recording, m.state, shouldRecord ) ) of
+                        ( ( _, _ ), ( Nothing, Acquisition.Ready, True ) ) ->
                             -- If not recording, start recording (useful for remotes)
-                            ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
-                            , startRecording
+                            ( { model
+                                | page =
+                                    App.Acquisition
+                                        { m
+                                            | recording = Just clientState.time |> cancelRecording
+                                            , currentSlide = 0
+                                            , currentSentence = 0
+                                        }
+                              }
+                            , startRecording |> cancelCommand
                             )
 
-                        ( ( _, _ ), ( Nothing, _ ) ) ->
+                        ( ( _, _ ), ( Nothing, _, True ) ) ->
                             -- If not recording but device is not ready, do nothing
                             ( model, Cmd.none )
 
-                        ( ( True, _ ), ( Just _, _ ) ) ->
+                        ( ( True, _ ), ( _, _, _ ) ) ->
                             -- If there is another line, go to the next line
                             ( { model | page = App.Acquisition { m | currentSentence = m.currentSentence + 1 } }
-                            , registerEvent Data.NextSentence
+                            , registerEvent Data.NextSentence |> cancelCommand
                             )
 
-                        ( ( _, Just _ ), ( Just _, _ ) ) ->
+                        ( ( _, Just _ ), ( _, _, _ ) ) ->
                             -- If there is no other line but a next slide, go to the next slide
                             ( { model | page = App.Acquisition { m | currentSlide = m.currentSlide + 1, currentSentence = 0 } }
-                            , registerEvent Data.NextSlide
+                            , registerEvent Data.NextSlide |> cancelCommand
                             )
 
-                        ( ( _, _ ), ( Just _, _ ) ) ->
+                        ( ( _, _ ), ( _, _, _ ) ) ->
                             -- If recording and end reach, stop recording
-                            ( { model | page = App.Acquisition { m | currentSlide = 0, currentSentence = 0, recording = Nothing } }
-                            , stopRecording
+                            ( { model
+                                | page =
+                                    App.Acquisition
+                                        { m
+                                            | currentSlide = 0
+                                            , currentSentence = 0
+                                            , recording = Nothing |> cancelRecording
+                                        }
+                              }
+                            , stopRecording |> cancelCommand
                             )
 
                 Acquisition.RecordArrived record ->
@@ -179,7 +212,7 @@ shortcuts : Keyboard.RawKey -> App.Msg
 shortcuts msg =
     case Keyboard.rawValue msg of
         "ArrowRight" ->
-            App.AcquisitionMsg Acquisition.NextSentence
+            App.AcquisitionMsg <| Acquisition.NextSentence True
 
         _ ->
             App.Noop

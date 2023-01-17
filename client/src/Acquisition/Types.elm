@@ -117,7 +117,7 @@ type Msg
     | ToggleSettings
     | StartRecording
     | StopRecording
-    | NextSentence
+    | NextSentence Bool
     | RecordArrived Record
     | PlayRecordFinished
     | PlayRecord Record

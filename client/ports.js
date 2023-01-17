@@ -364,6 +364,10 @@ function init(node, flags) {
             return;
         }
 
+        if (unbindRequested) {
+            await unbindDevice();
+        }
+
         console.log("Device bound");
         app.ports.deviceBound.send(null);
     }
