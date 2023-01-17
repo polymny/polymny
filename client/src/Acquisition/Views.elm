@@ -273,8 +273,11 @@ view config user model =
 
         promptElement : Element App.Msg
         promptElement =
-            case currentSentence of
-                Just s ->
+            case ( Maybe.map .prompt currentSlide, currentSentence ) of
+                ( Just "", _ ) ->
+                    Element.none
+
+                ( _, Just s ) ->
                     Element.column [ Ui.hfp 1, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
                         [ Element.paragraph [ Font.center, Font.size 40 ] [ Element.text s ]
                         , case nextSentence of
