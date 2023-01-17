@@ -17,6 +17,7 @@ import Device
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Keyboard
+import Route
 
 
 {-| The update function of the preparation page.
@@ -148,15 +149,24 @@ update msg model =
                     ( { model | page = App.Acquisition { m | records = record :: m.records } }, Cmd.none )
 
                 Acquisition.UploadRecord record ->
-                    ( { model
-                        | config =
-                            Config.addTask
-                                { task = Config.UploadRecord m.capsule.id m.gos (Acquisition.encodeRecord record)
-                                , progress = Just 0.0
-                                }
-                                model.config
-                      }
-                    , uploadRecord m.capsule m.gos record
+                    let
+                        task =
+                            { task = Config.UploadRecord m.capsule.id m.gos (Acquisition.encodeRecord record)
+                            , progress = Just 0.0
+                            }
+
+                        nextRoute =
+                            if m.gos + 1 < List.length m.capsule.structure then
+                                Route.Acquisition m.capsule.id (m.gos + 1)
+
+                            else
+                                Route.Home
+                    in
+                    ( { model | config = Config.addTask task model.config }
+                    , Cmd.batch
+                        [ uploadRecord m.capsule m.gos record
+                        , Route.push model.config.clientState.key nextRoute
+                        ]
                     )
 
         _ ->
