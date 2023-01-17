@@ -33,7 +33,7 @@ jobs:
           override: true
       - name : Build client
         run: |
-            cd client && cp src/Log.elm.debug src/Log.elm && elm make src/Main.elm && elm make src/Unlogged.elm
+          cargo install --git https://github.com/polymny/potoelm && potoelm client/strings/ > client/src/Strings.elm && cd client && elm make src/Main.elm
       - name: Build server
         run: |
           cd server && cargo build --no-default-features
