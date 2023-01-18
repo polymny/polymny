@@ -32,7 +32,7 @@ update message model =
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
 
         ( App.UnloggedMsg msg, App.Unlogged m ) ->
-            Unlogged.update msg m |> Tuple.mapBoth App.Unlogged (Cmd.map App.UnloggedMsg)
+            Unlogged.update msg m
 
         _ ->
             ( model, Cmd.none )

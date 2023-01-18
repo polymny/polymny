@@ -4,9 +4,15 @@ module Unlogged.Views exposing (..)
 -}
 
 import Element exposing (Element)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
-import Lang exposing (Lang)
+import Http
+import Lang
+import RemoteData
 import Strings
+import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Unlogged.Types as Unlogged
@@ -44,36 +50,69 @@ view model =
             else
                 Element.none
 
-        buttonText : Lang -> String
+        buttonText : Element msg
         buttonText =
-            case model.page of
-                Unlogged.Login ->
-                    Strings.loginLogin
+            case ( model.page, model.validate ) of
+                ( _, RemoteData.Loading _ ) ->
+                    Ui.spinningSpinner [] 20
 
-                Unlogged.Register ->
-                    Strings.loginSignUp
+                ( Unlogged.Login, _ ) ->
+                    Strings.loginLogin lang |> Element.text
 
-                Unlogged.ForgotPassword ->
-                    Strings.loginRequestNewPassword
+                ( Unlogged.Register, _ ) ->
+                    Strings.loginSignUp lang |> Element.text
+
+                ( Unlogged.ForgotPassword, _ ) ->
+                    Strings.loginRequestNewPassword lang |> Element.text
+
+        formatError : Maybe String -> Element msg
+        formatError string =
+            case string of
+                Just s ->
+                    Element.el
+                        [ Ui.wf
+                        , Border.color Colors.red
+                        , Ui.b 1
+                        , Ui.r 5
+                        , Ui.p 10
+                        , Background.color Colors.redLight
+                        , Font.color Colors.red
+                        ]
+                        (Element.text s)
+
+                Nothing ->
+                    Element.none
+
+        errorMessage : Maybe String
+        errorMessage =
+            case model.validate of
+                RemoteData.Failure (Http.BadStatus 401) ->
+                    Just <| Strings.loginWrongPassword lang ++ "."
+
+                RemoteData.Failure _ ->
+                    Just <| Strings.loginUnknownError lang ++ "."
+
+                _ ->
+                    Nothing
     in
-    Element.column [ Ui.p 10, Ui.s 10, Ui.cx ]
-        [ layout [ Ui.s 10, Ui.cx ]
+    Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
+        [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
             [ only2 Unlogged.Login Unlogged.Register <|
-                Input.username [ Ui.cx ]
+                Input.username [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserUsername lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserUsername lang
                     , onChange = Unlogged.UsernameChanged
                     , text = model.username
                     }
             , only2 Unlogged.ForgotPassword Unlogged.Register <|
-                Input.email [ Ui.cx ]
+                Input.email [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
                     , onChange = Unlogged.EmailChanged
                     , text = model.password
                     }
             , only2 Unlogged.Login Unlogged.Register <|
-                password [ Ui.cx ]
+                password [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
                     , onChange = Unlogged.PasswordChanged
@@ -81,16 +120,16 @@ view model =
                     , show = False
                     }
             , only Unlogged.Register <|
-                Input.newPassword [ Ui.cx ]
+                Input.newPassword [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
                     , onChange = Unlogged.RepeatPasswordChanged
                     , text = model.password
                     , show = False
                     }
-            , Ui.primary [ Ui.cx ]
-                { action = Ui.None
-                , label = buttonText lang
+            , Ui.primaryGeneric [ Ui.cx, Ui.wf ]
+                { action = Ui.Msg Unlogged.ButtonClicked
+                , label = buttonText
                 }
             ]
         , only Unlogged.Login <|
@@ -104,4 +143,5 @@ view model =
                     , label = Lang.question Strings.loginNotRegisteredYet lang
                     }
                 ]
+        , formatError errorMessage
         ]

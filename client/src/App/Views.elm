@@ -57,7 +57,14 @@ viewContent fullModel =
                     viewSuccess model |> Tuple.mapBoth (Element.map App.LoggedMsg) (Element.map App.LoggedMsg)
 
                 App.Unlogged model ->
-                    ( Unlogged.view model |> Element.map App.UnloggedMsg, Element.none )
+                    ( Element.row [ Ui.wf ]
+                        [ Element.el [ Ui.wf ] Element.none
+                        , Element.el [ Ui.wf ] (Unlogged.view model)
+                        , Element.el [ Ui.wf ] Element.none
+                        ]
+                        |> Element.map App.UnloggedMsg
+                    , Element.none
+                    )
 
                 App.Error error ->
                     ( viewError error |> Element.map App.LoggedMsg, Element.none )

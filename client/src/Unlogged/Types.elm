@@ -4,6 +4,8 @@ module Unlogged.Types exposing (..)
 -}
 
 import Config exposing (Config)
+import Data.User as Data exposing (User)
+import RemoteData
 
 
 {-| The model for the login form.
@@ -14,7 +16,8 @@ type alias Model =
     , username : String
     , email : String
     , password : String
-    , confirmPassword : String
+    , repeatPassword : String
+    , validate : RemoteData.WebData User
     }
 
 
@@ -34,6 +37,8 @@ type Msg
     | PasswordChanged String
     | RepeatPasswordChanged String
     | PageChanged Page
+    | DataChanged (RemoteData.WebData User)
+    | ButtonClicked
 
 
 {-| Initializes the unlogged model.
@@ -45,5 +50,6 @@ init config =
     , username = ""
     , email = ""
     , password = ""
-    , confirmPassword = ""
+    , repeatPassword = ""
+    , validate = RemoteData.NotAsked
     }

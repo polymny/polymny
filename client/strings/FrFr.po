@@ -96,6 +96,10 @@ msgstr "L'adresse e-mail est erronée"
 msgid "Login.wrongPassword"
 msgstr "Le mot de passe est incorrect"
 
+#. An unknown error occured while logging in.
+msgid "Login.unknownError"
+msgstr "Une erreur inconnue s'est produite"
+
 #. The username must have at least 3 characters
 msgid "Login.usernameAtLeastThreeCharacters"
 msgstr "Le nom d'utilisateur doit contenir au moins trois caractères"

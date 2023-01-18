@@ -82,6 +82,10 @@ msgstr ""
 msgid "Login.wrongPassword"
 msgstr ""
 
+#. An unknown error occured while logging in.
+msgid "Login.unknownError"
+msgstr ""
+
 #. The username must have at least 3 characters
 msgid "Login.usernameAtLeastThreeCharacters"
 msgstr ""
