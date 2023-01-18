@@ -13,7 +13,7 @@ use rocket::State as S;
 use crate::config::Config;
 use crate::db::capsule::Role;
 use crate::db::user::{Plan, User};
-use crate::templates::{index_html, unlogged_html};
+use crate::templates::index_html;
 use crate::{Db, Error, HashId, Lang, Result};
 
 pub mod admin;
@@ -144,12 +144,13 @@ pub async fn index<'a>(
         _ => (),
     };
 
-    let body = match json {
-        Some(Ok(json)) => {
-            index_html(json!({ "user": json, "global": global_flags(&config, &lang) }))
-        }
-        _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
-    };
+    let body = index_html(json!({
+        "user": match json {
+            Some(Ok(json)) => json,
+            _ => json!(null),
+         },
+         "global": global_flags(&config, &lang)
+    }));
 
     Cors::new(&config.home, Either::Left(Html(body)))
 }
@@ -176,12 +177,16 @@ pub async fn index_without_cors(
         _ => (),
     };
 
-    let body = match json {
-        Some(Ok(json)) => {
-            index_html(json!({ "user": json, "global": global_flags(&config, &lang) }))
-        }
-        _ => unlogged_html(json!({ "global": global_flags(&config, &lang) })),
-    };
+    let body = index_html(json!({
+        "user": match json {
+            Some(Ok(json)) => {
+                json
+            },
+            _ =>
+                json!(null)
+            },
+         "global": global_flags(&config, &lang)
+    }));
 
     Either::Left(Html(body))
 }

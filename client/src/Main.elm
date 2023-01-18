@@ -8,13 +8,13 @@ import Browser
 import Json.Decode as Decode
 
 
-main : Program Decode.Value (Result App.Error App.Model) App.Msg
+main : Program Decode.Value App.MaybeModel App.MaybeMsg
 main =
     Browser.application
         { init = App.init
         , update = App.update
         , view = App.view
         , subscriptions = App.subs
-        , onUrlChange = App.OnUrlChange
-        , onUrlRequest = App.onUrlRequest
+        , onUrlChange = \x -> App.LoggedMsg (App.OnUrlChange x)
+        , onUrlRequest = \x -> App.LoggedMsg (App.onUrlRequest x)
         }

@@ -1,6 +1,7 @@
 module App.Types exposing
     ( Model, Page(..), getCapsule, Msg(..), onUrlRequest
     , Error(..), errorToString
+    , MaybeModel(..), MaybeMsg(..), toMaybe
     )
 
 {-| This module contains the model and messages of our application.
@@ -26,7 +27,35 @@ import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
+import Unlogged.Types as Unlogged
 import Url
+
+
+{-| This type helps us deal with errors at the startup of the application.
+-}
+type MaybeModel
+    = Error Error
+    | Unlogged Unlogged.Model
+    | Logged Model
+
+
+{-| Extracts the logged model from a maybe model.
+-}
+toMaybe : MaybeModel -> Maybe Model
+toMaybe model =
+    case model of
+        Logged m ->
+            Just m
+
+        _ ->
+            Nothing
+
+
+{-| Type of messages that occur on maybe models.
+-}
+type MaybeMsg
+    = LoggedMsg Msg
+    | UnloggedMsg Unlogged.Msg
 
 
 {-| This type contains all the model of the application.

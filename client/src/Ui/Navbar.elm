@@ -44,13 +44,18 @@ navbar config page user =
 
             _ ->
                 Element.none
-        , Element.row [ Font.size 20, Element.alignRight, Element.spacing 10 ]
-            [ Maybe.map .username user |> Maybe.map Element.text |> Maybe.withDefault Element.none
-            , Ui.secondary [ Ui.pr 10 ]
-                { action = Ui.Msg App.Logout
-                , label = Strings.loginLogout lang
-                }
-            ]
+        , case user of
+            Just u ->
+                Element.row [ Font.size 20, Element.alignRight, Element.spacing 10 ]
+                    [ Element.text u.username
+                    , Ui.secondary [ Ui.pr 10 ]
+                        { action = Ui.Msg App.Logout
+                        , label = Strings.loginLogout lang
+                        }
+                    ]
+
+            _ ->
+                Element.none
         ]
 
 

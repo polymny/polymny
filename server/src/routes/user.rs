@@ -21,7 +21,7 @@ use crate::db::session::Session;
 use crate::db::user::User;
 use crate::routes::global_flags;
 use crate::routes::Cors;
-use crate::templates::unlogged_html;
+use crate::templates::index_html;
 use crate::{Db, Error, Lang, Result};
 
 /// Creates then authentication cookies.
@@ -130,7 +130,8 @@ pub async fn activate<'a>(
     let session = user.save_session(&db).await?;
     add_cookies(&session.secret, &config, cookies);
 
-    let body = unlogged_html(json!({ "global": global_flags(&config, &lang) }));
+    let json = user.to_json(&db).await?;
+    let body = index_html(json!({"user": json, "global": global_flags(&config, &lang) }));
     Ok(Html(body))
 }
 
@@ -317,13 +318,20 @@ pub async fn reset_password<'a>(
 ) -> Cors<Result<Html<String>>> {
     let user = User::get_by_reset_password_key(Some(key), &db).await;
 
-    match user {
+    let user = match user {
         Ok(Some(user)) => user,
         Ok(None) => return Cors::err(&config.home, Status::NotFound),
         _ => return Cors::err(&config.home, Status::InternalServerError),
     };
 
-    let body = unlogged_html(json!({ "global": global_flags(&config, &lang) }));
+    let json = user.to_json(&db).await;
+    let body = index_html(json!({
+        "user": match json {
+            Ok(json) => json,
+            _ => json!(null),
+        },
+        "global": global_flags(&config, &lang)
+    }));
     Cors::ok(&config.home, Html(body))
 }
 
@@ -357,7 +365,7 @@ pub async fn validate_email<'a>(
 ) -> Cors<Result<Html<String>>> {
     match User::validate_change_email(key, &db).await {
         Ok(_) => {
-            let body = unlogged_html(json!({ "global": global_flags(&config, &lang) }));
+            let body = index_html(json!({"user": null, "global": global_flags(&config, &lang) }));
             Cors::ok(&config.home, Html(body))
         }
         Err(Error(s)) => Cors::err(&config.home, s),
@@ -430,7 +438,8 @@ pub async fn validate_invitation<'a>(
     let session = user.save_session(&db).await?;
     add_cookies(&session.secret, &config, cookies);
 
-    let body = unlogged_html(json!({ "global": global_flags(&config, &lang) }));
+    let json = user.to_json(&db).await?;
+    let body = index_html(json!({"user": json, "global": global_flags(&config, &lang) }));
 
     Ok(Html(body))
 }
@@ -464,6 +473,7 @@ pub async fn request_invitation<'a>(
     let session = user.save_session(&db).await?;
     add_cookies(&session.secret, &config, cookies);
 
-    let body = unlogged_html(json!({ "global": global_flags(&config, &lang) }));
+    let json = user.to_json(&db).await?;
+    let body = index_html(json!({"user": json, "global": global_flags(&config, &lang) }));
     Ok(Html(body))
 }

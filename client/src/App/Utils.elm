@@ -17,12 +17,13 @@ import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
 import Route exposing (Route)
+import Unlogged.Types as Unlogged
 import Url exposing (Url)
 
 
 {-| Initializes the model for the application
 -}
-init : Decode.Value -> Url -> Browser.Navigation.Key -> ( Result App.Error App.Model, Cmd App.Msg )
+init : Decode.Value -> Url -> Browser.Navigation.Key -> ( App.MaybeModel, Cmd App.MaybeMsg )
 init flags url key =
     let
         serverConfig =
@@ -38,34 +39,37 @@ init flags url key =
             clientConfig |> Result.map .sortBy |> Result.withDefault Config.defaultClientConfig.sortBy
 
         user =
-            Decode.decodeValue (Decode.field "user" (Data.decodeUser sortBy)) flags
+            Decode.decodeValue (Decode.field "user" (Decode.nullable (Data.decodeUser sortBy))) flags
 
         route =
             Route.fromUrl url
 
         ( model, cmd ) =
             case ( serverConfig, clientConfig, user ) of
-                ( Ok s, Ok c, Ok u ) ->
+                ( Ok s, Ok c, Ok (Just u) ) ->
                     let
                         ( page, cm ) =
                             pageFromRoute { serverConfig = s, clientConfig = c, clientState = clientState } u route
                     in
-                    ( Ok
+                    ( App.Logged
                         { config = { serverConfig = s, clientConfig = c, clientState = clientState }
                         , user = u
                         , page = page
                         }
-                    , cm
+                    , Cmd.map App.LoggedMsg cm
                     )
 
+                ( Ok s, Ok c, Ok Nothing ) ->
+                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState }, Cmd.none )
+
                 ( Err s, _, _ ) ->
-                    ( Err (App.DecodeError s), Cmd.none )
+                    ( App.Error (App.DecodeError s), Cmd.none )
 
                 ( _, Err c, _ ) ->
-                    ( Err (App.DecodeError c), Cmd.none )
+                    ( App.Error (App.DecodeError c), Cmd.none )
 
                 ( _, _, Err u ) ->
-                    ( Err (App.DecodeError u), Cmd.none )
+                    ( App.Error (App.DecodeError u), Cmd.none )
     in
     ( model, cmd )
 

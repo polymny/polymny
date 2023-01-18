@@ -20,15 +20,19 @@ import NewCapsule.Updates as NewCapsule
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Route
+import Unlogged.Updates as Unlogged
 
 
 {-| Updates the model from a message, and returns the new model as well as the command to send.
 -}
-update : App.Msg -> Result App.Error App.Model -> ( Result App.Error App.Model, Cmd App.Msg )
-update msg model =
-    case model of
-        Ok m ->
-            updateModel msg m |> Tuple.mapFirst Ok
+update : App.MaybeMsg -> App.MaybeModel -> ( App.MaybeModel, Cmd App.MaybeMsg )
+update message model =
+    case ( message, model ) of
+        ( App.LoggedMsg msg, App.Logged m ) ->
+            updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
+
+        ( App.UnloggedMsg msg, App.Unlogged m ) ->
+            Unlogged.update msg m |> Tuple.mapBoth App.Unlogged (Cmd.map App.UnloggedMsg)
 
         _ ->
             ( model, Cmd.none )
@@ -117,13 +121,10 @@ updateModel msg model =
 
 {-| Returns the subscriptions of the app.
 -}
-subs : Result App.Error App.Model -> Sub App.Msg
+subs : App.MaybeModel -> Sub App.MaybeMsg
 subs m =
     case m of
-        Err _ ->
-            Sub.none
-
-        Ok model ->
+        App.Logged model ->
             Sub.batch
                 [ Sub.map App.ConfigMsg Config.subs
                 , case model.page of
@@ -139,3 +140,7 @@ subs m =
                     App.Acquisition x ->
                         Acquisition.subs x
                 ]
+                |> Sub.map App.LoggedMsg
+
+        _ ->
+            Sub.none

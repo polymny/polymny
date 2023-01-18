@@ -157,69 +157,6 @@ const INDEX_HTML_AFTER_FLAGS: &str = r#";
 "#;
 
 #[cfg(debug_assertions)]
-const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <style>
-            .blink {
-                animation: blinker 1s linear infinite;
-            }
-
-            @keyframes blinker {
-                50% {
-                    opacity: 0;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div id="root"></div>
-        <script src="/dist/js/unlogged.js"></script>
-        <script src="/dist/js/ports.js"></script>
-        <script>
-            var flags = "#;
-
-#[cfg(not(debug_assertions))]
-const UNLOGGED_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
-        <style>
-            .blink {
-                animation: blinker 1s linear infinite;
-            }
-
-            @keyframes blinker {
-                50% {
-                    opacity: 0;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div id="root"></div>
-        <script src="/dist/js/unlogged.min.js"></script>
-        <script src="/dist/js/ports.js"></script>
-        <script>
-            var flags = "#;
-
-const UNLOGGED_HTML_AFTER_FLAGS: &str = r#";
-            var app = Elm.Unlogged.init({
-                flags: flags,
-                node: document.getElementById('root')
-            });
-            setupPorts(app);
-        </script>
-    </body>
-</html>
-"#;
-
-#[cfg(debug_assertions)]
 const SETUP_HTML: &str = r#"<!doctype HTML>
 <html>
     <head>
@@ -264,14 +201,6 @@ pub fn index_html(flags: Value) -> String {
     format!(
         "{}{}{}",
         INDEX_HTML_BEFORE_FLAGS, flags, INDEX_HTML_AFTER_FLAGS
-    )
-}
-
-/// This functions formats the index.html page for unlogged users.
-pub fn unlogged_html(flags: Value) -> String {
-    format!(
-        "{}{}{}",
-        UNLOGGED_HTML_BEFORE_FLAGS, flags, UNLOGGED_HTML_AFTER_FLAGS
     )
 }
 

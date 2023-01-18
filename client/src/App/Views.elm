@@ -20,11 +20,12 @@ import Ui.Colors as Colors
 import Ui.Graphics as Ui
 import Ui.Navbar as Ui
 import Ui.Utils as Ui
+import Unlogged.Views as Unlogged
 
 
 {-| Returns the view of the model.
 -}
-view : Result App.Error App.Model -> Browser.Document App.Msg
+view : App.MaybeModel -> Browser.Document App.MaybeMsg
 view fullModel =
     { title = "Polymny Studio"
     , body =
@@ -47,24 +48,28 @@ view fullModel =
 
 {-| Stylizes all the content of the app.
 -}
-viewContent : Result App.Error App.Model -> Element App.Msg
+viewContent : App.MaybeModel -> Element App.MaybeMsg
 viewContent fullModel =
     let
         ( content, popup ) =
             case fullModel of
-                Ok model ->
-                    viewSuccess model
+                App.Logged model ->
+                    viewSuccess model |> Tuple.mapBoth (Element.map App.LoggedMsg) (Element.map App.LoggedMsg)
 
-                Err error ->
-                    ( viewError error, Element.none )
+                App.Unlogged model ->
+                    ( Unlogged.view model |> Element.map App.UnloggedMsg, Element.none )
+
+                App.Error error ->
+                    ( viewError error |> Element.map App.LoggedMsg, Element.none )
     in
     Element.column [ Ui.wf, Ui.hf, Element.inFront popup ]
         [ Ui.navbar
-            (fullModel |> Result.toMaybe |> Maybe.map .config)
-            (fullModel |> Result.toMaybe |> Maybe.map .page)
-            (fullModel |> Result.toMaybe |> Maybe.map .user)
+            (fullModel |> App.toMaybe |> Maybe.map .config)
+            (fullModel |> App.toMaybe |> Maybe.map .page)
+            (fullModel |> App.toMaybe |> Maybe.map .user)
+            |> Element.map App.LoggedMsg
         , Element.el [ Ui.wf, Ui.hf, Element.scrollbarY ] content
-        , Ui.bottombar (fullModel |> Result.toMaybe |> Maybe.map .config)
+        , Ui.bottombar (fullModel |> App.toMaybe |> Maybe.map .config)
         ]
 
 
