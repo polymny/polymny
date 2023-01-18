@@ -90,6 +90,8 @@ type Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url
     | ExternalUrl String
+    | Logout
+    | LoggedOut
 
 
 {-| Converts an URL request msg to an App.Msg.

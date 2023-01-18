@@ -8,6 +8,7 @@ module App.Updates exposing (update, updateModel, subs)
 
 import Acquisition.Types as Acquisition
 import Acquisition.Updates as Acquisition
+import Api.User as Api
 import App.Types as App
 import App.Utils as App
 import Browser.Navigation
@@ -102,6 +103,14 @@ updateModel msg model =
 
                 App.ExternalUrl url ->
                     ( model, Browser.Navigation.load url )
+
+                App.Logout ->
+                    ( model, Api.logout App.LoggedOut )
+
+                App.LoggedOut ->
+                    ( model
+                    , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
+                    )
     in
     ( updatedModel, Cmd.batch [ updatedCmd, unbindDevice ] )
 
