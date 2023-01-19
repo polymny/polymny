@@ -20,6 +20,7 @@ type alias Model =
     , repeatPassword : String
     , loginRequest : RemoteData.WebData User
     , newPasswordRequest : RemoteData.WebData ()
+    , resetPasswordRequest : RemoteData.WebData User
     }
 
 
@@ -63,6 +64,7 @@ type Msg
     | PageChanged Page
     | LoginRequestChanged (RemoteData.WebData User)
     | NewPasswordRequestChanged (RemoteData.WebData ())
+    | ResetPasswordRequestChanged (RemoteData.WebData User)
     | ButtonClicked
 
 
@@ -78,6 +80,7 @@ init config url =
     , repeatPassword = ""
     , loginRequest = RemoteData.NotAsked
     , newPasswordRequest = RemoteData.NotAsked
+    , resetPasswordRequest = RemoteData.NotAsked
     }
 
 

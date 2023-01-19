@@ -288,7 +288,7 @@ pub async fn change_password(
     form: Json<ChangePasswordForm>,
     config: &S<Config>,
     cookies: &CookieJar<'_>,
-) -> Result<()> {
+) -> Result<Value> {
     let mut user = match (&form.username_and_old_password, &form.key) {
         (None, None) => return Err(Error(Status::BadRequest)),
         (Some((username, old_password)), _) => {
@@ -304,8 +304,9 @@ pub async fn change_password(
     let session = user.save_session(&db).await?;
     add_cookies(&session.secret, &config, cookies);
     user.save(&db).await?;
+    let json = user.to_json(&db).await?;
 
-    Ok(())
+    Ok(json)
 }
 
 /// Link to the form that reset the user's password.

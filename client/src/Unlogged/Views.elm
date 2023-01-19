@@ -56,23 +56,26 @@ view model =
 
         buttonText : Element msg
         buttonText =
-            case ( model.page, model.loginRequest, model.newPasswordRequest ) of
-                ( _, RemoteData.Loading _, _ ) ->
+            case ( model.page, ( model.loginRequest, model.newPasswordRequest, model.resetPasswordRequest ) ) of
+                ( _, ( RemoteData.Loading _, _, _ ) ) ->
                     Ui.spinningSpinner [] 20
 
-                ( _, _, RemoteData.Loading _ ) ->
+                ( _, ( _, RemoteData.Loading _, _ ) ) ->
                     Ui.spinningSpinner [] 20
 
-                ( Unlogged.Login, _, _ ) ->
+                ( _, ( _, _, RemoteData.Loading _ ) ) ->
+                    Ui.spinningSpinner [] 20
+
+                ( Unlogged.Login, ( _, _, _ ) ) ->
                     Strings.loginLogin lang |> Element.text
 
-                ( Unlogged.Register, _, _ ) ->
+                ( Unlogged.Register, ( _, _, _ ) ) ->
                     Strings.loginSignUp lang |> Element.text
 
-                ( Unlogged.ForgotPassword, _, _ ) ->
+                ( Unlogged.ForgotPassword, ( _, _, _ ) ) ->
                     Strings.loginRequestNewPassword lang |> Element.text
 
-                ( Unlogged.ResetPassword _, _, _ ) ->
+                ( Unlogged.ResetPassword _, ( _, _, _ ) ) ->
                     Strings.loginResetPassword lang |> Element.text
 
         formatError : Maybe String -> Element msg
@@ -95,14 +98,17 @@ view model =
 
         errorMessage : Maybe String
         errorMessage =
-            case ( model.page, model.loginRequest, model.newPasswordRequest ) of
-                ( Unlogged.Login, RemoteData.Failure (Http.BadStatus 401), _ ) ->
+            case ( model.page, ( model.loginRequest, model.newPasswordRequest, model.resetPasswordRequest ) ) of
+                ( Unlogged.Login, ( RemoteData.Failure (Http.BadStatus 401), _, _ ) ) ->
                     Just <| Strings.loginWrongPassword lang ++ "."
 
-                ( Unlogged.Login, RemoteData.Failure _, _ ) ->
+                ( Unlogged.Login, ( RemoteData.Failure _, _, _ ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
-                ( Unlogged.ForgotPassword, _, RemoteData.Failure _ ) ->
+                ( Unlogged.ForgotPassword, ( _, RemoteData.Failure _, _ ) ) ->
+                    Just <| Strings.loginUnknownError lang ++ "."
+
+                ( Unlogged.ResetPassword _, ( _, _, RemoteData.Failure _ ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
                 _ ->
@@ -164,7 +170,7 @@ view model =
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
                     , onChange = Unlogged.RepeatPasswordChanged
-                    , text = model.password
+                    , text = model.repeatPassword
                     , show = False
                     }
             , Ui.primaryGeneric [ Ui.cx, Ui.wf ]

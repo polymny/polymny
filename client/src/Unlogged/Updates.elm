@@ -43,6 +43,15 @@ update msg model =
             , Api.requestNewPassword model.email (\x -> App.UnloggedMsg (Unlogged.NewPasswordRequestChanged x))
             )
 
+        ( Unlogged.ButtonClicked, Unlogged.ResetPassword key ) ->
+            ( App.Unlogged { model | newPasswordRequest = RemoteData.Loading Nothing }
+            , Api.resetPassword
+                model.config.clientConfig.sortBy
+                key
+                model.password
+                (\x -> App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged x))
+            )
+
         ( Unlogged.ButtonClicked, _ ) ->
             ( App.Unlogged model, Cmd.none )
 
@@ -57,3 +66,12 @@ update msg model =
 
         ( Unlogged.NewPasswordRequestChanged data, _ ) ->
             ( App.Unlogged { model | newPasswordRequest = data }, Cmd.none )
+
+        ( Unlogged.ResetPasswordRequestChanged (RemoteData.Success user), _ ) ->
+            App.pageFromRoute model.config user Route.Home
+                |> Tuple.mapBoth
+                    (\x -> App.Logged { config = model.config, user = user, page = x })
+                    (Cmd.map App.LoggedMsg)
+
+        ( Unlogged.ResetPasswordRequestChanged data, _ ) ->
+            ( App.Unlogged { model | resetPasswordRequest = data }, Cmd.none )

@@ -45,3 +45,21 @@ requestNewPassword email toMsg =
         , toMsg = toMsg
         , body = Http.jsonBody <| Encode.object [ ( "email", Encode.string email ) ]
         }
+
+
+{-| Tells the server to change the password after a forgotten password.
+-}
+resetPassword : Data.SortBy -> String -> String -> (WebData User -> msg) -> Cmd msg
+resetPassword sortBy key newPassword toMsg =
+    Api.postJson
+        { url = "/api/change-password"
+        , body =
+            Http.jsonBody
+                (Encode.object
+                    [ ( "key", Encode.string key )
+                    , ( "new_password", Encode.string newPassword )
+                    ]
+                )
+        , toMsg = toMsg
+        , decoder = Data.decodeUser sortBy
+        }
