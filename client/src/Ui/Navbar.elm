@@ -88,6 +88,10 @@ navButtons lang capsule page =
 -}
 bottombar : Maybe Config -> Element msg
 bottombar config =
+    let
+        lang =
+            Maybe.map (\x -> x.clientState.lang) config |> Maybe.withDefault Lang.default
+    in
     Element.row
         [ Background.color (Colors.grey 3)
         , Font.color Colors.greyBackground
@@ -103,30 +107,30 @@ bottombar config =
             , action = Ui.Route (Route.Custom "mailto:contacter@polymny.studio")
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
-            { label = "License GNU Affero V3"
+            { label = Strings.configLicense lang
             , action = Ui.Route (Route.Custom "https://github.com/polymny/polymny/blob/master/LICENSE")
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
-            { label = "Conditions d'utilisation"
+            { label = Strings.loginTermsOfService lang
             , action = Ui.Route (Route.Custom "https://polymny.studio/cgu/")
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
-            { label = "Source"
+            { label = Strings.configSource lang
             , action = Ui.Route (Route.Custom "https://github.com/polymny/polymny")
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
-            { label = "Langue"
+            { label = Strings.configLang lang ++ " " ++ Lang.flag lang
             , action = Ui.None
             }
         , config
             |> Maybe.map .serverConfig
             |> Maybe.map .version
-            |> Maybe.map (\x -> Element.text ("Version " ++ x))
+            |> Maybe.map (\x -> Element.text (Strings.configVersion lang ++ " " ++ x))
             |> Maybe.withDefault Element.none
         , config
             |> Maybe.map .serverConfig
             |> Maybe.andThen .commit
-            |> Maybe.map (\x -> Element.text ("Commit " ++ x))
+            |> Maybe.map (\x -> Element.text (Strings.configCommit lang ++ " " ++ x))
             |> Maybe.withDefault Element.none
         ]
 

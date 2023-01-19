@@ -820,6 +820,14 @@ msgstr ""
 msgid "Config.source"
 msgstr ""
 
+#. The lang of the application.
+msgid "Config.lang"
+msgstr ""
+
+#. The license of the code.
+msgid "Config.license"
+msgstr ""
+
 #. Welcome on Polymny.
 msgid "Intro.welcomeOnPolymny"
 msgstr ""

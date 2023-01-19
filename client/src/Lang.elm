@@ -1,5 +1,5 @@
 module Lang exposing
-    ( Lang(..), fromString, toString
+    ( Lang(..), fromString, toString, flag
     , default, other, question, dots
     )
 
@@ -8,7 +8,7 @@ module Lang exposing
 
 # Type definition
 
-@docs Lang, fromString, toString
+@docs Lang, fromString, toString, flag
 
 
 # Utils functions
@@ -41,6 +41,18 @@ toString lang =
 
         EnUs ->
             "en-US"
+
+
+{-| Returns the UTF-8 emoji for a flag representing the lang.
+-}
+flag : Lang -> String
+flag lang =
+    case lang of
+        FrFr ->
+            "🇫🇷"
+
+        EnUs ->
+            "🇺🇸"
 
 
 {-| This tries to guess the language from a string.

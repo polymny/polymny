@@ -860,6 +860,14 @@ msgstr "Commit"
 msgid "Config.source"
 msgstr "Source"
 
+#. The lang of the application.
+msgid "Config.lang"
+msgstr "Langue"
+
+#. The license of the code.
+msgid "Config.license"
+msgstr "Licence GNU Affero V3"
+
 #. Welcome on Polymny.
 msgid "Intro.welcomeOnPolymny"
 msgstr "Bienvenue sur Polymny Studio"
