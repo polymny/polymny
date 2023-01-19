@@ -70,10 +70,10 @@ type Msg
 
 {-| Initializes the unlogged model.
 -}
-init : Config -> Url -> Model
+init : Config -> Maybe Url -> Model
 init config url =
     { config = config
-    , page = fromUrl url
+    , page = Maybe.map fromUrl url |> Maybe.withDefault Login
     , username = ""
     , email = ""
     , password = ""

@@ -186,7 +186,7 @@ It is not in the client config since it cannot be persisted, and is recreated wi
 type alias ClientState =
     { zone : Time.Zone
     , time : Time.Posix
-    , key : Browser.Navigation.Key
+    , key : Maybe Browser.Navigation.Key
     , lang : Lang
     , lastRequest : Int
     , tasks : List TaskStatus
@@ -240,7 +240,7 @@ decodeTaskStatus =
 
 {-| Initializes a client state.
 -}
-initClientState : Browser.Navigation.Key -> Maybe Lang -> ClientState
+initClientState : Maybe Browser.Navigation.Key -> Maybe Lang -> ClientState
 initClientState key lang =
     { key = key
     , zone = Time.utc
@@ -448,7 +448,7 @@ update msg { serverConfig, clientConfig, clientState } =
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
-                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks |> Debug.log "tasks" }
+                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks }
                       }
                     , False
                     )

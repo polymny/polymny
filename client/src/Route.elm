@@ -102,6 +102,11 @@ fromPage page =
 
 {-| Go to the corresponding page.
 -}
-push : Browser.Navigation.Key -> Route -> Cmd msg
+push : Maybe Browser.Navigation.Key -> Route -> Cmd msg
 push key route =
-    Browser.Navigation.pushUrl key (toUrl route)
+    case key of
+        Just k ->
+            Browser.Navigation.pushUrl k (toUrl route)
+
+        _ ->
+            Cmd.none

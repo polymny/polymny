@@ -15,11 +15,12 @@ import Browser.Navigation
 import Config
 import Device
 import Home.Updates as Home
-import Json.Decode as Decode
 import NewCapsule.Updates as NewCapsule
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import RemoteData
 import Route
+import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
 
 
@@ -31,8 +32,24 @@ update message model =
         ( App.LoggedMsg msg, App.Logged m ) ->
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
 
+        -- On some particular events, the unlogged app needs to return to the logged app.
+        -- When login succeeds
+        ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
+            App.pageFromRoute m.config user Route.Home
+                |> Tuple.mapBoth
+                    (\x -> App.Logged { config = m.config, user = user, page = x })
+                    (Cmd.map App.LoggedMsg)
+
+        -- When the user changes his password after reset
+        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
+            App.pageFromRoute m.config user Route.Home
+                |> Tuple.mapBoth
+                    (\x -> App.Logged { config = m.config, user = user, page = x })
+                    (Cmd.map App.LoggedMsg)
+
         ( App.UnloggedMsg msg, App.Unlogged m ) ->
             Unlogged.update msg m
+                |> Tuple.mapBoth App.Unlogged (Cmd.map App.UnloggedMsg)
 
         _ ->
             ( model, Cmd.none )
@@ -103,7 +120,12 @@ updateModel msg model =
                     ( { model | page = page }, cmd )
 
                 App.InternalUrl url ->
-                    ( model, Browser.Navigation.pushUrl model.config.clientState.key url.path )
+                    case model.config.clientState.key of
+                        Just k ->
+                            ( model, Browser.Navigation.pushUrl k url.path )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 App.ExternalUrl url ->
                     ( model, Browser.Navigation.load url )

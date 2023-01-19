@@ -33,7 +33,7 @@ init flags url key =
             Decode.decodeValue (Decode.field "global" (Decode.field "clientConfig" Config.decodeClientConfig)) flags
 
         clientState =
-            Config.initClientState key (clientConfig |> Result.toMaybe |> Maybe.andThen .lang)
+            Config.initClientState (Just key) (clientConfig |> Result.toMaybe |> Maybe.andThen .lang)
 
         sortBy =
             clientConfig |> Result.map .sortBy |> Result.withDefault Config.defaultClientConfig.sortBy
@@ -60,7 +60,7 @@ init flags url key =
                     )
 
                 ( Ok s, Ok c, Ok Nothing ) ->
-                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState } url
+                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState } (Just url)
                     , Cmd.none
                     )
 
