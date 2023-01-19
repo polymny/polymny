@@ -318,20 +318,13 @@ pub async fn reset_password<'a>(
 ) -> Cors<Result<Html<String>>> {
     let user = User::get_by_reset_password_key(Some(key), &db).await;
 
-    let user = match user {
-        Ok(Some(user)) => user,
+    match user {
+        Ok(Some(_)) => (),
         Ok(None) => return Cors::err(&config.home, Status::NotFound),
         _ => return Cors::err(&config.home, Status::InternalServerError),
-    };
+    }
 
-    let json = user.to_json(&db).await;
-    let body = index_html(json!({
-        "user": match json {
-            Ok(json) => json,
-            _ => json!(null),
-        },
-        "global": global_flags(&config, &lang)
-    }));
+    let body = index_html(json!({ "user": json!(null), "global": global_flags(&config, &lang) }));
     Cors::ok(&config.home, Html(body))
 }
 

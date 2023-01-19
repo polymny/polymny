@@ -31,20 +31,15 @@ view model =
                 Unlogged.Register ->
                     ( Input.newPassword, Element.column )
 
+                Unlogged.ResetPassword _ ->
+                    ( Input.newPassword, Element.column )
+
                 _ ->
                     ( Input.currentPassword, Element.row )
 
-        only : Unlogged.Page -> Element Unlogged.Msg -> Element Unlogged.Msg
-        only page element =
-            if model.page == page then
-                element
-
-            else
-                Element.none
-
-        only2 : Unlogged.Page -> Unlogged.Page -> Element Unlogged.Msg -> Element Unlogged.Msg
-        only2 page1 page2 element =
-            if model.page == page1 || model.page == page2 then
+        only : List Unlogged.Page -> Element Unlogged.Msg -> Element Unlogged.Msg
+        only pages element =
+            if List.any (Unlogged.comparePage model.page) pages then
                 element
 
             else
@@ -76,6 +71,9 @@ view model =
 
                 ( Unlogged.ForgotPassword, _, _ ) ->
                     Strings.loginRequestNewPassword lang |> Element.text
+
+                ( Unlogged.ResetPassword _, _, _ ) ->
+                    Strings.loginResetPassword lang |> Element.text
 
         formatError : Maybe String -> Element msg
         formatError string =
@@ -139,21 +137,21 @@ view model =
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
-            [ only2 Unlogged.Login Unlogged.Register <|
+            [ only [ Unlogged.Login, Unlogged.Register ] <|
                 Input.username [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserUsername lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserUsername lang
                     , onChange = Unlogged.UsernameChanged
                     , text = model.username
                     }
-            , only2 Unlogged.ForgotPassword Unlogged.Register <|
+            , only [ Unlogged.ForgotPassword, Unlogged.Register ] <|
                 Input.email [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
                     , onChange = Unlogged.EmailChanged
                     , text = model.email
                     }
-            , only2 Unlogged.Login Unlogged.Register <|
+            , only [ Unlogged.Login, Unlogged.Register, Unlogged.ResetPassword "" ] <|
                 password [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
@@ -161,7 +159,7 @@ view model =
                     , text = model.password
                     , show = False
                     }
-            , only Unlogged.Register <|
+            , only [ Unlogged.Register, Unlogged.ResetPassword "" ] <|
                 Input.newPassword [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
@@ -174,7 +172,7 @@ view model =
                 , label = buttonText
                 }
             ]
-        , only Unlogged.Login <|
+        , only [ Unlogged.Login ] <|
             Element.row [ Ui.s 10, Ui.cx ]
                 [ Ui.link []
                     { action =

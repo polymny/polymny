@@ -60,7 +60,9 @@ init flags url key =
                     )
 
                 ( Ok s, Ok c, Ok Nothing ) ->
-                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState }, Cmd.none )
+                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState } url
+                    , Cmd.none
+                    )
 
                 ( Err s, _, _ ) ->
                     ( App.Error (App.DecodeError s), Cmd.none )
