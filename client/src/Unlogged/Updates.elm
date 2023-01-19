@@ -13,33 +13,47 @@ import Unlogged.Types as Unlogged
 
 update : Unlogged.Msg -> Unlogged.Model -> ( App.MaybeModel, Cmd App.MaybeMsg )
 update msg model =
-    case msg of
-        Unlogged.UsernameChanged newUsername ->
+    case ( msg, model.page ) of
+        ( Unlogged.UsernameChanged newUsername, _ ) ->
             ( App.Unlogged { model | username = newUsername }, Cmd.none )
 
-        Unlogged.EmailChanged newEmail ->
+        ( Unlogged.EmailChanged newEmail, _ ) ->
             ( App.Unlogged { model | email = newEmail }, Cmd.none )
 
-        Unlogged.PasswordChanged newPassword ->
+        ( Unlogged.PasswordChanged newPassword, _ ) ->
             ( App.Unlogged { model | password = newPassword }, Cmd.none )
 
-        Unlogged.RepeatPasswordChanged newRepeatPassword ->
+        ( Unlogged.RepeatPasswordChanged newRepeatPassword, _ ) ->
             ( App.Unlogged { model | repeatPassword = newRepeatPassword }, Cmd.none )
 
-        Unlogged.PageChanged newPage ->
+        ( Unlogged.PageChanged newPage, _ ) ->
             ( App.Unlogged { model | page = newPage }, Cmd.none )
 
-        Unlogged.ButtonClicked ->
-            ( App.Unlogged { model | validate = RemoteData.Loading Nothing }
-            , Api.login model.config.clientConfig.sortBy model.username model.password Unlogged.DataChanged
-                |> Cmd.map App.UnloggedMsg
+        ( Unlogged.ButtonClicked, Unlogged.Login ) ->
+            ( App.Unlogged { model | loginRequest = RemoteData.Loading Nothing }
+            , Api.login
+                model.config.clientConfig.sortBy
+                model.username
+                model.password
+                (\x -> App.UnloggedMsg (Unlogged.LoginRequestChanged x))
             )
 
-        Unlogged.DataChanged (RemoteData.Success user) ->
+        ( Unlogged.ButtonClicked, Unlogged.ForgotPassword ) ->
+            ( App.Unlogged { model | newPasswordRequest = RemoteData.Loading Nothing }
+            , Api.requestNewPassword model.email (\x -> App.UnloggedMsg (Unlogged.NewPasswordRequestChanged x))
+            )
+
+        ( Unlogged.ButtonClicked, _ ) ->
+            ( App.Unlogged model, Cmd.none )
+
+        ( Unlogged.LoginRequestChanged (RemoteData.Success user), _ ) ->
             App.pageFromRoute model.config user Route.Home
                 |> Tuple.mapBoth
                     (\x -> App.Logged { config = model.config, user = user, page = x })
                     (Cmd.map App.LoggedMsg)
 
-        Unlogged.DataChanged data ->
-            ( App.Unlogged { model | validate = data }, Cmd.none )
+        ( Unlogged.LoginRequestChanged data, _ ) ->
+            ( App.Unlogged { model | loginRequest = data }, Cmd.none )
+
+        ( Unlogged.NewPasswordRequestChanged data, _ ) ->
+            ( App.Unlogged { model | newPasswordRequest = data }, Cmd.none )

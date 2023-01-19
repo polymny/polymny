@@ -256,7 +256,7 @@ pub async fn request_new_password<'a>(
 ) -> Cors<Status> {
     let mut user = match User::get_by_email(&form.email, &db).await {
         Ok(Some(user)) => user,
-        _ => return Cors::new(&config.home, Status::NotFound),
+        _ => return Cors::new(&config.home, Status::Ok),
     };
 
     match user.request_change_password(&config.mailer, &db).await {

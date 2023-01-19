@@ -34,3 +34,14 @@ login sortBy username password toMsg =
 logout : msg -> Cmd msg
 logout msg =
     Api.post { url = "/api/logout", body = Http.emptyBody, toMsg = \_ -> msg }
+
+
+{-| Asks the server to authenticate via email to reset a forgotten password.
+-}
+requestNewPassword : String -> (WebData () -> msg) -> Cmd msg
+requestNewPassword email toMsg =
+    Api.post
+        { url = "/api/request-new-password"
+        , toMsg = toMsg
+        , body = Http.jsonBody <| Encode.object [ ( "email", Encode.string email ) ]
+        }

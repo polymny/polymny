@@ -50,19 +50,31 @@ view model =
             else
                 Element.none
 
+        buttonMsg : Ui.Action Unlogged.Msg
+        buttonMsg =
+            case ( model.page, model.newPasswordRequest ) of
+                ( Unlogged.ForgotPassword, RemoteData.Success _ ) ->
+                    Ui.None
+
+                _ ->
+                    Ui.Msg Unlogged.ButtonClicked
+
         buttonText : Element msg
         buttonText =
-            case ( model.page, model.validate ) of
-                ( _, RemoteData.Loading _ ) ->
+            case ( model.page, model.loginRequest, model.newPasswordRequest ) of
+                ( _, RemoteData.Loading _, _ ) ->
                     Ui.spinningSpinner [] 20
 
-                ( Unlogged.Login, _ ) ->
+                ( _, _, RemoteData.Loading _ ) ->
+                    Ui.spinningSpinner [] 20
+
+                ( Unlogged.Login, _, _ ) ->
                     Strings.loginLogin lang |> Element.text
 
-                ( Unlogged.Register, _ ) ->
+                ( Unlogged.Register, _, _ ) ->
                     Strings.loginSignUp lang |> Element.text
 
-                ( Unlogged.ForgotPassword, _ ) ->
+                ( Unlogged.ForgotPassword, _, _ ) ->
                     Strings.loginRequestNewPassword lang |> Element.text
 
         formatError : Maybe String -> Element msg
@@ -85,12 +97,42 @@ view model =
 
         errorMessage : Maybe String
         errorMessage =
-            case model.validate of
-                RemoteData.Failure (Http.BadStatus 401) ->
+            case ( model.page, model.loginRequest, model.newPasswordRequest ) of
+                ( Unlogged.Login, RemoteData.Failure (Http.BadStatus 401), _ ) ->
                     Just <| Strings.loginWrongPassword lang ++ "."
 
-                RemoteData.Failure _ ->
+                ( Unlogged.Login, RemoteData.Failure _, _ ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
+
+                ( Unlogged.ForgotPassword, _, RemoteData.Failure _ ) ->
+                    Just <| Strings.loginUnknownError lang ++ "."
+
+                _ ->
+                    Nothing
+
+        formatSuccess : Maybe String -> Element msg
+        formatSuccess string =
+            case string of
+                Just s ->
+                    Element.el
+                        [ Ui.wf
+                        , Border.color Colors.green2
+                        , Ui.b 1
+                        , Ui.r 5
+                        , Ui.p 10
+                        , Background.color Colors.greenLight
+                        , Font.color Colors.green2
+                        ]
+                        (Element.text s)
+
+                _ ->
+                    Element.none
+
+        successMessage : Maybe String
+        successMessage =
+            case ( model.page, model.newPasswordRequest ) of
+                ( Unlogged.ForgotPassword, RemoteData.Success () ) ->
+                    Just <| Strings.loginMailSent lang ++ "."
 
                 _ ->
                     Nothing
@@ -109,7 +151,7 @@ view model =
                     { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
                     , onChange = Unlogged.EmailChanged
-                    , text = model.password
+                    , text = model.email
                     }
             , only2 Unlogged.Login Unlogged.Register <|
                 password [ Ui.cx, Ui.wf ]
@@ -128,20 +170,31 @@ view model =
                     , show = False
                     }
             , Ui.primaryGeneric [ Ui.cx, Ui.wf ]
-                { action = Ui.Msg Unlogged.ButtonClicked
+                { action = buttonMsg
                 , label = buttonText
                 }
             ]
         , only Unlogged.Login <|
             Element.row [ Ui.s 10, Ui.cx ]
                 [ Ui.link []
-                    { action = Ui.Msg <| Unlogged.PageChanged <| Unlogged.ForgotPassword
+                    { action =
+                        if model.loginRequest == RemoteData.Loading Nothing then
+                            Ui.None
+
+                        else
+                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.ForgotPassword
                     , label = Lang.question Strings.loginForgottenPassword lang
                     }
                 , Ui.link []
-                    { action = Ui.Msg <| Unlogged.PageChanged <| Unlogged.Register
+                    { action =
+                        if model.loginRequest == RemoteData.Loading Nothing then
+                            Ui.None
+
+                        else
+                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.Register
                     , label = Lang.question Strings.loginNotRegisteredYet lang
                     }
                 ]
         , formatError errorMessage
+        , formatSuccess successMessage
         ]
