@@ -200,8 +200,16 @@ pub async fn login(
     login: Json<LoginForm>,
 ) -> Result<Value> {
     let user = User::get_by_username(&login.username, &db)
-        .await?
-        .ok_or(Error(Status::Unauthorized))?;
+        .await
+        .map_err(|_| Error(Status::Unauthorized))?;
+
+    let user = match user {
+        Some(user) => user,
+        None => match User::get_by_email(&login.username, &db).await {
+            Ok(Some(u)) => u,
+            _ => return Err(Error(Status::Unauthorized)),
+        },
+    };
 
     user.test_password(&login.password)?;
 

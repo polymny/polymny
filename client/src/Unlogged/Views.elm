@@ -78,6 +78,41 @@ view model =
                 ( Unlogged.ResetPassword _, ( _, _, _ ) ) ->
                     Strings.loginResetPassword lang |> Element.text
 
+        passwordStrengthElement : Element msg
+        passwordStrengthElement =
+            let
+                strength =
+                    passwordStrength model.password
+
+                color =
+                    if strength < 6 then
+                        Colors.red
+
+                    else if strength < 5 then
+                        Colors.orange
+
+                    else
+                        Colors.green2
+
+                firstAttr =
+                    if strength == 7 then
+                        Ui.r 10
+
+                    else
+                        Ui.rl 10
+
+                secondAttr =
+                    if strength == 0 then
+                        Ui.r 10
+
+                    else
+                        Ui.rr 10
+            in
+            Element.row [ Ui.wf, Ui.hpx 10 ]
+                [ Element.el [ firstAttr, Ui.hf, Background.color color, Ui.wfp strength ] Element.none
+                , Element.el [ secondAttr, Ui.hf, Background.color Colors.greyBorder, Ui.wfp (7 - strength) ] Element.none
+                ]
+
         formatError : Maybe String -> Element msg
         formatError string =
             case string of
@@ -166,6 +201,8 @@ view model =
                     , show = False
                     }
             , only [ Unlogged.Register, Unlogged.ResetPassword "" ] <|
+                passwordStrengthElement
+            , only [ Unlogged.Register, Unlogged.ResetPassword "" ] <|
                 Input.newPassword [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
@@ -202,3 +239,54 @@ view model =
         , formatError errorMessage
         , formatSuccess successMessage
         ]
+
+
+{-| Returns the strength of the password. A strength less than 5 is refused, and less than 6 gives a warning.
+-}
+passwordStrength : String -> Int
+passwordStrength password =
+    let
+        specialChars =
+            "[!@#$%^&*()_+-=[]{};':\"|,.<>\\/?]" |> String.toList
+
+        passwordLength =
+            String.length password
+
+        lengthStrength =
+            if passwordLength > 9 then
+                3
+
+            else if passwordLength > 7 then
+                2
+
+            else
+                1
+
+        boolToInt : Bool -> Int
+        boolToInt bool =
+            if bool then
+                1
+
+            else
+                0
+
+        hasLowerCase =
+            boolToInt <| String.any Char.isLower password
+
+        hasUpperCase =
+            boolToInt <| String.any Char.isUpper password
+
+        hasDigit =
+            boolToInt <| String.any Char.isDigit password
+
+        hasSpecial =
+            boolToInt <| String.any (\x -> List.member x specialChars) password
+    in
+    if passwordLength == 0 then
+        0
+
+    else if passwordLength < 6 then
+        1
+
+    else
+        lengthStrength + hasLowerCase + hasUpperCase + hasDigit + hasSpecial
