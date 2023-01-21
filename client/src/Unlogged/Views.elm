@@ -28,7 +28,7 @@ view model =
 
         ( password, layout ) =
             case model.page of
-                Unlogged.Register ->
+                Unlogged.SignUp ->
                     ( Input.newPassword, Element.column )
 
                 Unlogged.ResetPassword _ ->
@@ -56,26 +56,29 @@ view model =
 
         buttonText : Element msg
         buttonText =
-            case ( model.page, ( model.loginRequest, model.newPasswordRequest, model.resetPasswordRequest ) ) of
-                ( _, ( RemoteData.Loading _, _, _ ) ) ->
+            case ( model.page, ( ( model.loginRequest, model.newPasswordRequest ), ( model.resetPasswordRequest, model.signUpRequest ) ) ) of
+                ( _, ( ( RemoteData.Loading _, _ ), ( _, _ ) ) ) ->
                     Ui.spinningSpinner [] 20
 
-                ( _, ( _, RemoteData.Loading _, _ ) ) ->
+                ( _, ( ( _, RemoteData.Loading _ ), ( _, _ ) ) ) ->
                     Ui.spinningSpinner [] 20
 
-                ( _, ( _, _, RemoteData.Loading _ ) ) ->
+                ( _, ( ( _, _ ), ( RemoteData.Loading _, _ ) ) ) ->
                     Ui.spinningSpinner [] 20
 
-                ( Unlogged.Login, ( _, _, _ ) ) ->
+                ( _, ( ( _, _ ), ( _, RemoteData.Loading _ ) ) ) ->
+                    Ui.spinningSpinner [] 20
+
+                ( Unlogged.Login, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginLogin lang |> Element.text
 
-                ( Unlogged.Register, ( _, _, _ ) ) ->
+                ( Unlogged.SignUp, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginSignUp lang |> Element.text
 
-                ( Unlogged.ForgotPassword, ( _, _, _ ) ) ->
+                ( Unlogged.ForgotPassword, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginRequestNewPassword lang |> Element.text
 
-                ( Unlogged.ResetPassword _, ( _, _, _ ) ) ->
+                ( Unlogged.ResetPassword _, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginResetPassword lang |> Element.text
 
         passwordStrengthElement : Element msg
@@ -169,8 +172,11 @@ view model =
 
         successMessage : Maybe String
         successMessage =
-            case ( model.page, model.newPasswordRequest ) of
-                ( Unlogged.ForgotPassword, RemoteData.Success () ) ->
+            case ( model.page, model.newPasswordRequest, model.signUpRequest ) of
+                ( Unlogged.ForgotPassword, RemoteData.Success (), _ ) ->
+                    Just <| Strings.loginMailSent lang ++ "."
+
+                ( Unlogged.SignUp, _, RemoteData.Success () ) ->
                     Just <| Strings.loginMailSent lang ++ "."
 
                 _ ->
@@ -178,21 +184,21 @@ view model =
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
-            [ only [ Unlogged.Login, Unlogged.Register ] <|
+            [ only [ Unlogged.Login, Unlogged.SignUp ] <|
                 Input.username [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserUsername lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserUsername lang
                     , onChange = Unlogged.UsernameChanged
                     , text = model.username
                     }
-            , only [ Unlogged.ForgotPassword, Unlogged.Register ] <|
+            , only [ Unlogged.ForgotPassword, Unlogged.SignUp ] <|
                 Input.email [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
                     , onChange = Unlogged.EmailChanged
                     , text = model.email
                     }
-            , only [ Unlogged.Login, Unlogged.Register, Unlogged.ResetPassword "" ] <|
+            , only [ Unlogged.Login, Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 password [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
@@ -200,15 +206,29 @@ view model =
                     , text = model.password
                     , show = False
                     }
-            , only [ Unlogged.Register, Unlogged.ResetPassword "" ] <|
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 passwordStrengthElement
-            , only [ Unlogged.Register, Unlogged.ResetPassword "" ] <|
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 Input.newPassword [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
                     , onChange = Unlogged.RepeatPasswordChanged
                     , text = model.repeatPassword
                     , show = False
+                    }
+            , only [ Unlogged.SignUp ] <|
+                Input.checkbox []
+                    { label = Input.labelRight [] <| Element.text <| Strings.loginAcceptTermsOfService lang
+                    , icon = Input.defaultCheckbox
+                    , onChange = Unlogged.AcceptTermsOfServiceChanged
+                    , checked = model.acceptTermsOfService
+                    }
+            , only [ Unlogged.SignUp ] <|
+                Input.checkbox []
+                    { label = Input.labelRight [] <| Element.text <| Strings.loginSignUpForTheNewsletter lang
+                    , icon = Input.defaultCheckbox
+                    , onChange = Unlogged.SignUpForNewsletterChanged
+                    , checked = model.signUpForNewsletter
                     }
             , Ui.primaryGeneric [ Ui.cx, Ui.wf ]
                 { action = buttonMsg
@@ -232,7 +252,7 @@ view model =
                             Ui.None
 
                         else
-                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.Register
+                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.SignUp
                     , label = Lang.question Strings.loginNotRegisteredYet lang
                     }
                 ]

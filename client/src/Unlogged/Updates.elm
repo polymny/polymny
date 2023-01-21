@@ -25,6 +25,12 @@ update msg model =
         ( Unlogged.RepeatPasswordChanged newRepeatPassword, _ ) ->
             ( { model | repeatPassword = newRepeatPassword }, Cmd.none )
 
+        ( Unlogged.AcceptTermsOfServiceChanged v, _ ) ->
+            ( { model | acceptTermsOfService = v }, Cmd.none )
+
+        ( Unlogged.SignUpForNewsletterChanged v, _ ) ->
+            ( { model | signUpForNewsletter = v }, Cmd.none )
+
         ( Unlogged.PageChanged newPage, _ ) ->
             ( { model | page = newPage }, Cmd.none )
 
@@ -51,8 +57,10 @@ update msg model =
                 (\x -> Unlogged.ResetPasswordRequestChanged x)
             )
 
-        ( Unlogged.ButtonClicked, _ ) ->
-            ( model, Cmd.none )
+        ( Unlogged.ButtonClicked, Unlogged.SignUp ) ->
+            ( { model | newPasswordRequest = RemoteData.Loading Nothing }
+            , Api.signUp model (\x -> Unlogged.SignUpRequestChanged x)
+            )
 
         ( Unlogged.LoginRequestChanged data, _ ) ->
             ( { model | loginRequest = data }, Cmd.none )
@@ -62,3 +70,6 @@ update msg model =
 
         ( Unlogged.ResetPasswordRequestChanged data, _ ) ->
             ( { model | resetPasswordRequest = data }, Cmd.none )
+
+        ( Unlogged.SignUpRequestChanged data, _ ) ->
+            ( { model | signUpRequest = data }, Cmd.none )

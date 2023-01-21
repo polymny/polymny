@@ -18,12 +18,11 @@ login sortBy username password toMsg =
     Api.postJson
         { url = "/api/login"
         , body =
-            Http.jsonBody
-                (Encode.object
+            Http.jsonBody <|
+                Encode.object
                     [ ( "username", Encode.string username )
                     , ( "password", Encode.string password )
                     ]
-                )
         , toMsg = toMsg
         , decoder = Data.decodeUser sortBy
         }
@@ -54,12 +53,29 @@ resetPassword sortBy key newPassword toMsg =
     Api.postJson
         { url = "/api/change-password"
         , body =
-            Http.jsonBody
-                (Encode.object
+            Http.jsonBody <|
+                Encode.object
                     [ ( "key", Encode.string key )
                     , ( "new_password", Encode.string newPassword )
                     ]
-                )
         , toMsg = toMsg
         , decoder = Data.decodeUser sortBy
+        }
+
+
+{-| Creates a new Polymny account.
+-}
+signUp : { a | username : String, email : String, password : String, signUpForNewsletter : Bool } -> (WebData () -> msg) -> Cmd msg
+signUp { username, email, password, signUpForNewsletter } toMsg =
+    Api.post
+        { url = "/api/new-user"
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "username", Encode.string username )
+                    , ( "email", Encode.string email )
+                    , ( "password", Encode.string password )
+                    , ( "subscribed", Encode.bool signUpForNewsletter )
+                    ]
+        , toMsg = toMsg
         }

@@ -18,9 +18,12 @@ type alias Model =
     , email : String
     , password : String
     , repeatPassword : String
+    , acceptTermsOfService : Bool
+    , signUpForNewsletter : Bool
     , loginRequest : RemoteData.WebData User
     , newPasswordRequest : RemoteData.WebData ()
     , resetPasswordRequest : RemoteData.WebData User
+    , signUpRequest : RemoteData.WebData ()
     }
 
 
@@ -28,7 +31,7 @@ type alias Model =
 -}
 type Page
     = Login
-    | Register
+    | SignUp
     | ForgotPassword
     | ResetPassword String
 
@@ -41,7 +44,7 @@ comparePage page1 page2 =
         ( Login, Login ) ->
             True
 
-        ( Register, Register ) ->
+        ( SignUp, SignUp ) ->
             True
 
         ( ForgotPassword, ForgotPassword ) ->
@@ -61,10 +64,13 @@ type Msg
     | EmailChanged String
     | PasswordChanged String
     | RepeatPasswordChanged String
+    | AcceptTermsOfServiceChanged Bool
+    | SignUpForNewsletterChanged Bool
     | PageChanged Page
     | LoginRequestChanged (RemoteData.WebData User)
     | NewPasswordRequestChanged (RemoteData.WebData ())
     | ResetPasswordRequestChanged (RemoteData.WebData User)
+    | SignUpRequestChanged (RemoteData.WebData ())
     | ButtonClicked
 
 
@@ -78,9 +84,12 @@ init config url =
     , email = ""
     , password = ""
     , repeatPassword = ""
+    , acceptTermsOfService = False
+    , signUpForNewsletter = False
     , loginRequest = RemoteData.NotAsked
     , newPasswordRequest = RemoteData.NotAsked
     , resetPasswordRequest = RemoteData.NotAsked
+    , signUpRequest = RemoteData.NotAsked
     }
 
 
