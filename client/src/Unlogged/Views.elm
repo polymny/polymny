@@ -45,15 +45,6 @@ view model =
             else
                 Element.none
 
-        buttonMsg : Ui.Action Unlogged.Msg
-        buttonMsg =
-            case ( model.page, model.newPasswordRequest ) of
-                ( Unlogged.ForgotPassword, RemoteData.Success _ ) ->
-                    Ui.None
-
-                _ ->
-                    Ui.Msg Unlogged.ButtonClicked
-
         buttonText : Element msg
         buttonText =
             case ( model.page, ( ( model.loginRequest, model.newPasswordRequest ), ( model.resetPasswordRequest, model.signUpRequest ) ) ) of
@@ -185,19 +176,7 @@ view model =
                 _ ->
                     Nothing
 
-        withError : Maybe String -> Element Unlogged.Msg -> Element Unlogged.Msg
-        withError error input =
-            Element.column [ Ui.s 10, Ui.wf ]
-                [ input
-                , case error of
-                    Just s ->
-                        Element.text s
-
-                    _ ->
-                        Element.none
-                ]
-
-        ( passwordAttr, passwordError ) =
+        ( passwordAttr, passwordError, passwordAccepted ) =
             case model.page of
                 Unlogged.SignUp ->
                     if length < 6 then
@@ -205,6 +184,7 @@ view model =
                         , Strings.loginPasswordTooShort lang
                             |> Element.text
                             |> Element.el [ Font.color Colors.red ]
+                        , False
                         )
 
                     else if strength < 5 then
@@ -212,6 +192,7 @@ view model =
                         , Strings.loginInsufficientPasswordComplexity lang
                             |> Element.text
                             |> Element.el [ Font.color Colors.red ]
+                        , False
                         )
 
                     else if strength < 6 then
@@ -219,6 +200,7 @@ view model =
                         , Strings.loginAcceptablePasswordComplexity lang
                             |> Element.text
                             |> Element.el [ Font.color Colors.orange ]
+                        , True
                         )
 
                     else
@@ -226,10 +208,70 @@ view model =
                         , Strings.loginStrongPasswordComplexity lang
                             |> Element.text
                             |> Element.el [ Font.color Colors.green2 ]
+                        , True
                         )
 
                 _ ->
-                    ( [], Element.none )
+                    ( [], Element.none, True )
+
+        ( emailAttr, emailError, emailAccepted ) =
+            if model.page == Unlogged.SignUp && not (checkEmail model.email) then
+                ( [ Ui.b 1, Border.color Colors.red ]
+                , Strings.loginIncorrectEmailAddress lang |> Element.text |> Element.el [ Font.color Colors.red ]
+                , False
+                )
+
+            else
+                ( [], Element.none, True )
+
+        ( repeatAttr, repeatError, repeatAccepted ) =
+            if (model.page == Unlogged.SignUp || Unlogged.comparePage model.page (Unlogged.ResetPassword "")) && model.password /= model.repeatPassword then
+                ( [ Ui.b 1, Border.color Colors.red ]
+                , Strings.loginPasswordsDontMatch lang
+                    |> Element.text
+                    |> Element.el [ Font.color Colors.red ]
+                , False
+                )
+
+            else
+                ( [], Element.none, True )
+
+        ( acceptError, acceptAccepted ) =
+            if model.page == Unlogged.SignUp && not model.acceptTermsOfService then
+                ( Strings.loginMustAcceptTermsOfService lang
+                    |> Element.text
+                    |> Element.el [ Font.color Colors.red ]
+                , False
+                )
+
+            else
+                ( Element.none, True )
+
+        canSubmit =
+            case model.page of
+                Unlogged.Login ->
+                    True
+
+                Unlogged.SignUp ->
+                    passwordAccepted && emailAccepted && repeatAccepted && acceptAccepted
+
+                Unlogged.ForgotPassword ->
+                    True
+
+                Unlogged.ResetPassword _ ->
+                    True
+
+        buttonMsg : Ui.Action Unlogged.Msg
+        buttonMsg =
+            case ( model.page, model.newPasswordRequest, canSubmit ) of
+                ( _, _, False ) ->
+                    Ui.None
+
+                ( Unlogged.ForgotPassword, RemoteData.Success _, _ ) ->
+                    Ui.None
+
+                _ ->
+                    Ui.Msg Unlogged.ButtonClicked
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
@@ -241,12 +283,13 @@ view model =
                     , text = model.username
                     }
             , only [ Unlogged.ForgotPassword, Unlogged.SignUp ] <|
-                Input.email [ Ui.cx, Ui.wf ]
+                Input.email (Ui.cx :: Ui.wf :: emailAttr)
                     { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
                     , onChange = Unlogged.EmailChanged
                     , text = model.email
                     }
+            , only [ Unlogged.SignUp ] emailError
             , only [ Unlogged.Login, Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 password (Ui.cx :: Ui.wf :: passwordAttr)
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
@@ -258,13 +301,14 @@ view model =
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordStrengthElement
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordError
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
-                Input.newPassword [ Ui.cx, Ui.wf ]
+                Input.newPassword (Ui.cx :: Ui.wf :: repeatAttr)
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
                     , onChange = Unlogged.RepeatPasswordChanged
                     , text = model.repeatPassword
                     , show = False
                     }
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] repeatError
             , only [ Unlogged.SignUp ] <|
                 Input.checkbox []
                     { label =
@@ -280,6 +324,7 @@ view model =
                     , onChange = Unlogged.AcceptTermsOfServiceChanged
                     , checked = model.acceptTermsOfService
                     }
+            , only [ Unlogged.SignUp ] acceptError
             , only [ Unlogged.SignUp ] <|
                 Input.checkbox []
                     { label = Input.labelRight [] <| Element.text <| Strings.loginSignUpForTheNewsletter lang
@@ -367,3 +412,22 @@ passwordStrength password =
 
     else
         lengthStrength + hasLowerCase + hasUpperCase + hasDigit + hasSpecial
+
+
+{-| Checks whether an email address has a correct syntax.
+-}
+checkEmail : String -> Bool
+checkEmail email =
+    let
+        splitAt =
+            String.split "@" email
+
+        host =
+            List.drop 1 splitAt |> List.head |> Maybe.map (String.split "." >> List.length)
+    in
+    case ( List.length splitAt == 2, not (String.contains " " email), host ) of
+        ( True, True, Just x ) ->
+            x > 1
+
+        _ ->
+            False
