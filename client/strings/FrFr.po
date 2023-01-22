@@ -32,6 +32,10 @@ msgstr "Connexion echouée"
 msgid "Login.termsOfService"
 msgstr "Conditions générales d'utilisation"
 
+#. Begning of the sentence that the user pronounces when accepting the terms of service.
+msgid "Login.acceptTermsOfServiceBegining"
+msgstr "J'ai lu et j'accepte les"
+
 #. Sentence that the user pronounces when accepting the terms of service.
 msgid "Login.acceptTermsOfService"
 msgstr "J'ai lu et j'accepte les conditions générales d'utilisation"
@@ -117,6 +121,22 @@ msgstr[1] "Le formulaire contient des erreurs"
 #. You must accept the terms of service.
 msgid "Login.mustAcceptTermsOfService"
 msgstr "Vous devez accepter les conditions générales d'utilisation"
+
+#. The complexity of the password is insufficient.
+msgid "Login.insufficientPasswordComplexity"
+msgstr "La complexité du mot de passe est insuffisante"
+
+#. The complexity of the password is acceptable.
+msgid "Login.acceptablePasswordComplexity"
+msgstr "La complexité du mot de passe est acceptable"
+
+#. The complexity of the password is strong.
+msgid "Login.strongPasswordComplexity"
+msgstr "La complexité du mot de passe est forte"
+
+#. The password must contain more than 6 characters.
+msgid "Login.passwordTooShort"
+msgstr "Le mot de passe doit contenir au moins 6 caractères"
 
 #. Your account has been successfully activated.
 msgid "Login.accountActivated"

@@ -32,9 +32,13 @@ msgstr "Login failed"
 msgid "Login.termsOfService"
 msgstr "Terms of service"
 
+#. Begning of the sentence that the user pronounces when accepting the terms of service.
+msgid "Login.acceptTermsOfServiceBegining"
+msgstr "I read and accept the"
+
 #. Sentence that the user pronounces when accepting the terms of service.
 msgid "Login.acceptTermsOfService"
-msgstr "I accept the terms of service"
+msgstr "I read and accept the terms of service"
 
 #. Adjective describing a user that subscribed to the newsletter.
 msgid "Login.subscribedToTheNewsletter"
@@ -117,6 +121,22 @@ msgstr[1] "The form contains errors"
 #. You must accept the terms of service.
 msgid "Login.mustAcceptTermsOfService"
 msgstr "You must accept the terms of service"
+
+#. The complexity of the password is insufficient.
+msgid "Login.insufficientPasswordComplexity"
+msgstr "The complexity of the password is insufficient"
+
+#. The complexity of the password is acceptable.
+msgid "Login.acceptablePasswordComplexity"
+msgstr "The complexity of the password is acceptable"
+
+#. The complexity of the password is strong.
+msgid "Login.strongPasswordComplexity"
+msgstr "The complexity of the password is strong"
+
+#. The password must contain more than 6 characters.
+msgid "Login.passwordTooShort"
+msgstr "The password must contain at least 6 characters"
 
 #. Your account has been successfully activated.
 msgid "Login.accountActivated"

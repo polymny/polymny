@@ -81,17 +81,20 @@ view model =
                 ( Unlogged.ResetPassword _, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginResetPassword lang |> Element.text
 
+        strength =
+            passwordStrength model.password
+
+        length =
+            String.length model.password
+
         passwordStrengthElement : Element msg
         passwordStrengthElement =
             let
-                strength =
-                    passwordStrength model.password
-
                 color =
-                    if strength < 6 then
+                    if strength < 5 then
                         Colors.red
 
-                    else if strength < 5 then
+                    else if strength < 6 then
                         Colors.orange
 
                     else
@@ -181,6 +184,52 @@ view model =
 
                 _ ->
                     Nothing
+
+        withError : Maybe String -> Element Unlogged.Msg -> Element Unlogged.Msg
+        withError error input =
+            Element.column [ Ui.s 10, Ui.wf ]
+                [ input
+                , case error of
+                    Just s ->
+                        Element.text s
+
+                    _ ->
+                        Element.none
+                ]
+
+        ( passwordAttr, passwordError ) =
+            case model.page of
+                Unlogged.SignUp ->
+                    if length < 6 then
+                        ( [ Ui.b 1, Border.color Colors.red ]
+                        , Strings.loginPasswordTooShort lang
+                            |> Element.text
+                            |> Element.el [ Font.color Colors.red ]
+                        )
+
+                    else if strength < 5 then
+                        ( [ Ui.b 1, Border.color Colors.red ]
+                        , Strings.loginInsufficientPasswordComplexity lang
+                            |> Element.text
+                            |> Element.el [ Font.color Colors.red ]
+                        )
+
+                    else if strength < 6 then
+                        ( []
+                        , Strings.loginAcceptablePasswordComplexity lang
+                            |> Element.text
+                            |> Element.el [ Font.color Colors.orange ]
+                        )
+
+                    else
+                        ( []
+                        , Strings.loginStrongPasswordComplexity lang
+                            |> Element.text
+                            |> Element.el [ Font.color Colors.green2 ]
+                        )
+
+                _ ->
+                    ( [], Element.none )
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
@@ -199,15 +248,15 @@ view model =
                     , text = model.email
                     }
             , only [ Unlogged.Login, Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
-                password [ Ui.cx, Ui.wf ]
+                password (Ui.cx :: Ui.wf :: passwordAttr)
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
                     , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
                     , onChange = Unlogged.PasswordChanged
                     , text = model.password
                     , show = False
                     }
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
-                passwordStrengthElement
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordStrengthElement
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordError
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 Input.newPassword [ Ui.cx, Ui.wf ]
                     { label = Input.labelHidden <| Strings.dataUserPassword lang
@@ -218,7 +267,15 @@ view model =
                     }
             , only [ Unlogged.SignUp ] <|
                 Input.checkbox []
-                    { label = Input.labelRight [] <| Element.text <| Strings.loginAcceptTermsOfService lang
+                    { label =
+                        Input.labelRight [ Ui.wf ] <|
+                            Element.paragraph [ Ui.wf ]
+                                [ Element.text <| Strings.loginAcceptTermsOfServiceBegining lang ++ " "
+                                , Ui.link []
+                                    { label = Strings.loginTermsOfService lang |> String.toLower
+                                    , action = Ui.NewTab "https://polymny.studio/cgu-consommateurs/"
+                                    }
+                                ]
                     , icon = Input.defaultCheckbox
                     , onChange = Unlogged.AcceptTermsOfServiceChanged
                     , checked = model.acceptTermsOfService
