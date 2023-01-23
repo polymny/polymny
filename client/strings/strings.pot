@@ -82,6 +82,10 @@ msgstr ""
 msgid "Login.incorrectEmailAddress"
 msgstr ""
 
+#. Username or email already exist.
+msgid "Login.usernameOrEmailAlreadyExist"
+msgstr ""
+
 #. The password in wrong.
 msgid "Login.wrongPassword"
 msgstr ""

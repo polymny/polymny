@@ -143,6 +143,9 @@ view model =
                 ( Unlogged.ResetPassword _, ( ( _, _ ), ( RemoteData.Failure _, _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
+                ( Unlogged.SignUp, ( ( _, _ ), ( _, RemoteData.Failure (Http.BadStatus 404) ) ) ) ->
+                    Just <| Strings.loginUsernameOrEmailAlreadyExist lang ++ "."
+
                 ( Unlogged.SignUp, ( ( _, _ ), ( _, RemoteData.Failure _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 

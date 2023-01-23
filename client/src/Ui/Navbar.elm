@@ -46,9 +46,9 @@ navbar config page user =
                 Element.none
         , case user of
             Just u ->
-                Element.row [ Font.size 20, Element.alignRight, Element.spacing 10 ]
+                Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
                     [ Element.text u.username
-                    , Ui.secondary [ Ui.pr 10 ]
+                    , Ui.secondary []
                         { action = Ui.Msg App.Logout
                         , label = Strings.loginLogout lang
                         }

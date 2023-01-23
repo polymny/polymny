@@ -96,9 +96,13 @@ msgstr "Repeat password"
 msgid "Login.incorrectEmailAddress"
 msgstr "The e-mail address is incorrect"
 
+#. Username or email already exist.
+msgid "Login.usernameOrEmailAlreadyExist"
+msgstr "An account with this username or e-mail address already exists"
+
 #. The password in wrong.
 msgid "Login.wrongPassword"
-msgstr "The password is incorrect"
+msgstr "The username or the password is incorrect"
 
 #. An unknown error occured while logging in.
 msgid "Login.unknownError"
