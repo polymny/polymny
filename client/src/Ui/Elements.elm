@@ -99,7 +99,7 @@ secondary attr { label, action } =
 secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
 secondaryGeneric attr { label, action } =
     --navigationElement action (addSecondaryAttr attr) label
-    Element.el attr (navigationElement action (addSecondaryAttr []) label)
+    navigationElement action (addSecondaryAttr attr) (Element.el [ Ui.cx, Font.bold ] label)
 
 
 {-| The attributes of a secondary button.
@@ -110,9 +110,7 @@ addSecondaryAttr attr =
         :: Background.color Colors.white
         :: Border.color Colors.greyBorder
         :: Ui.b 1
-        -- :: Font.color Colors.greyFont
         :: Ui.p 12
-        :: Font.bold
         :: attr
 
 

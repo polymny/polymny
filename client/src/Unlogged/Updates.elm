@@ -58,7 +58,7 @@ update msg model =
             )
 
         ( Unlogged.ButtonClicked, Unlogged.SignUp ) ->
-            ( { model | newPasswordRequest = RemoteData.Loading Nothing }
+            ( { model | signUpRequest = RemoteData.Loading Nothing }
             , Api.signUp model (\x -> Unlogged.SignUpRequestChanged x)
             )
 

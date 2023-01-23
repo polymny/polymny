@@ -130,17 +130,20 @@ view model =
 
         errorMessage : Maybe String
         errorMessage =
-            case ( model.page, ( model.loginRequest, model.newPasswordRequest, model.resetPasswordRequest ) ) of
-                ( Unlogged.Login, ( RemoteData.Failure (Http.BadStatus 401), _, _ ) ) ->
+            case ( model.page, ( ( model.loginRequest, model.newPasswordRequest ), ( model.resetPasswordRequest, model.signUpRequest ) ) ) of
+                ( Unlogged.Login, ( ( RemoteData.Failure (Http.BadStatus 401), _ ), ( _, _ ) ) ) ->
                     Just <| Strings.loginWrongPassword lang ++ "."
 
-                ( Unlogged.Login, ( RemoteData.Failure _, _, _ ) ) ->
+                ( Unlogged.Login, ( ( RemoteData.Failure _, _ ), ( _, _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
-                ( Unlogged.ForgotPassword, ( _, RemoteData.Failure _, _ ) ) ->
+                ( Unlogged.ForgotPassword, ( ( _, RemoteData.Failure _ ), ( _, _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
-                ( Unlogged.ResetPassword _, ( _, _, RemoteData.Failure _ ) ) ->
+                ( Unlogged.ResetPassword _, ( ( _, _ ), ( RemoteData.Failure _, _ ) ) ) ->
+                    Just <| Strings.loginUnknownError lang ++ "."
+
+                ( Unlogged.SignUp, ( ( _, _ ), ( _, RemoteData.Failure _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
 
                 _ ->
@@ -261,17 +264,17 @@ view model =
                 Unlogged.ResetPassword _ ->
                     True
 
-        buttonMsg : Ui.Action Unlogged.Msg
-        buttonMsg =
+        -- (buttonMsg, mkButton) : (Ui.Action Unlogged.Msg, _)
+        ( buttonMsg, mkButton ) =
             case ( model.page, model.newPasswordRequest, canSubmit ) of
                 ( _, _, False ) ->
-                    Ui.None
+                    ( Ui.None, Ui.secondaryGeneric )
 
                 ( Unlogged.ForgotPassword, RemoteData.Success _, _ ) ->
-                    Ui.None
+                    ( Ui.None, Ui.secondaryGeneric )
 
                 _ ->
-                    Ui.Msg Unlogged.ButtonClicked
+                    ( Ui.Msg Unlogged.ButtonClicked, Ui.primaryGeneric )
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
@@ -332,7 +335,7 @@ view model =
                     , onChange = Unlogged.SignUpForNewsletterChanged
                     , checked = model.signUpForNewsletter
                     }
-            , Ui.primaryGeneric [ Ui.cx, Ui.wf ]
+            , mkButton [ Ui.cx, Ui.wf ]
                 { action = buttonMsg
                 , label = buttonText
                 }
