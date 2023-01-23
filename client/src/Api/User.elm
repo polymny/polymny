@@ -16,7 +16,7 @@ import RemoteData exposing (WebData)
 login : String -> Data.SortBy -> String -> String -> (WebData User -> msg) -> Cmd msg
 login root sortBy username password toMsg =
     Api.postJson
-        { url = root ++ "/login"
+        { url = root ++ "/api/login"
         , body =
             Http.jsonBody <|
                 Encode.object

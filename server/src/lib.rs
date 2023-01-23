@@ -468,6 +468,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
             "/api",
             routes![
                 routes::user::login,
+                routes::user::login_cors,
                 routes::user::logout,
                 routes::user::delete,
                 routes::user::request_new_password,

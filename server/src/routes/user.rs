@@ -157,7 +157,7 @@ pub async fn login_external<'a>(
     db: Db,
     cookies: &CookieJar<'_>,
     config: &S<Config>,
-    login: Json<LoginForm>,
+    login: Form<LoginForm>,
 ) -> Cors<Result<Redirect>> {
     let user = match User::get_by_username(&login.username, &db).await {
         Ok(u) => u,
@@ -191,9 +191,28 @@ pub async fn login_external<'a>(
     Cors::ok(&config.home, Redirect::to(config.root.clone()))
 }
 
+/// Route to allow CORS request from home page.
+#[options("/login")]
+pub fn login_cors(config: &S<Config>) -> Cors<()> {
+    Cors::new(&config.home, ())
+}
+
 /// The login page.
 #[post("/login", data = "<login>")]
 pub async fn login(
+    db: Db,
+    config: &S<Config>,
+    cookies: &CookieJar<'_>,
+    login: Json<LoginForm>,
+) -> Cors<Result<Value>> {
+    match login_wrapper(db, config, cookies, login).await {
+        Ok(v) => Cors::ok(&config.home, v),
+        Err(Error(e)) => Cors::err(&config.home, e),
+    }
+}
+
+/// Content of the login function.
+pub async fn login_wrapper(
     db: Db,
     config: &S<Config>,
     cookies: &CookieJar<'_>,
