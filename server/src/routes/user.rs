@@ -157,7 +157,7 @@ pub async fn login_external<'a>(
     db: Db,
     cookies: &CookieJar<'_>,
     config: &S<Config>,
-    login: Form<LoginForm>,
+    login: Json<LoginForm>,
 ) -> Cors<Result<Redirect>> {
     let user = match User::get_by_username(&login.username, &db).await {
         Ok(u) => u,

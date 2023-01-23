@@ -8,6 +8,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html
+import Html.Attributes
 import Http
 import Lang
 import RemoteData
@@ -366,6 +368,16 @@ view model =
                 ]
         , formatError errorMessage
         , formatSuccess successMessage
+        , Element.html <|
+            Html.form
+                [ Html.Attributes.method "POST"
+                , Html.Attributes.action (model.config.serverConfig.root ++ "/login")
+                , Html.Attributes.style "display" "none"
+                , Html.Attributes.id "loginform"
+                ]
+                [ Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "username", Html.Attributes.value model.username ] []
+                , Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "password", Html.Attributes.value model.password ] []
+                ]
         ]
 
 

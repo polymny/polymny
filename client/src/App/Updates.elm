@@ -45,7 +45,7 @@ update message model =
             App.pageFromRoute m.config user Route.Home
                 |> Tuple.mapBoth
                     (\x -> App.Logged { config = m.config, user = user, page = x })
-                    (Cmd.map App.LoggedMsg)
+                    (\x -> Cmd.batch [ Cmd.map App.LoggedMsg x, Route.push m.config.clientState.key Route.Home ])
 
         ( App.UnloggedMsg msg, App.Unlogged m ) ->
             Unlogged.update msg m

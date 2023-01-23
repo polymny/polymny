@@ -1,4 +1,4 @@
-module Unlogged.Updates exposing (..)
+port module Unlogged.Updates exposing (..)
 
 {-| This module contains the unlogged updates of the app.
 -}
@@ -12,6 +12,10 @@ import Unlogged.Types as Unlogged
 -}
 update : Unlogged.Msg -> Unlogged.Model -> ( Unlogged.Model, Cmd Unlogged.Msg )
 update msg model =
+    let
+        root =
+            model.config.serverConfig.root
+    in
     case ( msg, model.page ) of
         ( Unlogged.UsernameChanged newUsername, _ ) ->
             ( { model | username = newUsername }, Cmd.none )
@@ -37,6 +41,7 @@ update msg model =
         ( Unlogged.ButtonClicked, Unlogged.Login ) ->
             ( { model | loginRequest = RemoteData.Loading Nothing }
             , Api.login
+                root
                 model.config.clientConfig.sortBy
                 model.username
                 model.password
@@ -45,7 +50,7 @@ update msg model =
 
         ( Unlogged.ButtonClicked, Unlogged.ForgotPassword ) ->
             ( { model | newPasswordRequest = RemoteData.Loading Nothing }
-            , Api.requestNewPassword model.email (\x -> Unlogged.NewPasswordRequestChanged x)
+            , Api.requestNewPassword root model.email (\x -> Unlogged.NewPasswordRequestChanged x)
             )
 
         ( Unlogged.ButtonClicked, Unlogged.ResetPassword key ) ->
@@ -59,8 +64,13 @@ update msg model =
 
         ( Unlogged.ButtonClicked, Unlogged.SignUp ) ->
             ( { model | signUpRequest = RemoteData.Loading Nothing }
-            , Api.signUp model (\x -> Unlogged.SignUpRequestChanged x)
+            , Api.signUp root model (\x -> Unlogged.SignUpRequestChanged x)
             )
+
+        ( Unlogged.LoginRequestChanged (RemoteData.Success _), _ ) ->
+            -- This never happens on the full app, it only happens when embedding the form on the portal (in the full
+            -- app, this case is caught in App.Updates).
+            ( model, submitForm "loginform" )
 
         ( Unlogged.LoginRequestChanged data, _ ) ->
             ( { model | loginRequest = data }, Cmd.none )
@@ -73,3 +83,6 @@ update msg model =
 
         ( Unlogged.SignUpRequestChanged data, _ ) ->
             ( { model | signUpRequest = data }, Cmd.none )
+
+
+port submitForm : String -> Cmd msg

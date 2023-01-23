@@ -13,10 +13,10 @@ import RemoteData exposing (WebData)
 
 {-| Login with username and password.
 -}
-login : Data.SortBy -> String -> String -> (WebData User -> msg) -> Cmd msg
-login sortBy username password toMsg =
+login : String -> Data.SortBy -> String -> String -> (WebData User -> msg) -> Cmd msg
+login root sortBy username password toMsg =
     Api.postJson
-        { url = "/api/login"
+        { url = root ++ "/login"
         , body =
             Http.jsonBody <|
                 Encode.object
@@ -37,10 +37,10 @@ logout msg =
 
 {-| Asks the server to authenticate via email to reset a forgotten password.
 -}
-requestNewPassword : String -> (WebData () -> msg) -> Cmd msg
-requestNewPassword email toMsg =
+requestNewPassword : String -> String -> (WebData () -> msg) -> Cmd msg
+requestNewPassword root email toMsg =
     Api.post
-        { url = "/api/request-new-password"
+        { url = root ++ "/api/request-new-password"
         , toMsg = toMsg
         , body = Http.jsonBody <| Encode.object [ ( "email", Encode.string email ) ]
         }
@@ -65,10 +65,10 @@ resetPassword sortBy key newPassword toMsg =
 
 {-| Creates a new Polymny account.
 -}
-signUp : { a | username : String, email : String, password : String, signUpForNewsletter : Bool } -> (WebData () -> msg) -> Cmd msg
-signUp { username, email, password, signUpForNewsletter } toMsg =
+signUp : String -> { a | username : String, email : String, password : String, signUpForNewsletter : Bool } -> (WebData () -> msg) -> Cmd msg
+signUp root { username, email, password, signUpForNewsletter } toMsg =
     Api.post
-        { url = "/api/new-user"
+        { url = root ++ "/api/new-user"
         , body =
             Http.jsonBody <|
                 Encode.object
