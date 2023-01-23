@@ -185,42 +185,41 @@ view model =
                     Nothing
 
         ( passwordAttr, passwordError, passwordAccepted ) =
-            case model.page of
-                Unlogged.SignUp ->
-                    if length < 6 then
-                        ( [ Ui.b 1, Border.color Colors.red ]
-                        , Strings.loginPasswordTooShort lang
-                            |> Element.text
-                            |> Element.el [ Font.color Colors.red ]
-                        , False
-                        )
+            if model.page == Unlogged.SignUp || Unlogged.comparePage model.page (Unlogged.ResetPassword "") then
+                if length < 6 then
+                    ( [ Ui.b 1, Border.color Colors.red ]
+                    , Strings.loginPasswordTooShort lang
+                        |> Element.text
+                        |> Element.el [ Font.color Colors.red ]
+                    , False
+                    )
 
-                    else if strength < 5 then
-                        ( [ Ui.b 1, Border.color Colors.red ]
-                        , Strings.loginInsufficientPasswordComplexity lang
-                            |> Element.text
-                            |> Element.el [ Font.color Colors.red ]
-                        , False
-                        )
+                else if strength < 5 then
+                    ( [ Ui.b 1, Border.color Colors.red ]
+                    , Strings.loginInsufficientPasswordComplexity lang
+                        |> Element.text
+                        |> Element.el [ Font.color Colors.red ]
+                    , False
+                    )
 
-                    else if strength < 6 then
-                        ( []
-                        , Strings.loginAcceptablePasswordComplexity lang
-                            |> Element.text
-                            |> Element.el [ Font.color Colors.orange ]
-                        , True
-                        )
+                else if strength < 6 then
+                    ( []
+                    , Strings.loginAcceptablePasswordComplexity lang
+                        |> Element.text
+                        |> Element.el [ Font.color Colors.orange ]
+                    , True
+                    )
 
-                    else
-                        ( []
-                        , Strings.loginStrongPasswordComplexity lang
-                            |> Element.text
-                            |> Element.el [ Font.color Colors.green2 ]
-                        , True
-                        )
+                else
+                    ( []
+                    , Strings.loginStrongPasswordComplexity lang
+                        |> Element.text
+                        |> Element.el [ Font.color Colors.green2 ]
+                    , True
+                    )
 
-                _ ->
-                    ( [], Element.none, True )
+            else
+                ( [], Element.none, True )
 
         ( emailAttr, emailError, emailAccepted ) =
             if model.page == Unlogged.SignUp && not (checkEmail model.email) then
@@ -267,7 +266,7 @@ view model =
                     True
 
                 Unlogged.ResetPassword _ ->
-                    True
+                    passwordAccepted && repeatAccepted
 
         -- (buttonMsg, mkButton) : (Ui.Action Unlogged.Msg, _)
         ( buttonMsg, mkButton ) =
