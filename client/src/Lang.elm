@@ -1,6 +1,6 @@
 module Lang exposing
-    ( Lang(..), fromString, toString, flag
-    , default, other, question, dots
+    ( Lang(..), langs, fromString, toString, toLocal, flag
+    , default, question, dots
     )
 
 {-| This module holds the lang type and the different strings represented in the different languages.
@@ -8,7 +8,7 @@ module Lang exposing
 
 # Type definition
 
-@docs Lang, fromString, toString, flag
+@docs Lang, langs, fromString, toString, toLocal, flag
 
 
 # Utils functions
@@ -28,6 +28,13 @@ type Lang
     | EnUs
 
 
+{-| A list containing all available langs.
+-}
+langs : List Lang
+langs =
+    [ EnUs, FrFr ]
+
+
 {-| This function returns the string representation of the lang.
 
     toLang FrFr == "fr-FR"
@@ -41,6 +48,18 @@ toString lang =
 
         EnUs ->
             "en-US"
+
+
+{-| This functions returns the local name of the lang.
+-}
+toLocal : Lang -> String
+toLocal lang =
+    case lang of
+        FrFr ->
+            "Français"
+
+        EnUs ->
+            "English"
 
 
 {-| Returns the UTF-8 emoji for a flag representing the lang.
@@ -79,21 +98,6 @@ fromString string =
 default : Lang
 default =
     FrFr
-
-
-{-| Returns the other lang.
-
-Since we have only two langs supported, it makes it easy to swich lang.
-
--}
-other : Lang -> Lang
-other lang =
-    case lang of
-        FrFr ->
-            EnUs
-
-        EnUs ->
-            FrFr
 
 
 {-| Adds an interrogation mark to a string.

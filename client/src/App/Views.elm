@@ -9,15 +9,19 @@ module App.Views exposing (view, viewSuccess, viewError)
 import Acquisition.Views as Acquisition
 import App.Types as App
 import Browser
+import Config
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Home.Views as Home
 import Html.Attributes
+import Lang exposing (Lang)
 import NewCapsule.Views as NewCapsule
 import Preparation.Views as Preparation
 import Production.Views as Production
+import Strings
 import Ui.Colors as Colors
+import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Navbar as Ui
 import Ui.Utils as Ui
@@ -69,8 +73,26 @@ viewContent fullModel =
 
                 App.Error error ->
                     ( viewError error |> Element.map App.LoggedMsg, Element.none )
+
+        clientState =
+            case fullModel of
+                App.Logged { config } ->
+                    config.clientState
+
+                App.Unlogged { config } ->
+                    config.clientState
+
+                _ ->
+                    Config.initClientState Nothing Nothing
+
+        realPopup =
+            if clientState.showLangPicker then
+                langPicker clientState.lang
+
+            else
+                popup
     in
-    Element.column [ Ui.wf, Ui.hf, Element.inFront popup ]
+    Element.column [ Ui.wf, Ui.hf, Element.inFront realPopup ]
         [ Ui.navbar
             (fullModel |> App.toMaybe |> Maybe.map .config)
             (fullModel |> App.toMaybe |> Maybe.map .page)
@@ -110,3 +132,42 @@ viewSuccess model =
 viewError : App.Error -> Element App.Msg
 viewError error =
     Element.text (App.errorToString error)
+
+
+{-| The popup for the lang picker.
+-}
+langPicker : Lang -> Element App.MaybeMsg
+langPicker lang =
+    let
+        confirmButton =
+            Ui.primary [ Ui.ab, Ui.ar ]
+                { action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.ToggleLangPicker
+                , label = Strings.uiConfirm lang
+                }
+
+        langChoice : Lang -> Element App.MaybeMsg
+        langChoice l =
+            (if lang == l then
+                Ui.primaryGeneric
+
+             else
+                Ui.secondaryGeneric
+            )
+                []
+                { label =
+                    Element.row [ Ui.s 5 ]
+                        [ Element.text <| Lang.flag l
+                        , Element.text <| Lang.toLocal l
+                        ]
+                , action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.LangChanged l
+                }
+
+        langChoices =
+            Element.wrappedRow [ Ui.cx, Ui.cy, Ui.s 10 ] <|
+                List.map langChoice Lang.langs
+    in
+    Ui.popup 1 (Strings.configLang lang) <|
+        Element.column [ Ui.wf, Ui.hf ]
+            [ langChoices
+            , confirmButton
+            ]

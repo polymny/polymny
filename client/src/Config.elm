@@ -181,6 +181,8 @@ It is not in the client config since it cannot be persisted, and is recreated wi
     this will mimic it, but otherwise, it will give a lang chosen either by requesting info from the browser or a
     default lang.
   - `lastRequest` is the number of the last request sent. It allows us to ignore responses to old requests.
+  - `tasks` is the list of tasks being run by the client;
+  - `showLangPicker` is a bool that tells us whether we should show the lang picker or not.
 
 -}
 type alias ClientState =
@@ -190,6 +192,7 @@ type alias ClientState =
     , lang : Lang
     , lastRequest : Int
     , tasks : List TaskStatus
+    , showLangPicker : Bool
     }
 
 
@@ -248,6 +251,7 @@ initClientState key lang =
     , lang = Maybe.withDefault Lang.default lang
     , lastRequest = 0
     , tasks = []
+    , showLangPicker = False
     }
 
 
@@ -308,6 +312,7 @@ type Msg
     | SetAudio Device.Audio
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
     | UpdateTaskStatus TaskStatus
+    | ToggleLangPicker
 
 
 {-| This functions updates the config.
@@ -449,6 +454,14 @@ update msg { serverConfig, clientConfig, clientState } =
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
                       , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks }
+                      }
+                    , False
+                    )
+
+                ToggleLangPicker ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | showLangPicker = not clientState.showLangPicker }
                       }
                     , False
                     )

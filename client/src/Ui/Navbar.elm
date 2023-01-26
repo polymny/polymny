@@ -86,7 +86,7 @@ navButtons lang capsule page =
 
 {-| This function creates the bottom bar of the application.
 -}
-bottombar : Maybe Config -> Element msg
+bottombar : Maybe Config -> Element App.MaybeMsg
 bottombar config =
     let
         lang =
@@ -120,7 +120,7 @@ bottombar config =
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configLang lang ++ " " ++ Lang.flag lang
-            , action = Ui.None
+            , action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.ToggleLangPicker
             }
         , config
             |> Maybe.map .serverConfig
