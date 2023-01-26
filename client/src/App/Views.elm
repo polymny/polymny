@@ -16,6 +16,7 @@ import Home.Views as Home
 import Html.Attributes
 import NewCapsule.Views as NewCapsule
 import Preparation.Views as Preparation
+import Production.Views as Production
 import Ui.Colors as Colors
 import Ui.Graphics as Ui
 import Ui.Navbar as Ui
@@ -98,6 +99,10 @@ viewSuccess model =
         App.Acquisition m ->
             Acquisition.view model.config model.user m
                 |> Ui.addLeftAndRightColumn model.config.clientState.lang m.capsule (Just m.gos)
+
+        App.Production m ->
+            Production.view model.config model.user m
+                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gos)
 
 
 {-| Returns the view if the model is in error.

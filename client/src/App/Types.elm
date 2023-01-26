@@ -27,6 +27,7 @@ import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
+import Production.Types as Production
 import Unlogged.Types as Unlogged
 import Url
 
@@ -74,6 +75,7 @@ type Page
     | NewCapsule NewCapsule.Model
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model
+    | Production Production.Model
 
 
 {-| Tries to get the capsule from a specific page. Returns nothing if the page does not correspond to a specific
@@ -86,6 +88,9 @@ getCapsule page =
             Just m.capsule
 
         Acquisition m ->
+            Just m.capsule
+
+        Production m ->
             Just m.capsule
 
         _ ->
@@ -115,6 +120,7 @@ type Msg
     | NewCapsuleMsg NewCapsule.Msg
     | PreparationMsg Preparation.Msg
     | AcquisitionMsg Acquisition.Msg
+    | ProductionMsg Production.Msg
     | ConfigMsg Config.Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url

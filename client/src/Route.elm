@@ -17,6 +17,7 @@ type Route
     = Home
     | Preparation String
     | Acquisition String Int
+    | Production String Int
     | NotFound
     | Custom String
 
@@ -34,6 +35,9 @@ toUrl route =
 
         Acquisition s i ->
             "/capsule/acquisition/" ++ s ++ "/" ++ String.fromInt (i + 1)
+
+        Production s i ->
+            "/capsule/production/" ++ s ++ "/" ++ String.fromInt (i + 1)
 
         NotFound ->
             "/"
@@ -78,6 +82,11 @@ fromUrl url =
                 |> Maybe.map (\gosId -> Acquisition id (gosId - 1))
                 |> Maybe.withDefault NotFound
 
+        "capsule" :: "production" :: id :: gos :: [] ->
+            String.toInt gos
+                |> Maybe.map (\gosId -> Production id (gosId - 1))
+                |> Maybe.withDefault NotFound
+
         _ ->
             NotFound
 
@@ -98,6 +107,9 @@ fromPage page =
 
         App.Acquisition m ->
             Acquisition m.capsule.id m.gos
+
+        App.Production m ->
+            Production m.capsule.id m.gos
 
 
 {-| Go to the corresponding page.

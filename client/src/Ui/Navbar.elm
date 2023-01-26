@@ -79,7 +79,7 @@ navButtons lang capsule page =
     Element.row [ Ui.s 10, Ui.hf ]
         [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
         , makeButton (Route.Acquisition capsule.id 0) Strings.stepsAcquisitionRecord
-        , makeButton (Route.Custom "todo") Strings.stepsProductionProduce
+        , makeButton (Route.Production capsule.id 0) Strings.stepsProductionProduce
         , makeButton (Route.Custom "todo") Strings.stepsPublicationPublish
         ]
 

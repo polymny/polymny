@@ -18,6 +18,7 @@ import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Production.Updates as Production
 import RemoteData
 import Route
 import Unlogged.Types as Unlogged
@@ -112,6 +113,9 @@ updateModel msg model =
                 App.AcquisitionMsg aMsg ->
                     Acquisition.update aMsg model
 
+                App.ProductionMsg pMsg ->
+                    Production.update pMsg model
+
                 App.OnUrlChange url ->
                     let
                         ( page, cmd ) =
@@ -161,6 +165,9 @@ subs m =
 
                     App.Acquisition x ->
                         Acquisition.subs x
+
+                    App.Production _ ->
+                        Sub.none
                 ]
                 |> Sub.map App.LoggedMsg
 
