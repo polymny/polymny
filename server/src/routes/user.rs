@@ -118,8 +118,7 @@ pub async fn activate<'a>(
     config: &S<Config>,
     key: String,
     cookies: &CookieJar<'_>,
-    lang: Lang,
-) -> Result<Html<String>> {
+) -> Result<Redirect> {
     let mut user = User::get_by_activation_key(key, &db)
         .await?
         .ok_or(Error(Status::NotFound))?;
@@ -129,10 +128,7 @@ pub async fn activate<'a>(
     user.save(&db).await?;
     let session = user.save_session(&db).await?;
     add_cookies(&session.secret, &config, cookies);
-
-    let json = user.to_json(&db).await?;
-    let body = index_html(json!({"user": json, "global": global_flags(&config, &lang) }));
-    Ok(Html(body))
+    Ok(Redirect::to("/"))
 }
 
 /// A struct that serves for form veryfing.

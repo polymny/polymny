@@ -5,6 +5,7 @@ module Unlogged.Types exposing (..)
 
 import Config exposing (Config)
 import Data.User as Data exposing (User)
+import Json.Decode as Decode
 import RemoteData
 import Url exposing (Url)
 
@@ -123,3 +124,27 @@ fromUrl url =
 
         _ ->
             Login
+
+
+{-| Initializes the model for a standalone use.
+-}
+initStandalone : Decode.Value -> ( Maybe Model, Cmd Msg )
+initStandalone flags =
+    let
+        serverConfig =
+            Decode.decodeValue (Decode.field "global" (Decode.field "serverConfig" Config.decodeServerConfig)) flags
+
+        clientConfig =
+            Decode.decodeValue (Decode.field "global" (Decode.field "clientConfig" Config.decodeClientConfig)) flags
+
+        clientState =
+            Config.initClientState Nothing (clientConfig |> Result.toMaybe |> Maybe.andThen .lang)
+    in
+    case ( clientConfig, serverConfig ) of
+        ( Ok c, Ok s ) ->
+            ( Just <| init { serverConfig = s, clientConfig = c, clientState = clientState } Nothing
+            , Cmd.none
+            )
+
+        _ ->
+            ( Nothing, Cmd.none )

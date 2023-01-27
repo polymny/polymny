@@ -86,3 +86,15 @@ update msg model =
 
 
 port submitForm : String -> Cmd msg
+
+
+{-| Sup.
+-}
+updateStandalone : Unlogged.Msg -> Maybe Unlogged.Model -> ( Maybe Unlogged.Model, Cmd Unlogged.Msg )
+updateStandalone msg model =
+    case model of
+        Just m ->
+            update msg m |> Tuple.mapFirst Just
+
+        _ ->
+            ( Nothing, Cmd.none )

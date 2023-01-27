@@ -8,7 +8,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Html
+import Html exposing (Html)
 import Html.Attributes
 import Http
 import Lang
@@ -448,3 +448,26 @@ checkEmail email =
 
         _ ->
             False
+
+
+{-| Sup.
+-}
+viewStandalone : Maybe Unlogged.Model -> Html Unlogged.Msg
+viewStandalone model =
+    case model of
+        Just m ->
+            Element.layout
+                [ Ui.wf
+                , Ui.hf
+                , Font.size 18
+                , Font.family
+                    [ Font.typeface "Urbanist"
+                    , Font.typeface "Ubuntu"
+                    , Font.typeface "Cantarell"
+                    ]
+                , Font.color Colors.greyFont
+                ]
+                (view m)
+
+        _ ->
+            Element.layout [] (Element.text "oops")
