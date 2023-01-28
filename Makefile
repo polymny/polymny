@@ -77,3 +77,6 @@ clean: clean-client clean-server
 
 server/dist/js/ports.js: client/ports.js
 	@cp client/ports.js server/dist/js/ports.js
+
+multiview:
+	@multiview [ sh -c "cd server && unbuffer cargo run" ] [ unbuffer make client-watch ]
