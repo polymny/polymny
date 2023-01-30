@@ -95,16 +95,9 @@ update msg model =
 
                 Acquisition.CurrentSentenceChanged sentence ->
                     let
-                        slides : List Data.Slide
-                        slides =
-                            List.drop m.gos m.capsule.structure
-                                |> List.head
-                                |> Maybe.map .slides
-                                |> Maybe.withDefault []
-
                         currentSlide : Maybe Data.Slide
                         currentSlide =
-                            List.head (List.drop m.currentSlide slides)
+                            List.head (List.drop m.currentSlide m.gos.slides)
 
                         newPrompt : Maybe String
                         newPrompt =
@@ -154,20 +147,13 @@ update msg model =
                             else
                                 m.recording
 
-                        slides : List Data.Slide
-                        slides =
-                            List.drop m.gos m.capsule.structure
-                                |> List.head
-                                |> Maybe.map .slides
-                                |> Maybe.withDefault []
-
                         currentSlide : Maybe Data.Slide
                         currentSlide =
-                            List.head (List.drop m.currentSlide slides)
+                            List.head (List.drop m.currentSlide m.gos.slides)
 
                         nextSlide : Maybe Data.Slide
                         nextSlide =
-                            List.head (List.drop (m.currentSlide + 1) slides)
+                            List.head (List.drop (m.currentSlide + 1) m.gos.slides)
 
                         lineNumber : Int
                         lineNumber =
@@ -228,20 +214,20 @@ update msg model =
                 Acquisition.UploadRecord record ->
                     let
                         task =
-                            { task = Config.UploadRecord m.capsule.id m.gos (Acquisition.encodeRecord record)
+                            { task = Config.UploadRecord m.capsule.id m.gosId (Acquisition.encodeRecord record)
                             , progress = Just 0.0
                             }
 
                         nextRoute =
-                            if m.gos + 1 < List.length m.capsule.structure then
-                                Route.Acquisition m.capsule.id (m.gos + 1)
+                            if m.gosId + 1 < List.length m.capsule.structure then
+                                Route.Acquisition m.capsule.id (m.gosId + 1)
 
                             else
                                 Route.Home
                     in
                     ( { model | config = Config.addTask task model.config }
                     , Cmd.batch
-                        [ uploadRecord m.capsule m.gos record
+                        [ uploadRecord m.capsule m.gosId record
                         , Route.push model.config.clientState.key nextRoute
                         ]
                     )

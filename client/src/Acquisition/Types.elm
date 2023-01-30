@@ -25,7 +25,8 @@ type State
 -}
 type alias Model =
     { capsule : Capsule
-    , gos : Int
+    , gos : Data.Gos
+    , gosId : Int
     , state : State
     , deviceLevel : Maybe Float
     , showSettings : Bool
@@ -87,24 +88,26 @@ It returns Nothing if the grain is not in the capsule.
 -}
 init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
 init gos capsule =
-    if gos < List.length capsule.structure && gos >= 0 then
-        Just <|
-            ( { capsule = capsule
-              , gos = gos
-              , state = DetectingDevices
-              , deviceLevel = Nothing
-              , showSettings = False
-              , recording = Nothing
-              , currentSlide = 0
-              , currentSentence = 0
-              , records = []
-              , recordPlaying = Nothing
-              }
-            , Device.detectDevices Nothing
-            )
+    case List.drop gos capsule.structure of
+        h :: _ ->
+            Just <|
+                ( { capsule = capsule
+                  , gos = h
+                  , gosId = gos
+                  , state = DetectingDevices
+                  , deviceLevel = Nothing
+                  , showSettings = False
+                  , recording = Nothing
+                  , currentSlide = 0
+                  , currentSentence = 0
+                  , records = []
+                  , recordPlaying = Nothing
+                  }
+                , Device.detectDevices Nothing
+                )
 
-    else
-        Nothing
+        _ ->
+            Nothing
 
 
 {-| The message type of the module.

@@ -106,7 +106,7 @@ fromPage page =
             Preparation m.capsule.id
 
         App.Acquisition m ->
-            Acquisition m.capsule.id m.gos
+            Acquisition m.capsule.id m.gosId
 
         App.Production m ->
             Production m.capsule.id m.gosId

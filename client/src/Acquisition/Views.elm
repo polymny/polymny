@@ -225,17 +225,13 @@ view config user model =
             else
                 Element.none
 
-        slides : List Data.Slide
-        slides =
-            List.drop model.gos model.capsule.structure |> List.head |> Maybe.map .slides |> Maybe.withDefault []
-
         currentSlide : Maybe Data.Slide
         currentSlide =
-            List.head (List.drop model.currentSlide slides)
+            List.head (List.drop model.currentSlide model.gos.slides)
 
         nextSlide : Maybe Data.Slide
         nextSlide =
-            List.head (List.drop (model.currentSlide + 1) slides)
+            List.head (List.drop (model.currentSlide + 1) model.gos.slides)
 
         getLine : Int -> Data.Slide -> Maybe String
         getLine n x =

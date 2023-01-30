@@ -120,7 +120,7 @@ viewSuccess model =
 
         App.Acquisition m ->
             Acquisition.view model.config model.user m
-                |> Ui.addLeftAndRightColumn model.config.clientState.lang m.capsule (Just m.gos)
+                |> Ui.addLeftAndRightColumn model.config.clientState.lang m.capsule (Just m.gosId)
 
         App.Production m ->
             Production.view model.config model.user m
