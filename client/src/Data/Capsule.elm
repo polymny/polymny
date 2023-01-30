@@ -1,6 +1,6 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
-    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
+    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
     , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
@@ -19,7 +19,7 @@ module Data.Capsule exposing
 
 # The GoS (Group of Slides) type
 
-@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType, eventTypeToString
+@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor, Event, EventType, eventTypeToString
 
 
 ## Slides
@@ -213,6 +213,13 @@ updateSlide slide capsule =
             { gos | slides = List.map (\x -> Utils.tern (x.uuid == slide.uuid) slide x) gos.slides }
     in
     { capsule | structure = List.map gosMapper capsule.structure }
+
+
+{-| Updates a specific gos in a capsule.
+-}
+updateGos : Gos -> Capsule -> Capsule
+updateGos gos capsule =
+    capsule
 
 
 {-| This type represents a record done by a webcam.
@@ -435,6 +442,41 @@ type WebcamSettings
     | Pip { anchor : Anchor, opacity : Float, position : ( Int, Int ), size : ( Int, Int ), keycolor : Maybe String }
 
 
+{-| Sets the size of the webcam settings.
+
+Nothing means fullscreen.
+
+-}
+setWebcamSettingsSize : Maybe ( Int, Int ) -> WebcamSettings -> WebcamSettings
+setWebcamSettingsSize size settings =
+    let
+        default =
+            Maybe.map defaultPip size |> Maybe.withDefault (defaultPip ( 0, 0 ))
+    in
+    case size of
+        Just s ->
+            case settings of
+                Disabled ->
+                    defaultWebcamSettings s
+
+                Fullscreen { opacity, keycolor } ->
+                    Pip { default | opacity = opacity, keycolor = keycolor }
+
+                Pip pip ->
+                    Pip { pip | size = s }
+
+        Nothing ->
+            case settings of
+                Disabled ->
+                    Fullscreen { opacity = default.opacity, keycolor = default.keycolor }
+
+                Fullscreen _ ->
+                    settings
+
+                Pip { opacity, keycolor } ->
+                    Fullscreen { opacity = opacity, keycolor = keycolor }
+
+
 {-| JSON encoder for webcam settings.
 -}
 encodeWebcamSettings : WebcamSettings -> Encode.Value
@@ -473,16 +515,36 @@ decodePip =
         (Decode.maybe (Decode.field "keycolor" Decode.string))
 
 
+{-| Default pip settings.
+-}
+defaultPip :
+    ( Int, Int )
+    ->
+        { anchor : Anchor
+        , keycolor : Maybe a
+        , opacity : Float
+        , position : ( number, number1 )
+        , size : ( Int, Int )
+        }
+defaultPip size =
+    { anchor = BottomLeft
+    , keycolor = Nothing
+    , opacity = 1.0
+    , position = ( 0, 0 )
+    , size = size
+    }
+
+
 {-| Default webcam settings.
 -}
-defaultWebcamSettings : WebcamSettings
-defaultWebcamSettings =
+defaultWebcamSettings : ( Int, Int ) -> WebcamSettings
+defaultWebcamSettings size =
     Pip
         { anchor = BottomLeft
         , keycolor = Nothing
         , opacity = 1.0
         , position = ( 0, 0 )
-        , size = ( 400, 300 )
+        , size = size
         }
 
 
@@ -604,6 +666,6 @@ gosFromSlides slides =
     { record = Nothing
     , slides = slides
     , events = []
-    , webcamSettings = defaultWebcamSettings
+    , webcamSettings = Disabled
     , fade = defaultFade
     }

@@ -118,7 +118,7 @@ leftColumn config model =
                 { checked = model.gos.record /= Nothing && model.gos.webcamSettings /= Data.Disabled
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight [] <| Element.text <| Strings.stepsProductionUseVideo lang
-                , onChange = \_ -> App.Noop
+                , onChange = \_ -> App.ProductionMsg Production.ToggleVideo
                 }
 
         -- Text that explains why the user can't use the video (if they can't)
@@ -135,43 +135,66 @@ leftColumn config model =
 
         --  Title to introduce webcam size settings
         webcamSizeTitle =
-            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamSize lang
+            Strings.stepsProductionWebcamSize lang
+                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
 
         -- Element to control the webcam size
         webcamSizeText =
-            (disableIf <| model.gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
                 Input.text
                 [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
-                , onChange = \_ -> App.Noop
+                , onChange =
+                    \x ->
+                        case String.toInt x of
+                            Just y ->
+                                App.ProductionMsg <| Production.SetWidth <| Just y
+
+                            _ ->
+                                App.Noop
                 , placeholder = Nothing
                 , text = Maybe.map String.fromInt width |> Maybe.withDefault ""
                 }
 
         -- Element to choose the webcam size among small, medium, large, fullscreen
         webcamSizeRadio =
-            (disableIf <| model.gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamSize lang
-                , onChange = \_ -> App.Noop
+                , onChange = \x -> App.ProductionMsg <| Production.SetWidth <| x
                 , options =
-                    [ Input.option 200 <| Element.text <| Strings.stepsProductionSmall lang
-                    , Input.option 400 <| Element.text <| Strings.stepsProductionMedium lang
-                    , Input.option 800 <| Element.text <| Strings.stepsProductionLarge lang
-                    , Input.option 0 <| Element.text <| Strings.stepsProductionFullscreen lang
-                    , Input.option 0 <| Element.text <| Strings.stepsProductionCustom lang
+                    [ Input.option (Just 200) <| Element.text <| Strings.stepsProductionSmall lang
+                    , Input.option (Just 400) <| Element.text <| Strings.stepsProductionMedium lang
+                    , Input.option (Just 800) <| Element.text <| Strings.stepsProductionLarge lang
+                    , Input.option Nothing <| Element.text <| Strings.stepsProductionFullscreen lang
+                    , Input.option (Just 533) <| Element.text <| Strings.stepsProductionCustom lang
                     ]
-                , selected = width
+                , selected =
+                    Debug.log "yo" <|
+                        case model.gos.webcamSettings of
+                            Data.Pip { size } ->
+                                if List.member (Tuple.first size) [ 200, 400, 800 ] then
+                                    Just <| Just <| Tuple.first size
+
+                                else
+                                    Just <| Just 533
+
+                            Data.Fullscreen _ ->
+                                Just Nothing
+
+                            Data.Disabled ->
+                                Nothing
                 }
 
         -- Title to introduce webcam position settings
         webcamPositionTitle =
-            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamPosition lang
+            Strings.stepsProductionWebcamPosition lang
+                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
 
         -- Element to choose the webcam position among the four corners
         webcamPositionRadio =
-            (disableIf <| model.gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
@@ -187,13 +210,14 @@ leftColumn config model =
 
         -- Title to introduce webcam opacity settings
         opacityTitle =
-            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionOpacity lang
+            Strings.stepsProductionOpacity lang
+                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
 
         -- Slider to control opacity
         opacitySlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
-                  (disableIf <| model.gos.record == Nothing || audioOnly)
+                  (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
                     Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]

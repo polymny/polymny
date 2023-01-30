@@ -47,4 +47,20 @@ init gos capsule =
 {-| Message type of the app.
 -}
 type Msg
-    = Produce
+    = ToggleVideo
+    | SetWidth (Maybe Int) -- Nothing means fullscreen
+    | Produce
+
+
+{-| Changes the height preserving aspect ratio.
+-}
+setHeight : Int -> ( Int, Int ) -> ( Int, Int )
+setHeight newHeight ( width, height ) =
+    ( width * newHeight // height, newHeight )
+
+
+{-| Changes the width preserving aspect ratio.
+-}
+setWidth : Int -> ( Int, Int ) -> ( Int, Int )
+setWidth newWidth ( width, height ) =
+    ( newWidth, height * newWidth // width )
