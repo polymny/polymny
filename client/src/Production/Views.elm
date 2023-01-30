@@ -171,20 +171,19 @@ leftColumn config model =
                     , Input.option (Just 533) <| Element.text <| Strings.stepsProductionCustom lang
                     ]
                 , selected =
-                    Debug.log "yo" <|
-                        case model.gos.webcamSettings of
-                            Data.Pip { size } ->
-                                if List.member (Tuple.first size) [ 200, 400, 800 ] then
-                                    Just <| Just <| Tuple.first size
+                    case model.gos.webcamSettings of
+                        Data.Pip { size } ->
+                            if List.member (Tuple.first size) [ 200, 400, 800 ] then
+                                Just <| Just <| Tuple.first size
 
-                                else
-                                    Just <| Just 533
+                            else
+                                Just <| Just 533
 
-                            Data.Fullscreen _ ->
-                                Just Nothing
+                        Data.Fullscreen _ ->
+                            Just Nothing
 
-                            Data.Disabled ->
-                                Nothing
+                        Data.Disabled ->
+                            Nothing
                 }
 
         -- Title to introduce webcam position settings
