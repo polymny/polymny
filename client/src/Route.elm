@@ -109,7 +109,7 @@ fromPage page =
             Acquisition m.capsule.id m.gos
 
         App.Production m ->
-            Production m.capsule.id m.gos
+            Production m.capsule.id m.gosId
 
 
 {-| Go to the corresponding page.

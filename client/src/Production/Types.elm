@@ -10,7 +10,9 @@ import Data.Capsule as Data exposing (Capsule)
 -}
 type alias Model =
     { capsule : Capsule
-    , gos : Int
+    , gosId : Int
+    , gos : Data.Gos
+    , webcamPosition : ( Float, Float )
     }
 
 
@@ -18,16 +20,28 @@ type alias Model =
 -}
 init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
 init gos capsule =
-    if gos < List.length capsule.structure && gos >= 0 then
-        Just <|
-            ( { capsule = capsule
-              , gos = gos
-              }
-            , Cmd.none
-            )
+    case List.drop gos capsule.structure of
+        h :: _ ->
+            let
+                webcamPosition =
+                    case h.webcamSettings of
+                        Data.Pip { position } ->
+                            Tuple.mapBoth toFloat toFloat position
 
-    else
-        Nothing
+                        _ ->
+                            ( 0.0, 0.0 )
+            in
+            Just
+                ( { capsule = capsule
+                  , gos = h
+                  , gosId = gos
+                  , webcamPosition = webcamPosition
+                  }
+                , Cmd.none
+                )
+
+        _ ->
+            Nothing
 
 
 {-| Message type of the app.

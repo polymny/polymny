@@ -1,6 +1,6 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
-    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, Fade, defaultFade, Anchor, Event, EventType(..), eventTypeToString
+    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
     , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor

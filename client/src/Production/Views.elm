@@ -24,23 +24,18 @@ import Ui.Utils as Ui
 -}
 view : Config -> User -> Production.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
-    case List.drop model.gos model.capsule.structure of
-        h :: _ ->
-            ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
-                [ leftColumn config model h
-                , rightColumn config model h
-                ]
-            , Element.none
-            )
-
-        _ ->
-            ( Element.none, Element.none )
+    ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
+        [ leftColumn config model
+        , rightColumn config model
+        ]
+    , Element.none
+    )
 
 
 {-| The column with the controls of the production settings.
 -}
-leftColumn : Config -> Production.Model -> Data.Gos -> Element App.Msg
-leftColumn config model gos =
+leftColumn : Config -> Production.Model -> Element App.Msg
+leftColumn config model =
     let
         --- HELPERS ---
         -- Shortcut for lang
@@ -61,7 +56,7 @@ leftColumn config model gos =
         -- Video width if pip
         width : Maybe Int
         width =
-            case gos.webcamSettings of
+            case model.gos.webcamSettings of
                 Data.Pip { size } ->
                     Just (Tuple.first size)
 
@@ -71,7 +66,7 @@ leftColumn config model gos =
         -- Video opacity
         opacity : Float
         opacity =
-            case gos.webcamSettings of
+            case model.gos.webcamSettings of
                 Data.Pip pip ->
                     pip.opacity
 
@@ -84,7 +79,7 @@ leftColumn config model gos =
         -- True if the gos has a record that contains only audio
         audioOnly : Bool
         audioOnly =
-            Maybe.map .size gos.record == Just Nothing
+            Maybe.map .size model.gos.record == Just Nothing
 
         -- Attributes to show things as disabled
         disableAttr : List (Element.Attribute App.Msg)
@@ -117,10 +112,10 @@ leftColumn config model gos =
         --- UI ELEMENTS ---
         -- Whether the user wants to include the video inside the slides or not
         useVideo =
-            (disableIf <| gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly)
                 Input.checkbox
                 []
-                { checked = gos.record /= Nothing && gos.webcamSettings /= Data.Disabled
+                { checked = model.gos.record /= Nothing && model.gos.webcamSettings /= Data.Disabled
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight [] <| Element.text <| Strings.stepsProductionUseVideo lang
                 , onChange = \_ -> App.Noop
@@ -128,7 +123,7 @@ leftColumn config model gos =
 
         -- Text that explains why the user can't use the video (if they can't)
         useVideoInfo =
-            case Maybe.map .size gos.record of
+            case Maybe.map .size model.gos.record of
                 Nothing ->
                     paragraph <| Strings.stepsProductionCantUseVideoBecauseNoRecord lang ++ "."
 
@@ -140,11 +135,11 @@ leftColumn config model gos =
 
         --  Title to introduce webcam size settings
         webcamSizeTitle =
-            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamSize lang
+            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamSize lang
 
         -- Element to control the webcam size
         webcamSizeText =
-            (disableIf <| gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly)
                 Input.text
                 [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
@@ -155,7 +150,7 @@ leftColumn config model gos =
 
         -- Element to choose the webcam size among small, medium, large, fullscreen
         webcamSizeRadio =
-            (disableIf <| gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly)
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamSize lang
@@ -172,11 +167,11 @@ leftColumn config model gos =
 
         -- Title to introduce webcam position settings
         webcamPositionTitle =
-            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamPosition lang
+            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamPosition lang
 
         -- Element to choose the webcam position among the four corners
         webcamPositionRadio =
-            (disableIf <| gos.record == Nothing || audioOnly)
+            (disableIf <| model.gos.record == Nothing || audioOnly)
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
@@ -192,13 +187,13 @@ leftColumn config model gos =
 
         -- Title to introduce webcam opacity settings
         opacityTitle =
-            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionOpacity lang
+            title (model.gos.record == Nothing || audioOnly) <| Strings.stepsProductionOpacity lang
 
         -- Slider to control opacity
         opacitySlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
-                  (disableIf <| gos.record == Nothing || audioOnly)
+                  (disableIf <| model.gos.record == Nothing || audioOnly)
                     Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
@@ -243,15 +238,103 @@ leftColumn config model gos =
 
 {-| The column with the slide view and the production button.
 -}
-rightColumn : Config -> Production.Model -> Data.Gos -> Element App.Msg
-rightColumn config model gos =
+rightColumn : Config -> Production.Model -> Element App.Msg
+rightColumn config model =
     let
         lang =
             config.clientState.lang
 
+        -- overlay to show a frame of the record on the slide (if any)
+        overlay =
+            case ( model.gos.webcamSettings, model.gos.record ) of
+                ( Data.Pip s, Just r ) ->
+                    let
+                        ( ( marginX, marginY ), ( w, h ) ) =
+                            ( model.webcamPosition, ( toFloat (Tuple.first s.size), toFloat (Tuple.second s.size) ) )
+
+                        ( x, y ) =
+                            case s.anchor of
+                                Data.TopLeft ->
+                                    ( marginX, marginY )
+
+                                Data.TopRight ->
+                                    ( 1920 - w - marginX, marginY )
+
+                                Data.BottomLeft ->
+                                    ( marginX, 1080 - h - marginY )
+
+                                Data.BottomRight ->
+                                    ( 1920 - w - marginX, 1080 - h - marginY )
+
+                        tp =
+                            100 * y / 1080
+
+                        lp =
+                            100 * x / 1920
+
+                        bp =
+                            100 * (1080 - y - h) / 1080
+
+                        rp =
+                            100 * (1920 - x - w) / 1920
+                    in
+                    Element.el
+                        [ Element.htmlAttribute (Html.Attributes.style "position" "absolute")
+                        , Element.htmlAttribute (Html.Attributes.style "top" (String.fromFloat tp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "left" (String.fromFloat lp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "right" (String.fromFloat rp ++ "%"))
+                        , Element.htmlAttribute (Html.Attributes.style "bottom" (String.fromFloat bp ++ "%"))
+                        ]
+                        (Element.image
+                            [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                            , Element.alpha s.opacity
+                            , Ui.wf
+                            , Ui.hf
+
+                            --, Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                            --    (Decode.field "pointerId" Decode.int)
+                            --    (Decode.field "pageX" Decode.float)
+                            --    (Decode.field "pageY" Decode.float)
+                            --    |> Html.Events.on "pointerdown"
+                            --    |> Element.htmlAttribute
+                            --, Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
+                            --    |> Html.Events.on "pointerup"
+                            --    |> Element.htmlAttribute
+                            --, Element.htmlAttribute
+                            --    (Html.Events.custom "dragstart"
+                            --        (Decode.succeed
+                            --            { message = App.Noop
+                            --            , preventDefault = True
+                            --            , stopPropagation = True
+                            --            }
+                            --        )
+                            --    )
+                            ]
+                            { src = Data.assetPath model.capsule (r.uuid ++ ".png")
+                            , description = ""
+                            }
+                        )
+
+                ( Data.Fullscreen { opacity }, Just r ) ->
+                    Element.el
+                        [ Element.alpha opacity
+                        , Ui.hf
+                        , Ui.wf
+                        , ("center / contain content-box no-repeat url('"
+                            ++ Data.assetPath model.capsule (r.uuid ++ ".png")
+                            ++ "')"
+                          )
+                            |> Html.Attributes.style "background"
+                            |> Element.htmlAttribute
+                        ]
+                        Element.none
+
+                _ ->
+                    Element.none
+
         -- The display of the slide
         slide =
-            case gos.slides of
+            case model.gos.slides of
                 h :: _ ->
                     Element.image [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder ]
                         { src = Data.slidePath model.capsule h
@@ -269,6 +352,6 @@ rightColumn config model gos =
                 }
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]
-        [ slide
+        [ Element.el [ Ui.wf, Element.inFront overlay ] slide
         , produceButton
         ]

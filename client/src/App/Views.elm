@@ -124,7 +124,7 @@ viewSuccess model =
 
         App.Production m ->
             Production.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gos)
+                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gosId)
 
 
 {-| Returns the view if the model is in error.
