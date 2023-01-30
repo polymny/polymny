@@ -281,12 +281,17 @@ view config user model =
                 ( _, Just s ) ->
                     Element.column [ Ui.hfp 1, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
                         [ Element.el [ Ui.cx, Font.center, Font.size 40 ]
-                            (Input.multiline [ Background.color Colors.black, Ui.b 0 ]
+                            (Input.multiline
+                                [ Background.color Colors.black
+                                , Ui.b 0
+                                , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
+                                , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
+                                ]
                                 { label = Input.labelHidden ""
                                 , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)
                                 , placeholder = Nothing
-                                , spellcheck = False
                                 , text = s
+                                , spellcheck = False
                                 }
                             )
                         , case nextSentence of
