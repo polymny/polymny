@@ -165,7 +165,7 @@ navigationElement action attr label =
         None ->
             Element.el
                 (Element.htmlAttribute (Html.Attributes.style "cursor" "not-allowed")
-                    :: Font.color Colors.greyBorder
+                    :: Font.color Colors.greyFontDisabled
                     :: attr
                 )
                 label

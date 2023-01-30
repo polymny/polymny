@@ -42,6 +42,8 @@ view config user model =
 leftColumn : Config -> Production.Model -> Data.Gos -> Element App.Msg
 leftColumn config model gos =
     let
+        --- HELPERS ---
+        -- Shortcut for lang
         lang =
             config.clientState.lang
 
@@ -51,10 +53,10 @@ leftColumn config model gos =
             Element.paragraph [] [ Element.text input ]
 
         -- Helper to create section titles
-        title : String -> Element msg
-        title input =
+        title : Bool -> String -> Element App.Msg
+        title disabled input =
             Element.text input
-                |> Element.el [ Font.size 22, Font.bold ]
+                |> Element.el (disableAttrIf disabled ++ [ Font.size 22, Font.bold ])
 
         -- Video width if pip
         width : Maybe Int
@@ -79,9 +81,45 @@ leftColumn config model gos =
                 _ ->
                     1
 
+        -- True if the gos has a record that contains only audio
+        audioOnly : Bool
+        audioOnly =
+            Maybe.map .size gos.record == Just Nothing
+
+        -- Attributes to show things as disabled
+        disableAttr : List (Element.Attribute App.Msg)
+        disableAttr =
+            [ Font.color Colors.greyFontDisabled ]
+
+        -- Gives disable attributes if element is disabled
+        disableAttrIf : Bool -> List (Element.Attribute App.Msg)
+        disableAttrIf disabled =
+            if disabled then
+                disableAttr
+
+            else
+                []
+
+        -- Gives disable attributes and remove msg if element is disabled
+        disableIf :
+            Bool
+            -> (List (Element.Attribute App.Msg) -> { a | onChange : b -> App.Msg } -> Element App.Msg)
+            -> List (Element.Attribute App.Msg)
+            -> { a | onChange : b -> App.Msg }
+            -> Element App.Msg
+        disableIf disabled constructor attributes parameters =
+            if disabled then
+                constructor (disableAttr ++ attributes) { parameters | onChange = \_ -> App.Noop }
+
+            else
+                constructor attributes parameters
+
+        --- UI ELEMENTS ---
         -- Whether the user wants to include the video inside the slides or not
         useVideo =
-            Input.checkbox []
+            (disableIf <| gos.record == Nothing || audioOnly)
+                Input.checkbox
+                []
                 { checked = gos.record /= Nothing && gos.webcamSettings /= Data.Disabled
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight [] <| Element.text <| Strings.stepsProductionUseVideo lang
@@ -102,11 +140,13 @@ leftColumn config model gos =
 
         --  Title to introduce webcam size settings
         webcamSizeTitle =
-            title <| Strings.stepsProductionWebcamSize lang
+            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamSize lang
 
         -- Element to control the webcam size
         webcamSizeText =
-            Input.text [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
+            (disableIf <| gos.record == Nothing || audioOnly)
+                Input.text
+                [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
                 , onChange = \_ -> App.Noop
                 , placeholder = Nothing
@@ -115,7 +155,9 @@ leftColumn config model gos =
 
         -- Element to choose the webcam size among small, medium, large, fullscreen
         webcamSizeRadio =
-            Input.radio [ Ui.s 10 ]
+            (disableIf <| gos.record == Nothing || audioOnly)
+                Input.radio
+                [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamSize lang
                 , onChange = \_ -> App.Noop
                 , options =
@@ -130,11 +172,13 @@ leftColumn config model gos =
 
         -- Title to introduce webcam position settings
         webcamPositionTitle =
-            title <| Strings.stepsProductionWebcamPosition lang
+            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionWebcamPosition lang
 
         -- Element to choose the webcam position among the four corners
         webcamPositionRadio =
-            Input.radio [ Ui.s 10 ]
+            (disableIf <| gos.record == Nothing || audioOnly)
+                Input.radio
+                [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
                 , onChange = \_ -> App.Noop
                 , options =
@@ -148,13 +192,14 @@ leftColumn config model gos =
 
         -- Title to introduce webcam opacity settings
         opacityTitle =
-            title <| Strings.stepsProductionOpacity lang
+            title (gos.record == Nothing || audioOnly) <| Strings.stepsProductionOpacity lang
 
         -- Slider to control opacity
         opacitySlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
-                  Input.slider
+                  (disableIf <| gos.record == Nothing || audioOnly)
+                    Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
                     { onChange = \_ -> App.Noop

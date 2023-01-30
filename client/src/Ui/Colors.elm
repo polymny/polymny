@@ -1,11 +1,11 @@
 module Ui.Colors exposing
-    ( green1, green2, green3, yellow, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
+    ( green1, green2, green3, yellow, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
     , redLight
     )
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyBorder, tableBackground
+@docs green1, green2, green3, yellow, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
 
 -}
 
@@ -167,6 +167,13 @@ greyFont =
 -}
 greyBorder : Element.Color
 greyBorder =
+    grey 5
+
+
+{-| This color can be used for disabled text.
+-}
+greyFontDisabled : Element.Color
+greyFontDisabled =
     grey 5
 
 
