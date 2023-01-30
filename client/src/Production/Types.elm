@@ -33,4 +33,4 @@ init gos capsule =
 {-| Message type of the app.
 -}
 type Msg
-    = Noop
+    = Produce

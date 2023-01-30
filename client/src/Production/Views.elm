@@ -219,7 +219,7 @@ rightColumn config model gos =
         -- The button to produce the video
         produceButton =
             Ui.primary [ Ui.ar ]
-                { action = Ui.None
+                { action = Ui.Msg <| App.ProductionMsg <| Production.Produce
                 , label = Strings.stepsProductionProduceVideo lang
                 }
     in

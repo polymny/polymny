@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide
+@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule
 
 -}
 
@@ -80,5 +80,16 @@ replaceSlide capsule slide page file toMsg =
         { url = "/api/replace-slide/" ++ capsule.id ++ "/" ++ slide.uuid ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
+        , toMsg = toMsg
+        }
+
+
+{-| Triggers the production of a capsule.
+-}
+produceCapsule : Data.Capsule -> (WebData () -> msg) -> Cmd msg
+produceCapsule capsule toMsg =
+    Api.post
+        { url = "/api/produce/" ++ capsule.id
+        , body = Http.emptyBody
         , toMsg = toMsg
         }

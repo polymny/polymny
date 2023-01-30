@@ -3,6 +3,7 @@ module Production.Updates exposing (..)
 {-| This module deals with the updates of the production page.
 -}
 
+import Api.Capsule as Api
 import App.Types as App
 import Production.Types as Production
 
@@ -11,6 +12,11 @@ import Production.Types as Production
 -}
 update : Production.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case msg of
-        Production.Noop ->
+    case model.page of
+        App.Production m ->
+            case msg of
+                Production.Produce ->
+                    ( model, Api.produceCapsule m.capsule (\_ -> App.Noop) )
+
+        _ ->
             ( model, Cmd.none )
