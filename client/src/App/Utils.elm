@@ -17,6 +17,7 @@ import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
 import Production.Types as Production
+import Publication.Types as Publication
 import Route exposing (Route)
 import Unlogged.Types as Unlogged
 import Url exposing (Url)
@@ -104,6 +105,14 @@ pageFromRoute config user route =
                 |> Maybe.andThen (Production.init gos)
                 |> Maybe.map (\( a, b ) -> ( App.Production a, Cmd.map App.ProductionMsg b ))
                 |> Maybe.withDefault ( App.Home, Cmd.none )
+
+        Route.Publication id ->
+            ( Data.getCapsuleById id user
+                |> Maybe.map Publication.init
+                |> Maybe.map App.Publication
+                |> Maybe.withDefault App.Home
+            , Cmd.none
+            )
 
         _ ->
             ( App.Home, Cmd.none )

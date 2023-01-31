@@ -80,7 +80,7 @@ navButtons lang capsule page =
         [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
         , makeButton (Route.Acquisition capsule.id 0) Strings.stepsAcquisitionRecord
         , makeButton (Route.Production capsule.id 0) Strings.stepsProductionProduce
-        , makeButton (Route.Custom "todo") Strings.stepsPublicationPublish
+        , makeButton (Route.Publication capsule.id) Strings.stepsPublicationPublish
         ]
 
 
@@ -186,6 +186,9 @@ leftColumn lang page capsule selectedGos =
                 action =
                     case page of
                         App.Preparation _ ->
+                            id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
+
+                        App.Publication _ ->
                             id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
 
                         _ ->

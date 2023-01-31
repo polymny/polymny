@@ -18,6 +18,7 @@ type Route
     | Preparation String
     | Acquisition String Int
     | Production String Int
+    | Publication String
     | NotFound
     | Custom String
 
@@ -38,6 +39,9 @@ toUrl route =
 
         Production s i ->
             "/capsule/production/" ++ s ++ "/" ++ String.fromInt (i + 1)
+
+        Publication s ->
+            "/capsule/publication/" ++ s
 
         NotFound ->
             "/"
@@ -87,6 +91,9 @@ fromUrl url =
                 |> Maybe.map (\gosId -> Production id (gosId - 1))
                 |> Maybe.withDefault NotFound
 
+        "capsule" :: "publication" :: id :: [] ->
+            Publication id
+
         _ ->
             NotFound
 
@@ -111,6 +118,9 @@ fromPage page =
         App.Production m ->
             Production m.capsule.id m.gosId
 
+        App.Publication m ->
+            Publication m.capsule.id
+
 
 {-| Checks if the tab of the routes are the same.
 -}
@@ -127,6 +137,9 @@ compareTab r1 r2 =
             True
 
         ( Production _ _, Production _ _ ) ->
+            True
+
+        ( Publication _, Publication _ ) ->
             True
 
         _ ->
