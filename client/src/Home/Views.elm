@@ -325,14 +325,14 @@ progressIcons config poc =
                         ( Data.Done, _ ) ->
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
-                                , action = Ui.Route (Route.Custom (config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"))
+                                , action = Ui.Route <| Route.Custom <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
                                 , tooltip = "TODO"
                                 }
 
                         ( _, Just url ) ->
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
-                                , action = Ui.Route (Route.Custom url)
+                                , action = Ui.NewTab url
                                 , tooltip = "TODO"
                                 }
 
