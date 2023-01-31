@@ -104,19 +104,19 @@ bottombar config =
         [ Ui.link
             [ Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = "contacter@polymny.studio"
-            , action = Ui.Route (Route.Custom "mailto:contacter@polymny.studio")
+            , action = Ui.NewTab "mailto:contacter@polymny.studio"
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configLicense lang
-            , action = Ui.Route (Route.Custom "https://github.com/polymny/polymny/blob/master/LICENSE")
+            , action = Ui.NewTab "https://github.com/polymny/polymny/blob/master/LICENSE"
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.loginTermsOfService lang
-            , action = Ui.Route (Route.Custom "https://polymny.studio/cgu/")
+            , action = Ui.NewTab "https://polymny.studio/cgu/"
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configSource lang
-            , action = Ui.Route (Route.Custom "https://github.com/polymny/polymny")
+            , action = Ui.NewTab "https://github.com/polymny/polymny"
             }
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configLang lang ++ " " ++ Lang.flag lang
@@ -150,24 +150,31 @@ leftColumn lang page capsule selectedGos =
                         |> Element.text
                         |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder, Font.color Colors.greyFont ]
 
-                inFrontButtons =
-                    [ case Data.recordPath capsule gos of
-                        Just url ->
-                            Ui.primaryIcon []
-                                { action = Ui.NewTab url
-                                , icon = Material.Icons.theaters
-                                , tooltip = ""
-                                }
+                fillWithLink =
+                    Ui.link [ Ui.wf, Ui.hf ] { label = "", action = action }
 
-                        _ ->
-                            Element.none
-                    , Ui.primaryIcon []
-                        { action = Ui.Route (Route.Acquisition capsule.id id)
-                        , icon = Material.Icons.videocam
-                        , tooltip = ""
-                        }
+                inFrontButtons =
+                    [ fillWithLink
+                    , Element.row [ Ui.p 5, Ui.s 5 ]
+                        [ case Data.recordPath capsule gos of
+                            Just url ->
+                                Ui.primaryIcon []
+                                    { action = Ui.NewTab url
+                                    , icon = Material.Icons.theaters
+                                    , tooltip = ""
+                                    }
+
+                            _ ->
+                                Element.none
+                        , Ui.primaryIcon []
+                            { action = Ui.Route (Route.Acquisition capsule.id id)
+                            , icon = Material.Icons.videocam
+                            , tooltip = ""
+                            }
+                        ]
                     ]
-                        |> Element.row [ Ui.p 5, Ui.ar, Ui.at, Ui.s 5 ]
+                        |> Element.row [ Ui.wf, Ui.at ]
+                        |> (\x -> Element.column [ Ui.wf, Ui.hf ] [ x, fillWithLink ])
 
                 borderColor =
                     if selectedGos == Just id then
@@ -184,17 +191,16 @@ leftColumn lang page capsule selectedGos =
                         _ ->
                             id + 1 |> String.fromInt |> Route.Custom |> Ui.Route
             in
-            Ui.navigationElement action [ Ui.wf ] <|
-                Element.image
-                    [ Ui.wf
-                    , Ui.b 5
-                    , Border.color borderColor
-                    , Element.inFront inFrontLabel
-                    , Element.inFront inFrontButtons
-                    ]
-                    { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
-                    , description = ""
-                    }
+            Element.image
+                [ Ui.wf
+                , Ui.b 5
+                , Border.color borderColor
+                , Element.inFront inFrontLabel
+                , Element.inFront inFrontButtons
+                ]
+                { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
+                , description = ""
+                }
     in
     Element.column
         [ Background.color Colors.greyBackground
