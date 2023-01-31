@@ -4,17 +4,22 @@ module Publication.Types exposing (..)
 -}
 
 import Data.Capsule exposing (Capsule)
+import Data.Types as Data
 
 
 type alias Model =
     { capsule : Capsule
+    , showPrivacyPopup : Bool
     }
 
 
 init : Capsule -> Model
 init capsule =
-    { capsule = capsule }
+    { capsule = capsule
+    , showPrivacyPopup = False
+    }
 
 
 type Msg
-    = Noop
+    = TogglePrivacyPopup
+    | SetPrivacy Data.Privacy
