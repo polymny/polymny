@@ -614,6 +614,10 @@ function init(node, flags) {
             });
         });
 
+        let capsule = JSON.parse(xhr.responseText);
+        capsule.structure[gos].events = record.events;
+        await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
         // Debug thingy where we pretend the request is slow.
         for (let i = 1; i <= 10; i++) {
             await sleep(200);
@@ -627,10 +631,6 @@ function init(node, flags) {
                 "progress": i / 10,
             });
         }
-
-        let capsule = JSON.parse(xhr.responseText);
-        capsule.structure[gos].events = record.events;
-        await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
 
         // app.ports.capsuleUpdated.send(capsule);
     }
