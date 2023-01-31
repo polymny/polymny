@@ -81,6 +81,16 @@ leftColumn config model =
         audioOnly =
             Maybe.map .size model.gos.record == Just Nothing
 
+        -- Gives the anchor if the webcam settings is Pip
+        anchor : Maybe Data.Anchor
+        anchor =
+            case model.gos.webcamSettings of
+                Data.Pip p ->
+                    Just p.anchor
+
+                _ ->
+                    Nothing
+
         -- Attributes to show things as disabled
         disableAttr : List (Element.Attribute App.Msg)
         disableAttr =
@@ -205,14 +215,14 @@ leftColumn config model =
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
-                , onChange = \_ -> App.Noop
+                , onChange = \x -> App.ProductionMsg <| Production.SetAnchor x
                 , options =
-                    [ Input.option 0 <| Element.text <| Strings.stepsProductionTopLeft lang
-                    , Input.option 0 <| Element.text <| Strings.stepsProductionTopRight lang
-                    , Input.option 0 <| Element.text <| Strings.stepsProductionBottomLeft lang
-                    , Input.option 0 <| Element.text <| Strings.stepsProductionBottomRight lang
+                    [ Input.option Data.TopLeft <| Element.text <| Strings.stepsProductionTopLeft lang
+                    , Input.option Data.TopRight <| Element.text <| Strings.stepsProductionTopRight lang
+                    , Input.option Data.BottomLeft <| Element.text <| Strings.stepsProductionBottomLeft lang
+                    , Input.option Data.BottomRight <| Element.text <| Strings.stepsProductionBottomRight lang
                     ]
-                , selected = Nothing
+                , selected = anchor
                 }
 
         -- Whether the user can control the opacity
@@ -232,7 +242,7 @@ leftColumn config model =
                     Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
-                    { onChange = \_ -> App.Noop
+                    { onChange = \x -> App.ProductionMsg <| Production.SetOpacity x
                     , label = Input.labelHidden <| Strings.stepsProductionOpacity lang
                     , max = 1
                     , min = 0

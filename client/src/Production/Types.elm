@@ -49,6 +49,8 @@ init gos capsule =
 type Msg
     = ToggleVideo
     | SetWidth (Maybe Int) -- Nothing means fullscreen
+    | SetAnchor Data.Anchor
+    | SetOpacity Float
     | Produce
 
 

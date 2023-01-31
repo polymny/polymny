@@ -629,6 +629,9 @@ function init(node, flags) {
         }
 
         let capsule = JSON.parse(xhr.responseText);
+        capsule.structure[gos].events = record.events;
+        await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
         // app.ports.capsuleUpdated.send(capsule);
     }
 

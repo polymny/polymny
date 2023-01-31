@@ -37,6 +37,30 @@ update msg model =
                     in
                     updateModel { gos | webcamSettings = newWebcamSettings } model m
 
+                Production.SetAnchor anchor ->
+                    let
+                        newWebcamSettings =
+                            case gos.webcamSettings of
+                                Data.Pip p ->
+                                    Data.Pip { p | anchor = anchor }
+
+                                x ->
+                                    x
+                    in
+                    updateModel { gos | webcamSettings = newWebcamSettings } model m
+
+                Production.SetOpacity opacity ->
+                    let
+                        newWebcamSettings =
+                            case gos.webcamSettings of
+                                Data.Pip p ->
+                                    Data.Pip { p | opacity = opacity }
+
+                                x ->
+                                    x
+                    in
+                    updateModel { gos | webcamSettings = newWebcamSettings } model m
+
                 Production.SetWidth newWidth ->
                     let
                         newWebcamSettings =
