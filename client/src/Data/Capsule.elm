@@ -1,7 +1,7 @@
 module Data.Capsule exposing
     ( Capsule, assetPath
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
-    , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
+    , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
@@ -24,7 +24,7 @@ module Data.Capsule exposing
 
 ## Slides
 
-@docs Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide
+@docs Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
 
 
 ## Records
@@ -203,16 +203,18 @@ deleteSlide slide capsule =
     { capsule | structure = newStructure }
 
 
+{-| Updates a specific slide in a gos.
+-}
+updateSlideInGos : Slide -> Gos -> Gos
+updateSlideInGos slide gos =
+    { gos | slides = List.map (\x -> Utils.tern (x.uuid == slide.uuid) slide x) gos.slides }
+
+
 {-| Updates a specific slide in a capsule.
 -}
 updateSlide : Slide -> Capsule -> Capsule
 updateSlide slide capsule =
-    let
-        gosMapper : Gos -> Gos
-        gosMapper gos =
-            { gos | slides = List.map (\x -> Utils.tern (x.uuid == slide.uuid) slide x) gos.slides }
-    in
-    { capsule | structure = List.map gosMapper capsule.structure }
+    { capsule | structure = List.map (updateSlideInGos slide) capsule.structure }
 
 
 {-| Updates a specific gos in a capsule.

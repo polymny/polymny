@@ -116,16 +116,17 @@ update msg model =
                                 _ ->
                                     Nothing
 
-                        newCapsule : Capsule
-                        newCapsule =
+                        ( newGos, newCapsule ) =
                             case ( currentSlide, newPrompt ) of
                                 ( Just s, Just p ) ->
-                                    Data.updateSlide { s | prompt = p } m.capsule
+                                    ( Data.updateSlideInGos { s | prompt = p } m.gos
+                                    , Data.updateSlide { s | prompt = p } m.capsule
+                                    )
 
                                 _ ->
-                                    m.capsule
+                                    ( m.gos, m.capsule )
                     in
-                    ( { model | page = App.Acquisition { m | capsule = newCapsule } }
+                    ( { model | page = App.Acquisition { m | gos = newGos, capsule = newCapsule } }
                     , Api.updateCapsule newCapsule (\_ -> App.Noop)
                     )
 
