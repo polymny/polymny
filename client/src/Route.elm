@@ -1,8 +1,8 @@
-module Route exposing (Route(..), toUrl, fromUrl, fromPage, push)
+module Route exposing (Route(..), toUrl, compareTab, fromUrl, fromPage, push)
 
 {-| This module contains the type definition of the routes of the app, and the utility functions to manipulate routes.
 
-@docs Route, toUrl, fromUrl, fromPage, push
+@docs Route, toUrl, compareTab, fromUrl, fromPage, push
 
 -}
 
@@ -110,6 +110,27 @@ fromPage page =
 
         App.Production m ->
             Production m.capsule.id m.gosId
+
+
+{-| Checks if the tab of the routes are the same.
+-}
+compareTab : Route -> Route -> Bool
+compareTab r1 r2 =
+    case ( r1, r2 ) of
+        ( Home, Home ) ->
+            True
+
+        ( Preparation _, Preparation _ ) ->
+            True
+
+        ( Acquisition _ _, Acquisition _ _ ) ->
+            True
+
+        ( Production _ _, Production _ _ ) ->
+            True
+
+        _ ->
+            False
 
 
 {-| Go to the corresponding page.

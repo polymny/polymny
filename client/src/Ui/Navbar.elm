@@ -68,7 +68,7 @@ navButtons lang capsule page =
         makeButton route label =
             let
                 attr =
-                    if route == Route.fromPage page then
+                    if Route.compareTab route (Route.fromPage page) then
                         [ Background.color Colors.greyBackground ]
 
                     else
@@ -137,8 +137,8 @@ bottombar config =
 
 {-| This function creates the left column of the capsule pages, which presents the grains.
 -}
-leftColumn : Lang -> Capsule -> Maybe Int -> Element msg
-leftColumn lang capsule selectedGos =
+leftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> Element msg
+leftColumn lang page capsule selectedGos =
     let
         gosView : Int -> Data.Gos -> Element msg
         gosView id gos =
@@ -148,7 +148,7 @@ leftColumn lang capsule selectedGos =
                         ++ " "
                         ++ String.fromInt (id + 1)
                         |> Element.text
-                        |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder ]
+                        |> Element.el [ Ui.p 5, Ui.rbr 5, Background.color Colors.greyBorder, Font.color Colors.greyFont ]
 
                 inFrontButtons =
                     [ case Data.recordPath capsule gos of
@@ -175,9 +175,17 @@ leftColumn lang capsule selectedGos =
 
                     else
                         Colors.greyBorder
+
+                action =
+                    case page of
+                        App.Preparation _ ->
+                            id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
+
+                        _ ->
+                            id + 1 |> String.fromInt |> Route.Custom |> Ui.Route
             in
-            Element.el [ Ui.wf ]
-                (Element.image
+            Ui.navigationElement action [ Ui.wf ] <|
+                Element.image
                     [ Ui.wf
                     , Ui.b 5
                     , Border.color borderColor
@@ -187,7 +195,6 @@ leftColumn lang capsule selectedGos =
                     { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
                     , description = ""
                     }
-                )
     in
     Element.column
         [ Background.color Colors.greyBackground
@@ -204,10 +211,10 @@ leftColumn lang capsule selectedGos =
 
 {-| Adds the left column to an already existing element.
 -}
-addLeftColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
-addLeftColumn lang capsule selectedGos ( element, popup ) =
+addLeftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftColumn lang page capsule selectedGos ( element, popup ) =
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
-        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang capsule selectedGos)
+        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang page capsule selectedGos)
         , Element.el [ Ui.wfp 5, Ui.hf, Element.scrollbarY ] element
         ]
     , popup
@@ -216,10 +223,10 @@ addLeftColumn lang capsule selectedGos ( element, popup ) =
 
 {-| Adds the left column to an already existing element with its own right column.
 -}
-addLeftAndRightColumn : Lang -> Capsule -> Maybe Int -> ( Element msg, Element msg, Element msg ) -> ( Element msg, Element msg )
-addLeftAndRightColumn lang capsule selectedGos ( element, rightColumn, popup ) =
+addLeftAndRightColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element msg, Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftAndRightColumn lang page capsule selectedGos ( element, rightColumn, popup ) =
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
-        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang capsule selectedGos)
+        [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang page capsule selectedGos)
         , Element.el [ Ui.wfp 4, Ui.hf, Element.scrollbarY ] element
         , Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] rightColumn
         ]

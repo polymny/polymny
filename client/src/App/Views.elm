@@ -116,15 +116,15 @@ viewSuccess model =
 
         App.Preparation m ->
             Preparation.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang m.capsule Nothing
+                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
 
         App.Acquisition m ->
             Acquisition.view model.config model.user m
-                |> Ui.addLeftAndRightColumn model.config.clientState.lang m.capsule (Just m.gosId)
+                |> Ui.addLeftAndRightColumn model.config.clientState.lang model.page m.capsule (Just m.gosId)
 
         App.Production m ->
             Production.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang m.capsule (Just m.gosId)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule (Just m.gosId)
 
 
 {-| Returns the view if the model is in error.
