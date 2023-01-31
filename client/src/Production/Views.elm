@@ -13,6 +13,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
+import Html.Events
+import Json.Decode as Decode
 import Production.Types as Production
 import Strings
 import Ui.Colors as Colors
@@ -295,7 +297,7 @@ rightColumn config model =
                 ( Data.Pip s, Just r ) ->
                     let
                         ( ( marginX, marginY ), ( w, h ) ) =
-                            ( model.webcamPosition, ( toFloat (Tuple.first s.size), toFloat (Tuple.second s.size) ) )
+                            ( model.webcamPosition, Tuple.mapBoth toFloat toFloat s.size )
 
                         ( x, y ) =
                             case s.anchor of
@@ -331,29 +333,28 @@ rightColumn config model =
                         , Element.htmlAttribute (Html.Attributes.style "bottom" (String.fromFloat bp ++ "%"))
                         ]
                         (Element.image
-                            [ Element.htmlAttribute (Html.Attributes.id "webcam-miniature")
+                            [ Ui.id Production.miniatureId
                             , Element.alpha s.opacity
                             , Ui.wf
                             , Ui.hf
-
-                            --, Decode.map3 (\z pageX pageY -> Core.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
-                            --    (Decode.field "pointerId" Decode.int)
-                            --    (Decode.field "pageX" Decode.float)
-                            --    (Decode.field "pageY" Decode.float)
-                            --    |> Html.Events.on "pointerdown"
-                            --    |> Element.htmlAttribute
-                            --, Decode.succeed (Core.ProductionMsg (Production.HoldingImageChanged Nothing))
-                            --    |> Html.Events.on "pointerup"
-                            --    |> Element.htmlAttribute
-                            --, Element.htmlAttribute
-                            --    (Html.Events.custom "dragstart"
-                            --        (Decode.succeed
-                            --            { message = App.Noop
-                            --            , preventDefault = True
-                            --            , stopPropagation = True
-                            --            }
-                            --        )
-                            --    )
+                            , Decode.map3 (\z pageX pageY -> App.ProductionMsg (Production.HoldingImageChanged (Just ( z, pageX, pageY ))))
+                                (Decode.field "pointerId" Decode.int)
+                                (Decode.field "pageX" Decode.float)
+                                (Decode.field "pageY" Decode.float)
+                                |> Html.Events.on "pointerdown"
+                                |> Element.htmlAttribute
+                            , Decode.succeed (App.ProductionMsg (Production.HoldingImageChanged Nothing))
+                                |> Html.Events.on "pointerup"
+                                |> Element.htmlAttribute
+                            , Element.htmlAttribute
+                                (Html.Events.custom "dragstart"
+                                    (Decode.succeed
+                                        { message = App.Noop
+                                        , preventDefault = True
+                                        , stopPropagation = True
+                                        }
+                                    )
+                                )
                             ]
                             { src = Data.assetPath model.capsule (r.uuid ++ ".png")
                             , description = ""
@@ -397,6 +398,6 @@ rightColumn config model =
                 }
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]
-        [ Element.el [ Ui.wf, Element.inFront overlay ] slide
+        [ Element.el [ Ui.wf, Ui.cy, Element.inFront overlay, Element.clip ] slide
         , produceButton
         ]

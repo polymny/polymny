@@ -635,10 +635,13 @@ function init(node, flags) {
         // app.ports.capsuleUpdated.send(capsule);
     }
 
+
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    // Helper to easily make ports.
     function makePort(name, fn) {
         if (app.ports === undefined) {
             console.warn("app.ports is undefined, not mounting port...");
@@ -671,7 +674,19 @@ function init(node, flags) {
         input.click();
     });
 
-    // Detect video and audio devices.
+    // Sets the pointer capture to follow an element the right way.
+    makePort("setPointerCapture", function setPointerCapture(args) {
+        let id = args[0];
+        let pointerId = args[1];
+        let element = document.getElementById(id);
+        if (element === null) {
+            console.error("Cannot set pointer capture of null element");
+            return;
+        }
+
+        element.setPointerCapture(pointerId);
+    });
+
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);

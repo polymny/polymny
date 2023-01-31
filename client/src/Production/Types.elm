@@ -13,6 +13,7 @@ type alias Model =
     , gosId : Int
     , gos : Data.Gos
     , webcamPosition : ( Float, Float )
+    , holdingImage : Maybe ( Int, Float, Float )
     }
 
 
@@ -36,6 +37,7 @@ init gos capsule =
                   , gos = h
                   , gosId = gos
                   , webcamPosition = webcamPosition
+                  , holdingImage = Nothing
                   }
                 , Cmd.none
                 )
@@ -51,6 +53,8 @@ type Msg
     | SetWidth (Maybe Int) -- Nothing means fullscreen
     | SetAnchor Data.Anchor
     | SetOpacity Float
+    | ImageMoved Float Float Float Float
+    | HoldingImageChanged (Maybe ( Int, Float, Float ))
     | Produce
 
 
@@ -66,3 +70,10 @@ setHeight newHeight ( width, height ) =
 setWidth : Int -> ( Int, Int ) -> ( Int, Int )
 setWidth newWidth ( width, height ) =
     ( newWidth, height * newWidth // width )
+
+
+{-| The ID of the miniature of the webcam.
+-}
+miniatureId : String
+miniatureId =
+    "webcam-miniature"

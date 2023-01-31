@@ -166,8 +166,8 @@ subs m =
                     App.Acquisition x ->
                         Acquisition.subs x
 
-                    App.Production _ ->
-                        Sub.none
+                    App.Production x ->
+                        Production.subs x
                 ]
                 |> Sub.map App.LoggedMsg
 
