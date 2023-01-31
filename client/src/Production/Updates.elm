@@ -152,10 +152,6 @@ updateModel gos model m =
     )
 
 
-
--- , Api.updateCapsule Core.Noop newCapsule
-
-
 {-| Changes the gos in a capsule.
 -}
 updateGos : Int -> Data.Gos -> Capsule -> Capsule
