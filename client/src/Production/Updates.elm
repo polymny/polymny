@@ -6,6 +6,7 @@ module Production.Updates exposing (..)
 import Api.Capsule as Api
 import App.Types as App
 import Data.Capsule as Data exposing (Capsule)
+import Data.User as Data
 import Production.Types as Production
 
 
@@ -66,8 +67,13 @@ updateModel gos model m =
     let
         newCapsule =
             updateGos m.gosId gos m.capsule
+
+        newUser =
+            Data.updateUser newCapsule model.user
     in
-    ( { model | page = App.Production { m | capsule = newCapsule, gos = gos } }, Cmd.none )
+    ( { model | user = newUser, page = App.Production { m | capsule = newCapsule, gos = gos } }
+    , Api.updateCapsule newCapsule (\_ -> App.Noop)
+    )
 
 
 

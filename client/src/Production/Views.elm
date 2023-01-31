@@ -133,14 +133,18 @@ leftColumn config model =
                 _ ->
                     Element.none
 
+        -- Whether the webcam size is disabled
+        webcamSizeDisabled =
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+
         --  Title to introduce webcam size settings
         webcamSizeTitle =
             Strings.stepsProductionWebcamSize lang
-                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+                |> title webcamSizeDisabled
 
         -- Element to control the webcam size
         webcamSizeText =
-            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+            disableIf webcamSizeDisabled
                 Input.text
                 [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
@@ -186,14 +190,18 @@ leftColumn config model =
                             Nothing
                 }
 
+        -- Whether the webcam position is disabled
+        webcamPositionDisabled =
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+
         -- Title to introduce webcam position settings
         webcamPositionTitle =
             Strings.stepsProductionWebcamPosition lang
-                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+                |> title webcamPositionDisabled
 
         -- Element to choose the webcam position among the four corners
         webcamPositionRadio =
-            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+            disableIf webcamPositionDisabled
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
@@ -207,23 +215,27 @@ leftColumn config model =
                 , selected = Nothing
                 }
 
+        -- Whether the user can control the opacity
+        opacityDisabled =
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+
         -- Title to introduce webcam opacity settings
         opacityTitle =
             Strings.stepsProductionOpacity lang
-                |> title (model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+                |> title opacityDisabled
 
         -- Slider to control opacity
         opacitySlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
-                  (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+                  disableIf opacityDisabled
                     Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
                     { onChange = \_ -> App.Noop
                     , label = Input.labelHidden <| Strings.stepsProductionOpacity lang
-                    , max = 0
-                    , min = 1
+                    , max = 1
+                    , min = 0
                     , step = Just 0.1
                     , thumb = Input.defaultThumb
                     , value = opacity
@@ -235,7 +247,7 @@ leftColumn config model =
                     |> String.fromInt
                     |> (\x -> x ++ "%")
                     |> Element.text
-                    |> Element.el [ Ui.wfp 1, Ui.ab ]
+                    |> Element.el (Ui.wfp 1 :: Ui.ab :: disableAttrIf opacityDisabled)
                 ]
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
