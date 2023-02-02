@@ -23,3 +23,5 @@ init capsule =
 type Msg
     = TogglePrivacyPopup
     | SetPrivacy Data.Privacy
+    | SetPromptSubtitles Bool
+    | PublishVideo

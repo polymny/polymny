@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule
+@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule
 
 -}
 
@@ -90,6 +90,17 @@ produceCapsule : Data.Capsule -> (WebData () -> msg) -> Cmd msg
 produceCapsule capsule toMsg =
     Api.post
         { url = "/api/produce/" ++ capsule.id
+        , body = Http.emptyBody
+        , toMsg = toMsg
+        }
+
+
+{-| Triggers the publication of a capsule.
+-}
+publishCapsule : Data.Capsule -> (WebData () -> msg) -> Cmd msg
+publishCapsule capsule toMsg =
+    Api.post
+        { url = "/api/publish/" ++ capsule.id
         , body = Http.emptyBody
         , toMsg = toMsg
         }

@@ -1,5 +1,5 @@
 module Data.Capsule exposing
-    ( Capsule, assetPath
+    ( Capsule, assetPath, iframeHtml
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
     , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
     , Record
@@ -14,7 +14,7 @@ module Data.Capsule exposing
 
 # The capsule type
 
-@docs Capsule, assetPath
+@docs Capsule, assetPath, iframeHtml
 
 
 # The GoS (Group of Slides) type
@@ -48,6 +48,7 @@ module Data.Capsule exposing
 
 -}
 
+import Config exposing (Config)
 import Data.Types as Data
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -113,6 +114,27 @@ decodeCapsule =
 assetPath : Capsule -> String -> String
 assetPath capsule path =
     "/data/" ++ capsule.id ++ "/assets/" ++ path
+
+
+{-| Returns the HTML code to embed the video into another web page.
+-}
+iframeHtml : Config -> Capsule -> String
+iframeHtml config capsule =
+    "<div style=\"position: relative; width: 100%; padding-top: 56.25%\">\n"
+        ++ "    <iframe\n"
+        ++ "        allowfullscreen=\"true\"\n"
+        ++ "        style=\"position:absolute;top:0;left:0;width:100%;height:100%;\"\n"
+        ++ "        src=\""
+        ++ config.serverConfig.videoRoot
+        ++ "/"
+        ++ capsule.id
+        ++ "/\"\n"
+        ++ "        title=\""
+        ++ capsule.name
+        ++ "\"\n"
+        ++ "    >\n"
+        ++ "    </iframe>\n"
+        ++ "</div>"
 
 
 {-| This type represents a slide of a presentation.

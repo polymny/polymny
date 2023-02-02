@@ -27,6 +27,12 @@ update msg model =
                 Publication.SetPrivacy privacy ->
                     updateModel { capsule | privacy = privacy } model m
 
+                Publication.SetPromptSubtitles promptSubtitles ->
+                    updateModel { capsule | promptSubtitles = promptSubtitles } model m
+
+                Publication.PublishVideo ->
+                    ( model, Api.publishCapsule m.capsule (\_ -> App.Noop) )
+
         _ ->
             ( model, Cmd.none )
 

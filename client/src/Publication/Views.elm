@@ -12,6 +12,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html
 import Html.Attributes
 import Publication.Types as Publication
@@ -143,14 +144,57 @@ view config user model =
                     ]
                 )
 
+        -- Title for publication options
+        publicationTitle =
+            title "Paramètres de publication"
+
+        -- Option to enable the automatic generation of captions via prompt text
+        usePromptForSubtitles =
+            Input.checkbox []
+                { checked = model.capsule.promptSubtitles
+                , icon = Input.defaultCheckbox
+                , label = Input.labelRight [] <| Element.text <| Strings.stepsPublicationPromptSubtitles lang ++ "."
+                , onChange = \x -> App.PublicationMsg <| Publication.SetPromptSubtitles x
+                }
+
+        -- Publish button
+        publishButton =
+            Ui.primary []
+                { label = Strings.stepsPublicationPublishVideo lang
+                , action = Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+                }
+
+        -- Title for additionnal information of published capsule
+        publicationInformationTitle =
+            title "Code d'intégration HTML"
+
+        -- Text area showing the iframe code for the capsule
+        iframeCode =
+            Input.multiline []
+                { label = Input.labelHidden "oops"
+                , onChange = \_ -> App.Noop
+                , placeholder = Nothing
+                , spellcheck = False
+                , text = Data.iframeHtml config model.capsule
+                }
+
         -- Menu for publication
         menu =
-            Element.column [ Ui.wf, Ui.hf, Element.spacing 10 ]
-                [ privacyTitle
-                , privacyButton
+            Element.column [ Ui.wf, Ui.hf, Ui.s 30 ]
+                [ Element.column [ Ui.s 10 ]
+                    [ privacyTitle
+                    , privacyButton
+                    ]
+                , Element.column [ Ui.s 10 ]
+                    [ publicationTitle
+                    , usePromptForSubtitles
+                    , publishButton
+                    ]
+                , Element.column [ Ui.s 10 ]
+                    [ publicationInformationTitle
+                    , iframeCode
+                    ]
                 ]
-
-        -- [ Element.text (Lang.videoNotProduced global.lang) ]
     in
     ( Element.row [ Ui.wf, Ui.hf, Ui.p 10, Ui.s 10 ]
         [ menu, video ]
