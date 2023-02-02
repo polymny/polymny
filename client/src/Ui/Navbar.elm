@@ -9,6 +9,7 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 import App.Types as App
 import Config exposing (Config)
 import Data.Capsule as Data exposing (Capsule)
+import Data.Types as Data
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
@@ -34,10 +35,21 @@ navbar config page user =
 
         capsule =
             Maybe.andThen App.getCapsule page
+
+        logo =
+            case Maybe.map .plan user of
+                Just Data.Admin ->
+                    Ui.logoRed
+
+                Just Data.PremiumLvl1 ->
+                    Ui.logoBlue
+
+                _ ->
+                    Ui.logo
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
-        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] Ui.logo
+        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
         , case ( capsule, page ) of
             ( Just c, Just p ) ->
                 navButtons lang c p
