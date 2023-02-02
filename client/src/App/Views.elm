@@ -20,6 +20,7 @@ import NewCapsule.Views as NewCapsule
 import Preparation.Views as Preparation
 import Production.Views as Production
 import Publication.Views as Publication
+import Settings.Views as Settings
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -130,6 +131,9 @@ viewSuccess model =
         App.Publication m ->
             Publication.view model.config model.user m
                 |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
+
+        App.Settings m ->
+            Settings.view model.config model.user m
 
 
 {-| Returns the view if the model is in error.

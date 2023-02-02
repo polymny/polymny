@@ -19,6 +19,7 @@ import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
 import Route exposing (Route)
+import Settings.Types as Settings
 import Unlogged.Types as Unlogged
 import Url exposing (Url)
 
@@ -113,6 +114,9 @@ pageFromRoute config user route =
                 |> Maybe.withDefault App.Home
             , Cmd.none
             )
+
+        Route.Settings ->
+            ( App.Settings Settings.init, Cmd.none )
 
         _ ->
             ( App.Home, Cmd.none )

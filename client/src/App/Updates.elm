@@ -23,6 +23,8 @@ import Publication.Types as Publication
 import Publication.Updates as Publication
 import RemoteData
 import Route
+import Settings.Types as Settings
+import Settings.Updates as Settings
 import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
 
@@ -121,6 +123,9 @@ updateModel msg model =
                 App.PublicationMsg pMsg ->
                     Publication.update pMsg model
 
+                App.SettingsMsg sMsg ->
+                    Settings.update sMsg model
+
                 App.OnUrlChange url ->
                     let
                         ( page, cmd ) =
@@ -175,6 +180,9 @@ subs m =
                         Production.subs x
 
                     App.Publication _ ->
+                        Sub.none
+
+                    App.Settings _ ->
                         Sub.none
                 ]
                 |> Sub.map App.LoggedMsg

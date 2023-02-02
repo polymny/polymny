@@ -29,6 +29,7 @@ import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
+import Settings.Types as Settings
 import Unlogged.Types as Unlogged
 import Url
 
@@ -78,6 +79,7 @@ type Page
     | Acquisition Acquisition.Model
     | Production Production.Model
     | Publication Publication.Model
+    | Settings Settings.Model
 
 
 {-| Tries to get the capsule from a specific page. Returns nothing if the page does not correspond to a specific
@@ -127,6 +129,7 @@ type Msg
     | AcquisitionMsg Acquisition.Msg
     | ProductionMsg Production.Msg
     | PublicationMsg Publication.Msg
+    | SettingsMsg Settings.Msg
     | ConfigMsg Config.Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url
