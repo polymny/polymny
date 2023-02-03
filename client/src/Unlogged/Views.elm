@@ -18,6 +18,7 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Unlogged.Types as Unlogged
+import Utils
 
 
 {-| The view of the form.
@@ -222,7 +223,7 @@ view model =
                 ( [], Element.none, True )
 
         ( emailAttr, emailError, emailAccepted ) =
-            if model.page == Unlogged.SignUp && not (checkEmail model.email) then
+            if model.page == Unlogged.SignUp && not (Utils.checkEmail model.email) then
                 ( [ Ui.b 1, Border.color Colors.red ]
                 , Strings.loginIncorrectEmailAddress lang |> Element.text |> Element.el [ Font.color Colors.red ]
                 , False
@@ -429,25 +430,6 @@ passwordStrength password =
 
     else
         lengthStrength + hasLowerCase + hasUpperCase + hasDigit + hasSpecial
-
-
-{-| Checks whether an email address has a correct syntax.
--}
-checkEmail : String -> Bool
-checkEmail email =
-    let
-        splitAt =
-            String.split "@" email
-
-        host =
-            List.drop 1 splitAt |> List.head |> Maybe.map (String.split "." >> List.length)
-    in
-    case ( List.length splitAt == 2, not (String.contains " " email), host ) of
-        ( True, True, Just x ) ->
-            x > 1
-
-        _ ->
-            False
 
 
 {-| Sup.

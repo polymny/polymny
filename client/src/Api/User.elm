@@ -79,3 +79,14 @@ signUp root { username, email, password, signUpForNewsletter } toMsg =
                     ]
         , toMsg = toMsg
         }
+
+
+{-| Requests to change the email of a user.
+-}
+changeEmail : String -> (WebData () -> msg) -> Cmd msg
+changeEmail newEmail toMsg =
+    Api.post
+        { url = "/api/request-change-email"
+        , body = Http.jsonBody <| Encode.object [ ( "new_email", Encode.string newEmail ) ]
+        , toMsg = toMsg
+        }

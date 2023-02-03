@@ -3,21 +3,33 @@ module Settings.Types exposing (..)
 {-| This module contains everything required for the settings view.
 -}
 
+import RemoteData exposing (WebData)
 
-{-| This type contains the data for the settings page.
+
+{-| The different tabs on which the settings page can be.
 -}
-type alias Model =
-    {}
+type Model
+    = Info InfoModel
 
 
 {-| Initializes a model.
 -}
 init : Model
 init =
-    {}
+    Info { newEmail = "", data = RemoteData.NotAsked }
+
+
+{-| The data required for the info tab.
+-}
+type alias InfoModel =
+    { newEmail : String
+    , data : WebData ()
+    }
 
 
 {-| This type contains the different messages that can happen on the settings page.
 -}
 type Msg
-    = Noop
+    = InfoNewEmailChanged String
+    | InfoNewEmailConfirm
+    | InfoNewEmailDataChanged (WebData ())

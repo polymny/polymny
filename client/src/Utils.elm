@@ -1,8 +1,8 @@
-module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed)
+module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed, checkEmail)
 
 {-| This module contains useful functions.
 
-@docs Confirmation, andMap, tern, regroup, regroupFixed
+@docs Confirmation, andMap, tern, regroup, regroupFixed, checkEmail
 
 -}
 
@@ -92,3 +92,22 @@ regroupFixedAux acc size input =
 
             else
                 regroupFixedAux ([ Just h2 ] :: h1 :: t1) size t2
+
+
+{-| Checks whether an email address has a correct syntax.
+-}
+checkEmail : String -> Bool
+checkEmail email =
+    let
+        splitAt =
+            String.split "@" email
+
+        host =
+            List.drop 1 splitAt |> List.head |> Maybe.map (String.split "." >> List.length)
+    in
+    case ( ( String.endsWith "." email, List.length splitAt == 2 ), ( not (String.contains " " email), host ) ) of
+        ( ( False, True ), ( True, Just x ) ) ->
+            x > 1
+
+        _ ->
+            False
