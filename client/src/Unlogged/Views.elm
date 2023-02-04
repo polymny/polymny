@@ -76,42 +76,10 @@ view model =
                     Strings.loginResetPassword lang |> Element.text
 
         strength =
-            passwordStrength model.password
+            Utils.passwordStrength model.password
 
         length =
             String.length model.password
-
-        passwordStrengthElement : Element msg
-        passwordStrengthElement =
-            let
-                color =
-                    if strength < 5 then
-                        Colors.red
-
-                    else if strength < 6 then
-                        Colors.orange
-
-                    else
-                        Colors.green2
-
-                firstAttr =
-                    if strength == 7 then
-                        Ui.r 10
-
-                    else
-                        Ui.rl 10
-
-                secondAttr =
-                    if strength == 0 then
-                        Ui.r 10
-
-                    else
-                        Ui.rr 10
-            in
-            Element.row [ Ui.wf, Ui.hpx 10 ]
-                [ Element.el [ firstAttr, Ui.hf, Background.color color, Ui.wfp strength ] Element.none
-                , Element.el [ secondAttr, Ui.hf, Background.color Colors.greyBorder, Ui.wfp (7 - strength) ] Element.none
-                ]
 
         formatError : Maybe String -> Element msg
         formatError string =
@@ -195,7 +163,7 @@ view model =
                     , False
                     )
 
-                else if strength < 5 then
+                else if strength < Utils.minPasswordStrength then
                     ( [ Ui.b 1, Border.color Colors.red ]
                     , Strings.loginInsufficientPasswordComplexity lang
                         |> Element.text
@@ -203,7 +171,7 @@ view model =
                     , False
                     )
 
-                else if strength < 6 then
+                else if strength < Utils.minPasswordStrength + 1 then
                     ( []
                     , Strings.loginAcceptablePasswordComplexity lang
                         |> Element.text
@@ -306,7 +274,7 @@ view model =
                     , text = model.password
                     , show = False
                     }
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordStrengthElement
+            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <| Utils.passwordStrengthElement model.password
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordError
             , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
                 Input.newPassword (Ui.cx :: Ui.wf :: repeatAttr)
@@ -379,57 +347,6 @@ view model =
                 , Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "password", Html.Attributes.value model.password ] []
                 ]
         ]
-
-
-{-| Returns the strength of the password. A strength less than 5 is refused, and less than 6 gives a warning.
--}
-passwordStrength : String -> Int
-passwordStrength password =
-    let
-        specialChars =
-            "[!@#$%^&*()_+-=[]{};':\"|,.<>\\/?]" |> String.toList
-
-        passwordLength =
-            String.length password
-
-        lengthStrength =
-            if passwordLength > 9 then
-                3
-
-            else if passwordLength > 7 then
-                2
-
-            else
-                1
-
-        boolToInt : Bool -> Int
-        boolToInt bool =
-            if bool then
-                1
-
-            else
-                0
-
-        hasLowerCase =
-            boolToInt <| String.any Char.isLower password
-
-        hasUpperCase =
-            boolToInt <| String.any Char.isUpper password
-
-        hasDigit =
-            boolToInt <| String.any Char.isDigit password
-
-        hasSpecial =
-            boolToInt <| String.any (\x -> List.member x specialChars) password
-    in
-    if passwordLength == 0 then
-        0
-
-    else if passwordLength < 6 then
-        1
-
-    else
-        lengthStrength + hasLowerCase + hasUpperCase + hasDigit + hasSpecial
 
 
 {-| Sup.

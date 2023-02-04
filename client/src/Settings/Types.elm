@@ -4,32 +4,97 @@ module Settings.Types exposing (..)
 -}
 
 import RemoteData exposing (WebData)
+import Unlogged.Types as Unlogged
 
 
 {-| The different tabs on which the settings page can be.
 -}
 type Model
-    = Info InfoModel
+    = Info
+    | ChangeEmail ChangeEmailModel
+    | ChangePassword ChangePasswordModel
+
+
+{-| Checks whether the model is the same type as another.
+-}
+isSameTab : Model -> Model -> Bool
+isSameTab m1 m2 =
+    case ( m1, m2 ) of
+        ( Info, Info ) ->
+            True
+
+        ( ChangeEmail _, ChangeEmail _ ) ->
+            True
+
+        _ ->
+            False
+
+
+
+-- _ ->
+--     False
 
 
 {-| Initializes a model.
 -}
 init : Model
 init =
-    Info { newEmail = "", data = RemoteData.NotAsked }
+    Info
 
 
-{-| The data required for the info tab.
+{-| Inits an info model.
 -}
-type alias InfoModel =
+initInfo : Model
+initInfo =
+    Info
+
+
+{-| The data required to change email address.
+-}
+type alias ChangeEmailModel =
     { newEmail : String
     , data : WebData ()
     }
 
 
+{-| Inits an email model.
+-}
+initChangeEmail : Model
+initChangeEmail =
+    ChangeEmail { newEmail = "", data = RemoteData.NotAsked }
+
+
+{-| The data required to change the password.
+-}
+type alias ChangePasswordModel =
+    { currentPassword : String
+    , newPassword : String
+    , newPasswordRepeat : String
+    , data : WebData ()
+    }
+
+
+{-| Initializes a change password model.
+-}
+initChangePassword : Model
+initChangePassword =
+    ChangePassword
+        { currentPassword = ""
+        , newPassword = ""
+        , newPasswordRepeat = ""
+        , data = RemoteData.NotAsked
+        }
+
+
 {-| This type contains the different messages that can happen on the settings page.
 -}
 type Msg
-    = InfoNewEmailChanged String
-    | InfoNewEmailConfirm
-    | InfoNewEmailDataChanged (WebData ())
+    = TabChanged Model
+    | ChangeEmailNewEmailChanged String
+    | ChangeEmailConfirm
+    | ChangeEmailDataChanged (WebData ())
+    | ChangePasswordCurrentPasswordChanged String
+    | ChangePasswordNewPasswordChanged String
+    | ChangePasswordNewPasswordRepeatChanged String
+    | ChangePasswordConfirm
+    | ChangePasswordDataChanged (WebData ())

@@ -13,21 +13,49 @@ import Settings.Types as Settings
 -}
 update : Settings.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case model.page of
-        App.Settings (Settings.Info s) ->
-            case msg of
-                Settings.InfoNewEmailChanged newEmail ->
-                    ( { model | page = App.Settings <| Settings.Info { s | newEmail = newEmail } }
-                    , Cmd.none
-                    )
+    case ( msg, model.page ) of
+        ( Settings.TabChanged m, _ ) ->
+            ( { model | page = App.Settings m }, Cmd.none )
 
-                Settings.InfoNewEmailConfirm ->
-                    ( { model | page = App.Settings <| Settings.Info <| { s | data = RemoteData.Loading Nothing } }
-                    , Api.changeEmail s.newEmail (\x -> App.SettingsMsg <| Settings.InfoNewEmailDataChanged x)
-                    )
+        ( Settings.ChangeEmailNewEmailChanged newEmail, App.Settings (Settings.ChangeEmail s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangeEmail { s | newEmail = newEmail } }
+            , Cmd.none
+            )
 
-                Settings.InfoNewEmailDataChanged d ->
-                    ( { model | page = App.Settings <| Settings.Info { s | data = d } }, Cmd.none )
+        ( Settings.ChangeEmailConfirm, App.Settings (Settings.ChangeEmail s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangeEmail <| { s | data = RemoteData.Loading Nothing } }
+            , Api.changeEmail s.newEmail (\x -> App.SettingsMsg <| Settings.ChangeEmailDataChanged x)
+            )
+
+        ( Settings.ChangeEmailDataChanged d, App.Settings (Settings.ChangeEmail s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangeEmail { s | data = d } }
+            , Cmd.none
+            )
+
+        ( Settings.ChangePasswordCurrentPasswordChanged p, App.Settings (Settings.ChangePassword s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangePassword { s | currentPassword = p } }
+            , Cmd.none
+            )
+
+        ( Settings.ChangePasswordNewPasswordChanged p, App.Settings (Settings.ChangePassword s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangePassword { s | newPassword = p } }
+            , Cmd.none
+            )
+
+        ( Settings.ChangePasswordNewPasswordRepeatChanged p, App.Settings (Settings.ChangePassword s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangePassword { s | newPasswordRepeat = p } }
+            , Cmd.none
+            )
+
+        ( Settings.ChangePasswordConfirm, App.Settings (Settings.ChangePassword s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangePassword <| { s | data = RemoteData.Loading Nothing } }
+            , Api.changePassword model.user s.currentPassword s.newPassword (\x -> App.SettingsMsg <| Settings.ChangePasswordDataChanged x)
+            )
+
+        ( Settings.ChangePasswordDataChanged d, App.Settings (Settings.ChangePassword s) ) ->
+            ( { model | page = App.Settings <| Settings.ChangePassword <| { s | data = d } }
+            , Cmd.none
+            )
 
         _ ->
             ( model, Cmd.none )

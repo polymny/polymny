@@ -1,12 +1,16 @@
-module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed, checkEmail)
+module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength)
 
 {-| This module contains useful functions.
 
-@docs Confirmation, andMap, tern, regroup, regroupFixed, checkEmail
+@docs Confirmation, andMap, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength
 
 -}
 
+import Element exposing (Element)
+import Element.Background as Background
 import Json.Decode as Decode exposing (Decoder)
+import Ui.Colors as Colors
+import Ui.Utils as Ui
 
 
 {-| Type for things that require user confirmation.
@@ -111,3 +115,99 @@ checkEmail email =
 
         _ ->
             False
+
+
+{-| Returns the strength of the password. A strength less than 5 is refused, and less than 6 gives a warning.
+-}
+passwordStrength : String -> Int
+passwordStrength password =
+    let
+        specialChars =
+            "[!@#$%^&*()_+-=[]{};':\"|,.<>\\/?]" |> String.toList
+
+        passwordLength =
+            String.length password
+
+        lengthStrength =
+            if passwordLength > 9 then
+                3
+
+            else if passwordLength > 7 then
+                2
+
+            else
+                1
+
+        boolToInt : Bool -> Int
+        boolToInt bool =
+            if bool then
+                1
+
+            else
+                0
+
+        hasLowerCase =
+            boolToInt <| String.any Char.isLower password
+
+        hasUpperCase =
+            boolToInt <| String.any Char.isUpper password
+
+        hasDigit =
+            boolToInt <| String.any Char.isDigit password
+
+        hasSpecial =
+            boolToInt <| String.any (\x -> List.member x specialChars) password
+    in
+    if passwordLength == 0 then
+        0
+
+    else if passwordLength < 6 then
+        1
+
+    else
+        lengthStrength + hasLowerCase + hasUpperCase + hasDigit + hasSpecial
+
+
+{-| Minimum allowed password strength.
+-}
+minPasswordStrength : Int
+minPasswordStrength =
+    5
+
+
+{-| Progress bar that shows the strength of the password.
+-}
+passwordStrengthElement : String -> Element msg
+passwordStrengthElement password =
+    let
+        strength =
+            passwordStrength password
+
+        color =
+            if strength < 5 then
+                Colors.red
+
+            else if strength < 6 then
+                Colors.orange
+
+            else
+                Colors.green2
+
+        firstAttr =
+            if strength == 7 then
+                Ui.r 10
+
+            else
+                Ui.rl 10
+
+        secondAttr =
+            if strength == 0 then
+                Ui.r 10
+
+            else
+                Ui.rr 10
+    in
+    Element.row [ Ui.wf, Ui.hpx 10 ]
+        [ Element.el [ firstAttr, Ui.hf, Background.color color, Ui.wfp strength ] Element.none
+        , Element.el [ secondAttr, Ui.hf, Background.color Colors.greyBorder, Ui.wfp (7 - strength) ] Element.none
+        ]

@@ -63,6 +63,22 @@ resetPassword sortBy key newPassword toMsg =
         }
 
 
+{-| Changes the password of the user.
+-}
+changePassword : User -> String -> String -> (WebData () -> msg) -> Cmd msg
+changePassword user oldPassword newPassword toMsg =
+    Api.post
+        { url = "/api/change-password"
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "username_and_old_password", Encode.list Encode.string [ user.username, oldPassword ] )
+                    , ( "new_password", Encode.string newPassword )
+                    ]
+        , toMsg = toMsg
+        }
+
+
 {-| Creates a new Polymny account.
 -}
 signUp : String -> { a | username : String, email : String, password : String, signUpForNewsletter : Bool } -> (WebData () -> msg) -> Cmd msg
