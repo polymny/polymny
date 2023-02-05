@@ -85,16 +85,7 @@ view model =
         formatError string =
             case string of
                 Just s ->
-                    Element.el
-                        [ Ui.wf
-                        , Border.color Colors.red
-                        , Ui.b 1
-                        , Ui.r 5
-                        , Ui.p 10
-                        , Background.color Colors.redLight
-                        , Font.color Colors.red
-                        ]
-                        (Element.text s)
+                    Ui.errorModal [ Ui.wf ] (Element.text s)
 
                 Nothing ->
                     Element.none
@@ -103,7 +94,7 @@ view model =
         errorMessage =
             case ( model.page, ( ( model.loginRequest, model.newPasswordRequest ), ( model.resetPasswordRequest, model.signUpRequest ) ) ) of
                 ( Unlogged.Login, ( ( RemoteData.Failure (Http.BadStatus 401), _ ), ( _, _ ) ) ) ->
-                    Just <| Strings.loginWrongPassword lang ++ "."
+                    Just <| Strings.loginWrongUsernameOrPassword lang ++ "."
 
                 ( Unlogged.Login, ( ( RemoteData.Failure _, _ ), ( _, _ ) ) ) ->
                     Just <| Strings.loginUnknownError lang ++ "."
@@ -127,16 +118,7 @@ view model =
         formatSuccess string =
             case string of
                 Just s ->
-                    Element.el
-                        [ Ui.wf
-                        , Border.color Colors.green2
-                        , Ui.b 1
-                        , Ui.r 5
-                        , Ui.p 10
-                        , Background.color Colors.greenLight
-                        , Font.color Colors.green2
-                        ]
-                        (Element.text s)
+                    Ui.successModal [ Ui.wf ] (Element.text s)
 
                 _ ->
                     Element.none

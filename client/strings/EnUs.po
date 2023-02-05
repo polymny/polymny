@@ -100,9 +100,13 @@ msgstr "The e-mail address is incorrect"
 msgid "Login.usernameOrEmailAlreadyExist"
 msgstr "An account with this username or e-mail address already exists"
 
-#. The password in wrong.
+#. The password is wrong.
 msgid "Login.wrongPassword"
-msgstr "The username or the password is incorrect"
+msgstr "The password is incorrect"
+
+#. The username or the password is wrong.
+msgid "Login.wrongUsernameOrPassword"
+msgstr "The username or the password is incorrec"
 
 #. An unknown error occured while logging in.
 msgid "Login.unknownError"

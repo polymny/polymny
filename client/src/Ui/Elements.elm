@@ -1,12 +1,14 @@
 module Ui.Elements exposing
     ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
     , spinner, spinningSpinner, popup
+    , errorModal, successModal
     )
 
 {-| This module contains helpers to easily make buttons.
 
 @docs primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin
 @docs spinner, spinningSpinner, popup
+@docs errorModaln successModal
 
 -}
 
@@ -261,3 +263,35 @@ popup size titleText content =
             ]
         , Element.el [ Ui.wfp 1 ] Element.none
         ]
+
+
+{-| Helper to create an error modal.
+-}
+errorModal : List (Element.Attribute msg) -> Element msg -> Element msg
+errorModal attr input =
+    Element.el
+        (Border.color Colors.red
+            :: Font.color Colors.red
+            :: Background.color Colors.redLight
+            :: Ui.b 1
+            :: Ui.p 10
+            :: Ui.r 5
+            :: attr
+        )
+        input
+
+
+{-| Helper to create a success modal.
+-}
+successModal : List (Element.Attribute msg) -> Element msg -> Element msg
+successModal attr input =
+    Element.el
+        (Border.color Colors.green2
+            :: Font.color Colors.green2
+            :: Background.color Colors.greenLight
+            :: Ui.b 1
+            :: Ui.p 10
+            :: Ui.r 5
+            :: attr
+        )
+        input

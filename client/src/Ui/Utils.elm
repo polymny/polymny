@@ -5,7 +5,7 @@ module Ui.Utils exposing
     , bl, br, bt, bb, by, bx, b
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
-    , shrink
+    , shrink, paragraph
     , id, class
     )
 
@@ -44,7 +44,7 @@ module Ui.Utils exposing
 
 # Text utilities
 
-@docs shrink
+@docs shrink, paragraph
 
 
 # HTML utilities
@@ -53,7 +53,7 @@ module Ui.Utils exposing
 
 -}
 
-import Element
+import Element exposing (Element)
 import Element.Border as Border
 import Html.Attributes
 import Material.Icons.Types exposing (Icon)
@@ -320,6 +320,13 @@ shrink length string =
 
     else
         string
+
+
+{-| Helper to create a paragraph with a single text.
+-}
+paragraph : List (Element.Attribute msg) -> String -> Element msg
+paragraph attr text =
+    Element.paragraph attr [ Element.text text ]
 
 
 {-| An alias for an HTML id.

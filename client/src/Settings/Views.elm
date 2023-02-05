@@ -11,6 +11,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
+import Http
 import RemoteData
 import Settings.Types as Settings
 import Strings
@@ -35,6 +36,9 @@ view config user model =
 
                 Settings.ChangePassword s ->
                     changePassword config user model s
+
+                Settings.DeleteAccount s ->
+                    deleteAccount config user model s
     in
     ( Element.row [ Ui.wf, Ui.hf ]
         [ Element.el [ Ui.wfp 2 ] Element.none
@@ -110,20 +114,41 @@ changeEmail config user model m =
                 }
 
         -- Helper info to create the button to request the email address change
-        ( newEmailButtonText, canSend ) =
+        ( newEmailButtonText, outcomeInfo, canSend ) =
             case m.data of
                 RemoteData.Loading _ ->
-                    ( Ui.spinningSpinner [] 20, False )
+                    ( Ui.spinningSpinner [] 20
+                    , Element.none
+                    , False
+                    )
 
                 RemoteData.Success _ ->
-                    ( Element.text <| Strings.loginMailSent lang, False )
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Strings.loginMailSent lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.successModal [ Ui.wf ]
+                    , False
+                    )
 
-                _ ->
-                    ( Element.text <| Strings.uiConfirm lang, True )
+                RemoteData.Failure _ ->
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Strings.loginUnknownError lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.errorModal [ Ui.wf ]
+                    , True
+                    )
+
+                RemoteData.NotAsked ->
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Element.none
+                    , True
+                    )
 
         -- Button to request the email address change
         newEmailButton =
-            Utils.tern newEmailValid
+            Utils.tern (newEmailValid && canSend)
                 Ui.primaryGeneric
                 Ui.secondaryGeneric
                 [ Ui.wf ]
@@ -141,6 +166,7 @@ changeEmail config user model m =
                     , newEmailErrorMsg
                     ]
                 , newEmailButton
+                , outcomeInfo
                 ]
     in
     ( content, Element.none )
@@ -240,16 +266,46 @@ changePassword config user model m =
                 }
 
         -- Helper info to create the button to request the password change
-        ( changePasswordButtonText, canSend ) =
+        ( changePasswordButtonText, outcomeMessage, canSend ) =
             case m.data of
                 RemoteData.Loading _ ->
-                    ( Ui.spinningSpinner [] 20, False )
+                    ( Ui.spinningSpinner [] 20
+                    , Element.none
+                    , False
+                    )
 
                 RemoteData.Success _ ->
-                    ( Element.text <| Strings.loginPasswordChanged lang, False )
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Strings.loginPasswordChanged lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.successModal [ Ui.wf ]
+                    , False
+                    )
 
-                _ ->
-                    ( Element.text <| Strings.uiConfirm lang, True )
+                RemoteData.Failure (Http.BadStatus 401) ->
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Strings.loginWrongPassword lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.errorModal [ Ui.wf ]
+                    , True
+                    )
+
+                RemoteData.Failure _ ->
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Strings.loginUnknownError lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.errorModal [ Ui.wf ]
+                    , True
+                    )
+
+                RemoteData.NotAsked ->
+                    ( Element.text <| Strings.uiConfirm lang
+                    , Element.none
+                    , True
+                    )
 
         -- Button to request the password change
         changePasswordButton =
@@ -279,9 +335,110 @@ changePassword config user model m =
                     , newPasswordRepeatError
                     ]
                 , changePasswordButton
+                , outcomeMessage
                 ]
     in
     ( content, Element.none )
+
+
+{-| View that lets the user delete their account.
+-}
+deleteAccount : Config -> User -> Settings.Model -> Settings.DeleteAccountModel -> ( Element App.Msg, Element App.Msg )
+deleteAccount config user model m =
+    let
+        lang =
+            config.clientState.lang
+
+        -- Current password field
+        currentPassword =
+            Input.currentPassword []
+                { onChange = \x -> App.SettingsMsg <| Settings.DeleteAccountPasswordChanged x
+                , label = Input.labelAbove titleAttr <| Element.text <| Strings.dataUserPassword lang
+                , placeholder = Nothing
+                , show = False
+                , text = m.password
+                }
+
+        -- Helper info to create the button to request the account deletion
+        ( deleteAccountButtonText, outcomeMessage, canSend ) =
+            case m.data of
+                RemoteData.Loading _ ->
+                    ( Ui.spinningSpinner [] 20
+                    , Element.none
+                    , False
+                    )
+
+                RemoteData.Success _ ->
+                    ( Element.text <| Strings.loginDeleteAccount lang
+                    , Strings.loginPasswordChanged lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.successModal [ Ui.wf ]
+                    , False
+                    )
+
+                RemoteData.Failure (Http.BadStatus 401) ->
+                    ( Element.text <| Strings.loginDeleteAccount lang
+                    , Strings.loginWrongPassword lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.errorModal [ Ui.wf ]
+                    , True
+                    )
+
+                RemoteData.Failure _ ->
+                    ( Element.text <| Strings.loginDeleteAccount lang
+                    , Strings.loginUnknownError lang
+                        ++ "."
+                        |> Ui.paragraph []
+                        |> Ui.errorModal [ Ui.wf ]
+                    , True
+                    )
+
+                RemoteData.NotAsked ->
+                    ( Element.text <| Strings.loginDeleteAccount lang
+                    , Element.none
+                    , True
+                    )
+
+        -- Button to request the password change
+        deleteAccountButton =
+            Utils.tern canSend
+                Ui.primaryGeneric
+                Ui.secondaryGeneric
+                [ Ui.wf ]
+                { action =
+                    Utils.tern
+                        canSend
+                        (Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirm)
+                        Ui.None
+                , label = deleteAccountButtonText
+                }
+
+        -- Account deletion confirm popup
+        popup =
+            if m.showPopup then
+                Ui.popup 1 (Strings.uiWarning lang) <|
+                    Element.column [ Ui.wf, Ui.hf ]
+                        [ Ui.paragraph [ Ui.cy ] <| Strings.loginConfirmDeleteAccount lang ++ "."
+                        , Element.row [ Ui.s 10, Ui.ab, Ui.ar ]
+                            [ Ui.secondary [] { label = Strings.uiCancel lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountCancel }
+                            , Ui.primary [] { label = Strings.uiConfirm lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirmTwice }
+                            ]
+                        ]
+
+            else
+                Element.none
+
+        -- Content
+        content =
+            Element.column [ Ui.wf, Ui.s 30 ]
+                [ currentPassword
+                , deleteAccountButton
+                , outcomeMessage
+                ]
+    in
+    ( content, popup )
 
 
 {-| Column to navigate in tabs.
@@ -304,6 +461,7 @@ tabs config user model =
             [ Element.el [ Font.bold, Font.size 23 ] <| Element.text <| Strings.navigationSettings lang
             , link (Strings.dataUserEmailAddress lang) Settings.initChangeEmail
             , link (Strings.dataUserPassword lang) Settings.initChangePassword
+            , link (Strings.loginDeleteAccount lang) Settings.initDeleteAccount
             ]
 
 

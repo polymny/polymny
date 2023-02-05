@@ -106,3 +106,14 @@ changeEmail newEmail toMsg =
         , body = Http.jsonBody <| Encode.object [ ( "new_email", Encode.string newEmail ) ]
         , toMsg = toMsg
         }
+
+
+{-| Requests to delete your account.
+-}
+deleteAccount : String -> (WebData () -> msg) -> Cmd msg
+deleteAccount password toMsg =
+    Api.delete
+        { url = "/api/delete-user"
+        , body = Http.jsonBody <| Encode.object [ ( "current_password", Encode.string password ) ]
+        , toMsg = toMsg
+        }

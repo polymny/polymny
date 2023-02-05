@@ -57,5 +57,30 @@ update msg model =
             , Cmd.none
             )
 
+        ( Settings.DeleteAccountPasswordChanged p, App.Settings (Settings.DeleteAccount s) ) ->
+            ( { model | page = App.Settings <| Settings.DeleteAccount { s | password = p } }
+            , Cmd.none
+            )
+
+        ( Settings.DeleteAccountConfirm, App.Settings (Settings.DeleteAccount s) ) ->
+            ( { model | page = App.Settings <| Settings.DeleteAccount <| { s | showPopup = True } }
+            , Cmd.none
+            )
+
+        ( Settings.DeleteAccountCancel, App.Settings (Settings.DeleteAccount s) ) ->
+            ( { model | page = App.Settings <| Settings.DeleteAccount <| { s | showPopup = False } }
+            , Cmd.none
+            )
+
+        ( Settings.DeleteAccountConfirmTwice, App.Settings (Settings.DeleteAccount s) ) ->
+            ( { model | page = App.Settings <| Settings.DeleteAccount <| { s | data = RemoteData.Loading Nothing, showPopup = False } }
+            , Api.deleteAccount s.password (\x -> App.SettingsMsg <| Settings.DeleteAccountDataChanged x)
+            )
+
+        ( Settings.DeleteAccountDataChanged d, App.Settings (Settings.DeleteAccount s) ) ->
+            ( { model | page = App.Settings <| Settings.DeleteAccount <| { s | data = d } }
+            , Cmd.none
+            )
+
         _ ->
             ( model, Cmd.none )

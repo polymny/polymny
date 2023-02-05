@@ -34,10 +34,9 @@ import Unlogged.Updates as Unlogged
 update : App.MaybeMsg -> App.MaybeModel -> ( App.MaybeModel, Cmd App.MaybeMsg )
 update message model =
     case ( message, model ) of
-        ( App.LoggedMsg msg, App.Logged m ) ->
-            updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
-
-        -- On some particular events, the unlogged app needs to return to the logged app.
+        -- In some cases (transitions from unlogged to logged or vice versa), the update needs to be managed here
+        -- because the submodulse will not know about UnloggedModel or LoggedModel.
+        -- This can happen :
         -- When login succeeds
         ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
             App.pageFromRoute m.config user Route.Home
@@ -45,12 +44,26 @@ update message model =
                     (\x -> App.Logged { config = m.config, user = user, page = x })
                     (Cmd.map App.LoggedMsg)
 
-        -- When the user changes his password after reset
+        -- When the user changes their password after reset
         ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
             App.pageFromRoute m.config user Route.Home
                 |> Tuple.mapBoth
                     (\x -> App.Logged { config = m.config, user = user, page = x })
                     (\x -> Cmd.batch [ Cmd.map App.LoggedMsg x, Route.push m.config.clientState.key Route.Home ])
+
+        -- When the user deletes their account
+        ( App.LoggedMsg (App.SettingsMsg (Settings.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
+            ( App.Unlogged (Unlogged.init m.config Nothing)
+            , case m.config.serverConfig.home of
+                Just url ->
+                    Browser.Navigation.load url
+
+                _ ->
+                    Route.push m.config.clientState.key Route.Home
+            )
+
+        ( App.LoggedMsg msg, App.Logged m ) ->
+            updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
 
         ( App.UnloggedMsg msg, App.Unlogged m ) ->
             Unlogged.update msg m

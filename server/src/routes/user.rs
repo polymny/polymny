@@ -367,6 +367,10 @@ pub async fn request_change_email(
     config: &S<Config>,
     form: Json<ChangeEmailForm>,
 ) -> Result<()> {
+    if User::get_by_email(&form.new_email, &db).await?.is_some() {
+        return Err(Error(Status::BadRequest));
+    }
+
     user.request_change_email(form.0.new_email, &config.mailer, &db)
         .await?;
     Ok(())

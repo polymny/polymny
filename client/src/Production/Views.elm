@@ -44,11 +44,6 @@ leftColumn config model =
         lang =
             config.clientState.lang
 
-        -- Helper to create paragraphs
-        paragraph : String -> Element msg
-        paragraph input =
-            Element.paragraph [] [ Element.text input ]
-
         -- Helper to create section titles
         title : Bool -> String -> Element App.Msg
         title disabled input =
@@ -137,10 +132,10 @@ leftColumn config model =
         useVideoInfo =
             case Maybe.map .size model.gos.record of
                 Nothing ->
-                    paragraph <| Strings.stepsProductionCantUseVideoBecauseNoRecord lang ++ "."
+                    Ui.paragraph [] <| Strings.stepsProductionCantUseVideoBecauseNoRecord lang ++ "."
 
                 Just Nothing ->
-                    paragraph <| Strings.stepsProductionCantUserVideoBecauseAudioOnly lang ++ "."
+                    Ui.paragraph [] <| Strings.stepsProductionCantUserVideoBecauseAudioOnly lang ++ "."
 
                 _ ->
                     Element.none

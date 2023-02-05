@@ -13,6 +13,7 @@ type Model
     = Info
     | ChangeEmail ChangeEmailModel
     | ChangePassword ChangePasswordModel
+    | DeleteAccount DeleteAccountModel
 
 
 {-| Checks whether the model is the same type as another.
@@ -86,6 +87,26 @@ initChangePassword =
         }
 
 
+{-| The data to delete the account.
+-}
+type alias DeleteAccountModel =
+    { password : String
+    , showPopup : Bool
+    , data : WebData ()
+    }
+
+
+{-| Initializes a delete account model.
+-}
+initDeleteAccount : Model
+initDeleteAccount =
+    DeleteAccount
+        { password = ""
+        , showPopup = False
+        , data = RemoteData.NotAsked
+        }
+
+
 {-| This type contains the different messages that can happen on the settings page.
 -}
 type Msg
@@ -98,3 +119,8 @@ type Msg
     | ChangePasswordNewPasswordRepeatChanged String
     | ChangePasswordConfirm
     | ChangePasswordDataChanged (WebData ())
+    | DeleteAccountPasswordChanged String
+    | DeleteAccountConfirm
+    | DeleteAccountCancel
+    | DeleteAccountConfirmTwice
+    | DeleteAccountDataChanged (WebData ())

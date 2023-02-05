@@ -86,8 +86,12 @@ msgstr ""
 msgid "Login.usernameOrEmailAlreadyExist"
 msgstr ""
 
-#. The password in wrong.
+#. The password is wrong.
 msgid "Login.wrongPassword"
+msgstr ""
+
+#. The username or the password is wrong.
+msgid "Login.wrongUsernameOrPassword"
 msgstr ""
 
 #. An unknown error occured while logging in.

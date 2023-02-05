@@ -101,8 +101,12 @@ msgid "Login.usernameOrEmailAlreadyExist"
 msgstr ""
 "Un compte avec ce nom d'utilisateur ou cette adresse e-mail existe déjà"
 
-#. The password in wrong.
+#. The password is wrong.
 msgid "Login.wrongPassword"
+msgstr "Le mot de passe est incorrect"
+
+#. The username or the password is wrong.
+msgid "Login.wrongUsernameOrPassword"
 msgstr "Le nom d'utilisateur ou le mot de passe est incorrect"
 
 #. An unknown error occured while logging in.
@@ -699,7 +703,7 @@ msgstr "Erreur"
 
 #. A warning to the user.
 msgid "Ui.warning"
-msgstr "Warning"
+msgstr "Attention"
 
 #. The question to ask to make sure the user really wants to delete a capsule.
 msgid "Ui.Warning.confirmDeleteCapsule"
