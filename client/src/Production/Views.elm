@@ -153,7 +153,9 @@ leftColumn config model =
         webcamSizeText =
             disableIf webcamSizeDisabled
                 Input.text
-                [ Element.htmlAttribute <| Html.Attributes.type_ "number" ]
+                [ Element.htmlAttribute <| Html.Attributes.type_ "number"
+                , Element.htmlAttribute <| Html.Attributes.min "10"
+                ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
                 , onChange =
                     \x ->
