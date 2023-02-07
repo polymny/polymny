@@ -266,8 +266,8 @@ leftColumn config model =
             ]
         , Element.column [ Ui.s 10 ]
             [ webcamSizeTitle
-            , webcamSizeText
             , webcamSizeRadio
+            , webcamSizeText
             ]
         , Element.column [ Ui.s 10 ]
             [ webcamPositionTitle
