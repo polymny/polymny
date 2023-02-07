@@ -10,6 +10,7 @@ import Api.Capsule as Api
 import App.Types as App
 import Config exposing (Config)
 import Data.Capsule as Data
+import Data.User as Data
 import Dict exposing (Dict)
 import File
 import File.Select as Select
@@ -54,7 +55,11 @@ update msg model =
                             , Config.incrementRequest model.config
                             )
                     in
-                    ( { model | page = App.Preparation (Preparation.init capsule), config = newConfig }
+                    ( { model
+                        | user = Data.updateUser capsule model.user
+                        , page = App.Preparation (Preparation.init capsule)
+                        , config = newConfig
+                      }
                     , sync
                     )
 
@@ -80,7 +85,7 @@ update msg model =
                             Api.updateCapsule newCapsule
                                 (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                     in
-                    ( { model | page = App.Preparation (Preparation.init newCapsule) }, sync )
+                    ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
 
         _ ->
             ( model, Cmd.none )
