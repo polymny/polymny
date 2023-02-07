@@ -17,6 +17,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html
+import Html.Attributes
 import Lang exposing (Lang)
 import List.Extra
 import Material.Icons as Icons
@@ -188,6 +190,34 @@ slideView config user model ghost default s =
                             , action = mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
                             }
                         ]
+
+                slideElement =
+                    case Maybe.andThen .extra slide.slide of
+                        Just v ->
+                            Element.html
+                                (Html.video
+                                    [ Html.Attributes.class "wf", Html.Attributes.controls True ]
+                                    [ Html.source
+                                        [ Html.Attributes.src <| Data.assetPath model.capsule v ++ ".mp4"
+                                        , Html.Attributes.controls True
+                                        ]
+                                        []
+                                    ]
+                                )
+
+                        _ ->
+                            Element.image
+                                (Ui.wf
+                                    :: Ui.b 1
+                                    :: Border.color Colors.greyBorder
+                                    :: Element.inFront inFrontLabel
+                                    :: slideStyle model.slideModel slide.totalSlideId Drag
+                                    ++ slideStyle model.slideModel slide.totalSlideId Drop
+                                    ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
+                                )
+                                { src = Data.slidePath model.capsule dataSlide
+                                , description = ""
+                                }
             in
             Element.el
                 [ Ui.wf
@@ -195,19 +225,7 @@ slideView config user model ghost default s =
                 , Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
                 , Element.inFront inFrontButtons
                 ]
-                (Element.image
-                    (Ui.wf
-                        :: Ui.b 1
-                        :: Border.color Colors.greyBorder
-                        :: Element.inFront inFrontLabel
-                        :: slideStyle model.slideModel slide.totalSlideId Drag
-                        ++ slideStyle model.slideModel slide.totalSlideId Drop
-                        ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
-                    )
-                    { src = Data.slidePath model.capsule dataSlide
-                    , description = ""
-                    }
-                )
+                slideElement
 
         ( Just _, _ ) ->
             Element.none
