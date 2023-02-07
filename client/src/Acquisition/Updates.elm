@@ -217,6 +217,7 @@ update msg model =
                         task =
                             { task = Config.UploadRecord m.capsule.id m.gosId (Acquisition.encodeRecord record)
                             , progress = Just 0.0
+                            , finished = False
                             }
 
                         nextRoute =

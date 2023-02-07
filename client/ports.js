@@ -619,7 +619,7 @@ function init(node, flags) {
         await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
 
         // Debug thingy where we pretend the request is slow.
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 50; i++) {
             await sleep(200);
             app.ports.taskProgress.send({
                 "task": {
@@ -628,7 +628,8 @@ function init(node, flags) {
                     "gos": gos,
                     "value": record,
                 },
-                "progress": i / 10,
+                "progress": i / 50,
+                "finished": i === 50,
             });
         }
 

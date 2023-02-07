@@ -229,6 +229,7 @@ decodeTask =
 type alias TaskStatus =
     { task : Task
     , progress : Maybe Float
+    , finished : Bool
     }
 
 
@@ -236,9 +237,10 @@ type alias TaskStatus =
 -}
 decodeTaskStatus : Decoder TaskStatus
 decodeTaskStatus =
-    Decode.map2 TaskStatus
+    Decode.map3 TaskStatus
         (Decode.field "task" decodeTask)
         (Decode.maybe (Decode.field "progress" Decode.float))
+        (Decode.field "finished" Decode.bool)
 
 
 {-| Initializes a client state.
@@ -443,17 +445,33 @@ update msg { serverConfig, clientConfig, clientState } =
 
                 UpdateTaskStatus task ->
                     let
-                        updateTask : TaskStatus -> TaskStatus -> TaskStatus
+                        updateTask : TaskStatus -> TaskStatus -> ( TaskStatus, Bool )
                         updateTask t input =
                             if compareTasks t.task input.task then
-                                t
+                                ( t, True )
 
                             else
-                                input
+                                ( input, False )
+
+                        updatedTasks : List ( TaskStatus, Bool )
+                        updatedTasks =
+                            List.map (updateTask task) clientState.tasks
+
+                        taskUpdated : Bool
+                        taskUpdated =
+                            List.any Tuple.second updatedTasks
+
+                        newTasks : List TaskStatus
+                        newTasks =
+                            if taskUpdated then
+                                List.map Tuple.first updatedTasks
+
+                            else
+                                task :: clientState.tasks
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
-                      , clientState = { clientState | tasks = List.map (updateTask task) clientState.tasks }
+                      , clientState = { clientState | tasks = newTasks }
                       }
                     , False
                     )
