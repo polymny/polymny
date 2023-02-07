@@ -91,7 +91,7 @@ pub async fn new_capsule(
                 prompt: String::new(),
             }],
             events: vec![],
-            webcam_settings: WebcamSettings::default(),
+            webcam_settings: None,
             fade: Fade::none(),
         })
         .collect::<Vec<_>>();
@@ -123,6 +123,9 @@ pub struct CapsuleEdit {
 
     /// The new structure of the capsule.
     pub structure: Vec<Gos>,
+
+    /// The new webcam settings.
+    pub webcam_settings: WebcamSettings,
 }
 
 /// The route that updates a capsule structure.
@@ -138,6 +141,7 @@ pub async fn edit_capsule(
         project,
         name,
         structure,
+        webcam_settings,
         privacy,
         prompt_subtitles,
     } = data.0;
@@ -151,6 +155,7 @@ pub async fn edit_capsule(
     capsule.privacy = privacy;
     capsule.prompt_subtitles = prompt_subtitles;
     capsule.structure = EJson(structure);
+    capsule.webcam_settings = EJson(webcam_settings);
     capsule.set_changed();
     capsule.save(&db).await?;
 
@@ -251,7 +256,7 @@ pub async fn upload_record(
     });
 
     if size.is_none() {
-        gos.webcam_settings = WebcamSettings::Disabled;
+        gos.webcam_settings = Some(WebcamSettings::Disabled);
     }
     capsule.set_changed();
     capsule.save(&db).await?;

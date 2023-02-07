@@ -53,7 +53,7 @@ leftColumn config model =
         -- Video width if pip
         width : Maybe Int
         width =
-            case model.gos.webcamSettings of
+            case getWebcamSettings model.gos model of
                 Data.Pip { size } ->
                     Just (Tuple.first size)
 
@@ -63,7 +63,7 @@ leftColumn config model =
         -- Video opacity
         opacity : Float
         opacity =
-            case model.gos.webcamSettings of
+            case getWebcamSettings model.gos model of
                 Data.Pip pip ->
                     pip.opacity
 
@@ -81,7 +81,7 @@ leftColumn config model =
         -- Gives the anchor if the webcam settings is Pip
         anchor : Maybe Data.Anchor
         anchor =
-            case model.gos.webcamSettings of
+            case getWebcamSettings model.gos model of
                 Data.Pip p ->
                     Just p.anchor
 
@@ -122,7 +122,7 @@ leftColumn config model =
             (disableIf <| model.gos.record == Nothing || audioOnly)
                 Input.checkbox
                 []
-                { checked = model.gos.record /= Nothing && model.gos.webcamSettings /= Data.Disabled
+                { checked = model.gos.record /= Nothing && model.gos.webcamSettings /= Just Data.Disabled
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight [] <| Element.text <| Strings.stepsProductionUseVideo lang
                 , onChange = \_ -> App.ProductionMsg Production.ToggleVideo
@@ -142,7 +142,7 @@ leftColumn config model =
 
         -- Whether the webcam size is disabled
         webcamSizeDisabled =
-            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Just Data.Disabled
 
         --  Title to introduce webcam size settings
         webcamSizeTitle =
@@ -171,7 +171,7 @@ leftColumn config model =
 
         -- Element to choose the webcam size among small, medium, large, fullscreen
         webcamSizeRadio =
-            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled)
+            (disableIf <| model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Just Data.Disabled)
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamSize lang
@@ -184,7 +184,7 @@ leftColumn config model =
                     , Input.option (Just 533) <| Element.text <| Strings.stepsProductionCustom lang
                     ]
                 , selected =
-                    case model.gos.webcamSettings of
+                    case getWebcamSettings model.gos model of
                         Data.Pip { size } ->
                             if List.member (Tuple.first size) [ 200, 400, 800 ] then
                                 Just <| Just <| Tuple.first size
@@ -201,7 +201,7 @@ leftColumn config model =
 
         -- Whether the webcam position is disabled
         webcamPositionDisabled =
-            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Just Data.Disabled
 
         -- Title to introduce webcam position settings
         webcamPositionTitle =
@@ -226,7 +226,7 @@ leftColumn config model =
 
         -- Whether the user can control the opacity
         opacityDisabled =
-            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Data.Disabled
+            model.gos.record == Nothing || audioOnly || model.gos.webcamSettings == Just Data.Disabled
 
         -- Title to introduce webcam opacity settings
         opacityTitle =
@@ -290,7 +290,7 @@ rightColumn config model =
 
         -- overlay to show a frame of the record on the slide (if any)
         overlay =
-            case ( model.gos.webcamSettings, model.gos.record ) of
+            case ( getWebcamSettings model.gos model, model.gos.record ) of
                 ( Data.Pip s, Just r ) ->
                     let
                         ( ( marginX, marginY ), ( w, h ) ) =
@@ -398,3 +398,11 @@ rightColumn config model =
         [ Element.el [ Ui.wf, Ui.cy, Element.inFront overlay, Element.clip ] slide
         , produceButton
         ]
+
+
+{-| Get webcam settings from the gos and model.
+-}
+getWebcamSettings : Data.Gos -> Production.Model -> Data.WebcamSettings
+getWebcamSettings gos model =
+    gos.webcamSettings
+        |> Maybe.withDefault model.capsule.defaultWebcamSettings

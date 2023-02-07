@@ -232,7 +232,7 @@ pub struct Gos {
     pub events: Vec<Event>,
 
     /// The webcam settings of the gos.
-    pub webcam_settings: WebcamSettings,
+    pub webcam_settings: Option<WebcamSettings>,
 
     /// Video/audio fade options
     #[serde(default)]
@@ -246,7 +246,7 @@ impl Gos {
             record: None,
             slides: vec![],
             events: vec![],
-            webcam_settings: WebcamSettings::default(),
+            webcam_settings: None,
             fade: Fade::none(),
         }
     }
@@ -306,6 +306,9 @@ pub struct Capsule {
     /// The structure of the capsule.
     pub structure: Json<Vec<Gos>>,
 
+    /// The default webcam settings.
+    pub webcam_settings: Json<WebcamSettings>,
+
     /// The last time the capsule was modified.
     pub last_modified: NaiveDateTime,
 
@@ -343,6 +346,7 @@ impl Capsule {
             Privacy::Public,
             true,
             Json(vec![]),
+            Json(WebcamSettings::default()),
             Utc::now().naive_utc(),
             0,
             0,
@@ -384,6 +388,7 @@ impl Capsule {
             "published": self.published,
             "privacy": self.privacy,
             "structure": self.structure.0,
+            "webcam_settings": self.webcam_settings.0,
             "last_modified": self.last_modified.timestamp(),
             "users": users,
             "prompt_subtitles": self.prompt_subtitles,

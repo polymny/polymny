@@ -26,7 +26,7 @@ init gos capsule =
             let
                 webcamPosition =
                     case h.webcamSettings of
-                        Data.Pip { position } ->
+                        Just (Data.Pip { position }) ->
                             Tuple.mapBoth toFloat toFloat position
 
                         _ ->

@@ -21,6 +21,7 @@ import Preparation.Updates as Preparation
 import Production.Updates as Production
 import Publication.Types as Publication
 import Publication.Updates as Publication
+import Options.Updates as Options
 import RemoteData
 import Route
 import Settings.Types as Settings
@@ -135,6 +136,9 @@ updateModel msg model =
 
                 App.PublicationMsg pMsg ->
                     Publication.update pMsg model
+                
+                App.OptionsMsg oMsg ->
+                    Options.update oMsg model
 
                 App.SettingsMsg sMsg ->
                     Settings.update sMsg model
@@ -193,6 +197,9 @@ subs m =
                         Production.subs x
 
                     App.Publication _ ->
+                        Sub.none
+                    
+                    App.Options _ ->
                         Sub.none
 
                     App.Settings _ ->

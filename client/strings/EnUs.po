@@ -911,3 +911,7 @@ msgstr ""
 #. Sentence to exaplin that after the slides have been uploaded, you may record.
 msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr "Once the slides have been uploaded, the recording can start"
+
+#. Capsule general options.
+msgid "Steps.Options.options"
+msgstr "Options"

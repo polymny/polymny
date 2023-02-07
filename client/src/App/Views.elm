@@ -20,6 +20,7 @@ import NewCapsule.Views as NewCapsule
 import Preparation.Views as Preparation
 import Production.Views as Production
 import Publication.Views as Publication
+import Options.Views as Options
 import Settings.Views as Settings
 import Strings
 import Ui.Colors as Colors
@@ -130,6 +131,10 @@ viewSuccess model =
 
         App.Publication m ->
             Publication.view model.config model.user m
+                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
+        
+        App.Options m ->
+            Options.view model.config model.user m
                 |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
 
         App.Settings m ->

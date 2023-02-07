@@ -29,6 +29,7 @@ import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
+import Options.Types as Options
 import Settings.Types as Settings
 import Unlogged.Types as Unlogged
 import Url
@@ -79,6 +80,7 @@ type Page
     | Acquisition Acquisition.Model
     | Production Production.Model
     | Publication Publication.Model
+    | Options Options.Model
     | Settings Settings.Model
 
 
@@ -98,6 +100,9 @@ getCapsule page =
             Just m.capsule
 
         Publication m ->
+            Just m.capsule
+        
+        Options m ->
             Just m.capsule
 
         _ ->
@@ -129,6 +134,7 @@ type Msg
     | AcquisitionMsg Acquisition.Msg
     | ProductionMsg Production.Msg
     | PublicationMsg Publication.Msg
+    | OptionsMsg Options.Msg
     | SettingsMsg Settings.Msg
     | ConfigMsg Config.Msg
     | OnUrlChange Url.Url

@@ -922,3 +922,7 @@ msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr ""
 "Une fois la présentation téléchargée, l'enregistrement vidéo des planches "
 "pourra débuter"
+
+#. Capsule general options.
+msgid "Steps.Options.options"
+msgstr "Options"

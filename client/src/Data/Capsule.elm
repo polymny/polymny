@@ -67,6 +67,7 @@ type alias Capsule =
     , published : Data.TaskStatus
     , privacy : Data.Privacy
     , structure : List Gos
+    , defaultWebcamSettings : WebcamSettings
     , lastModified : Int
     , promptSubtitles : Bool
     , diskUsage : Int
@@ -84,6 +85,7 @@ encodeCapsule capsule =
         , ( "name", Encode.string capsule.name )
         , ( "privacy", Data.encodePrivacy capsule.privacy )
         , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
+        , ( "webcam_settings", encodeWebcamSettings capsule.defaultWebcamSettings )
         , ( "structure", Encode.list encodeGos capsule.structure )
         ]
 
@@ -102,6 +104,7 @@ decodeCapsule =
         |> andMap (Decode.field "published" Data.decodeTaskStatus)
         |> andMap (Decode.field "privacy" Data.decodePrivacy)
         |> andMap (Decode.field "structure" (Decode.list decodeGos))
+        |> andMap (Decode.field "webcam_settings" decodeWebcamSettings)
         |> andMap (Decode.field "last_modified" Decode.int)
         -- |> andMap (Decode.field "users" (Decode.list decodeUser))
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
@@ -653,7 +656,7 @@ type alias Gos =
     { record : Maybe Record
     , slides : List Slide
     , events : List Event
-    , webcamSettings : WebcamSettings
+    , webcamSettings : Maybe WebcamSettings
     , fade : Fade
     }
 
@@ -666,7 +669,14 @@ encodeGos gos =
         [ ( "record", encodeRecord gos.record )
         , ( "slides", Encode.list encodeSlide gos.slides )
         , ( "events", Encode.list encodeEvent gos.events )
-        , ( "webcam_settings", encodeWebcamSettings gos.webcamSettings )
+        , ( "webcam_settings"
+          , case gos.webcamSettings of
+                Just ws ->
+                    encodeWebcamSettings ws
+
+                Nothing ->
+                    Encode.null
+          )
         , ( "fade", encodeFade gos.fade )
         ]
 
@@ -679,7 +689,7 @@ decodeGos =
         (Decode.maybe (Decode.field "record" decodeRecord))
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "events" (Decode.list decodeEvent))
-        (Decode.field "webcam_settings" decodeWebcamSettings)
+        (Decode.maybe (Decode.field "webcam_settings" decodeWebcamSettings))
         (Decode.field "fade" decodeFade)
 
 
@@ -690,6 +700,6 @@ gosFromSlides slides =
     { record = Nothing
     , slides = slides
     , events = []
-    , webcamSettings = Disabled
+    , webcamSettings = Nothing
     , fade = defaultFade
     }
