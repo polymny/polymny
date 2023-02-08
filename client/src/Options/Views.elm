@@ -127,8 +127,13 @@ column config model =
                 ]
                 { label = Input.labelHidden <| Strings.stepsProductionCustom lang
                 , onChange =
-                    -- TODO: update the default webcam settings
-                    \x -> App.Noop
+                    \x ->
+                        case String.toInt x of
+                            Just y ->
+                                App.OptionsMsg <| Options.SetWidth <| Just y
+
+                            _ ->
+                                App.Noop
                 , placeholder = Nothing
                 , text = Maybe.map String.fromInt width |> Maybe.withDefault ""
                 }
