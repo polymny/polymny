@@ -43,8 +43,7 @@ update msg model =
                                     Route.push model.config.clientState.key (Route.Preparation capsule.id)
 
                                 NewCapsule.Acquisition ->
-                                    -- Route.push model.config.clientState.key (Route.Acquisition capsule.id)
-                                    Cmd.none
+                                    Route.push model.config.clientState.key (Route.Acquisition capsule.id 0)
                     in
                     ( { model | user = Data.updateUser capsule model.user }, cmd )
 

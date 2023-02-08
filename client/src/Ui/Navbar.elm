@@ -23,6 +23,7 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
+import Utils
 
 
 {-| This function creates the navbar of the application.
@@ -46,6 +47,30 @@ navbar config page user =
 
                 _ ->
                     Ui.logo
+
+        taskProgress : Maybe Int
+        taskProgress =
+            config
+                |> Maybe.map .clientState
+                |> Maybe.map .tasks
+                |> Maybe.andThen Utils.headAndTail
+                |> Maybe.map (\( h, t ) -> List.filterMap .progress (h :: t))
+                |> Maybe.map (\x -> List.sum x / toFloat (List.length x))
+                |> Maybe.map (\x -> round (x * 100))
+
+        tasksElement =
+            case taskProgress of
+                Just p ->
+                    let
+                        background =
+                            Background.gradient { angle = 0, steps = List.repeat p Colors.white ++ List.repeat (100 - p) Colors.green2 }
+                    in
+                    Element.el [ Ui.wpx 50, Ui.hpx 50, Ui.b 1, Ui.r 100, background ] <|
+                        Element.el [ Ui.cx, Ui.cy ] <|
+                            Element.text (String.fromInt p ++ "%")
+
+                Nothing ->
+                    Element.none
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
@@ -59,7 +84,8 @@ navbar config page user =
         , case user of
             Just u ->
                 Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
-                    [ Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
+                    [ tasksElement
+                    , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
                         Ui.icon 25 Material.Icons.settings
                     , Element.text u.username
                     , Ui.secondary []

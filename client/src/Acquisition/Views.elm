@@ -395,7 +395,11 @@ videoView lang preferredVideo video =
                     Ui.Msg <| App.ConfigMsg <| Config.SetVideo Nothing
 
                 Just ( v, [] ) ->
-                    Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission v.deviceId
+                    if v.available then
+                        Ui.Msg <| App.AcquisitionMsg <| Acquisition.RequestCameraPermission v.deviceId
+
+                    else
+                        Ui.None
 
                 Just ( v, r :: _ ) ->
                     if v.available then

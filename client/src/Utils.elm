@@ -1,8 +1,8 @@
-module Utils exposing (Confirmation(..), andMap, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength)
+module Utils exposing (Confirmation(..), andMap, headAndTail, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength)
 
 {-| This module contains useful functions.
 
-@docs Confirmation, andMap, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength
+@docs Confirmation, andMap, headAndTail, tern, regroup, regroupFixed, checkEmail, passwordStrength, passwordStrengthElement, minPasswordStrength
 
 -}
 
@@ -26,6 +26,18 @@ type Confirmation
 andMap : Decoder a -> Decoder (a -> b) -> Decoder b
 andMap =
     Decode.map2 (|>)
+
+
+{-| Deconstructs a list.
+-}
+headAndTail : List a -> Maybe ( a, List a )
+headAndTail input =
+    case input of
+        h :: t ->
+            Just ( h, t )
+
+        _ ->
+            Nothing
 
 
 {-| A ternary for elm.
