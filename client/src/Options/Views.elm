@@ -18,13 +18,33 @@ import Ui.Utils as Ui
 
 view : Config -> User -> Options.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
-    ( column config model
+    let
+        -- Helper to create section titles
+        title : String -> Element App.Msg
+        title input =
+            Element.el [ Font.size 30, Font.underline ] (Element.text input)
+    in
+    ( Element.row []
+        [ Element.column [ Ui.s 10, Ui.p 100 ]
+            [ "Options de production par défaut"
+                |> title
+            , Element.column [ Ui.s 10, Ui.pt 20, Ui.wf ]
+                [ defaultProd config model
+                ]
+            ]
+        , Element.column [ Ui.s 10, Ui.p 100 ]
+            [ "Options générales\n(TODO with sound track and backrgound)"
+                |> title
+            , Element.column [ Ui.s 10 ]
+                []
+            ]
+        ]
     , Element.none
     )
 
 
-column : Config -> Options.Model -> Element App.Msg
-column config model =
+defaultProd : Config -> Options.Model -> Element App.Msg
+defaultProd config model =
     let
         --- HELPERS ---
         -- Shortcut for lang
