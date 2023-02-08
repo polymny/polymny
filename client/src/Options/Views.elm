@@ -106,9 +106,7 @@ column config model =
                 { checked = model.capsule.defaultWebcamSettings /= Data.Disabled
                 , icon = Input.defaultCheckbox
                 , label = Input.labelRight [] <| Element.text <| Strings.stepsProductionUseVideo lang
-                , onChange =
-                    -- TODO: update the default webcam settings
-                    \_ -> App.Noop
+                , onChange = \_ -> App.OptionsMsg Options.ToggleVideo
                 }
 
         -- Whether the webcam size is disabled
@@ -141,9 +139,7 @@ column config model =
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamSize lang
-                , onChange =
-                    -- TODO: update the default webcam settings
-                    \x -> App.Noop
+                , onChange = \x -> App.OptionsMsg <| Options.SetWidth x
                 , options =
                     [ Input.option (Just 200) <| Element.text <| Strings.stepsProductionSmall lang
                     , Input.option (Just 400) <| Element.text <| Strings.stepsProductionMedium lang
@@ -182,9 +178,7 @@ column config model =
                 Input.radio
                 [ Ui.s 10 ]
                 { label = Input.labelHidden <| Strings.stepsProductionWebcamPosition lang
-                , onChange =
-                    -- TODO: update the default webcam settings
-                    \x -> App.Noop
+                , onChange = \x -> App.OptionsMsg <| Options.SetAnchor x
                 , options =
                     [ Input.option Data.TopLeft <| Element.text <| Strings.stepsProductionTopLeft lang
                     , Input.option Data.TopRight <| Element.text <| Strings.stepsProductionTopRight lang
@@ -211,9 +205,7 @@ column config model =
                     Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
-                    { onChange =
-                        -- TODO: update the default webcam settings
-                        \x -> App.Noop
+                    { onChange = \x -> App.OptionsMsg <| Options.SetOpacity x
                     , label = Input.labelHidden <| Strings.stepsProductionOpacity lang
                     , max = 1
                     , min = 0

@@ -12,6 +12,8 @@ import Data.Capsule as Data exposing (Capsule)
 type Msg
     = SetOpacity Float
     | SetWidth (Maybe Int) -- Nothing means fullscreen
+    | SetAnchor Data.Anchor
+    | ToggleVideo
 
 
 {-| The model for the Option module.
@@ -31,10 +33,3 @@ init capsule =
     , webcamPosition = ( 0, 0 )
     , holdingImage = Nothing
     }
-
-
-{-| Changes the width preserving aspect ratio.
--}
-setWidth : Int -> ( Int, Int ) -> ( Int, Int )
-setWidth newWidth ( width, height ) =
-    ( newWidth, height * newWidth // width )
