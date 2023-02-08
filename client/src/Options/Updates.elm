@@ -71,11 +71,11 @@ update msg model =
 updateModel : Data.WebcamSettings -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
 updateModel ws model m =
     let
-        newCapsule0 =
+        capsule =
             m.capsule
 
         newCapsule =
-            { newCapsule0 | defaultWebcamSettings = ws }
+            { capsule | defaultWebcamSettings = ws }
 
         newUser =
             Data.updateUser newCapsule model.user
