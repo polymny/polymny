@@ -296,6 +296,12 @@ rightColumn config model =
                         ( ( marginX, marginY ), ( w, h ) ) =
                             ( model.webcamPosition, Tuple.mapBoth toFloat toFloat s.size )
 
+                        _ =
+                            Debug.log "h" h
+
+                        _ =
+                            Debug.log "w" w
+
                         ( x, y ) =
                             case s.anchor of
                                 Data.TopLeft ->
@@ -404,5 +410,37 @@ rightColumn config model =
 -}
 getWebcamSettings : Data.Gos -> Production.Model -> Data.WebcamSettings
 getWebcamSettings gos model =
-    gos.webcamSettings
-        |> Maybe.withDefault model.capsule.defaultWebcamSettings
+    let
+        -- Get record size
+        recordSize =
+            case model.gos.record of
+                Just r ->
+                    case r.size of
+                        Just s ->
+                            s
+
+                        Nothing ->
+                            ( 0, 0 )
+
+                Nothing ->
+                    ( 0, 0 )
+
+        -- Reset size
+        resetSize =
+            case model.capsule.defaultWebcamSettings of
+                Data.Pip s ->
+                    ( s.size, s.anchor )
+
+                _ ->
+                    ( recordSize, Data.TopLeft )
+
+        -- base webcam settings
+        baseWebcamSettings =
+            case model.capsule.defaultWebcamSettings of
+                Data.Pip s ->
+                    -- TODO
+                    model.capsule.defaultWebcamSettings
+                _ ->
+                    model.capsule.defaultWebcamSettings
+    in
+    baseWebcamSettings
