@@ -883,3 +883,7 @@ msgstr ""
 #. Sentence to explain that these are default options for the production.
 msgid "Steps.Options.optionsExplanation"
 msgstr ""
+
+#. Sentence to reset the options to the default values.
+msgid "Steps.Production.resetOptions"
+msgstr ""

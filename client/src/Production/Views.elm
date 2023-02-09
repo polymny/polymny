@@ -20,6 +20,7 @@ import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
+import Production.Updates exposing (resetOptions)
 
 
 {-| The full view of the page.
@@ -117,6 +118,20 @@ leftColumn config model =
                 constructor attributes parameters
 
         --- UI ELEMENTS ---
+        -- Reset to default options button
+        resetButton =
+            Ui.secondary
+                []
+                { label = Strings.stepsProductionResetOptions lang
+                , action = 
+                    case model.gos.webcamSettings of
+                        Just _ ->
+                            Ui.Msg <| App.ProductionMsg Production.ResetOptions
+                        
+                        Nothing ->
+                            Ui.None
+                }
+
         -- Whether the user wants to include the video inside the slides or not
         useVideo =
             (disableIf <| model.gos.record == Nothing || audioOnly)
@@ -260,7 +275,8 @@ leftColumn config model =
                 ]
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
-        [ Element.column [ Ui.s 10 ]
+        [ resetButton
+        , Element.column [ Ui.s 10 ]
             [ useVideo
             , useVideoInfo
             ]

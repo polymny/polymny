@@ -27,6 +27,9 @@ update msg model =
                     Maybe.andThen .size gos.record
             in
             case msg of
+                Production.ResetOptions ->
+                    updateModel (resetOptions gos) model m
+
                 Production.ToggleVideo ->
                     let
                         newWebcamSettings =
@@ -150,6 +153,13 @@ updateModel gos model m =
     ( { model | user = newUser, page = App.Production { m | capsule = newCapsule, gos = gos } }
     , Api.updateCapsule newCapsule (\_ -> App.Noop)
     )
+
+
+{-| Reset to default options. (Set to Nothing)
+-}
+resetOptions : Data.Gos -> Data.Gos
+resetOptions gos =
+    { gos | webcamSettings = Nothing }
 
 
 {-| Changes the gos in a capsule.

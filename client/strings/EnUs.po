@@ -919,3 +919,7 @@ msgstr "Options"
 #. Sentence to explain that these are default options for the production.
 msgid "Steps.Options.optionsExplanation"
 msgstr "Default production options"
+
+#. Sentence to reset the options to the default values.
+msgid "Steps.Production.resetOptions"
+msgstr "Reset options"

@@ -56,6 +56,7 @@ type Msg
     | ImageMoved Float Float Float Float
     | HoldingImageChanged (Maybe ( Int, Float, Float ))
     | Produce
+    | ResetOptions
 
 
 {-| Changes the height preserving aspect ratio.
