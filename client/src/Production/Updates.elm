@@ -9,7 +9,7 @@ import Browser.Events
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
 import Json.Decode as Decode
-import Production.Types as Production
+import Production.Types as Production exposing (getWebcamSettings)
 
 
 {-| Updates the model.
@@ -172,14 +172,6 @@ updateGos id gos capsule =
             capsule
     in
     { oldCapsule | structure = newStructure }
-
-
-{-| Get webcam settings from the gos and model.
--}
-getWebcamSettings : Data.Gos -> Production.Model -> Data.WebcamSettings
-getWebcamSettings gos model =
-    gos.webcamSettings
-        |> Maybe.withDefault model.capsule.defaultWebcamSettings
 
 
 type alias Event =
