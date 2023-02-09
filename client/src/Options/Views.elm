@@ -26,7 +26,7 @@ view config user model =
     in
     ( Element.row []
         [ Element.column [ Ui.s 10, Ui.p 100 ]
-            [ "Options de production par défaut"
+            [ Strings.stepsOptionsOptionsExplanation config.clientState.lang
                 |> title
             , Element.column [ Ui.s 10, Ui.pt 20, Ui.wf ]
                 [ defaultProd config model

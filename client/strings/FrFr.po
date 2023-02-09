@@ -926,3 +926,7 @@ msgstr ""
 #. Capsule general options.
 msgid "Steps.Options.options"
 msgstr "Options"
+
+#. Sentence to explain that these are default options for the production.
+msgid "Steps.Options.optionsExplanation"
+msgstr "Options de production par défaut"
