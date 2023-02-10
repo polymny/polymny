@@ -241,6 +241,18 @@ pub async fn publication(
     index_without_cors(config, db, user, lang).await
 }
 
+/// The route to the publication of a capsule.
+#[get("/capsule/options/<_id>")]
+pub async fn options(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Either<Html<String>, Redirect> {
+    index_without_cors(config, db, user, lang).await
+}
+
 /// The route to the settings page.
 #[get("/settings")]
 pub async fn settings(

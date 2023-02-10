@@ -46,7 +46,7 @@ toUrl route =
             "/capsule/publication/" ++ s
 
         Options s ->
-            "/capsule/option/" ++ s
+            "/capsule/options/" ++ s
 
         Settings ->
             "/settings"
@@ -102,7 +102,7 @@ fromUrl url =
         "capsule" :: "publication" :: id :: [] ->
             Publication id
 
-        "capsule" :: "option" :: id :: [] ->
+        "capsule" :: "options" :: id :: [] ->
             Options id
 
         "settings" :: [] ->
