@@ -5,6 +5,7 @@ module Options.Types exposing (..)
 -}
 
 import Data.Capsule as Data exposing (Capsule)
+import File exposing (File)
 import FileValue exposing (File)
 import RemoteData exposing (WebData)
 
@@ -17,6 +18,7 @@ type Msg
     | SetAnchor Data.Anchor
     | ToggleVideo
     | TrackUploadRequested
+    | TrackUploadReceived FileValue.File File.File
     | TrackUploaded File
     | TrackUploadResponded (WebData Capsule)
     | RequestDeleteTrack

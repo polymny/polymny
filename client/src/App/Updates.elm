@@ -16,12 +16,13 @@ import Config
 import Device
 import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
+import Options.Types as Options
+import Options.Updates as Options
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Production.Updates as Production
 import Publication.Types as Publication
 import Publication.Updates as Publication
-import Options.Updates as Options
 import RemoteData
 import Route
 import Settings.Types as Settings
@@ -136,7 +137,7 @@ updateModel msg model =
 
                 App.PublicationMsg pMsg ->
                     Publication.update pMsg model
-                
+
                 App.OptionsMsg oMsg ->
                     Options.update oMsg model
 
@@ -198,9 +199,9 @@ subs m =
 
                     App.Publication _ ->
                         Sub.none
-                    
+
                     App.Options _ ->
-                        Sub.none
+                        Options.subs
 
                     App.Settings _ ->
                         Sub.none

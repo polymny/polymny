@@ -291,7 +291,7 @@ generalOptions config model =
             Ui.secondary
                 []
                 { label = Strings.stepsOptionsUploadTrack lang
-                , action = Ui.Msg <| App.OptionsMsg Options.TrackUploadRequested
+                , action = Ui.Msg (App.OptionsMsg Options.TrackUploadRequested)
                 }
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]

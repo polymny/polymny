@@ -688,6 +688,17 @@ function init(node, flags) {
         element.setPointerCapture(pointerId);
     });
 
+    // Open the file select popup.
+    makePort("selectTrack", function(mimes) {
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = mimes.join(',');
+        input.onchange = function(e) {
+            app.ports.selectedTrack.send(e.target.files[0]);
+        };
+        input.click();
+    });
+
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);
