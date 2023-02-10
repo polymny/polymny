@@ -19,7 +19,7 @@ update msg model =
                         newWebcamSettings =
                             case m.capsule.defaultWebcamSettings of
                                 Data.Disabled ->
-                                    Data.defaultWebcamSettings (533, 0)
+                                    Data.defaultWebcamSettings ( 533, 0 )
 
                                 x ->
                                     Data.Disabled
@@ -61,6 +61,21 @@ update msg model =
                                     x
                     in
                     updateModel newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
+
+                Options.TrackUploadRequested ->
+                    ( model, Cmd.none )
+
+                Options.TrackUploaded file ->
+                    ( model, Cmd.none )
+
+                Options.TrackUploadResponded response ->
+                    ( model, Cmd.none )
+
+                Options.RequestDeleteTrack ->
+                    ( model, Cmd.none )
+
+                Options.DeleteTrackResponded response ->
+                    ( model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

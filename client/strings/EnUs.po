@@ -923,3 +923,15 @@ msgstr "Default production options"
 #. Sentence to reset the options to the default values.
 msgid "Steps.Production.resetOptions"
 msgstr "Reset options"
+
+#. General options.
+msgid "Steps.Options.generalOptions"
+msgstr "General options"
+
+#. Sound track.
+msgid "Steps.Options.soundTrack"
+msgstr "Sound track"
+
+#. Upload sound track.
+msgid "Steps.Options.uploadTrack"
+msgstr "Add a sound track"

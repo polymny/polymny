@@ -33,10 +33,11 @@ view config user model =
                 ]
             ]
         , Element.column [ Ui.s 10, Ui.p 100 ]
-            [ "Options générales\n(TODO with sound track and backrgound)"
+            [ Strings.stepsOptionsGeneralOptions config.clientState.lang
                 |> title
-            , Element.column [ Ui.s 10 ]
-                []
+            , Element.column [ Ui.s 10, Ui.pt 20, Ui.wf ]
+                [ generalOptions config model
+                ]
             ]
         ]
     , Element.none
@@ -264,5 +265,38 @@ defaultProd config model =
         , Element.column [ Ui.wf, Ui.s 10 ]
             [ opacityTitle
             , opacitySlider
+            ]
+        ]
+
+
+generalOptions : Config -> Options.Model -> Element App.Msg
+generalOptions config model =
+    let
+        lang =
+            config.clientState.lang
+
+        -- Helper to create section titles
+        title : String -> Element App.Msg
+        title input =
+            Element.text input
+                |> Element.el [ Font.size 22, Font.bold ]
+
+        --- UI ELEMENTS ---
+        -- Sound track title
+        soundTrackTitle =
+            title (Strings.stepsOptionsSoundTrack lang)
+
+        -- Sound track upload button
+        soundTrackUpload =
+            Ui.secondary
+                []
+                { label = Strings.stepsOptionsUploadTrack lang
+                , action = Ui.Msg <| App.OptionsMsg Options.TrackUploadRequested
+                }
+    in
+    Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
+        [ Element.column [ Ui.s 10 ]
+            [ soundTrackTitle
+            , soundTrackUpload
             ]
         ]

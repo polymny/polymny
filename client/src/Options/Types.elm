@@ -5,6 +5,8 @@ module Options.Types exposing (..)
 -}
 
 import Data.Capsule as Data exposing (Capsule)
+import FileValue exposing (File)
+import RemoteData exposing (WebData)
 
 
 {-| Message type of the app.
@@ -14,6 +16,11 @@ type Msg
     | SetWidth (Maybe Int) -- Nothing means fullscreen
     | SetAnchor Data.Anchor
     | ToggleVideo
+    | TrackUploadRequested
+    | TrackUploaded File
+    | TrackUploadResponded (WebData Capsule)
+    | RequestDeleteTrack
+    | DeleteTrackResponded (WebData Capsule)
 
 
 {-| The model for the Option module.
@@ -24,7 +31,6 @@ type alias Model =
     , webcamPosition : ( Float, Float )
     , holdingImage : Maybe ( Int, Float, Float )
     }
-
 
 
 init : Capsule -> Model
