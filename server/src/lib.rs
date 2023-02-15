@@ -498,6 +498,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
                 routes::capsule::invite,
                 routes::capsule::deinvite,
                 routes::capsule::change_role,
+                routes::capsule::sound_track,
                 routes::notification::mark_as_read,
                 routes::notification::delete,
                 routes::admin::get_dashboard,

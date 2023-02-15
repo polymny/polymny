@@ -2,12 +2,13 @@
 
 use std::process::Stdio;
 use std::sync::Arc;
+use std::path::Path;
 
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
 
-use tokio::fs::{create_dir_all, remove_dir_all};
+use tokio::fs::{create_dir_all, remove_dir_all, remove_file};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::Semaphore;
@@ -21,7 +22,7 @@ use rocket::{Data, State as S};
 
 use crate::command::{export_slides, run_command};
 use crate::config::Config;
-use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings};
+use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings, SoundTrack};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::User;
 use crate::websockets::WebSockets;
@@ -126,6 +127,9 @@ pub struct CapsuleEdit {
 
     /// The new webcam settings.
     pub webcam_settings: WebcamSettings,
+
+    /// The new soundtrack.
+    pub sound_track: Option<SoundTrack>,
 }
 
 /// The route that updates a capsule structure.
@@ -142,6 +146,7 @@ pub async fn edit_capsule(
         name,
         structure,
         webcam_settings,
+        sound_track,
         privacy,
         prompt_subtitles,
     } = data.0;
@@ -156,6 +161,7 @@ pub async fn edit_capsule(
     capsule.prompt_subtitles = prompt_subtitles;
     capsule.structure = EJson(structure);
     capsule.webcam_settings = EJson(webcam_settings);
+    capsule.sound_track = EJson(sound_track);
     capsule.set_changed();
     capsule.save(&db).await?;
 
@@ -1249,6 +1255,73 @@ pub async fn deinvite(user: User, id: HashId, db: Db, data: Json<Deinvite>) -> R
     }
 
     capsule.remove_user(&deinvited, &db).await?;
+
+    Ok(())
+}
+
+/// Update the capsule's track.
+#[post("/sound-track/<id>/<name>", data = "<data>")]
+pub async fn sound_track(
+    user: User,
+    id: HashId,
+    name: String,
+    db: Db,
+    data: Data<'_>,
+    config: &S<Config>,
+) -> Result<()> {
+    // User must have write access to the capsule.
+    let (mut capsule, _) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    // Get base path.
+    let uuid = Uuid::new_v4();
+    let path = config.data_path
+        .join(format!("{}", *id))
+        .join("assets");
+        
+    // Delete old track if any.
+    let old_track = capsule.sound_track;
+    if let Some(old_track) = old_track.0 {
+        let old_uuid = old_track.uuid;
+        let old_path = path
+            .join(format!("{}", old_uuid))
+            .with_extension("m4a");
+        remove_file(&old_path).await?;
+    }
+
+    // Create paths.
+    let path = path.join(format!("{}", uuid));
+    let tmp_path = path.with_extension("tmp.mp3");
+    let m4a_path = path.with_extension("m4a");
+
+    // Save the file.
+    data.open(1_i32.gibibytes()).into_file(Path::new(&tmp_path)).await?;
+
+    // Convert file to expected format.
+    let res = run_command(&vec![
+        "../scripts/psh",
+        "transcode-audio",
+        &tmp_path
+            .to_str()
+            .ok_or(Error(Status::InternalServerError))?
+            .to_string(),
+        &m4a_path
+            .to_str()
+            .ok_or(Error(Status::InternalServerError))?
+            .to_string(),
+    ])?;
+
+    // Remove the temporary file.
+    remove_file(&tmp_path).await?;
+
+    // Save the track in the database.
+    let sound_track = SoundTrack {
+        uuid: uuid,
+        name: name.to_string(),
+    };
+    capsule.sound_track = EJson(Some(sound_track));
+    capsule.save(&db).await?;
 
     Ok(())
 }

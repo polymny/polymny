@@ -4,10 +4,12 @@ module Options.Types exposing (..)
 |
 -}
 
-import Data.Capsule as Data exposing (Capsule)
+import Data.Capsule as Data exposing (Capsule, SoundTrack)
 import File exposing (File)
 import FileValue exposing (File)
 import RemoteData exposing (WebData)
+import Utils
+import Html exposing (track)
 
 
 {-| Message type of the app.
@@ -21,8 +23,9 @@ type Msg
     | TrackUploadReceived FileValue.File File.File
     | TrackUploaded File
     | TrackUploadResponded (WebData Capsule)
-    | RequestDeleteTrack
-    | DeleteTrackResponded (WebData Capsule)
+    | DeleteTrack Utils.Confirmation (Maybe Data.SoundTrack)
+    | TrackUpload (WebData Data.Capsule)
+    | CapsuleUpdate Int (RemoteData.WebData ())
 
 
 {-| The model for the Option module.
@@ -31,7 +34,8 @@ type Msg
 type alias Model =
     { capsule : Capsule
     , webcamPosition : ( Float, Float )
-    , holdingImage : Maybe ( Int, Float, Float )
+    , deleteTrack : Maybe Data.SoundTrack
+    , capsuleUpdate : RemoteData.WebData ()
     }
 
 
@@ -39,5 +43,6 @@ init : Capsule -> Model
 init capsule =
     { capsule = capsule
     , webcamPosition = ( 0, 0 )
-    , holdingImage = Nothing
+    , deleteTrack = Nothing
+    , capsuleUpdate = RemoteData.NotAsked
     }

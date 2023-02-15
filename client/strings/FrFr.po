@@ -946,3 +946,15 @@ msgstr "Musique de fond"
 #. Upload sound track.
 msgid "Steps.Options.uploadTrack"
 msgstr "Ajouter une musique de fond"
+
+#. No sound track.
+msgid "Steps.Options.noTrack"
+msgstr "Pas de musique"
+
+#. Delete track action.
+msgid "Actions.Confirm.deleteTrack"
+msgstr "Voulez vous vraiment supprimer la musique de fond"
+
+#. Delete track hint.
+msgid "Actions.deleteTrack"
+msgstr "Supprimer la musique de fond"

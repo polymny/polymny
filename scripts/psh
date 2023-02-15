@@ -1096,6 +1096,14 @@ on-video-upload() {
 
 }
 # USAGE:
+#  trancode_audio <input> <output>
+#
+# EXAMPLE:
+#  trancode_audio input.xxx output.m4a
+transcode_audio() {
+    ffmpeg -i $1 -c:a aac -b:a 128k -ar 48000 $2
+}
+# USAGE:
 #  format_time <time in milliseconds>
 #
 # EXAMPLE:
@@ -1270,6 +1278,10 @@ main() {
         "transcode")
             cmd=$(header && transcode_video "$@")
             $cmd
+            ;;
+        
+        "transcode-audio")
+            transcode_audio "$@"
             ;;
 
         *)

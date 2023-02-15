@@ -7,6 +7,7 @@ module Data.Capsule exposing
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
     , decodeEventType, decodeAnchor, decodeSlide, decodePair
+    , SoundTrack, removeTrack
     )
 
 {-| This module contains all the data related to capsules.
@@ -72,6 +73,7 @@ type alias Capsule =
     , promptSubtitles : Bool
     , diskUsage : Int
     , duration : Int
+    , soundTrack : Maybe SoundTrack
     }
 
 
@@ -110,6 +112,7 @@ decodeCapsule =
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
         |> andMap (Decode.field "disk_usage" Decode.int)
         |> andMap (Decode.field "duration_ms" Decode.int)
+        |> andMap (Decode.maybe (Decode.field "sound_track" decodeSoundTrack))
 
 
 {-| Returns an asset path from its capsule and basename.
@@ -703,3 +706,40 @@ gosFromSlides slides =
     , webcamSettings = Nothing
     , fade = defaultFade
     }
+
+
+{-| This type represents a sound track.
+-}
+type alias SoundTrack =
+    { uuid : String
+    , name : String
+
+    -- , volume : Float
+    }
+
+
+{-| JSON encoder for sound track.
+-}
+encodeSoundTrack : SoundTrack -> Encode.Value
+encodeSoundTrack st =
+    Encode.object
+        [ ( "file", Encode.string st.name )
+
+        -- , ( "volume", Encode.float st.volume )
+        ]
+
+
+{-| JSON decoder for sound track.
+-}
+decodeSoundTrack : Decoder SoundTrack
+decodeSoundTrack =
+    Decode.map2 SoundTrack
+        (Decode.field "uuid" Decode.string)
+        (Decode.field "name" Decode.string)
+
+
+{-| Remove the sound track from the capsule.
+-}
+removeTrack : Capsule -> Capsule
+removeTrack capsule =
+    { capsule | soundTrack = Nothing }

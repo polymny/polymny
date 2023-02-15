@@ -935,3 +935,15 @@ msgstr "Sound track"
 #. Upload sound track.
 msgid "Steps.Options.uploadTrack"
 msgstr "Add a sound track"
+
+#. No sound track.
+msgid "Steps.Options.noTrack"
+msgstr "No track"
+
+#. Delete track action.
+msgid "Actions.Confirm.deleteTrack"
+msgstr "Do you really want to delete this track"
+
+#. Delete track hint.
+msgid "Actions.deleteTrack"
+msgstr "Delete track"

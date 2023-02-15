@@ -2,12 +2,15 @@ port module Options.Updates exposing (..)
 
 import Api.Capsule as Api
 import App.Types as App exposing (Page(..))
-import Data.Capsule as Data exposing (Capsule)
+import Config exposing (Config)
+import Data.Capsule as Data exposing (Capsule, removeTrack)
 import Data.User as Data
 import File
 import FileValue
 import Json.Decode as Decode
 import Options.Types as Options
+import RemoteData
+import Utils
 
 
 {-| Updates the model.
@@ -66,42 +69,37 @@ update msg model =
                     updateModel newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
 
                 Options.TrackUploadRequested ->
-                    ( model, Debug.log "toto" (selectTrack [ "audio/*" ]) )
+                    ( model, selectTrack [ "audio/*" ] )
 
                 Options.TrackUploadReceived fileValue file ->
                     let
-                        _ =
-                            Debug.log "toto" ( fileValue, file )
+                        isAudio =
+                            fileValue.mime |> String.startsWith "audio/"
                     in
-                    -- case fileValue.mime of
-                    --     "application/pdf" ->
-                    --         let
-                    --             projectName =
-                    --                 Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
-                    --             name =
-                    --                 fileValue.name
-                    --                     |> String.split "."
-                    --                     |> List.reverse
-                    --                     |> List.drop 1
-                    --                     |> List.reverse
-                    --                     |> String.join "."
-                    --             newPage =
-                    --                 RemoteData.Loading Nothing
-                    --                     |> NewCapsule.init model.config.clientState.lang project name
-                    --                     |> App.NewCapsule
-                    --         in
-                    --         ( { model | page = newPage }
-                    --         , Api.uploadSlideShow
-                    --             { project = projectName
-                    --             , fileValue = fileValue
-                    --             , file = file
-                    --             , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
-                    --             }
-                    --         )
-                    --     -- TODO : manage "application/zip"
-                    --     _ ->
-                    --         ( model, Cmd.none )
-                    ( model, Cmd.none )
+                    if isAudio then
+                        let
+                            name =
+                                fileValue.name
+                                    |> String.split "."
+                                    |> List.reverse
+                                    |> List.drop 1
+                                    |> List.reverse
+                                    |> String.join "."
+
+                            newPage =
+                                App.Options { m | deleteTrack = Nothing }
+                        in
+                        ( { model | page = newPage }
+                        , Api.uploadTrackShow
+                            { capsule = m.capsule
+                            , fileValue = fileValue
+                            , file = file
+                            , toMsg = \x -> App.OptionsMsg (Options.TrackUpload x)
+                            }
+                        )
+
+                    else
+                        ( model, Cmd.none )
 
                 Options.TrackUploaded file ->
                     ( model, Cmd.none )
@@ -109,11 +107,50 @@ update msg model =
                 Options.TrackUploadResponded response ->
                     ( model, Cmd.none )
 
-                Options.RequestDeleteTrack ->
-                    ( model, Cmd.none )
+                Options.DeleteTrack Utils.Request track ->
+                    case m.capsule.soundTrack of
+                        Just _ ->
+                            ( { model | page = App.Options { m | deleteTrack = track } }, Cmd.none )
 
-                Options.DeleteTrackResponded response ->
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Options.DeleteTrack Utils.Cancel _ ->
+                    case m.capsule.soundTrack of
+                        Just _ ->
+                            ( { model | page = App.Options { m | deleteTrack = Nothing } }, Cmd.none )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Options.DeleteTrack Utils.Confirm track ->
+                    let
+                        capsule =
+                            Data.removeTrack m.capsule
+
+                        ( sync, newConfig ) =
+                            ( Api.updateCapsule capsule
+                                (\x -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest x))
+                            , Config.incrementRequest model.config
+                            )
+                    in
+                    ( { model
+                        | user = Data.updateUser capsule model.user
+                        , page = App.Options (Options.init capsule)
+                        , config = newConfig
+                      }
+                    , sync
+                    )
+
+                Options.TrackUpload x ->
                     ( model, Cmd.none )
+                
+                Options.CapsuleUpdate id data ->
+                    if model.config.clientState.lastRequest == id + 1 then
+                        ( { model | page = App.Options { m | capsuleUpdate = data } }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

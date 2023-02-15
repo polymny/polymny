@@ -135,6 +135,20 @@ impl Default for WebcamSettings {
     }
 }
 
+/// The sound track for a capsule.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct SoundTrack {
+    /// The uuid of the file.
+    pub uuid: Uuid,
+
+    /// The name of the file.
+    pub name: String,
+
+    // /// The volume of the sound track.
+    // pub volume: f32,
+}
+
 /// A record, with an uuid, a resolution and a duration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Record {
@@ -318,6 +332,9 @@ pub struct Capsule {
     /// duration of produced video in ms
     pub duration_ms: i32,
 
+    /// The sound track of the capsule.
+    pub sound_track: Json<Option<SoundTrack>>,
+
     /// The user that has rights on the capsule.
     #[many_to_many(capsules, Role)]
     pub users: User,
@@ -350,6 +367,7 @@ impl Capsule {
             Utc::now().naive_utc(),
             0,
             0,
+            Json(None),
         )
         .save(&db)
         .await?;
@@ -392,8 +410,9 @@ impl Capsule {
             "last_modified": self.last_modified.timestamp(),
             "users": users,
             "prompt_subtitles": self.prompt_subtitles,
-            "disk_usage":self.disk_usage,
-            "duration_ms":self.duration_ms
+            "disk_usage": self.disk_usage,
+            "duration_ms": self.duration_ms,
+            "sound_track": self.sound_track.0,
         }))
     }
 
