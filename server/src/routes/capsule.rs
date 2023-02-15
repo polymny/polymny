@@ -749,10 +749,16 @@ pub async fn produce(
     let output_path = config.data_path.join(format!("{}", *id)).join("output.mp4");
 
     tokio::spawn(async move {
+        let track_uuid = if let Some(track) = &capsule.sound_track.0 {
+            track.uuid.to_string()
+        } else {
+            "-1".to_string()
+        };
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
             .arg("-1")
+            .arg(track_uuid)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn();
@@ -764,6 +770,12 @@ pub async fn produce(
             capsule.save(&db).await.ok();
 
             if let Some(stdin) = child.stdin.as_mut() {
+                // replace null webcamsteeings with default webcam settings
+                for gos in &mut capsule.structure.0 {
+                    if gos.webcam_settings.is_none() {
+                        gos.webcam_settings = Some(capsule.webcam_settings.0.clone());
+                    }
+                }
                 stdin
                     .write_all(json!(capsule.structure.0).to_string().as_bytes())
                     .await
