@@ -962,6 +962,7 @@ compose_gos(){
 compose_goss(){
     local cid=$1
     local gosid=$2
+    local track=$3
 
     local start=`date +%s`
     capsule_path=$(get_config "data_path")"/$cid"
@@ -988,6 +989,22 @@ compose_goss(){
             echo $command >&2
 
             return 1
+        fi
+
+        # add audio track (if track = -1 no audio track)
+        if (( $track != -1 )); then
+            track_path="$capsule_path/assets/$track.m4a"
+            track_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$track_path" | bc)
+            delay=$(echo "$track_duration-0.5" | bc)
+            ffmpeg -y -i "$output" -stream_loop -1 -i "$track_path" \
+            -filter_complex "\
+                [1:a]afade=t=in:st=0:d=0.5,afade=t=out:st=$delay:d=0.5,volume=0.1[loop]; \
+                [loop]adelay=0|0,acrossfade=d=1[a1]; \
+                [0:a][a1]amix=inputs=2:duration=longest:dropout_transition=0,pan=stereo|c0<c0+c2|c1<c1+c3[a] \
+            " \
+            -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 128k -loglevel quiet "$output.mp4"
+
+            mv $output.mp4 $output
         fi
 
         local end=`date +%s`
@@ -1053,10 +1070,11 @@ on-record() {
 on-produce() {
     local cid=$1
     local gosid=$2
+    local track=$3
 
     #transcode_records $cid
     echo "Composition start for capsule $cid and gos $gosid" >&2
-    compose_goss $cid $gosid
+    compose_goss $cid $gosid $track
     echo "Composition end for capsule $cid and gos $gosid" >&2
 }
 
