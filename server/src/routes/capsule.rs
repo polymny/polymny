@@ -749,16 +749,16 @@ pub async fn produce(
     let output_path = config.data_path.join(format!("{}", *id)).join("output.mp4");
 
     tokio::spawn(async move {
-        let track_uuid =  if let Some(track) = &capsule.sound_track.0 {
-            track.uuid.to_string()
+        let sound_track_info = if let Some(sound_track) = &capsule.sound_track.0 {
+            format!("{}:{}", sound_track.uuid, sound_track.volume)
         } else {
-            "-1".to_string()
+            "null".to_string()
         };
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
             .arg("-1")
-            .arg(track_uuid)
+            .arg(sound_track_info)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn();
@@ -1293,9 +1293,11 @@ pub async fn sound_track(
         .join("assets");
         
     // Delete old track if any.
+    let mut volume = 0.8; 
     let old_track = capsule.sound_track;
     if let Some(old_track) = old_track.0 {
         let old_uuid = old_track.uuid;
+        volume = old_track.volume;
         let old_path = path
             .join(format!("{}", old_uuid))
             .with_extension("m4a");
@@ -1331,6 +1333,7 @@ pub async fn sound_track(
     let sound_track = SoundTrack {
         uuid: uuid,
         name: name.to_string(),
+        volume: volume,
     };
     capsule.sound_track = EJson(Some(sound_track));
     capsule.save(&db).await?;

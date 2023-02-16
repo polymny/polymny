@@ -958,3 +958,7 @@ msgstr "Voulez vous vraiment supprimer la musique de fond"
 #. Delete track hint.
 msgid "Actions.deleteTrack"
 msgstr "Supprimer la musique de fond"
+
+#. volume of the sound track.
+msgid "Steps.Options.volume"
+msgstr "Volume de la musique de fond"

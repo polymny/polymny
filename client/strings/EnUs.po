@@ -947,3 +947,7 @@ msgstr "Do you really want to delete this track"
 #. Delete track hint.
 msgid "Actions.deleteTrack"
 msgstr "Delete track"
+
+#. volume of the sound track.
+msgid "Steps.Options.volume"
+msgstr "Sound track volume"

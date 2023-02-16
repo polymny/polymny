@@ -145,8 +145,8 @@ pub struct SoundTrack {
     /// The name of the file.
     pub name: String,
 
-    // /// The volume of the sound track.
-    // pub volume: f32,
+    /// The volume of the sound track.
+    pub volume: f32,
 }
 
 /// A record, with an uuid, a resolution and a duration.

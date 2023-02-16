@@ -299,6 +299,48 @@ generalOptions config model =
             Element.text input
                 |> Element.el [ Font.size 22, Font.bold ]
 
+        -- Attributes to show things as disabled
+        disableAttr : List (Element.Attribute App.Msg)
+        disableAttr =
+            [ Font.color Colors.greyFontDisabled ]
+
+        -- Gives disable attributes if element is disabled
+        disableAttrIf : Bool -> List (Element.Attribute App.Msg)
+        disableAttrIf disabled =
+            if disabled then
+                disableAttr
+
+            else
+                []
+
+        -- Gives disable attributes and remove msg if element is disabled
+        disableIf :
+            Bool
+            -> (List (Element.Attribute App.Msg) -> { a | onChange : b -> App.Msg } -> Element App.Msg)
+            -> List (Element.Attribute App.Msg)
+            -> { a | onChange : b -> App.Msg }
+            -> Element App.Msg
+        disableIf disabled constructor attributes parameters =
+            if disabled then
+                constructor (disableAttr ++ attributes) { parameters | onChange = \_ -> App.Noop }
+
+            else
+                constructor attributes parameters
+
+        -- Track volume
+        volume : Float
+        volume =
+            case model.capsule.soundTrack of
+                Just st ->
+                    st.volume
+
+                Nothing ->
+                    0.0
+
+        -- Whether the user can control the volume
+        volumeDisabled =
+            model.capsule.soundTrack == Nothing
+
         --- UI ELEMENTS ---
         -- Sound track title
         soundTrackTitle =
@@ -331,6 +373,32 @@ generalOptions config model =
                 , tooltip = Strings.actionsDeleteTrack lang
                 , action = Ui.Msg (App.OptionsMsg (Options.DeleteTrack Utils.Request model.capsule.soundTrack))
                 }
+
+        -- Slider to control volume
+        volumeSlider =
+            Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
+                [ -- Slider for the control
+                  disableIf volumeDisabled
+                    Input.slider
+                    [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
+                    ]
+                    { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
+                    , label = Input.labelHidden <| Strings.stepsOptionsVolume lang
+                    , max = 1
+                    , min = 0
+                    , step = Just 0.01
+                    , thumb = Input.defaultThumb
+                    , value = volume
+                    }
+                , -- Text label of the volume value
+                  volume
+                    * 100
+                    |> floor
+                    |> String.fromInt
+                    |> (\x -> x ++ "%")
+                    |> Element.text
+                    |> Element.el (Ui.wfp 1 :: Ui.ab :: disableAttrIf volumeDisabled)
+                ]
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
@@ -340,6 +408,7 @@ generalOptions config model =
                 , soundTrackUpload
                 , soundTrackRemove
                 ]
+            , volumeSlider
             ]
         ]
 

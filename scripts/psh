@@ -991,12 +991,16 @@ compose_goss(){
             return 1
         fi
 
-        # Add audio track (if track = -1, no audio track)
-        if [[ $track != "-1" ]]; then
+        # Add audio track
+        if [[ $track != "null" ]]; then
             echo "Adding audio track" >&2
 
+            # `$track` is like `uuid:volume`
+            track_uuid=$(echo $track | cut -d':' -f1)
+            track_volume=$(echo $track | cut -d':' -f2)
+
             # Get path to the audio track
-            track_path="$capsule_path/assets/$track.m4a"
+            track_path="$capsule_path/assets/$track_uuid.m4a"
 
             # Get duration of the input video
             video_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$output")
@@ -1027,7 +1031,7 @@ compose_goss(){
             -filter_complex " \
                 $fade_filter_inputs \
                 $fade_filter_outputs concat=n=$counter:v=0:a=1[concat]; \
-                [concat]volume=1.0[volume]; \
+                [concat]volume=$track_volume[volume]; \
                 [volume]afade=t=out:st=$fadeout_start:d=$fade_duration[fade]; \
                 [0:a][fade]amerge=inputs=2[out] \
             " \

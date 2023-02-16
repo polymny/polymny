@@ -30,7 +30,7 @@ update msg model =
                                 x ->
                                     Data.Disabled
                     in
-                    updateModel newWebcamSettings model m
+                    updateModelWebcamSettings newWebcamSettings model m
 
                 Options.SetOpacity opacity ->
                     let
@@ -42,7 +42,7 @@ update msg model =
                                 x ->
                                     x
                     in
-                    updateModel newWebcamSettings model m
+                    updateModelWebcamSettings newWebcamSettings model m
 
                 Options.SetWidth newWidth ->
                     let
@@ -54,7 +54,7 @@ update msg model =
                                 Just width ->
                                     Data.setWebcamSettingsSize (Just ( width, 0 )) m.capsule.defaultWebcamSettings
                     in
-                    updateModel newWebcamSettings model m
+                    updateModelWebcamSettings newWebcamSettings model m
 
                 Options.SetAnchor anchor ->
                     let
@@ -66,7 +66,7 @@ update msg model =
                                 x ->
                                     x
                     in
-                    updateModel newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
+                    updateModelWebcamSettings newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
 
                 Options.TrackUploadRequested ->
                     ( model, selectTrack [ "audio/*" ] )
@@ -144,7 +144,7 @@ update msg model =
 
                 Options.TrackUpload x ->
                     ( model, Cmd.none )
-                
+
                 Options.CapsuleUpdate id data ->
                     if model.config.clientState.lastRequest == id + 1 then
                         ( { model | page = App.Options { m | capsuleUpdate = data } }, Cmd.none )
@@ -152,20 +152,54 @@ update msg model =
                     else
                         ( model, Cmd.none )
 
+                Options.SetVolume volume ->
+                    let
+                        soundTrack =
+                            m.capsule.soundTrack
+
+                        newSoundTrack =
+                            case soundTrack of
+                                Just st ->
+                                    Just { st | volume = volume }
+
+                                Nothing ->
+                                    Nothing
+                    in
+                    updateModelSoundTrack newSoundTrack model m
+
         _ ->
             ( model, Cmd.none )
 
 
 {-| Changes the current webcamsettings in the model.
 -}
-updateModel : Data.WebcamSettings -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
-updateModel ws model m =
+updateModelWebcamSettings : Data.WebcamSettings -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
+updateModelWebcamSettings ws model m =
     let
         capsule =
             m.capsule
 
         newCapsule =
             { capsule | defaultWebcamSettings = ws }
+
+        newUser =
+            Data.updateUser newCapsule model.user
+    in
+    ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
+    , Api.updateCapsule newCapsule (\_ -> App.Noop)
+    )
+
+
+{-| Changes the current sound track.
+-}
+updateModelSoundTrack : Maybe Data.SoundTrack -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
+updateModelSoundTrack sound_track model m =
+    let
+        capsule =
+            m.capsule
+
+        newCapsule =
+            { capsule | soundTrack = sound_track }
 
         newUser =
             Data.updateUser newCapsule model.user

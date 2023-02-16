@@ -89,6 +89,7 @@ encodeCapsule capsule =
         , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
         , ( "webcam_settings", encodeWebcamSettings capsule.defaultWebcamSettings )
         , ( "structure", Encode.list encodeGos capsule.structure )
+        , ( "sound_track", Maybe.map encodeSoundTrack capsule.soundTrack |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -713,8 +714,7 @@ gosFromSlides slides =
 type alias SoundTrack =
     { uuid : String
     , name : String
-
-    -- , volume : Float
+    , volume : Float
     }
 
 
@@ -723,9 +723,9 @@ type alias SoundTrack =
 encodeSoundTrack : SoundTrack -> Encode.Value
 encodeSoundTrack st =
     Encode.object
-        [ ( "file", Encode.string st.name )
-
-        -- , ( "volume", Encode.float st.volume )
+        [ ( "uuid", Encode.string st.uuid )
+        , ( "name", Encode.string st.name )
+        , ( "volume", Encode.float st.volume )
         ]
 
 
@@ -733,9 +733,10 @@ encodeSoundTrack st =
 -}
 decodeSoundTrack : Decoder SoundTrack
 decodeSoundTrack =
-    Decode.map2 SoundTrack
+    Decode.map3 SoundTrack
         (Decode.field "uuid" Decode.string)
         (Decode.field "name" Decode.string)
+        (Decode.field "volume" Decode.float)
 
 
 {-| Remove the sound track from the capsule.

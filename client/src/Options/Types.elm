@@ -26,6 +26,7 @@ type Msg
     | DeleteTrack Utils.Confirmation (Maybe Data.SoundTrack)
     | TrackUpload (WebData Data.Capsule)
     | CapsuleUpdate Int (RemoteData.WebData ())
+    | SetVolume Float
 
 
 {-| The model for the Option module.
