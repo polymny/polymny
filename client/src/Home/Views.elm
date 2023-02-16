@@ -180,10 +180,17 @@ name : Poc -> Element App.Msg
 name poc =
     case poc of
         Project p ->
-            Ui.link [ Ui.p 10, Font.bold ]
-                { action = Ui.Msg (App.HomeMsg (Home.Toggle p))
-                , label = Utils.tern p.folded "▷ " "▽ " ++ p.name
-                }
+            let
+                action =
+                    Ui.Msg (App.HomeMsg (Home.Toggle p))
+            in
+            Ui.navigationElement action
+                (Ui.addLinkAttr [ Ui.p 10, Font.bold ])
+                (Element.row [ Ui.wf, Ui.hf, Ui.cy ]
+                    [ Utils.tern p.folded (Ui.icon 22 Icons.expand_more) (Ui.icon 22 Icons.expand_less)
+                    , Element.text p.name
+                    ]
+                )
 
         Capsule c ->
             Ui.link [ Ui.pl 30 ] { action = Ui.Route (Route.Preparation c.id), label = Ui.shrink 50 c.name }

@@ -1,6 +1,6 @@
 module Ui.Elements exposing
     ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
-    , spinner, spinningSpinner, popup
+    , spinner, spinningSpinner, popup, addLinkAttr
     , errorModal, successModal
     )
 
