@@ -30,7 +30,6 @@ type Msg
 
 
 {-| The model for the Option module.
-|
 -}
 type alias Model =
     { capsule : Capsule
