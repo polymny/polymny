@@ -749,7 +749,7 @@ pub async fn produce(
     let output_path = config.data_path.join(format!("{}", *id)).join("output.mp4");
 
     tokio::spawn(async move {
-        let track_uuid = if let Some(track) = &capsule.sound_track.0 {
+        let track_uuid =  if let Some(track) = &capsule.sound_track.0 {
             track.uuid.to_string()
         } else {
             "-1".to_string()
@@ -1311,7 +1311,7 @@ pub async fn sound_track(
     data.open(1_i32.gibibytes()).into_file(Path::new(&tmp_path)).await?;
 
     // Convert file to expected format.
-    let res = run_command(&vec![
+    let _res = run_command(&vec![
         "../scripts/psh",
         "transcode-audio",
         &tmp_path

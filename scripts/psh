@@ -991,19 +991,55 @@ compose_goss(){
             return 1
         fi
 
-        # add audio track (if track = -1 no audio track)
-        if (( $track != -1 )); then
-            track_path="$capsule_path/assets/$track.m4a"
-            track_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$track_path" | bc)
-            delay=$(echo "$track_duration-0.5" | bc)
-            ffmpeg -y -i "$output" -stream_loop -1 -i "$track_path" \
-            -filter_complex "\
-                [1:a]afade=t=in:st=0:d=0.5,afade=t=out:st=$delay:d=0.5,volume=0.1[loop]; \
-                [loop]adelay=0|0,acrossfade=d=1[a1]; \
-                [0:a][a1]amix=inputs=2:duration=longest:dropout_transition=0,pan=stereo|c0<c0+c2|c1<c1+c3[a] \
-            " \
-            -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 128k -loglevel quiet "$output.mp4"
+        # Add audio track (if track = -1, no audio track)
+        if [[ $track != "-1" ]]; then
+            echo "Adding audio track" >&2
 
+            # Get path to the audio track
+            track_path="$capsule_path/assets/$track.m4a"
+
+            # Get duration of the input video
+            video_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$output")
+            track_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$track_path")
+
+            # Create fade in/out filter
+            fade_duration=1.0
+            fadeout_start=$(echo "$track_duration - $fade_duration" | bc)
+            fade_filter="afade=t=in:st=0:d=$fade_duration,afade=t=out:st=$fadeout_start:d=$fade_duration"
+
+            # Concatenate the audio track to repeat it for the entire duration of the video
+            fade_filter_inputs=""
+            fade_filter_outputs=""
+            duration=$video_duration
+            counter=0
+            while [[ $(echo "$duration > 0" | bc -l) -eq 1 ]]; do
+                fade_filter_inputs+="[1:a]$fade_filter[fade$counter];"
+                fade_filter_outputs+="[fade$counter]"
+                duration=$(echo "$duration - $track_duration" | bc)
+                counter=$((counter+1))
+            done
+
+            # Add final fade out
+            fadeout_start=$(echo "$video_duration - $fade_duration" | bc)
+
+            # Use ffmpeg to add the audio track to the video
+            ffmpeg -y -i "$output" -i "$track_path" \
+            -filter_complex " \
+                $fade_filter_inputs \
+                $fade_filter_outputs concat=n=$counter:v=0:a=1[concat]; \
+                [concat]volume=1.0[volume]; \
+                [volume]afade=t=out:st=$fadeout_start:d=$fade_duration[fade]; \
+                [0:a][fade]amerge=inputs=2[out] \
+            " \
+            -map 0:v \
+            -map "[out]" \
+            -c:v copy \
+            -c:a aac \
+            -shortest \
+            -loglevel error \
+            "$output.mp4"
+
+            # Replace the original video with the new one
             mv $output.mp4 $output
         fi
 
