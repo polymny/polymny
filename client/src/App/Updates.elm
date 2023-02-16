@@ -16,6 +16,8 @@ import Config
 import Device
 import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
+import Options.Types as Options
+import Options.Updates as Options
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Production.Updates as Production
@@ -136,6 +138,9 @@ updateModel msg model =
                 App.PublicationMsg pMsg ->
                     Publication.update pMsg model
 
+                App.OptionsMsg oMsg ->
+                    Options.update oMsg model
+
                 App.SettingsMsg sMsg ->
                     Settings.update sMsg model
 
@@ -194,6 +199,9 @@ subs m =
 
                     App.Publication _ ->
                         Sub.none
+
+                    App.Options _ ->
+                        Options.subs
 
                     App.Settings _ ->
                         Sub.none

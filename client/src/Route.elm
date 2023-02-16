@@ -19,6 +19,7 @@ type Route
     | Acquisition String Int
     | Production String Int
     | Publication String
+    | Options String
     | Settings
     | NotFound
     | Custom String
@@ -43,6 +44,9 @@ toUrl route =
 
         Publication s ->
             "/capsule/publication/" ++ s
+
+        Options s ->
+            "/capsule/options/" ++ s
 
         Settings ->
             "/settings"
@@ -98,6 +102,9 @@ fromUrl url =
         "capsule" :: "publication" :: id :: [] ->
             Publication id
 
+        "capsule" :: "options" :: id :: [] ->
+            Options id
+
         "settings" :: [] ->
             Settings
 
@@ -128,6 +135,9 @@ fromPage page =
         App.Publication m ->
             Publication m.capsule.id
 
+        App.Options m ->
+            Options m.capsule.id
+
         App.Settings _ ->
             Settings
 
@@ -150,6 +160,9 @@ compareTab r1 r2 =
             True
 
         ( Publication _, Publication _ ) ->
+            True
+
+        ( Options _, Options _ ) ->
             True
 
         ( Settings, Settings ) ->

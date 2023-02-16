@@ -26,7 +26,7 @@ init gos capsule =
             let
                 webcamPosition =
                     case h.webcamSettings of
-                        Data.Pip { position } ->
+                        Just (Data.Pip { position }) ->
                             Tuple.mapBoth toFloat toFloat position
 
                         _ ->
@@ -56,6 +56,7 @@ type Msg
     | ImageMoved Float Float Float Float
     | HoldingImageChanged (Maybe ( Int, Float, Float ))
     | Produce
+    | ResetOptions
 
 
 {-| Changes the height preserving aspect ratio.
@@ -77,3 +78,75 @@ setWidth newWidth ( width, height ) =
 miniatureId : String
 miniatureId =
     "webcam-miniature"
+
+
+{-| Get webcam settings from the gos and model.
+-}
+getWebcamSettings : Data.Gos -> Model -> Data.WebcamSettings
+getWebcamSettings gos model =
+    let
+        -- Get record size
+        recordSize =
+            case model.gos.record of
+                Just r ->
+                    case r.size of
+                        Just s ->
+                            s
+
+                        Nothing ->
+                            ( 1, 1 )
+
+                Nothing ->
+                    ( 1, 1 )
+
+        -- Get default size
+        defaultSize =
+            case model.capsule.defaultWebcamSettings of
+                Data.Pip s ->
+                    s.size
+
+                _ ->
+                    ( 1, 1 )
+
+        -- Reset size
+        resetSize =
+            let
+                recoardWidth =
+                    recordSize |> Tuple.first |> toFloat
+
+                recoardHeight =
+                    recordSize |> Tuple.second |> toFloat
+
+                ratio =
+                    recoardWidth / recoardHeight
+
+                defaultWidth =
+                    defaultSize |> Tuple.first |> toFloat
+
+                newHeight =
+                    defaultWidth / ratio
+            in
+            ( defaultWidth |> round, newHeight |> round )
+
+        -- Get webcam settings
+        webcamSettings =
+            case gos.webcamSettings of
+                Just s ->
+                    s
+
+                Nothing ->
+                    -- Create webcam settings from default with good size
+                    case model.capsule.defaultWebcamSettings of
+                        Data.Pip s ->
+                            Data.Pip
+                                { anchor = s.anchor
+                                , keycolor = s.keycolor
+                                , opacity = s.opacity
+                                , position = s.position
+                                , size = resetSize
+                                }
+
+                        _ ->
+                            model.capsule.defaultWebcamSettings
+    in
+    webcamSettings

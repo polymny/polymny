@@ -135,6 +135,20 @@ impl Default for WebcamSettings {
     }
 }
 
+/// The sound track for a capsule.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct SoundTrack {
+    /// The uuid of the file.
+    pub uuid: Uuid,
+
+    /// The name of the file.
+    pub name: String,
+
+    /// The volume of the sound track.
+    pub volume: f32,
+}
+
 /// A record, with an uuid, a resolution and a duration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Record {
@@ -232,7 +246,7 @@ pub struct Gos {
     pub events: Vec<Event>,
 
     /// The webcam settings of the gos.
-    pub webcam_settings: WebcamSettings,
+    pub webcam_settings: Option<WebcamSettings>,
 
     /// Video/audio fade options
     #[serde(default)]
@@ -246,7 +260,7 @@ impl Gos {
             record: None,
             slides: vec![],
             events: vec![],
-            webcam_settings: WebcamSettings::default(),
+            webcam_settings: None,
             fade: Fade::none(),
         }
     }
@@ -306,6 +320,9 @@ pub struct Capsule {
     /// The structure of the capsule.
     pub structure: Json<Vec<Gos>>,
 
+    /// The default webcam settings.
+    pub webcam_settings: Json<WebcamSettings>,
+
     /// The last time the capsule was modified.
     pub last_modified: NaiveDateTime,
 
@@ -314,6 +331,9 @@ pub struct Capsule {
 
     /// duration of produced video in ms
     pub duration_ms: i32,
+
+    /// The sound track of the capsule.
+    pub sound_track: Json<Option<SoundTrack>>,
 
     /// The user that has rights on the capsule.
     #[many_to_many(capsules, Role)]
@@ -343,9 +363,11 @@ impl Capsule {
             Privacy::Public,
             true,
             Json(vec![]),
+            Json(WebcamSettings::default()),
             Utc::now().naive_utc(),
             0,
             0,
+            Json(None),
         )
         .save(&db)
         .await?;
@@ -384,11 +406,13 @@ impl Capsule {
             "published": self.published,
             "privacy": self.privacy,
             "structure": self.structure.0,
+            "webcam_settings": self.webcam_settings.0,
             "last_modified": self.last_modified.timestamp(),
             "users": users,
             "prompt_subtitles": self.prompt_subtitles,
-            "disk_usage":self.disk_usage,
-            "duration_ms":self.duration_ms
+            "disk_usage": self.disk_usage,
+            "duration_ms": self.duration_ms,
+            "sound_track": self.sound_track.0,
         }))
     }
 

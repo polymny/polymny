@@ -7,6 +7,7 @@ module Data.Capsule exposing
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
     , decodeEventType, decodeAnchor, decodeSlide, decodePair
+    , SoundTrack, removeTrack
     )
 
 {-| This module contains all the data related to capsules.
@@ -67,10 +68,12 @@ type alias Capsule =
     , published : Data.TaskStatus
     , privacy : Data.Privacy
     , structure : List Gos
+    , defaultWebcamSettings : WebcamSettings
     , lastModified : Int
     , promptSubtitles : Bool
     , diskUsage : Int
     , duration : Int
+    , soundTrack : Maybe SoundTrack
     }
 
 
@@ -84,7 +87,9 @@ encodeCapsule capsule =
         , ( "name", Encode.string capsule.name )
         , ( "privacy", Data.encodePrivacy capsule.privacy )
         , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
+        , ( "webcam_settings", encodeWebcamSettings capsule.defaultWebcamSettings )
         , ( "structure", Encode.list encodeGos capsule.structure )
+        , ( "sound_track", Maybe.map encodeSoundTrack capsule.soundTrack |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -102,11 +107,13 @@ decodeCapsule =
         |> andMap (Decode.field "published" Data.decodeTaskStatus)
         |> andMap (Decode.field "privacy" Data.decodePrivacy)
         |> andMap (Decode.field "structure" (Decode.list decodeGos))
+        |> andMap (Decode.field "webcam_settings" decodeWebcamSettings)
         |> andMap (Decode.field "last_modified" Decode.int)
         -- |> andMap (Decode.field "users" (Decode.list decodeUser))
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
         |> andMap (Decode.field "disk_usage" Decode.int)
         |> andMap (Decode.field "duration_ms" Decode.int)
+        |> andMap (Decode.maybe (Decode.field "sound_track" decodeSoundTrack))
 
 
 {-| Returns an asset path from its capsule and basename.
@@ -653,7 +660,7 @@ type alias Gos =
     { record : Maybe Record
     , slides : List Slide
     , events : List Event
-    , webcamSettings : WebcamSettings
+    , webcamSettings : Maybe WebcamSettings
     , fade : Fade
     }
 
@@ -666,7 +673,14 @@ encodeGos gos =
         [ ( "record", encodeRecord gos.record )
         , ( "slides", Encode.list encodeSlide gos.slides )
         , ( "events", Encode.list encodeEvent gos.events )
-        , ( "webcam_settings", encodeWebcamSettings gos.webcamSettings )
+        , ( "webcam_settings"
+          , case gos.webcamSettings of
+                Just ws ->
+                    encodeWebcamSettings ws
+
+                Nothing ->
+                    Encode.null
+          )
         , ( "fade", encodeFade gos.fade )
         ]
 
@@ -679,7 +693,7 @@ decodeGos =
         (Decode.maybe (Decode.field "record" decodeRecord))
         (Decode.field "slides" (Decode.list decodeSlide))
         (Decode.field "events" (Decode.list decodeEvent))
-        (Decode.field "webcam_settings" decodeWebcamSettings)
+        (Decode.maybe (Decode.field "webcam_settings" decodeWebcamSettings))
         (Decode.field "fade" decodeFade)
 
 
@@ -690,6 +704,43 @@ gosFromSlides slides =
     { record = Nothing
     , slides = slides
     , events = []
-    , webcamSettings = Disabled
+    , webcamSettings = Nothing
     , fade = defaultFade
     }
+
+
+{-| This type represents a sound track.
+-}
+type alias SoundTrack =
+    { uuid : String
+    , name : String
+    , volume : Float
+    }
+
+
+{-| JSON encoder for sound track.
+-}
+encodeSoundTrack : SoundTrack -> Encode.Value
+encodeSoundTrack st =
+    Encode.object
+        [ ( "uuid", Encode.string st.uuid )
+        , ( "name", Encode.string st.name )
+        , ( "volume", Encode.float st.volume )
+        ]
+
+
+{-| JSON decoder for sound track.
+-}
+decodeSoundTrack : Decoder SoundTrack
+decodeSoundTrack =
+    Decode.map3 SoundTrack
+        (Decode.field "uuid" Decode.string)
+        (Decode.field "name" Decode.string)
+        (Decode.field "volume" Decode.float)
+
+
+{-| Remove the sound track from the capsule.
+-}
+removeTrack : Capsule -> Capsule
+removeTrack capsule =
+    { capsule | soundTrack = Nothing }

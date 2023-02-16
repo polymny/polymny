@@ -875,3 +875,43 @@ msgstr ""
 #. Sentence to exaplin that after the slides have been uploaded, you may record.
 msgid "Intro.afterSlidesUploadYouCanRecord"
 msgstr ""
+
+#. Capsule general options.
+msgid "Steps.Options.options"
+msgstr ""
+
+#. Sentence to explain that these are default options for the production.
+msgid "Steps.Options.optionsExplanation"
+msgstr ""
+
+#. Sentence to reset the options to the default values.
+msgid "Steps.Production.resetOptions"
+msgstr ""
+
+#. General options.
+msgid "Steps.Options.generalOptions"
+msgstr ""
+
+#. Sound track.
+msgid "Steps.Options.soundTrack"
+msgstr ""
+
+#. Upload sound track.
+msgid "Steps.Options.uploadTrack"
+msgstr ""
+
+#. No sound track.
+msgid "Steps.Options.noTrack"
+msgstr ""
+
+#. Delete track action.
+msgid "Actions.Confirm.deleteTrack"
+msgstr ""
+
+#. Delete track hint.
+msgid "Actions.deleteTrack"
+msgstr ""
+
+#. volume of the sound track.
+msgid "Steps.Options.volume"
+msgstr ""

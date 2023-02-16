@@ -18,6 +18,7 @@ import NewCapsule.Types as NewCapsule
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
+import Options.Types as Options
 import Route exposing (Route)
 import Settings.Types as Settings
 import Unlogged.Types as Unlogged
@@ -111,6 +112,14 @@ pageFromRoute config user route =
             ( Data.getCapsuleById id user
                 |> Maybe.map Publication.init
                 |> Maybe.map App.Publication
+                |> Maybe.withDefault App.Home
+            , Cmd.none
+            )
+        
+        Route.Options id ->
+            ( Data.getCapsuleById id user
+                |> Maybe.map Options.init
+                |> Maybe.map App.Options
                 |> Maybe.withDefault App.Home
             , Cmd.none
             )

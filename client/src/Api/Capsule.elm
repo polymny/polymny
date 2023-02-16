@@ -1,4 +1,4 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrackShow)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
@@ -102,5 +102,27 @@ publishCapsule capsule toMsg =
     Api.post
         { url = "/api/publish/" ++ capsule.id
         , body = Http.emptyBody
+        , toMsg = toMsg
+        }
+
+{-| Uploads a sound track to the server.
+-}
+uploadTrackShow :
+    { capsule : Data.Capsule, fileValue : FileValue.File, file : File.File, toMsg : WebData Data.Capsule -> msg }
+    -> Cmd msg
+uploadTrackShow { capsule, fileValue, file, toMsg } =
+    let
+        name =
+            fileValue.name
+                |> String.split "."
+                |> List.reverse
+                |> List.drop 1
+                |> List.reverse
+                |> String.join "."
+    in
+    Api.postJson
+        { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name
+        , body = Http.fileBody file
+        , decoder = Data.decodeCapsule
         , toMsg = toMsg
         }
