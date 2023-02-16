@@ -260,7 +260,7 @@ defaultProd config model =
                 , -- Text label of the opacity value
                   opacity
                     * 100
-                    |> floor
+                    |> round
                     |> String.fromInt
                     |> (\x -> x ++ "%")
                     |> Element.text
@@ -393,7 +393,7 @@ generalOptions config model =
                 , -- Text label of the volume value
                   volume
                     * 100
-                    |> floor
+                    |> round
                     |> String.fromInt
                     |> (\x -> x ++ "%")
                     |> Element.text

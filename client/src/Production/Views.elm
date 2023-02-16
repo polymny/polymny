@@ -267,7 +267,7 @@ leftColumn config model =
                 , -- Text label of the opacity value
                   opacity
                     * 100
-                    |> floor
+                    |> round
                     |> String.fromInt
                     |> (\x -> x ++ "%")
                     |> Element.text
