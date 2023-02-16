@@ -21,11 +21,10 @@ type Msg
     | ToggleVideo
     | TrackUploadRequested
     | TrackUploadReceived FileValue.File File.File
-    | TrackUploaded File
     | TrackUploadResponded (WebData Capsule)
     | DeleteTrack Utils.Confirmation (Maybe Data.SoundTrack)
     | TrackUpload (WebData Data.Capsule)
-    | CapsuleUpdate Int (RemoteData.WebData ())
+    | CapsuleUpdate Int (RemoteData.WebData Capsule)
     | SetVolume Float
 
 
@@ -35,7 +34,7 @@ type alias Model =
     { capsule : Capsule
     , webcamPosition : ( Float, Float )
     , deleteTrack : Maybe Data.SoundTrack
-    , capsuleUpdate : RemoteData.WebData ()
+    , capsuleUpdate : RemoteData.WebData Capsule
     }
 
 

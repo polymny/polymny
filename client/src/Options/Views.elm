@@ -13,6 +13,7 @@ import Lang exposing (Lang)
 import List exposing (map)
 import Material.Icons
 import Options.Types as Options
+import RemoteData
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -348,15 +349,20 @@ generalOptions config model =
 
         -- Track name
         soundTrackName =
-            Element.text
-                (case model.capsule.soundTrack of
-                    Just st ->
-                        st.name
+            case model.capsuleUpdate of
+                RemoteData.Loading Nothing ->
+                    Ui.spinningSpinner [] 20
 
-                    Nothing ->
-                        Strings.stepsOptionsNoTrack lang
-                )
-                |> Element.el [ Ui.wfp 1, Ui.s 10 ]
+                _ ->
+                    Element.text
+                        (case model.capsule.soundTrack of
+                            Just st ->
+                                st.name
+
+                            Nothing ->
+                                Strings.stepsOptionsNoTrack lang
+                        )
+                        |> Element.el [ Ui.wfp 1, Ui.s 10 ]
 
         -- Sound track upload button
         soundTrackUpload =
