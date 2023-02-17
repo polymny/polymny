@@ -1329,6 +1329,29 @@ pub async fn sound_track(
     // Remove the temporary file.
     remove_file(&tmp_path).await.ok();
 
+    // Find first record uuid in the capsule. (if none, uuid is 0)
+    let record_uuid = if let Some(gos) = capsule
+        .structure.0
+        .iter()
+        .find(|gos| gos.record.is_some()) {
+            if let Some(rec) = &gos.record {
+                rec.uuid.to_string()
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        };
+
+    // Compose the track preview.
+    let _res = run_command(&vec![
+        "../scripts/psh",
+        "compose-track-preview",
+        &capsule.id.to_string(),
+        &uuid.to_string(),
+        &record_uuid,
+    ])?;
+
     // Save the track in the database.
     let sound_track = SoundTrack {
         uuid: uuid,

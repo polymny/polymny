@@ -6,8 +6,10 @@ import Data.Capsule as Data
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html exposing (audio)
 import Html.Attributes
 import Lang exposing (Lang)
 import List exposing (map)
@@ -339,8 +341,19 @@ generalOptions config model =
                     0.0
 
         -- Whether the user can control the volume
-        volumeDisabled =
+        noTrack =
             model.capsule.soundTrack == Nothing
+
+        -- Helper to create the HTML audio element
+        audioElement : String -> Element App.Msg
+        audioElement path =
+            Element.el [ Ui.wf, Ui.hf, Border.width 1, Border.color Colors.greyBorder ]
+                (Element.html
+                    (Html.audio
+                        [ Html.Attributes.controls True, Html.Attributes.class "wf" ]
+                        [ Html.source [ Html.Attributes.src path ] [] ]
+                    )
+                )
 
         --- UI ELEMENTS ---
         -- Sound track title
@@ -382,29 +395,46 @@ generalOptions config model =
 
         -- Slider to control volume
         volumeSlider =
-            Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
-                [ -- Slider for the control
-                  disableIf volumeDisabled
-                    Input.slider
-                    [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
+            if noTrack then
+                Element.none
+
+            else
+                Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
+                    [ -- Slider for the control
+                      Input.slider
+                        [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
+                        ]
+                        { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
+                        , label = Input.labelHidden <| Strings.stepsOptionsVolume lang
+                        , max = 1
+                        , min = 0
+                        , step = Just 0.01
+                        , thumb = Input.defaultThumb
+                        , value = volume
+                        }
+                    , -- Text label of the volume value
+                      volume
+                        * 100
+                        |> round
+                        |> String.fromInt
+                        |> (\x -> x ++ "%")
+                        |> Element.text
+                        |> Element.el [ Ui.wfp 1, Ui.ab ]
                     ]
-                    { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
-                    , label = Input.labelHidden <| Strings.stepsOptionsVolume lang
-                    , max = 1
-                    , min = 0
-                    , step = Just 0.01
-                    , thumb = Input.defaultThumb
-                    , value = volume
-                    }
-                , -- Text label of the volume value
-                  volume
-                    * 100
-                    |> round
-                    |> String.fromInt
-                    |> (\x -> x ++ "%")
-                    |> Element.text
-                    |> Element.el (Ui.wfp 1 :: Ui.ab :: disableAttrIf volumeDisabled)
-                ]
+
+        -- Sound track preview
+        audioPreview =
+            case model.capsuleUpdate of
+                RemoteData.Loading Nothing ->
+                    Element.none
+
+                _ ->
+                    case Data.trackPreviewPath model.capsule of
+                        Just path ->
+                            audioElement path
+
+                        Nothing ->
+                            Element.none
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
@@ -415,6 +445,7 @@ generalOptions config model =
                 , soundTrackRemove
                 ]
             , volumeSlider
+            , audioPreview
             ]
         ]
 

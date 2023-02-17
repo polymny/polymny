@@ -7,7 +7,7 @@ module Data.Capsule exposing
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
     , decodeEventType, decodeAnchor, decodeSlide, decodePair
-    , SoundTrack, removeTrack
+    , SoundTrack, removeTrack, trackPreviewPath
     )
 
 {-| This module contains all the data related to capsules.
@@ -205,6 +205,21 @@ videoPath capsule =
 
     else
         Nothing
+
+
+{-| Returns the path to the track preview of a capsule.
+
+Returns Nothing if the capsule doesn't have a track.
+
+-}
+trackPreviewPath : Capsule -> Maybe String
+trackPreviewPath capsule =
+    case capsule.soundTrack of
+        Just track ->
+            Just <| assetPath capsule ("trackPreview.m4a")
+
+        _ ->
+            Nothing
 
 
 {-| Returns the path to a specific gos that has been produced independantly from the video.

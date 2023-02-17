@@ -952,13 +952,71 @@ compose_gos(){
     echo "file '$output_gos'" >> $seq_file
 }
 
+# USAGE:
+#  add_audio_track <input> <track_path> <output> <fade_duration> <track_volume>
+# EXAMPLE:
+#  add_audio_track $input $track_path $output 1.0 0.5
+add_audio_track() {
+    local input=$1
+    local track_path=$2
+    local output=$3
+    local fade_duration=$4
+    local track_volume=$5
+
+    local output_ext="${output##*.}"
+    local temp_path=$(mktemp --suffix=.$output_ext)
+
+    # Get duration of the input video
+    video_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input")
+    track_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$track_path")
+
+    # Create fade in/out filter
+    fadeout_start=$(echo "$track_duration - $fade_duration" | bc)
+    fade_filter="afade=t=in:st=0:d=$fade_duration,afade=t=out:st=$fadeout_start:d=$fade_duration"
+
+    # Concatenate the audio track to repeat it for the entire duration of the video
+    fade_filter_inputs=""
+    fade_filter_outputs=""
+    duration=$video_duration
+    counter=0
+    while [[ $(echo "$duration > 0" | bc -l) -eq 1 ]]; do
+        fade_filter_inputs+="[1:a]$fade_filter[fade$counter];"
+        fade_filter_outputs+="[fade$counter]"
+        duration=$(echo "$duration - $track_duration" | bc)
+        counter=$((counter+1))
+    done
+
+    # Add final fade out
+    fadeout_start=$(echo "$video_duration - $fade_duration" | bc)
+
+    # Use ffmpeg to add the audio track to the video
+    ffmpeg -y -i "$input" -i "$track_path" \
+    -filter_complex " \
+        $fade_filter_inputs \
+        $fade_filter_outputs concat=n=$counter:v=0:a=1[concat]; \
+        [concat]volume=$track_volume[volume]; \
+        [volume]afade=t=out:st=$fadeout_start:d=$fade_duration[fade]; \
+        [0:a][fade]amerge=inputs=2[out] \
+    " \
+    -map 0:v \
+    -map "[out]" \
+    -c:v copy \
+    -c:a aac \
+    -shortest \
+    -loglevel error \
+    "$temp_path"
+
+    # Replace the original video with the new one
+    mv $temp_path $output
+
+}
+
 # combine slide and records
 # USAGE:
 #   compose_goss <capsule id> <gos id>
 # EXAMPLE:
 #   compose_goss 42 -1 for all gos
 #   compose_goss 42 2 for gos 2 only
-
 compose_goss(){
     local cid=$1
     local gosid=$2
@@ -1001,50 +1059,12 @@ compose_goss(){
 
             # Get path to the audio track
             track_path="$capsule_path/assets/$track_uuid.m4a"
-
-            # Get duration of the input video
-            video_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$output")
-            track_duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$track_path")
-
-            # Create fade in/out filter
+            
+            # Set fade duration
             fade_duration=1.0
-            fadeout_start=$(echo "$track_duration - $fade_duration" | bc)
-            fade_filter="afade=t=in:st=0:d=$fade_duration,afade=t=out:st=$fadeout_start:d=$fade_duration"
 
-            # Concatenate the audio track to repeat it for the entire duration of the video
-            fade_filter_inputs=""
-            fade_filter_outputs=""
-            duration=$video_duration
-            counter=0
-            while [[ $(echo "$duration > 0" | bc -l) -eq 1 ]]; do
-                fade_filter_inputs+="[1:a]$fade_filter[fade$counter];"
-                fade_filter_outputs+="[fade$counter]"
-                duration=$(echo "$duration - $track_duration" | bc)
-                counter=$((counter+1))
-            done
-
-            # Add final fade out
-            fadeout_start=$(echo "$video_duration - $fade_duration" | bc)
-
-            # Use ffmpeg to add the audio track to the video
-            ffmpeg -y -i "$output" -i "$track_path" \
-            -filter_complex " \
-                $fade_filter_inputs \
-                $fade_filter_outputs concat=n=$counter:v=0:a=1[concat]; \
-                [concat]volume=$track_volume[volume]; \
-                [volume]afade=t=out:st=$fadeout_start:d=$fade_duration[fade]; \
-                [0:a][fade]amerge=inputs=2[out] \
-            " \
-            -map 0:v \
-            -map "[out]" \
-            -c:v copy \
-            -c:a aac \
-            -shortest \
-            -loglevel error \
-            "$output.mp4"
-
-            # Replace the original video with the new one
-            mv $output.mp4 $output
+            # Add audio track
+            add_audio_track "$output" "$track_path" "$output" "$fade_duration" "$track_volume"
         fi
 
         local end=`date +%s`
@@ -1116,6 +1136,37 @@ on-produce() {
     echo "Composition start for capsule $cid and gos $gosid" >&2
     compose_goss $cid $gosid $track
     echo "Composition end for capsule $cid and gos $gosid" >&2
+}
+# USAGE:
+#  compose_track_preview <capsule_id> <audio_uuid> <record_uuid>
+#
+# EXAMPLE:
+#  compose_track_preview 1 2 3
+compose_track_preview() {
+    local capsule_id=$1
+    local audio_uuid=$2
+    local record_uuid=$3
+
+    # Get paths
+    local capsule_path=$(get_config "data_path")"/$capsule_id"
+    local record_path="${capsule_path}/assets/${record_uuid}.webm"
+    local temp_path=$(mktemp --suffix=.webm)
+    local audio_path="${capsule_path}/assets/${audio_uuid}.m4a"
+    local preview_path="${capsule_path}/assets/trackPreview.m4a"
+
+    if [[ $record_uuid == "" ]]; then
+        # Copy audio to preview
+        cp $audio_path $preview_path
+    else
+        # Add audio track to record audio
+        fade_duration=1.0
+        track_volume=1.0
+
+        add_audio_track "$record_path" "$audio_path" "$temp_path" "$fade_duration" "$track_volume"
+        ffmpeg -y -i $temp_path -vn -loglevel error $preview_path
+
+        rm $temp_path
+    fi
 }
 
 # USAGE:
@@ -1340,6 +1391,10 @@ main() {
         
         "transcode-audio")
             transcode_audio "$@"
+            ;;
+        
+        "compose-track-preview")
+            compose_track_preview "$@"
             ;;
 
         *)
