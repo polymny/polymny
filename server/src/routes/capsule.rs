@@ -754,7 +754,6 @@ pub async fn produce(
         } else {
             "null".to_string()
         };
-        println!("sound_track_info: {}", sound_track_info);
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
