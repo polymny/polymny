@@ -1,4 +1,4 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrackShow)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
@@ -107,10 +107,10 @@ publishCapsule capsule toMsg =
 
 {-| Uploads a sound track to the server.
 -}
-uploadTrackShow :
+uploadTrack :
     { capsule : Data.Capsule, fileValue : FileValue.File, file : File.File, toMsg : WebData Data.Capsule -> msg }
     -> Cmd msg
-uploadTrackShow { capsule, fileValue, file, toMsg } =
+uploadTrack { capsule, fileValue, file, toMsg } =
     let
         name =
             fileValue.name

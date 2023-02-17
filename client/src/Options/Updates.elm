@@ -78,19 +78,11 @@ update msg model =
                     in
                     if isAudio then
                         let
-                            name =
-                                fileValue.name
-                                    |> String.split "."
-                                    |> List.reverse
-                                    |> List.drop 1
-                                    |> List.reverse
-                                    |> String.join "."
-
                             newPage =
-                                App.Options { m | deleteTrack = Nothing }
+                                App.Options { m | deleteTrack = Nothing, capsuleUpdate = RemoteData.Loading Nothing }
                         in
                         ( { model | page = newPage }
-                        , Api.uploadTrackShow
+                        , Api.uploadTrack
                             { capsule = m.capsule
                             , fileValue = fileValue
                             , file = file
@@ -100,9 +92,6 @@ update msg model =
 
                     else
                         ( model, Cmd.none )
-
-                Options.TrackUploaded file ->
-                    ( model, Cmd.none )
 
                 Options.TrackUploadResponded response ->
                     ( model, Cmd.none )
@@ -130,7 +119,7 @@ update msg model =
 
                         ( sync, newConfig ) =
                             ( Api.updateCapsule capsule
-                                (\x -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest x))
+                                (\_ -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest (RemoteData.Success capsule)))
                             , Config.incrementRequest model.config
                             )
                     in
@@ -142,7 +131,11 @@ update msg model =
                     , sync
                     )
 
-                Options.TrackUpload x ->
+                Options.TrackUpload (RemoteData.Success c) ->
+                    ( { model | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
+                    , user = Data.updateUser c model.user }, Cmd.none )
+
+                Options.TrackUpload _ ->
                     ( model, Cmd.none )
 
                 Options.CapsuleUpdate id data ->

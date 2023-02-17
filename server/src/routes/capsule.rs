@@ -754,6 +754,7 @@ pub async fn produce(
         } else {
             "null".to_string()
         };
+        println!("sound_track_info: {}", sound_track_info);
         let child = Command::new("../scripts/psh")
             .arg("on-produce")
             .arg(format!("{}", capsule.id))
@@ -1280,9 +1281,9 @@ pub async fn sound_track(
     db: Db,
     data: Data<'_>,
     config: &S<Config>,
-) -> Result<()> {
+) -> Result<Value> {
     // User must have write access to the capsule.
-    let (mut capsule, _) = user
+    let (mut capsule, role) = user
         .get_capsule_with_permission(*id, Role::Write, &db)
         .await?;
 
@@ -1301,7 +1302,7 @@ pub async fn sound_track(
         let old_path = path
             .join(format!("{}", old_uuid))
             .with_extension("m4a");
-        remove_file(&old_path).await?;
+        remove_file(&old_path).await.ok();
     }
 
     // Create paths.
@@ -1327,7 +1328,7 @@ pub async fn sound_track(
     ])?;
 
     // Remove the temporary file.
-    remove_file(&tmp_path).await?;
+    remove_file(&tmp_path).await.ok();
 
     // Save the track in the database.
     let sound_track = SoundTrack {
@@ -1338,5 +1339,5 @@ pub async fn sound_track(
     capsule.sound_track = EJson(Some(sound_track));
     capsule.save(&db).await?;
 
-    Ok(())
+    Ok(capsule.to_json(role, &db).await?)
 }
