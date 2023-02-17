@@ -7,7 +7,7 @@ module Home.Views exposing (view)
 -}
 
 import App.Types as App
-import Config exposing (Config)
+import Config exposing (Config, Msg(..))
 import Data.Capsule as Data
 import Data.Types as Data
 import Data.User as Data exposing (User)
@@ -132,7 +132,7 @@ table config user =
               }
             , { header = makeHeader (Strings.dataCapsuleAction lang 3)
               , width = Element.shrink
-              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i Element.none
+              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i (actions lang x)
               }
             ]
         }
@@ -194,6 +194,50 @@ name poc =
 
         Capsule c ->
             Ui.link [ Ui.pl 30 ] { action = Ui.Route (Route.Preparation c.id), label = Ui.shrink 50 c.name }
+
+
+{-| This functions returns the actions that can be done on a capsule.
+-}
+actions : Lang -> Poc -> Element App.Msg
+actions lang poc =
+    case poc of
+        Project p ->
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
+                [ Ui.secondaryIcon []
+                    { icon = Icons.add
+                    , tooltip = Strings.actionsAddCapsule lang
+                    , action = Ui.None
+                    }
+                , Ui.secondaryIcon []
+                    { icon = Icons.drive_file_rename_outline
+                    , tooltip = Strings.actionsRenameProject lang
+                    , action = Ui.None
+                    }
+                , Ui.secondaryIcon []
+                    { icon = Icons.delete
+                    , tooltip = Strings.actionsDeleteProject lang
+                    , action = Ui.None
+                    }
+                ]
+
+        Capsule c ->
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
+                [ Ui.secondaryIcon []
+                    { icon = Icons.ios_share
+                    , tooltip = Strings.actionsExportCapsule lang
+                    , action = Ui.None
+                    }
+                , Ui.secondaryIcon []
+                    { icon = Icons.drive_file_rename_outline
+                    , tooltip = Strings.actionsRenameCapsule lang
+                    , action = Ui.None
+                    }
+                , Ui.secondaryIcon []
+                    { icon = Icons.delete
+                    , tooltip = Strings.actionsDeleteCapsule lang
+                    , action = Ui.None
+                    }
+                ]
 
 
 {-| This functions returns the progress bar of the capsule.
@@ -326,6 +370,9 @@ progressIcons config poc =
 
         Capsule c ->
             let
+                lang =
+                    config.clientState.lang
+
                 watch : Element App.Msg
                 watch =
                     case ( c.published, Data.videoPath c ) of
@@ -333,14 +380,14 @@ progressIcons config poc =
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.Route <| Route.Custom <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
-                                , tooltip = "TODO"
+                                , tooltip = Strings.actionsWatchCapsule lang
                                 }
 
                         ( _, Just url ) ->
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.NewTab url
-                                , tooltip = "TODO"
+                                , tooltip = Strings.actionsWatchCapsule lang
                                 }
 
                         _ ->

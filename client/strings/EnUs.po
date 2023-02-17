@@ -948,6 +948,34 @@ msgstr "Do you really want to delete this track"
 msgid "Actions.deleteTrack"
 msgstr "Delete track"
 
-#. volume of the sound track.
+#. Volume of the sound track.
 msgid "Steps.Options.volume"
 msgstr "Sound track volume"
+
+#. Delete project.
+msgid "Actions.deleteProject"
+msgstr "Delete project"
+
+#. Delete capsule.
+msgid "Actions.deleteCapsule"
+msgstr "Delete capsule"
+
+#. Rename project.
+msgid "Actions.renameProject"
+msgstr "Rename project"
+
+#. Rename capsule.
+msgid "Actions.renameCapsule"
+msgstr "Rename capsule"
+
+#. Add capsule.
+msgid "Actions.addCapsule"
+msgstr "Add capsule"
+
+#. Export capsule.
+msgid "Actions.exportCapsule"
+msgstr "Export capsule"
+
+#. Watch the capsule video.
+msgid "Actions.watchCapsule"
+msgstr "Watch the capsule"

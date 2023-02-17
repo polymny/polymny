@@ -959,6 +959,34 @@ msgstr "Voulez vous vraiment supprimer la musique de fond"
 msgid "Actions.deleteTrack"
 msgstr "Supprimer la musique de fond"
 
-#. volume of the sound track.
+#. Volume of the sound track.
 msgid "Steps.Options.volume"
 msgstr "Volume de la musique de fond"
+
+#. Delete project.
+msgid "Actions.deleteProject"
+msgstr "Supprimer le projet"
+
+#. Delete capsule.
+msgid "Actions.deleteCapsule"
+msgstr "Supprimer la capsule"
+
+#. Rename project.
+msgid "Actions.renameProject"
+msgstr "Renommer le projet"
+
+#. Rename capsule.
+msgid "Actions.renameCapsule"
+msgstr "Renommer la capsule"
+
+#. Add capsule.
+msgid "Actions.addCapsule"
+msgstr "Ajouter une capsule"
+
+#. Export capsule.
+msgid "Actions.exportCapsule"
+msgstr "Exporter la capsule"
+
+#. Watch the capsule video.
+msgid "Actions.watchCapsule"
+msgstr "Regarder la vidéo"
