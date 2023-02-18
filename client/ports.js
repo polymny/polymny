@@ -82,7 +82,7 @@ function init(node, flags) {
 
     // Make setTimeout with async/await.
     function sleep(duration) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function(resolve, _reject) {
             setTimeout(resolve, duration);
         })
     }
@@ -697,6 +697,59 @@ function init(node, flags) {
             app.ports.selectedTrack.send(e.target.files[0]);
         };
         input.click();
+    });
+
+    // Play sound track.
+    makePort("playTrackPreview", function(args) {
+        // Extract args.
+        let track_path = args[0];
+        let record_path = args[1];
+        let volume = args[2];
+
+        // Get div.
+        let div = document.getElementById('preview-hidden');
+        div.innerHTML = '';
+        
+        // Nothing to do if no track.
+        if (track_path === null) {
+            return;
+        }
+        
+        // Play track.
+        let audio = document.createElement('audio');
+        audio.src = track_path;
+        audio.autoplay = true;
+        audio.hidden = true;
+        audio.loop = true;
+        audio.volume = volume;
+        audio.addEventListener('ended', () => {
+            if (record_path === null) {
+                div.removeChild(audio);
+            }
+        });
+        div.appendChild(audio);
+
+        // Track only if no record.
+        if (record_path === null) {
+            return;
+        }
+        
+        // Play record.
+        let video = document.createElement('video');
+        video.src = record_path;
+        video.autoplay = true;
+        video.hidden = true;
+        video.addEventListener('ended', () => {
+            div.removeChild(audio);
+            div.removeChild(video);
+        });
+        div.appendChild(video);
+    });
+
+    // Stop sound track.
+    makePort("stopTrackPreview", function() {
+        let div = document.getElementById('preview-hidden');
+        div.innerHTML = '';
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));

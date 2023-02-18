@@ -422,19 +422,27 @@ generalOptions config model =
                         |> Element.el [ Ui.wfp 1, Ui.ab ]
                     ]
 
-        -- Sound track preview
-        audioPreview =
-            case model.capsuleUpdate of
-                RemoteData.Loading Nothing ->
-                    Element.none
+        -- Play button
+        playButton : Element App.Msg
+        playButton =
+            Ui.primaryIcon []
+                { icon = Material.Icons.play_arrow
+                , tooltip = Strings.stepsOptionsPlayPreview lang
+                , action = Ui.Msg (App.OptionsMsg Options.Play)
+                }
 
-                _ ->
-                    case Data.trackPreviewPath model.capsule of
-                        Just path ->
-                            audioElement path
+        -- Stop button
+        stopButton : Element App.Msg
+        stopButton =
+            Ui.primaryIcon []
+                { icon = Material.Icons.stop
+                , tooltip = Strings.stepsOptionsStopPreview lang
+                , action = Ui.Msg (App.OptionsMsg Options.Stop)
+                }
 
-                        Nothing ->
-                            Element.none
+        -- Preview hidden
+        previewHidden =
+            Element.html <| Html.div [ Html.Attributes.id "preview-hidden" ] []
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
@@ -445,7 +453,11 @@ generalOptions config model =
                 , soundTrackRemove
                 ]
             , volumeSlider
-            , audioPreview
+            , Element.row [ Ui.s 10 ]
+                [ playButton
+                , stopButton
+                ]
+            , previewHidden
             ]
         ]
 

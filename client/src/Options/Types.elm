@@ -26,6 +26,8 @@ type Msg
     | TrackUpload (WebData Data.Capsule)
     | CapsuleUpdate Int (RemoteData.WebData Capsule)
     | SetVolume Float
+    | Play
+    | Stop
 
 
 {-| The model for the Option module.
