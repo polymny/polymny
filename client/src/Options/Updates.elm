@@ -182,13 +182,13 @@ update msg model =
                                         Nothing ->
                                             1.0
                             in
-                            ( model, playTrackPreviewPort ( track_path, record_path, volume ) )
+                            ( { model | page = App.Options { m | playPreview = True } }, playTrackPreviewPort ( track_path, record_path, volume ) )
 
                         Nothing ->
                             ( model, Cmd.none )
 
                 Options.Stop ->
-                    ( model, stopTrackPreviewPort () )
+                    ( { model | page = App.Options { m | playPreview = False } }, stopTrackPreviewPort () )
 
         _ ->
             ( model, Cmd.none )
@@ -250,6 +250,11 @@ port stopTrackPreviewPort : () -> Cmd msg
 port volumeChangedPort : Float -> Cmd msg
 
 
+{-| Subscription to record ended.
+-}
+port recordEnded : (Decode.Value -> msg) -> Sub msg
+
+
 {-| Subscription to select a file.
 -}
 selectTrack : List String -> Cmd msg
@@ -271,12 +276,15 @@ port selectedTrack : (Decode.Value -> msg) -> Sub msg
 -}
 subs : Sub App.Msg
 subs =
-    selectedTrack
-        (\x ->
-            case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
-                ( Ok y, Ok z ) ->
-                    App.OptionsMsg (Options.TrackUploadReceived y z)
+    Sub.batch
+        [ selectedTrack
+            (\x ->
+                case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
+                    ( Ok y, Ok z ) ->
+                        App.OptionsMsg (Options.TrackUploadReceived y z)
 
-                _ ->
-                    App.Noop
-        )
+                    _ ->
+                        App.Noop
+            )
+        , recordEnded (\_ -> App.OptionsMsg Options.Stop)
+        ]

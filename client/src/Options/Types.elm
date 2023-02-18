@@ -37,6 +37,7 @@ type alias Model =
     , webcamPosition : ( Float, Float )
     , deleteTrack : Maybe Data.SoundTrack
     , capsuleUpdate : RemoteData.WebData Capsule
+    , playPreview : Bool
     }
 
 
@@ -46,4 +47,5 @@ init capsule =
     , webcamPosition = ( 0, 0 )
     , deleteTrack = Nothing
     , capsuleUpdate = RemoteData.NotAsked
+    , playPreview = False
     }

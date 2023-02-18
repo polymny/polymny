@@ -742,6 +742,7 @@ function init(node, flags) {
         video.addEventListener('ended', () => {
             div.removeChild(audio);
             div.removeChild(video);
+            app.ports.recordEnded.send();
         });
         div.appendChild(video);
     });

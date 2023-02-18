@@ -387,7 +387,7 @@ generalOptions config model =
 
         -- Sound track remove button
         soundTrackRemove =
-            Ui.primaryIcon []
+            Ui.secondaryIcon (disableAttrIf noTrack)
                 { icon = Material.Icons.delete
                 , tooltip = Strings.actionsDeleteTrack lang
                 , action = Ui.Msg (App.OptionsMsg (Options.DeleteTrack Utils.Request model.capsule.soundTrack))
@@ -421,19 +421,43 @@ generalOptions config model =
         -- Play button
         playButton : Element App.Msg
         playButton =
-            Ui.primaryIcon []
+            let
+                attr =
+                    disableAttrIf model.playPreview
+
+                action =
+                    if model.playPreview then
+                        App.Noop
+
+                    else
+                        App.OptionsMsg Options.Play
+            in
+            Ui.secondaryIcon
+                attr
                 { icon = Material.Icons.play_arrow
                 , tooltip = Strings.stepsOptionsPlayPreview lang
-                , action = Ui.Msg (App.OptionsMsg Options.Play)
+                , action = Ui.Msg action
                 }
 
         -- Stop button
         stopButton : Element App.Msg
         stopButton =
-            Ui.primaryIcon []
+            let
+                attr =
+                    disableAttrIf (not model.playPreview)
+
+                action =
+                    if model.playPreview then
+                        App.OptionsMsg Options.Stop
+
+                    else
+                        App.Noop
+            in
+            Ui.secondaryIcon
+                attr
                 { icon = Material.Icons.stop
                 , tooltip = Strings.stepsOptionsStopPreview lang
-                , action = Ui.Msg (App.OptionsMsg Options.Stop)
+                , action = Ui.Msg action
                 }
 
         -- Preview hidden
