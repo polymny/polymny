@@ -752,6 +752,15 @@ function init(node, flags) {
         div.innerHTML = '';
     });
 
+    // Volume changed.
+    makePort("volumeChanged", function(volume) {
+        let div = document.getElementById('preview-hidden');
+        let audio = div.querySelector('audio');
+        if (audio !== null) {
+            audio.volume = volume;
+        }
+    });
+
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);

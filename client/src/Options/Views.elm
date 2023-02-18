@@ -395,32 +395,28 @@ generalOptions config model =
 
         -- Slider to control volume
         volumeSlider =
-            if noTrack then
-                Element.none
-
-            else
-                Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
-                    [ -- Slider for the control
-                      Input.slider
-                        [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
-                        ]
-                        { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
-                        , label = Input.labelHidden <| Strings.stepsOptionsVolume lang
-                        , max = 1
-                        , min = 0
-                        , step = Just 0.01
-                        , thumb = Input.defaultThumb
-                        , value = volume
-                        }
-                    , -- Text label of the volume value
-                      volume
-                        * 100
-                        |> round
-                        |> String.fromInt
-                        |> (\x -> x ++ "%")
-                        |> Element.text
-                        |> Element.el [ Ui.wfp 1, Ui.ab ]
+            Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
+                [ -- Slider for the control
+                  Input.slider
+                    [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
+                    { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
+                    , label = Input.labelHidden <| Strings.stepsOptionsVolume lang
+                    , max = 1
+                    , min = 0
+                    , step = Just 0.01
+                    , thumb = Input.defaultThumb
+                    , value = volume
+                    }
+                , -- Text label of the volume value
+                  volume
+                    * 100
+                    |> round
+                    |> String.fromInt
+                    |> (\x -> x ++ "%")
+                    |> Element.text
+                    |> Element.el [ Ui.wfp 1, Ui.ab ]
+                ]
 
         -- Play button
         playButton : Element App.Msg
@@ -446,19 +442,26 @@ generalOptions config model =
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
-            [ soundTrackTitle
-            , Element.row [ Ui.s 10 ]
+            ([ soundTrackTitle
+             , Element.row [ Ui.s 10 ]
                 [ soundTrackName
                 , soundTrackUpload
                 , soundTrackRemove
                 ]
-            , volumeSlider
-            , Element.row [ Ui.s 10 ]
-                [ playButton
-                , stopButton
-                ]
-            , previewHidden
-            ]
+             ]
+                ++ (if noTrack then
+                        []
+
+                    else
+                        [ volumeSlider
+                        , Element.row [ Ui.s 10 ]
+                            [ playButton
+                            , stopButton
+                            ]
+                        , previewHidden
+                        ]
+                   )
+            )
         ]
 
 

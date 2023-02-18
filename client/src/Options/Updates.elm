@@ -173,7 +173,7 @@ update msg model =
 
                                 record_path =
                                     Data.firstRecordPath m.capsule
-                                
+
                                 volume =
                                     case m.capsule.soundTrack of
                                         Just st ->
@@ -186,7 +186,7 @@ update msg model =
 
                         Nothing ->
                             ( model, Cmd.none )
-                
+
                 Options.Stop ->
                     ( model, stopTrackPreviewPort () )
 
@@ -228,7 +228,10 @@ updateModelSoundTrack sound_track model m =
             Data.updateUser newCapsule model.user
     in
     ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
-    , Api.updateCapsule newCapsule (\_ -> App.Noop)
+    , Cmd.batch
+        [ Api.updateCapsule newCapsule (\_ -> App.Noop)
+        , volumeChangedPort (Maybe.withDefault 1.0 (Maybe.map .volume sound_track))
+        ]
     )
 
 
@@ -240,6 +243,11 @@ port playTrackPreviewPort : ( Maybe String, Maybe String, Float ) -> Cmd msg
 {-| Stop the sound track.
 -}
 port stopTrackPreviewPort : () -> Cmd msg
+
+
+{-| Volume changed.
+-}
+port volumeChangedPort : Float -> Cmd msg
 
 
 {-| Subscription to select a file.
