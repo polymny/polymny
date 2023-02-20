@@ -79,4 +79,4 @@ server/dist/js/ports.js: client/ports.js
 	@cp client/ports.js server/dist/js/ports.js
 
 multiview:
-	@multiview [ sh -c "cd server && unbuffer cargo run" ] [ unbuffer make client-watch ]
+	@rm -rf $$HOME/.npmbin/lib/node_modules/multiview/cli/multiview_main.sock && multiview [ sh -c "cd server && unbuffer cargo run" ] [ unbuffer make client-watch ]
