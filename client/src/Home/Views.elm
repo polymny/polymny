@@ -528,9 +528,11 @@ leaveCapsuleConfirmPopup lang capsule =
 -}
 deleteProjectConfirmPopup : Lang -> Data.Project -> Element App.Msg
 deleteProjectConfirmPopup lang project =
-    Element.column [ Ui.wf, Ui.hf ]
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
         [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
-            [ Element.text (Lang.warning Strings.actionsConfirmDeleteProjectWarning lang) ]
+            [ Element.text (Lang.warning Strings.uiWarning lang)]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Strings.actionsConfirmDeleteProjectWarning lang) ]
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Lang.question Strings.actionsConfirmDeleteProject lang) ]
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]

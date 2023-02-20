@@ -998,4 +998,8 @@ msgstr "Do you really want to delete this project"
 
 #. Delete project warning.
 msgid "Actions.Confirm.deleteProjectWarning"
-msgstr "Be careful, deleting a project will delete all its capsules or unsubscribe you from them"
+msgstr "Deleting a project will delete all its capsules or unsubscribe you from them."
+
+#. Warning.
+msgid "Ui.warning"
+msgstr "Warning"

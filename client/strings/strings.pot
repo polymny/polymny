@@ -963,3 +963,7 @@ msgstr ""
 #. Delete project warning.
 msgid "Actions.Confirm.deleteProjectWarning"
 msgstr ""
+
+#. Warning.
+msgid "Ui.warning"
+msgstr ""
