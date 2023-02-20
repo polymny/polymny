@@ -984,10 +984,10 @@ msgstr "Watch the capsule"
 msgid "Actions.Confirm.deleteCapsule"
 msgstr "Do you really want to delete this capsule"
 
-#. Delete a capsule.
-msgid "Actions.deleteCapsule"
-msgstr "Delete capsule"
+#. Leave a capsule.
+msgid "Actions.Confirm.leaveCapsule"
+msgstr "Do you really want to leave this capsule"
 
-#. Delete the track.
-msgid "Actions.deleteTrack"
-msgstr "Delete track"
+#. Leave a capsule.
+msgid "Actions.leaveCapsule"
+msgstr "Leave capsule"

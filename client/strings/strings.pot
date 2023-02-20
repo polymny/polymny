@@ -948,10 +948,10 @@ msgstr ""
 msgid "Actions.Confirm.deleteCapsule"
 msgstr ""
 
-#. Delete a capsule.
-msgid "Actions.deleteCapsule"
+#. Leave a capsule.
+msgid "Actions.Confirm.leaveCapsule"
 msgstr ""
 
-#. Delete the track.
-msgid "Actions.deleteTrack"
+#. Leave a capsule.
+msgid "Actions.leaveCapsule"
 msgstr ""

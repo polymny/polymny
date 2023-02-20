@@ -995,10 +995,10 @@ msgstr "Regarder la vidéo"
 msgid "Actions.Confirm.deleteCapsule"
 msgstr "Voulez vous vraiment supprimer la capsule"
 
-#. Delete a capsule.
-msgid "Actions.deleteCapsule"
-msgstr "Supprimer la capsule"
+#. Leave a capsule.
+msgid "Actions.Confirm.leaveCapsule"
+msgstr "Voulez vous vraiment ne plus participer à la capsule"
 
-#. Delete the track.
-msgid "Actions.deleteTrack"
-msgstr "Supprimer la musique de fond"
+#. Leave a capsule.
+msgid "Actions.leaveCapsule"
+msgstr "Ne plus participer à la capsule"

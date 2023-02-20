@@ -94,13 +94,26 @@ update msg model =
                                     { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules }
 
                                 Nothing ->
+                                    -- Internal error
                                     { name = capsule.project, capsules = [], folded = False }
 
                         user =
                             model.user
 
                         new_user =
-                            { user | projects = new_project :: List.filter (\p -> p.name /= capsule.project) model.user.projects }
+                            let
+                                projects =
+                                    user.projects
+                                        |> List.filter (\p -> p.name /= capsule.project)
+                                        |> List.append
+                                            (if new_project.capsules == [] then
+                                                []
+
+                                             else
+                                                [ new_project ]
+                                            )
+                            in
+                            { user | projects = projects }
 
                         new_model =
                             { model
@@ -108,7 +121,7 @@ update msg model =
                                 , page = App.Home { m | deleteCapsule = Nothing }
                             }
                     in
-                    ( new_model, Api.deleteCapsule capsule.id (\_ -> App.Noop) )
+                    ( new_model, Api.deleteCapsule capsule (\_ -> App.Noop) )
 
         _ ->
             ( model, Cmd.none )

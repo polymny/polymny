@@ -41,7 +41,15 @@ view config user model =
         popup =
             case model.deleteCapsule of
                 Just c ->
-                    deleteCapsuleConfirmPopup lang c
+                    let
+                        isOwner =
+                            c.role == Data.Owner
+                    in
+                    if isOwner then
+                        deleteCapsuleConfirmPopup lang c
+
+                    else
+                        leaveCapsuleConfirmPopup lang c
 
                 _ ->
                     Element.none
@@ -216,54 +224,64 @@ actions : Lang -> Poc -> User -> Element App.Msg
 actions lang poc user =
     case poc of
         Project p ->
-            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
                 [ Ui.secondaryIcon []
                     { icon = Icons.add
                     , tooltip = Strings.actionsAddCapsule lang
                     , action = Ui.None
                     }
-                ]
-                    ++ (if True then
-                            [ Ui.secondaryIcon []
-                                { icon = Icons.drive_file_rename_outline
-                                , tooltip = Strings.actionsRenameProject lang
-                                , action = Ui.None
-                                }
-                            , Ui.secondaryIcon []
-                                { icon = Icons.delete
-                                , tooltip = Strings.actionsDeleteProject lang
-                                , action = Ui.None
-                                }
-                            ]
+                , if True then
+                    Ui.secondaryIcon []
+                        { icon = Icons.drive_file_rename_outline
+                        , tooltip = Strings.actionsRenameProject lang
+                        , action = Ui.None
+                        }
 
-                        else
-                            []
-                       )
+                  else
+                    Element.none
+                , Ui.secondaryIcon []
+                    { icon = Icons.delete
+                    , tooltip = Strings.actionsDeleteProject lang
+                    , action = Ui.None
+                    }
+                ]
 
         Capsule c ->
+            let
+                isOwner =
+                    c.role == Data.Owner
+            in
             Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
                 [ Ui.secondaryIcon []
                     { icon = Icons.ios_share
                     , tooltip = Strings.actionsExportCapsule lang
                     , action = Ui.None
                     }
-                ]
-                    ++ (if c.role == Data.Owner then
-                            [ Ui.secondaryIcon []
-                                { icon = Icons.drive_file_rename_outline
-                                , tooltip = Strings.actionsRenameCapsule lang
-                                , action = Ui.None
-                                }
-                            , Ui.secondaryIcon []
-                                { icon = Icons.delete
-                                , tooltip = Strings.actionsDeleteCapsule lang
-                                , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
-                                }
-                            ]
+                , if isOwner then
+                    Ui.secondaryIcon []
+                        { icon = Icons.drive_file_rename_outline
+                        , tooltip = Strings.actionsRenameCapsule lang
+                        , action = Ui.None
+                        }
+
+                  else
+                    Element.none
+                , Ui.secondaryIcon []
+                    { icon =
+                        if isOwner then
+                            Icons.delete
 
                         else
-                            []
-                       )
+                            Icons.door_back
+                    , tooltip =
+                        if isOwner then
+                            Strings.actionsDeleteCapsule lang
+
+                        else
+                            Strings.actionsLeaveCapsule lang
+                    , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
+                    }
+                ]
 
 
 {-| This functions returns the progress bar of the capsule.
@@ -480,6 +498,27 @@ deleteCapsuleConfirmPopup lang capsule =
             ]
         ]
         |> Ui.popup 1 (Strings.actionsDeleteCapsule lang)
+
+
+{-| Popup to confirm leaving a capsule.
+-}
+leaveCapsuleConfirmPopup : Lang -> Data.Capsule -> Element App.Msg
+leaveCapsuleConfirmPopup lang capsule =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmLeaveCapsule lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsLeaveCapsule lang)
 
 
 {-| Easily creates the Ui.Msg for options msg.

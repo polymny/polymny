@@ -4,6 +4,7 @@ module Api.User exposing (..)
 -}
 
 import Api.Utils as Api
+import Data.Capsule exposing (Capsule)
 import Data.Types as Data
 import Data.User as Data exposing (User)
 import Http
@@ -121,10 +122,25 @@ deleteAccount password toMsg =
 
 {-| Requests to delete a capsule.
 -}
-deleteCapsule : String -> (WebData () -> msg) -> Cmd msg
-deleteCapsule capsuleId toMsg =
-    Api.delete
-        { url = "/api/capsule/" ++ capsuleId
-        , body = Http.emptyBody
-        , toMsg = toMsg
-        }
+deleteCapsule : Capsule -> (WebData () -> msg) -> Cmd msg
+deleteCapsule capsule toMsg =
+    let
+        capsuleId =
+            capsule.id
+
+        isOwner =
+            capsule.role == Data.Owner
+    in
+    if isOwner then
+        Api.delete
+            { url = "/api/capsule/" ++ capsuleId
+            , body = Http.emptyBody
+            , toMsg = toMsg
+            }
+
+    else
+        Api.post
+            { url = "/api/leave/" ++ capsuleId
+            , body = Http.emptyBody
+            , toMsg = toMsg
+            }
