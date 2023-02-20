@@ -124,7 +124,7 @@ deleteAccount password toMsg =
 deleteCapsule : String -> (WebData () -> msg) -> Cmd msg
 deleteCapsule capsuleId toMsg =
     Api.delete
-        { url = "/api/delete-capsule/" ++ capsuleId
+        { url = "/api/capsule/" ++ capsuleId
         , body = Http.emptyBody
         , toMsg = toMsg
         }
