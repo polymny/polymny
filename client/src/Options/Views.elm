@@ -344,17 +344,6 @@ generalOptions config model =
         noTrack =
             model.capsule.soundTrack == Nothing
 
-        -- Helper to create the HTML audio element
-        audioElement : String -> Element App.Msg
-        audioElement path =
-            Element.el [ Ui.wf, Ui.hf, Border.width 1, Border.color Colors.greyBorder ]
-                (Element.html
-                    (Html.audio
-                        [ Html.Attributes.controls True, Html.Attributes.class "wf" ]
-                        [ Html.source [ Html.Attributes.src path ] [] ]
-                    )
-                )
-
         --- UI ELEMENTS ---
         -- Sound track title
         soundTrackTitle =
@@ -388,11 +377,12 @@ generalOptions config model =
         -- Sound track remove button
         soundTrackRemove =
             let
-                action = 
+                action =
                     if noTrack then
                         Ui.None
+
                     else
-                        Ui.Msg <| App.OptionsMsg  <| Options.DeleteTrack Utils.Request model.capsule.soundTrack
+                        Ui.Msg <| App.OptionsMsg <| Options.DeleteTrack Utils.Request model.capsule.soundTrack
             in
             Ui.secondaryIcon (disableAttrIf noTrack)
                 { icon = Material.Icons.delete
@@ -466,10 +456,6 @@ generalOptions config model =
                 , tooltip = Strings.stepsOptionsStopPreview lang
                 , action = action
                 }
-
-        -- Preview hidden
-        previewHidden =
-            Element.html <| Html.div [ Html.Attributes.id "preview-hidden" ] []
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
@@ -489,7 +475,6 @@ generalOptions config model =
                             [ playButton
                             , stopButton
                             ]
-                        , previewHidden
                         ]
                    )
             )

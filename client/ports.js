@@ -46,6 +46,12 @@ function init(node, flags) {
     // The id of the video element.
     const videoId = "video";
 
+    // The audio and video for the level checks when adding soundtracks.
+    let soundtrackCheck = {
+        audio: null,
+        video: null,
+    };
+
     // List of possible resolutions for devices.
     const quickScan = [
         { "width": 1920, "height": 1080 }, { "width": 1280, "height":  720 }, { "width":  800, "height":  600 },
@@ -702,63 +708,55 @@ function init(node, flags) {
     // Play sound track.
     makePort("playTrackPreview", function(args) {
         // Extract args.
-        let track_path = args[0];
-        let record_path = args[1];
+        let trackPath = args[0];
+        let recordPath = args[1];
         let volume = args[2];
 
-        // Get div.
-        let div = document.getElementById('preview-hidden');
-        div.innerHTML = '';
-        
         // Nothing to do if no track.
-        if (track_path === null) {
+        if (trackPath === null) {
             return;
         }
-        
+
         // Play track.
-        let audio = document.createElement('audio');
-        audio.src = track_path;
-        audio.autoplay = true;
-        audio.hidden = true;
-        audio.loop = true;
-        audio.volume = volume;
-        audio.addEventListener('ended', () => {
-            if (record_path === null) {
-                div.removeChild(audio);
-            }
-        });
-        div.appendChild(audio);
+        soundtrackCheck.audio = new Audio();
+        soundtrackCheck.audio.src = trackPath;
+        soundtrackCheck.audio.autoplay = true;
+        soundtrackCheck.audio.hidden = true;
+        soundtrackCheck.audio.loop = true;
+        soundtrackCheck.audio.volume = volume;
 
         // Track only if no record.
-        if (record_path === null) {
+        if (recordPath === null) {
             return;
         }
-        
+
         // Play record.
-        let video = document.createElement('video');
-        video.src = record_path;
-        video.autoplay = true;
-        video.hidden = true;
-        video.addEventListener('ended', () => {
-            div.removeChild(audio);
-            div.removeChild(video);
+        soundtrackCheck.video = document.createElement('video');
+        soundtrackCheck.video.src = recordPath;
+        soundtrackCheck.video.autoplay = true;
+        soundtrackCheck.video.hidden = true;
+        soundtrackCheck.video.addEventListener('ended', () => {
             app.ports.recordEnded.send();
         });
-        div.appendChild(video);
     });
 
     // Stop sound track.
     makePort("stopTrackPreview", function() {
-        let div = document.getElementById('preview-hidden');
-        div.innerHTML = '';
+        if (soundtrackCheck.audio !== null) {
+            soundtrackCheck.audio.pause();
+            soundtrackCheck.audio.currentTime = 0;
+        }
+
+        if (soundtrackCheck.video !== null) {
+            soundtrackCheck.video.pause();
+            soundtrackCheck.video.currentTime = 0;
+        }
     });
 
     // Volume changed.
     makePort("volumeChanged", function(volume) {
-        let div = document.getElementById('preview-hidden');
-        let audio = div.querySelector('audio');
-        if (audio !== null) {
-            audio.volume = volume;
+        if (soundtrackCheck.audio !== null) {
+            soundtrackCheck.audio.volume = volume;
         }
     });
 
