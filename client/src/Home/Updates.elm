@@ -31,48 +31,78 @@ import Utils
 -}
 update : Home.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case msg of
-        Home.Toggle p ->
-            ( { model | user = Data.toggleProject p model.user }, Cmd.none )
+    case model.page of
+        App.Home m ->
+            case msg of
+                Home.Toggle p ->
+                    ( { model | user = Data.toggleProject p model.user }, Cmd.none )
 
-        Home.SlideUploadClicked ->
-            ( model
-            , Utils.tern (Data.isPremium model.user) [ "application/pdf", "application/zip" ] [ "application/pdf" ]
-                |> select Nothing
-            )
-
-        Home.SlideUploadReceived project fileValue file ->
-            case fileValue.mime of
-                "application/pdf" ->
-                    let
-                        projectName =
-                            Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
-
-                        name =
-                            fileValue.name
-                                |> String.split "."
-                                |> List.reverse
-                                |> List.drop 1
-                                |> List.reverse
-                                |> String.join "."
-
-                        newPage =
-                            RemoteData.Loading Nothing
-                                |> NewCapsule.init model.config.clientState.lang project name
-                                |> App.NewCapsule
-                    in
-                    ( { model | page = newPage }
-                    , Api.uploadSlideShow
-                        { project = projectName
-                        , fileValue = fileValue
-                        , file = file
-                        , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
-                        }
+                Home.SlideUploadClicked ->
+                    ( model
+                    , Utils.tern (Data.isPremium model.user) [ "application/pdf", "application/zip" ] [ "application/pdf" ]
+                        |> select Nothing
                     )
 
-                -- TODO : manage "application/zip"
-                _ ->
-                    ( model, Cmd.none )
+                Home.SlideUploadReceived project fileValue file ->
+                    case fileValue.mime of
+                        "application/pdf" ->
+                            let
+                                projectName =
+                                    Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
+
+                                name =
+                                    fileValue.name
+                                        |> String.split "."
+                                        |> List.reverse
+                                        |> List.drop 1
+                                        |> List.reverse
+                                        |> String.join "."
+
+                                newPage =
+                                    RemoteData.Loading Nothing
+                                        |> NewCapsule.init model.config.clientState.lang project name
+                                        |> App.NewCapsule
+                            in
+                            ( { model | page = newPage }
+                            , Api.uploadSlideShow
+                                { project = projectName
+                                , fileValue = fileValue
+                                , file = file
+                                , toMsg = \x -> App.NewCapsuleMsg (NewCapsule.SlideUpload x)
+                                }
+                            )
+
+                        -- TODO : manage "application/zip"
+                        _ ->
+                            ( model, Cmd.none )
+
+                Home.DeleteCapsule Utils.Request capsule ->
+                    ( { model | page = App.Home { m | deleteCapsule = Just capsule } }, Cmd.none )
+
+                Home.DeleteCapsule Utils.Cancel _ ->
+                    ( { model | page = App.Home { m | deleteCapsule = Nothing } }, Cmd.none )
+
+                Home.DeleteCapsule Utils.Confirm track ->
+                    ( { model | page = App.Home { m | deleteCapsule = Nothing } }, Cmd.none )
+
+        -- let
+        --     capsule =
+        --         Data.removeCapsule m.capsule
+        --     ( sync, newConfig ) =
+        --         ( Api.updateCapsule capsule
+        --             (\_ -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest (RemoteData.Success capsule)))
+        --         , Config.incrementRequest model.config
+        --         )
+        -- in
+        -- ( { model
+        --     | user = Data.dele capsule model.user
+        --     , page = App.Options (Options.init capsule)
+        --     , config = newConfig
+        --   }
+        -- , sync
+        -- )
+        _ ->
+            ( model, Cmd.none )
 
 
 {-| Port to ask to select a file.

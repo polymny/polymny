@@ -26,17 +26,32 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
+import Home.Types as Home
 
 
 {-| This function returns the view of the home page.
 -}
-view : Config -> User -> ( Element App.Msg, Element App.Msg )
-view config user =
+view : Config -> User -> Home.Model -> ( Element App.Msg, Element App.Msg )
+view config user model =
+    let
+        lang =
+            config.clientState.lang
+
+        -- Helper to create popup
+        popup : Element App.Msg
+        popup =
+            case model.deleteCapsule of
+                Just c ->
+                    deleteCapsuleConfirmPopup lang c
+
+                _ ->
+                    Element.none
+    in
     ( Element.row [ Ui.wf, Ui.hf ]
         [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
         , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop ] (table config user)
         ]
-    , Element.none
+    , popup
     )
 
 
@@ -235,7 +250,7 @@ actions lang poc =
                 , Ui.secondaryIcon []
                     { icon = Icons.delete
                     , tooltip = Strings.actionsDeleteCapsule lang
-                    , action = Ui.None
+                    , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
                     }
                 ]
 
@@ -433,3 +448,38 @@ lastModified lang zone poc =
                     c.lastModified
     in
     TimeUtils.formatTime lang zone date |> Element.text
+
+
+{-| Popup to confirm the capsule deletion.
+-}
+deleteCapsuleConfirmPopup : Lang -> Data.Capsule -> Element App.Msg
+deleteCapsuleConfirmPopup lang capsule =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteCapsule lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteCapsule lang)
+
+
+{-| Easily creates the Ui.Msg for options msg.
+-}
+mkUiMsg : Home.Msg -> Ui.Action App.Msg
+mkUiMsg msg =
+    mkMsg msg |> Ui.Msg
+
+
+{-| Easily creates a options msg.
+-}
+mkMsg : Home.Msg -> App.Msg
+mkMsg msg =
+    App.HomeMsg msg

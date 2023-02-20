@@ -182,7 +182,7 @@ subs m =
             Sub.batch
                 [ Sub.map App.ConfigMsg Config.subs
                 , case model.page of
-                    App.Home ->
+                    App.Home _ ->
                         Home.subs
 
                     App.NewCapsule _ ->

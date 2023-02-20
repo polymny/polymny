@@ -979,3 +979,15 @@ msgstr "Export capsule"
 #. Watch the capsule video.
 msgid "Actions.watchCapsule"
 msgstr "Watch the capsule"
+
+#. Delete a capsule.
+msgid "Actions.Confirm.deleteCapsule"
+msgstr "Do you really want to delete this capsule"
+
+#. Delete a capsule.
+msgid "Actions.deleteCapsule"
+msgstr "Delete capsule"
+
+#. Delete the track.
+msgid "Actions.deleteTrack"
+msgstr "Delete track"

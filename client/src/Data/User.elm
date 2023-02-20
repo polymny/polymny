@@ -236,6 +236,18 @@ addCapsuleAux capsule finished acc input =
                 addCapsuleAux capsule False (h :: acc) t
 
 
+{-| Deletes a capsule in a user.
+-}
+deleteCapsule : Capsule -> User -> User
+deleteCapsule capsule user =
+    let
+        projectMapper : Project -> Project
+        projectMapper project =
+            { project | capsules = List.filter (\c -> c.id /= capsule.id) project.capsules }
+    in
+    { user | projects = List.map projectMapper user.projects }
+
+
 {-| Updates a capsule in a user.
 -}
 updateUser : Capsule -> User -> User

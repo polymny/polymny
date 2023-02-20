@@ -943,3 +943,15 @@ msgstr ""
 #. Watch the capsule video.
 msgid "Actions.watchCapsule"
 msgstr ""
+
+#. Delete a capsule.
+msgid "Actions.Confirm.deleteCapsule"
+msgstr ""
+
+#. Delete a capsule.
+msgid "Actions.deleteCapsule"
+msgstr ""
+
+#. Delete the track.
+msgid "Actions.deleteTrack"
+msgstr ""
