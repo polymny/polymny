@@ -1,6 +1,7 @@
 module Lang exposing
     ( Lang(..), langs, fromString, toString, toLocal, flag
     , default, question, dots
+    , warning
     )
 
 {-| This module holds the lang type and the different strings represented in the different languages.
@@ -119,3 +120,10 @@ dots string lang =
     case lang of
         _ ->
             string lang ++ "..."
+
+
+{-| Adds warning emoji at the beginning and end of a string.
+-}
+warning : (Lang -> String) -> Lang -> String
+warning string lang =
+    "⚠️ " ++ string lang ++ " ⚠️"

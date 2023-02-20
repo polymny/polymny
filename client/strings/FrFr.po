@@ -1009,4 +1009,4 @@ msgstr "Voulez vous vraiment supprimer le projet"
 
 #. Delete project warning.
 msgid "Actions.Confirm.deleteProjectWarning"
-msgstr "Attention, supprimer un projet supprime toutes les capsules qui y sont liées ou vous désabonne de celles-ci !"
+msgstr "Attention, supprimer un projet supprime toutes les capsules qui y sont liées ou vous désabonne de celles-ci"
