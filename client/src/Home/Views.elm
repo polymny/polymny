@@ -26,7 +26,6 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
-import Home.Types as Home
 
 
 {-| This function returns the view of the home page.
@@ -147,7 +146,7 @@ table config user =
               }
             , { header = makeHeader (Strings.dataCapsuleAction lang 3)
               , width = Element.shrink
-              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i (actions lang x)
+              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i (actions lang x user)
               }
             ]
         }
@@ -213,46 +212,58 @@ name poc =
 
 {-| This functions returns the actions that can be done on a capsule.
 -}
-actions : Lang -> Poc -> Element App.Msg
-actions lang poc =
+actions : Lang -> Poc -> User -> Element App.Msg
+actions lang poc user =
     case poc of
         Project p ->
-            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
                 [ Ui.secondaryIcon []
                     { icon = Icons.add
                     , tooltip = Strings.actionsAddCapsule lang
                     , action = Ui.None
                     }
-                , Ui.secondaryIcon []
-                    { icon = Icons.drive_file_rename_outline
-                    , tooltip = Strings.actionsRenameProject lang
-                    , action = Ui.None
-                    }
-                , Ui.secondaryIcon []
-                    { icon = Icons.delete
-                    , tooltip = Strings.actionsDeleteProject lang
-                    , action = Ui.None
-                    }
                 ]
+                    ++ (if True then
+                            [ Ui.secondaryIcon []
+                                { icon = Icons.drive_file_rename_outline
+                                , tooltip = Strings.actionsRenameProject lang
+                                , action = Ui.None
+                                }
+                            , Ui.secondaryIcon []
+                                { icon = Icons.delete
+                                , tooltip = Strings.actionsDeleteProject lang
+                                , action = Ui.None
+                                }
+                            ]
+
+                        else
+                            []
+                       )
 
         Capsule c ->
-            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
                 [ Ui.secondaryIcon []
                     { icon = Icons.ios_share
                     , tooltip = Strings.actionsExportCapsule lang
                     , action = Ui.None
                     }
-                , Ui.secondaryIcon []
-                    { icon = Icons.drive_file_rename_outline
-                    , tooltip = Strings.actionsRenameCapsule lang
-                    , action = Ui.None
-                    }
-                , Ui.secondaryIcon []
-                    { icon = Icons.delete
-                    , tooltip = Strings.actionsDeleteCapsule lang
-                    , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
-                    }
                 ]
+                    ++ (if c.role == Data.Owner then
+                            [ Ui.secondaryIcon []
+                                { icon = Icons.drive_file_rename_outline
+                                , tooltip = Strings.actionsRenameCapsule lang
+                                , action = Ui.None
+                                }
+                            , Ui.secondaryIcon []
+                                { icon = Icons.delete
+                                , tooltip = Strings.actionsDeleteCapsule lang
+                                , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
+                                }
+                            ]
+
+                        else
+                            []
+                       )
 
 
 {-| This functions returns the progress bar of the capsule.

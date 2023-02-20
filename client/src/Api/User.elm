@@ -117,3 +117,14 @@ deleteAccount password toMsg =
         , body = Http.jsonBody <| Encode.object [ ( "current_password", Encode.string password ) ]
         , toMsg = toMsg
         }
+
+
+{-| Requests to delete a capsule.
+-}
+deleteCapsule : String -> (WebData () -> msg) -> Cmd msg
+deleteCapsule capsuleId toMsg =
+    Api.delete
+        { url = "/api/delete-capsule/" ++ capsuleId
+        , body = Http.emptyBody
+        , toMsg = toMsg
+        }

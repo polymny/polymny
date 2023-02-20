@@ -114,26 +114,34 @@ update msg model =
 
                 Options.DeleteTrack Utils.Confirm track ->
                     let
-                        capsule =
+                        new_capsule =
                             Data.removeTrack m.capsule
 
                         ( sync, newConfig ) =
-                            ( Api.updateCapsule capsule
-                                (\_ -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest (RemoteData.Success capsule)))
+                            ( Api.updateCapsule new_capsule
+                                (\_ ->
+                                    RemoteData.Success new_capsule
+                                        |> Options.CapsuleUpdate model.config.clientState.lastRequest
+                                        |> App.OptionsMsg
+                                )
                             , Config.incrementRequest model.config
                             )
                     in
                     ( { model
-                        | user = Data.updateUser capsule model.user
-                        , page = App.Options (Options.init capsule)
+                        | user = Data.updateUser new_capsule model.user
+                        , page = App.Options (Options.init new_capsule)
                         , config = newConfig
                       }
                     , sync
                     )
 
                 Options.TrackUpload (RemoteData.Success c) ->
-                    ( { model | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
-                    , user = Data.updateUser c model.user }, Cmd.none )
+                    ( { model
+                        | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
+                        , user = Data.updateUser c model.user
+                      }
+                    , Cmd.none
+                    )
 
                 Options.TrackUpload _ ->
                     ( model, Cmd.none )

@@ -15,6 +15,7 @@ port module Home.Updates exposing
 -}
 
 import Api.Capsule as Api
+import Api.User as Api
 import App.Types as App
 import Data.User as Data
 import File
@@ -22,7 +23,7 @@ import FileValue
 import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
-import RemoteData
+import RemoteData exposing (RemoteData)
 import Strings
 import Utils
 
@@ -82,25 +83,33 @@ update msg model =
                 Home.DeleteCapsule Utils.Cancel _ ->
                     ( { model | page = App.Home { m | deleteCapsule = Nothing } }, Cmd.none )
 
-                Home.DeleteCapsule Utils.Confirm track ->
-                    ( { model | page = App.Home { m | deleteCapsule = Nothing } }, Cmd.none )
+                Home.DeleteCapsule Utils.Confirm capsule ->
+                    let
+                        project =
+                            model.user.projects |> List.filter (\p -> p.name == capsule.project) |> List.head
 
-        -- let
-        --     capsule =
-        --         Data.removeCapsule m.capsule
-        --     ( sync, newConfig ) =
-        --         ( Api.updateCapsule capsule
-        --             (\_ -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest (RemoteData.Success capsule)))
-        --         , Config.incrementRequest model.config
-        --         )
-        -- in
-        -- ( { model
-        --     | user = Data.dele capsule model.user
-        --     , page = App.Options (Options.init capsule)
-        --     , config = newConfig
-        --   }
-        -- , sync
-        -- )
+                        new_project =
+                            case project of
+                                Just p ->
+                                    { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules }
+
+                                Nothing ->
+                                    { name = capsule.project, capsules = [], folded = False }
+
+                        user =
+                            model.user
+
+                        new_user =
+                            { user | projects = new_project :: List.filter (\p -> p.name /= capsule.project) model.user.projects }
+
+                        new_model =
+                            { model
+                                | user = new_user
+                                , page = App.Home { m | deleteCapsule = Nothing }
+                            }
+                    in
+                    ( new_model, Api.deleteCapsule capsule.id (\_ -> App.Noop) )
+
         _ ->
             ( model, Cmd.none )
 
