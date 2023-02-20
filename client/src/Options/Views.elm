@@ -387,10 +387,17 @@ generalOptions config model =
 
         -- Sound track remove button
         soundTrackRemove =
+            let
+                action = 
+                    if noTrack then
+                        Ui.None
+                    else
+                        Ui.Msg <| App.OptionsMsg  <| Options.DeleteTrack Utils.Request model.capsule.soundTrack
+            in
             Ui.secondaryIcon (disableAttrIf noTrack)
                 { icon = Material.Icons.delete
                 , tooltip = Strings.actionsDeleteTrack lang
-                , action = Ui.Msg (App.OptionsMsg (Options.DeleteTrack Utils.Request model.capsule.soundTrack))
+                , action = action
                 }
 
         -- Slider to control volume
@@ -427,16 +434,16 @@ generalOptions config model =
 
                 action =
                     if model.playPreview then
-                        App.Noop
+                        Ui.None
 
                     else
-                        App.OptionsMsg Options.Play
+                        Ui.Msg (App.OptionsMsg Options.Play)
             in
             Ui.secondaryIcon
                 attr
                 { icon = Material.Icons.play_arrow
                 , tooltip = Strings.stepsOptionsPlayPreview lang
-                , action = Ui.Msg action
+                , action = action
                 }
 
         -- Stop button
@@ -448,16 +455,16 @@ generalOptions config model =
 
                 action =
                     if model.playPreview then
-                        App.OptionsMsg Options.Stop
+                        Ui.Msg (App.OptionsMsg Options.Stop)
 
                     else
-                        App.Noop
+                        Ui.None
             in
             Ui.secondaryIcon
                 attr
                 { icon = Material.Icons.stop
                 , tooltip = Strings.stepsOptionsStopPreview lang
-                , action = Ui.Msg action
+                , action = action
                 }
 
         -- Preview hidden
@@ -498,11 +505,11 @@ deleteTrackConfirmPopup lang model s =
             [ Element.text (Lang.question Strings.actionsConfirmDeleteTrack lang) ]
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
-                { action = mkUiMsg (Options.DeleteTrack Utils.Cancel (Just s))
+                { action = mkUiMsg <| Options.DeleteTrack Utils.Cancel <| Just s
                 , label = Strings.uiCancel lang
                 }
             , Ui.primary []
-                { action = mkUiMsg (Options.DeleteTrack Utils.Confirm (Just s))
+                { action = mkUiMsg <| Options.DeleteTrack Utils.Confirm <| Just s
                 , label = Strings.uiConfirm lang
                 }
             ]
