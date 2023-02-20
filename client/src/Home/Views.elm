@@ -39,8 +39,8 @@ view config user model =
         -- Helper to create popup
         popup : Element App.Msg
         popup =
-            case model.deleteCapsule of
-                Just c ->
+            case ( model.deleteCapsule, model.deleteProject ) of
+                ( Just c, _ ) ->
                     let
                         isOwner =
                             c.role == Data.Owner
@@ -50,6 +50,9 @@ view config user model =
 
                     else
                         leaveCapsuleConfirmPopup lang c
+
+                ( _, Just p ) ->
+                    deleteProjectConfirmPopup lang p
 
                 _ ->
                     Element.none
@@ -242,7 +245,7 @@ actions lang poc user =
                 , Ui.secondaryIcon []
                     { icon = Icons.delete
                     , tooltip = Strings.actionsDeleteProject lang
-                    , action = Ui.None
+                    , action = Ui.Msg (App.HomeMsg (Home.DeleteProject Utils.Request p))
                     }
                 ]
 
@@ -519,6 +522,29 @@ leaveCapsuleConfirmPopup lang capsule =
             ]
         ]
         |> Ui.popup 1 (Strings.actionsLeaveCapsule lang)
+
+
+{-| Popup to confirm the project deletion.
+-}
+deleteProjectConfirmPopup : Lang -> Data.Project -> Element App.Msg
+deleteProjectConfirmPopup lang project =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteProjectWarning lang) ]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteProject lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteProject Utils.Cancel project)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteProject Utils.Confirm project)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteProject lang)
 
 
 {-| Easily creates the Ui.Msg for options msg.

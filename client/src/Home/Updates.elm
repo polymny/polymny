@@ -122,6 +122,28 @@ update msg model =
                             }
                     in
                     ( new_model, Api.deleteCapsule capsule (\_ -> App.Noop) )
+            
+                Home.DeleteProject Utils.Request project ->
+                    ( { model | page = App.Home { m | deleteProject = Just project } }, Cmd.none )
+                
+                Home.DeleteProject Utils.Cancel _ ->
+                    ( { model | page = App.Home { m | deleteProject = Nothing } }, Cmd.none )
+                
+                Home.DeleteProject Utils.Confirm project ->
+                    let
+                        user =
+                            model.user
+
+                        new_user =
+                            { user | projects = List.filter (\p -> p.name /= project.name) user.projects }
+                        
+                        new_model =
+                            { model
+                                | user = new_user
+                                , page = App.Home { m | deleteProject = Nothing }
+                            }
+                    in
+                    ( new_model, Api.deleteProject project.name (\_ -> App.Noop) )
 
         _ ->
             ( model, Cmd.none )

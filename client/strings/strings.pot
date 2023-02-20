@@ -955,3 +955,11 @@ msgstr ""
 #. Leave a capsule.
 msgid "Actions.leaveCapsule"
 msgstr ""
+
+#. Delete a project.
+msgid "Actions.Confirm.deleteProject"
+msgstr ""
+
+#. Delete project warning.
+msgid "Actions.Confirm.deleteProjectWarning"
+msgstr ""

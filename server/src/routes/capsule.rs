@@ -190,7 +190,7 @@ pub async fn delete_project(user: User, db: Db, config: &S<Config>, name: String
 
     for (capsule, role) in capsules {
         if role != Role::Owner {
-            continue;
+            leave_aux(&user, HashId(capsule.id), &db).await?;
         }
 
         if capsule.project != name {
@@ -1272,9 +1272,7 @@ pub async fn deinvite(user: User, id: HashId, db: Db, data: Json<Deinvite>) -> R
     Ok(())
 }
 
-/// Leaves a user from a capsule.
-#[post("/leave/<id>")]
-pub async fn leave(user: User, id: HashId, db: Db) -> Result<()> {
+pub async fn leave_aux(user: &User, id: HashId, db: &Db) -> Result<()> {
     let (capsule, role) = user
         .get_capsule_with_permission(*id, Role::Read, &db)
         .await?;
@@ -1286,6 +1284,12 @@ pub async fn leave(user: User, id: HashId, db: Db) -> Result<()> {
     capsule.remove_user(&user, &db).await?;
 
     Ok(())
+}
+
+/// Leaves a user from a capsule.
+#[post("/leave/<id>")]
+pub async fn leave(user: User, id: HashId, db: Db) -> Result<()> {
+    leave_aux(&user, id, &db).await
 }
 
 /// Update the capsule's track.

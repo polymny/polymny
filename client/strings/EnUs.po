@@ -991,3 +991,11 @@ msgstr "Do you really want to leave this capsule"
 #. Leave a capsule.
 msgid "Actions.leaveCapsule"
 msgstr "Leave capsule"
+
+#. Delete a project.
+msgid "Actions.Confirm.deleteProject"
+msgstr "Do you really want to delete this project"
+
+#. Delete project warning.
+msgid "Actions.Confirm.deleteProjectWarning"
+msgstr "Be careful, deleting a project will delete all its capsules or unsubscribe you from them!"

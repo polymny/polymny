@@ -24,14 +24,17 @@ type Msg
     | SlideUploadClicked
     | SlideUploadReceived (Maybe String) FileValue.File File.File
     | DeleteCapsule Utils.Confirmation Data.Capsule
+    | DeleteProject Utils.Confirmation Data.Project
 
 
 type alias Model =
     { deleteCapsule : Maybe Data.Capsule
+    , deleteProject : Maybe Data.Project
     }
 
 
 init : Model
 init =
     { deleteCapsule = Nothing
+    , deleteProject = Nothing
     }

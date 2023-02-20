@@ -144,3 +144,13 @@ deleteCapsule capsule toMsg =
             , body = Http.emptyBody
             , toMsg = toMsg
             }
+
+{-| Requests to delete a project.
+-}
+deleteProject : String -> (WebData () -> msg) -> Cmd msg
+deleteProject projectId toMsg =
+    Api.delete
+        { url = "/api/project/" ++ projectId
+        , body = Http.emptyBody
+        , toMsg = toMsg
+        }

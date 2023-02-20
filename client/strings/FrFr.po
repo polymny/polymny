@@ -1002,3 +1002,11 @@ msgstr "Voulez vous vraiment ne plus participer à la capsule"
 #. Leave a capsule.
 msgid "Actions.leaveCapsule"
 msgstr "Ne plus participer à la capsule"
+
+#. Delete a project.
+msgid "Actions.Confirm.deleteProject"
+msgstr "Voulez vous vraiment supprimer le projet"
+
+#. Delete project warning.
+msgid "Actions.Confirm.deleteProjectWarning"
+msgstr "Attention, supprimer un projet supprime toutes les capsules qui y sont liées ou vous désabonne de celles-ci !"
