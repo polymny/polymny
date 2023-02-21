@@ -1272,6 +1272,7 @@ pub async fn deinvite(user: User, id: HashId, db: Db, data: Json<Deinvite>) -> R
     Ok(())
 }
 
+/// Leaves a user from a capsule.
 pub async fn leave_aux(user: &User, id: HashId, db: &Db) -> Result<()> {
     let (capsule, role) = user
         .get_capsule_with_permission(*id, Role::Read, &db)
@@ -1286,7 +1287,7 @@ pub async fn leave_aux(user: &User, id: HashId, db: &Db) -> Result<()> {
     Ok(())
 }
 
-/// Leaves a user from a capsule.
+/// Routes to leave a user from a capsule.
 #[post("/leave/<id>")]
 pub async fn leave(user: User, id: HashId, db: Db) -> Result<()> {
     leave_aux(&user, id, &db).await
