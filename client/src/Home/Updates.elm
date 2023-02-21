@@ -276,6 +276,39 @@ update msg model =
                     in
                     ( { model | page = App.Home { m | popupType = Just (Home.RenameProjectPopup new_project) } }, Cmd.none )
 
+                Home.SortBy sort_key ->
+                    let
+                        sort_by =
+                            model.config.clientConfig.sortBy
+
+                        new_sort_by =
+                            let
+                                key =
+                                    sort_by.key
+
+                                ascending =
+                                    sort_by.ascending
+                            in
+                            if key == sort_key then
+                                { sort_by | ascending = not ascending }
+
+                            else
+                                { sort_by | key = sort_key }
+
+                        client_config =
+                            model.config.clientConfig
+
+                        new_client_config =
+                            { client_config | sortBy = new_sort_by }
+
+                        config =
+                            model.config
+
+                        new_config =
+                            { config | clientConfig = new_client_config }
+                    in
+                    ( { model | config = new_config }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 

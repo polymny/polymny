@@ -10,6 +10,7 @@ module Home.Types exposing
 -}
 
 import Data.Capsule as Data
+import Data.Types as Data
 import Data.User as Data
 import File
 import FileValue
@@ -29,6 +30,7 @@ type Msg
     | DeleteProject Utils.Confirmation Data.Project
     | RenameProject Utils.Confirmation Data.Project
     | ProjectNameChanged Data.Project String
+    | SortBy Data.SortKey
 
 
 type PopupType

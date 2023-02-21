@@ -1,6 +1,6 @@
 module Ui.Utils exposing
     ( ar, al, at, ab
-    , wf, wfp, wpx, hf, hfp, hpx
+    , w, wf, wfp, wpx, h, hf, hfp, hpx
     , s, pl, pr, pt, pb, py, px, p
     , bl, br, bt, bb, by, bx, b
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
@@ -19,7 +19,7 @@ module Ui.Utils exposing
 
 # Width and height aliases
 
-@docs wf, wfp, wpx, hf, hfp, hpx
+@docs w, wf, wfp, wpx, h, hf, hfp, hpx
 
 
 # Spacing and padding aliases
@@ -87,6 +87,13 @@ ab =
     Element.alignBottom
 
 
+{-| An alias for `Element.width (Element.px x)`.
+-}
+w : Int -> Element.Attribute msg
+w x =
+    Element.width (Element.px x)
+
+
 {-| An alias for `Element.width Element.fill`.
 -}
 wf : Element.Attribute msg
@@ -106,6 +113,13 @@ wfp x =
 wpx : Int -> Element.Attribute msg
 wpx x =
     Element.width (Element.px x)
+
+
+{-| An alias for `Element.height (Element.px x)`.
+-}
+h : Int -> Element.Attribute msg
+h x =
+    Element.height (Element.px x)
 
 
 {-| An alias for `Element.height Element.fill`.

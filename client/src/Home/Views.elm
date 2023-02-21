@@ -20,7 +20,7 @@ import Home.Types as Home
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
-import Strings
+import Strings exposing (actionsLeaveCapsule)
 import Time
 import TimeUtils
 import Ui.Colors as Colors
@@ -140,31 +140,37 @@ table config user =
                 , topLeft = 0
                 , topRight = 0
                 }
+
+        sortByName =
+            Just Data.Name
+
+        sortLastModified =
+            Just Data.LastModified
     in
     Element.indexedTable [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Border.rounded 20 ]
         { data = data
         , columns =
-            [ { header = makeHeader (Strings.dataProjectProjectName lang)
+            [ { header = makeHeader (Strings.dataProjectProjectName lang) config sortByName
               , width = Element.fill
               , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomLeft ] []) i (name x)
               }
-            , { header = makeHeader (Strings.dataCapsuleProgress lang)
+            , { header = makeHeader (Strings.dataCapsuleProgress lang) config Nothing
               , width = Element.shrink
               , view = \i x -> makeCell [] i (progress lang x)
               }
-            , { header = makeHeader ""
+            , { header = makeHeader "" config Nothing
               , width = Element.fill
               , view = \i x -> makeCell [] i (progressIcons config x)
               }
-            , { header = makeHeader (Strings.dataCapsuleRoleRole lang)
+            , { header = makeHeader (Strings.dataCapsuleRoleRole lang) config Nothing
               , width = Element.shrink
               , view = \i x -> makeCell [] i (role lang x)
               }
-            , { header = makeHeader (Strings.dataCapsuleLastModification lang)
+            , { header = makeHeader (Strings.dataCapsuleLastModification lang) config sortLastModified
               , width = Element.shrink
               , view = \i x -> makeCell [] i (lastModified lang zone x)
               }
-            , { header = makeHeader (Strings.dataCapsuleAction lang 3)
+            , { header = makeHeader (Strings.dataCapsuleAction lang 3) config Nothing
               , width = Element.shrink
               , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i (actions lang x user)
               }
@@ -174,9 +180,51 @@ table config user =
 
 {-| This functions transforms a text into a header element.
 -}
-makeHeader : String -> Element App.Msg
-makeHeader text =
-    Element.el [ Ui.p 10, Font.bold ] (Element.text text)
+makeHeader : String -> Config -> Maybe Data.SortKey -> Element App.Msg
+makeHeader text config key =
+    let
+        cur_key =
+            config.clientConfig.sortBy.key
+
+        cur_ascending =
+            config.clientConfig.sortBy.ascending
+
+        action =
+            case key of
+                Just k ->
+                    Ui.Msg <|
+                        App.ConfigMsg <|
+                            Config.SortByChanged <|
+                                { key = k
+                                , ascending =
+                                    if cur_key == k then
+                                        not cur_ascending
+
+                                    else
+                                        cur_ascending
+                                }
+
+                Nothing ->
+                    Ui.Msg App.Noop
+
+        icon =
+            case key of
+                Just k ->
+                    if cur_key == k then
+                        Ui.icon 24 (Utils.tern cur_ascending Icons.arrow_drop_down Icons.arrow_drop_up)
+
+                    else
+                        Ui.icon 24 Icons.arrow_right
+
+                Nothing ->
+                    -- Element.el [ Ui.w 24, Ui.h 24 ] Element.none
+                    Element.none
+    in
+    Ui.navigationElement action [] <|
+        Element.row [ Ui.p 10, Font.bold ]
+            [ Element.el [] icon
+            , Element.text text
+            ]
 
 
 {-| This functions transforms an element into a table cell.
