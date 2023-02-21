@@ -1,6 +1,6 @@
 module Home.Types exposing
     ( Msg(..)
-    , Model, init
+    , Model, PopupType(..), init
     )
 
 {-| This module contains the types required for the home page.
@@ -24,17 +24,26 @@ type Msg
     | SlideUploadClicked
     | SlideUploadReceived (Maybe String) FileValue.File File.File
     | DeleteCapsule Utils.Confirmation Data.Capsule
+    | RenameCapsule Utils.Confirmation Data.Capsule
+    | CapsuleNameChanged Data.Capsule String
     | DeleteProject Utils.Confirmation Data.Project
+    | RenameProject Utils.Confirmation Data.Project
+    | ProjectNameChanged Data.Project String
+
+
+type PopupType
+    = DeleteCapsulePopup Data.Capsule
+    | RenameCapsulePopup Data.Capsule
+    | DeleteProjectPopup Data.Project
+    | RenameProjectPopup Data.Project
 
 
 type alias Model =
-    { deleteCapsule : Maybe Data.Capsule
-    , deleteProject : Maybe Data.Project
+    { popupType : Maybe PopupType
     }
 
 
 init : Model
 init =
-    { deleteCapsule = Nothing
-    , deleteProject = Nothing
+    { popupType = Nothing
     }

@@ -15,6 +15,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input exposing (Placeholder)
 import Home.Types as Home
 import Lang exposing (Lang)
 import Material.Icons as Icons
@@ -39,20 +40,28 @@ view config user model =
         -- Helper to create popup
         popup : Element App.Msg
         popup =
-            case ( model.deleteCapsule, model.deleteProject ) of
-                ( Just c, _ ) ->
-                    let
-                        isOwner =
-                            c.role == Data.Owner
-                    in
-                    if isOwner then
-                        deleteCapsuleConfirmPopup lang c
+            case model.popupType of
+                Just pt ->
+                    case pt of
+                        Home.DeleteCapsulePopup c ->
+                            let
+                                isOwner =
+                                    c.role == Data.Owner
+                            in
+                            if isOwner then
+                                deleteCapsuleConfirmPopup lang c
 
-                    else
-                        leaveCapsuleConfirmPopup lang c
+                            else
+                                leaveCapsuleConfirmPopup lang c
 
-                ( _, Just p ) ->
-                    deleteProjectConfirmPopup lang p
+                        Home.RenameCapsulePopup c ->
+                            renameCapsulePopup lang c
+
+                        Home.DeleteProjectPopup p ->
+                            deleteProjectConfirmPopup lang p
+
+                        Home.RenameProjectPopup p ->
+                            renameProjectPopup lang p
 
                 _ ->
                     Element.none
@@ -227,17 +236,21 @@ actions : Lang -> Poc -> User -> Element App.Msg
 actions lang poc user =
     case poc of
         Project p ->
+            let
+                isWriter =
+                    List.any (\c -> c.role == Data.Write || c.role == Data.Owner) p.capsules
+            in
             Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
                 [ Ui.secondaryIcon []
                     { icon = Icons.add
                     , tooltip = Strings.actionsAddCapsule lang
                     , action = Ui.None
                     }
-                , if True then
+                , if isWriter then
                     Ui.secondaryIcon []
                         { icon = Icons.drive_file_rename_outline
                         , tooltip = Strings.actionsRenameProject lang
-                        , action = Ui.None
+                        , action = Ui.Msg (App.HomeMsg (Home.RenameProject Utils.Request p))
                         }
 
                   else
@@ -253,6 +266,9 @@ actions lang poc user =
             let
                 isOwner =
                     c.role == Data.Owner
+
+                isWriter =
+                    c.role == Data.Write || isOwner
             in
             Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
                 [ Ui.secondaryIcon []
@@ -260,11 +276,11 @@ actions lang poc user =
                     , tooltip = Strings.actionsExportCapsule lang
                     , action = Ui.None
                     }
-                , if isOwner then
+                , if isWriter then
                     Ui.secondaryIcon []
                         { icon = Icons.drive_file_rename_outline
                         , tooltip = Strings.actionsRenameCapsule lang
-                        , action = Ui.None
+                        , action = Ui.Msg (App.HomeMsg (Home.RenameCapsule Utils.Request c))
                         }
 
                   else
@@ -524,13 +540,43 @@ leaveCapsuleConfirmPopup lang capsule =
         |> Ui.popup 1 (Strings.actionsLeaveCapsule lang)
 
 
+{-| Popup to rename a capsule.
+-}
+renameCapsulePopup : Lang -> Data.Capsule -> Element App.Msg
+renameCapsulePopup lang capsule =
+    let
+        name_input =
+            Element.Input.text
+                []
+                { onChange = \x -> App.HomeMsg (Home.CapsuleNameChanged capsule x)
+                , text = capsule.name
+                , placeholder = Nothing
+                , label = Element.Input.labelAbove [] (Ui.title (Strings.dataCapsuleCapsuleName lang))
+                }
+    in
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ name_input
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.RenameCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.RenameCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsRenameCapsule lang)
+
+
 {-| Popup to confirm the project deletion.
 -}
 deleteProjectConfirmPopup : Lang -> Data.Project -> Element App.Msg
 deleteProjectConfirmPopup lang project =
     Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
         [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
-            [ Element.text (Lang.warning Strings.uiWarning lang)]
+            [ Element.text (Lang.warning Strings.uiWarning lang) ]
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Strings.actionsConfirmDeleteProjectWarning lang) ]
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
@@ -547,6 +593,36 @@ deleteProjectConfirmPopup lang project =
             ]
         ]
         |> Ui.popup 1 (Strings.actionsDeleteProject lang)
+
+
+{-| Renames a project.
+-}
+renameProjectPopup : Lang -> Data.Project -> Element App.Msg
+renameProjectPopup lang project =
+    let
+        name_input =
+            Element.Input.text
+                []
+                { onChange = \x -> App.HomeMsg (Home.ProjectNameChanged project x)
+                , text = project.name
+                , placeholder = Nothing
+                , label = Element.Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName lang))
+                }
+    in
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ name_input
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.RenameProject Utils.Cancel project)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.RenameProject Utils.Confirm project)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsRenameProject lang)
 
 
 {-| Easily creates the Ui.Msg for options msg.
