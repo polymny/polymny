@@ -301,7 +301,7 @@ actions lang poc user =
                             Icons.delete
 
                         else
-                            Icons.door_back
+                            Icons.logout
                     , tooltip =
                         if isOwner then
                             Strings.actionsDeleteCapsule lang
