@@ -234,6 +234,21 @@ name poc =
 -}
 actions : Lang -> Poc -> User -> Element App.Msg
 actions lang poc user =
+    let
+        -- Attributes to show things as disabled
+        disableAttr : List (Element.Attribute App.Msg)
+        disableAttr =
+            [ Font.color Colors.greyFontDisabled ]
+
+        -- Gives disable attributes if element is disabled
+        disableAttrIf : Bool -> List (Element.Attribute App.Msg)
+        disableAttrIf disabled =
+            if disabled then
+                disableAttr
+
+            else
+                []
+    in
     case poc of
         Project p ->
             let
@@ -246,15 +261,16 @@ actions lang poc user =
                     , tooltip = Strings.actionsAddCapsule lang
                     , action = Ui.None
                     }
-                , if isWriter then
-                    Ui.secondaryIcon []
-                        { icon = Icons.drive_file_rename_outline
-                        , tooltip = Strings.actionsRenameProject lang
-                        , action = Ui.Msg (App.HomeMsg (Home.RenameProject Utils.Request p))
-                        }
+                , Ui.secondaryIcon (disableAttrIf (not isWriter))
+                    { icon = Icons.drive_file_rename_outline
+                    , tooltip = Strings.actionsRenameProject lang
+                    , action =
+                        if isWriter then
+                            Ui.Msg (App.HomeMsg (Home.RenameProject Utils.Request p))
 
-                  else
-                    Element.none
+                        else
+                            Ui.None
+                    }
                 , Ui.secondaryIcon []
                     { icon = Icons.delete
                     , tooltip = Strings.actionsDeleteProject lang
@@ -276,15 +292,16 @@ actions lang poc user =
                     , tooltip = Strings.actionsExportCapsule lang
                     , action = Ui.None
                     }
-                , if isWriter then
-                    Ui.secondaryIcon []
-                        { icon = Icons.drive_file_rename_outline
-                        , tooltip = Strings.actionsRenameCapsule lang
-                        , action = Ui.Msg (App.HomeMsg (Home.RenameCapsule Utils.Request c))
-                        }
+                , Ui.secondaryIcon (disableAttrIf (not isWriter))
+                    { icon = Icons.drive_file_rename_outline
+                    , tooltip = Strings.actionsRenameCapsule lang
+                    , action =
+                        if isWriter then
+                            Ui.Msg (App.HomeMsg (Home.RenameCapsule Utils.Request c))
 
-                  else
-                    Element.none
+                        else
+                            Ui.None
+                    }
                 , Ui.secondaryIcon []
                     { icon =
                         if isOwner then
@@ -611,6 +628,10 @@ renameProjectPopup lang project =
     in
     Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
         [ name_input
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.warning Strings.uiWarning lang) ]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Strings.actionsConfirmRenameProjectWarning lang) ]
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.RenameProject Utils.Cancel project)

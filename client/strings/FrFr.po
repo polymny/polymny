@@ -1014,3 +1014,7 @@ msgstr "Supprimer un projet supprime toutes les capsules qui y sont liées ou vo
 #. Warning.
 msgid "Ui.warning"
 msgstr "Attention"
+
+#. Rename project warning.
+msgid "Actions.Confirm.renameProjectWarning"
+msgstr "Renommer un projet renomme toutes les capsules qui y sont liées dont vous avez le droit de modification."

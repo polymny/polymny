@@ -967,3 +967,7 @@ msgstr ""
 #. Warning.
 msgid "Ui.warning"
 msgstr ""
+
+#. Rename project warning.
+msgid "Actions.Confirm.renameProjectWarning"
+msgstr ""
