@@ -262,8 +262,15 @@ update msg model =
                                             )
                             in
                             { user | projects = projects }
+
+                        new_model =
+                            if prev_project_name == project.name then
+                                { model | page = App.Home { m | popupType = Nothing } }
+
+                            else
+                                { model | user = new_user, page = App.Home { m | popupType = Nothing } }
                     in
-                    ( { model | user = new_user, page = App.Home { m | popupType = Nothing } }
+                    ( new_model
                     , capsules_write
                         |> List.map (\c -> Api.updateCapsule c (\_ -> App.Noop))
                         |> Cmd.batch
