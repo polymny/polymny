@@ -15,6 +15,7 @@ import Element.Border as Border
 import Element.Input as Input
 import NewCapsule.Types as NewCapsule
 import RemoteData
+import Route exposing (Route)
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -63,7 +64,7 @@ view config user model =
                 ( RemoteData.Success _, ( _, RemoteData.NotAsked ) ) ->
                     Element.row [ Ui.wf, Element.spacing 10 ]
                         [ Ui.secondary []
-                            { action = Ui.Msg (App.NewCapsuleMsg NewCapsule.Cancel)
+                            { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Cancel
                             , label = Strings.uiCancel config.clientState.lang
                             }
                         , Ui.secondary [ Element.alignRight ]

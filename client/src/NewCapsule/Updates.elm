@@ -7,9 +7,11 @@ module NewCapsule.Updates exposing (update)
 -}
 
 import Api.Capsule as Api
+import Api.User as Api
 import App.Types as App
 import Data.Capsule as Data
 import Data.User as Data
+import Home.Types as Home
 import NewCapsule.Types as NewCapsule
 import RemoteData
 import Route exposing (Route)
@@ -85,7 +87,17 @@ update msg model =
             ( model, RemoteData.map (\( x, _ ) -> updateCapsule nextPage x) m.slideUpload |> RemoteData.withDefault Cmd.none )
 
         ( App.NewCapsule m, NewCapsule.Cancel ) ->
-            ( model, Cmd.none )
+            case m.slideUpload of
+                RemoteData.Success ( c, _ ) ->
+                    ( { model
+                        | user = Data.deleteCapsule c model.user
+                        , page = App.Home Home.init
+                      }
+                    , Api.deleteCapsule c (\_ -> App.Noop)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
