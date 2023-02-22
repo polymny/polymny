@@ -1,8 +1,8 @@
-module Data.User exposing (User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing (User, decodeUser, isPremium, addCapsule, updateUser, sortProjects, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, addCapsule, updateUser, sortProjects, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
 
 -}
 
@@ -128,7 +128,7 @@ compareProject { key, ascending } aInput bInput =
     in
     case key of
         Data.Name ->
-            compare aInput.name bInput.name
+            compare a.name b.name
 
         Data.LastModified ->
             compare
