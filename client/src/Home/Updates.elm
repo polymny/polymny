@@ -39,10 +39,10 @@ update msg model =
                 Home.Toggle p ->
                     ( { model | user = Data.toggleProject p model.user }, Cmd.none )
 
-                Home.SlideUploadClicked ->
+                Home.SlideUploadClicked project_name ->
                     ( model
                     , Utils.tern (Data.isPremium model.user) [ "application/pdf", "application/zip" ] [ "application/pdf" ]
-                        |> select Nothing
+                        |> select project_name
                     )
 
                 Home.SlideUploadReceived project fileValue file ->
@@ -322,9 +322,9 @@ update msg model =
 
 {-| Port to ask to select a file.
 -}
-select : Maybe Data.Project -> List String -> Cmd msg
+select : Maybe String -> List String -> Cmd msg
 select project mimeTypesAllowed =
-    selectPort ( Maybe.map .name project, mimeTypesAllowed )
+    selectPort ( project, mimeTypesAllowed )
 
 
 {-| Port to ask to select a file.

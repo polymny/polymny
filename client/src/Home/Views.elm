@@ -85,7 +85,7 @@ leftColumn config user =
         uploadSlidesButton =
             Ui.primary [ Ui.wf ]
                 { label = Strings.stepsPreparationSelectPdf config.clientState.lang
-                , action = Ui.Msg (App.HomeMsg Home.SlideUploadClicked)
+                , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked Nothing
                 }
     in
     Element.column
@@ -292,7 +292,7 @@ actions lang poc user =
                 [ Ui.secondaryIcon []
                     { icon = Icons.add
                     , tooltip = Strings.actionsAddCapsule lang
-                    , action = Ui.None
+                    , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked <| Just p.name
                     }
                 , if isWriter then
                     Ui.secondaryIcon []
