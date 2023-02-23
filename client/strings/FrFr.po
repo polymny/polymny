@@ -959,6 +959,14 @@ msgstr "Voulez vous vraiment supprimer la musique de fond"
 msgid "Actions.deleteTrack"
 msgstr "Supprimer la musique de fond"
 
-#. volume of the sound track.
+#. Volume of the sound track.
 msgid "Steps.Options.volume"
 msgstr "Volume de la musique de fond"
+
+#. Play sound track preview.
+msgid "Steps.Options.playPreview"
+msgstr "Jouer un aperçu de la musique de fond"
+
+#. Stop sound track preview.
+msgid "Steps.Options.stopPreview"
+msgstr "Arrêter l'aperçu"

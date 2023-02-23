@@ -26,6 +26,8 @@ type Msg
     | TrackUpload (WebData Data.Capsule)
     | CapsuleUpdate Int (RemoteData.WebData Capsule)
     | SetVolume Float
+    | Play
+    | Stop
 
 
 {-| The model for the Option module.
@@ -35,6 +37,7 @@ type alias Model =
     , webcamPosition : ( Float, Float )
     , deleteTrack : Maybe Data.SoundTrack
     , capsuleUpdate : RemoteData.WebData Capsule
+    , playPreview : Bool
     }
 
 
@@ -44,4 +47,5 @@ init capsule =
     , webcamPosition = ( 0, 0 )
     , deleteTrack = Nothing
     , capsuleUpdate = RemoteData.NotAsked
+    , playPreview = False
     }

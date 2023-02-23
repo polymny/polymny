@@ -912,6 +912,14 @@ msgstr ""
 msgid "Actions.deleteTrack"
 msgstr ""
 
-#. volume of the sound track.
+#. Volume of the sound track.
 msgid "Steps.Options.volume"
+msgstr ""
+
+#. Play sound track preview.
+msgid "Steps.Options.playPreview"
+msgstr ""
+
+#. Stop sound track preview.
+msgid "Steps.Options.stopPreview"
 msgstr ""

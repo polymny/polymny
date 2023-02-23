@@ -8,7 +8,7 @@ import Data.User as Data
 import File
 import FileValue
 import Json.Decode as Decode
-import Options.Types as Options
+import Options.Types as Options exposing (init)
 import RemoteData
 import Utils
 
@@ -132,8 +132,12 @@ update msg model =
                     )
 
                 Options.TrackUpload (RemoteData.Success c) ->
-                    ( { model | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
-                    , user = Data.updateUser c model.user }, Cmd.none )
+                    ( { model
+                        | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
+                        , user = Data.updateUser c model.user
+                      }
+                    , Cmd.none
+                    )
 
                 Options.TrackUpload _ ->
                     ( model, Cmd.none )
@@ -159,6 +163,32 @@ update msg model =
                                     Nothing
                     in
                     updateModelSoundTrack newSoundTrack model m
+
+                Options.Play ->
+                    case m.capsule.soundTrack of
+                        Just _ ->
+                            let
+                                track_path =
+                                    Data.trackPath m.capsule
+
+                                record_path =
+                                    Data.firstRecordPath m.capsule
+
+                                volume =
+                                    case m.capsule.soundTrack of
+                                        Just st ->
+                                            st.volume
+
+                                        Nothing ->
+                                            1.0
+                            in
+                            ( { model | page = App.Options { m | playPreview = True } }, playTrackPreviewPort ( track_path, record_path, volume ) )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Options.Stop ->
+                    ( { model | page = App.Options { m | playPreview = False } }, stopTrackPreviewPort () )
 
         _ ->
             ( model, Cmd.none )
@@ -198,8 +228,31 @@ updateModelSoundTrack sound_track model m =
             Data.updateUser newCapsule model.user
     in
     ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
-    , Api.updateCapsule newCapsule (\_ -> App.Noop)
+    , Cmd.batch
+        [ Api.updateCapsule newCapsule (\_ -> App.Noop)
+        , volumeChangedPort (Maybe.withDefault 1.0 (Maybe.map .volume sound_track))
+        ]
     )
+
+
+{-| Play the sound track.
+-}
+port playTrackPreviewPort : ( Maybe String, Maybe String, Float ) -> Cmd msg
+
+
+{-| Stop the sound track.
+-}
+port stopTrackPreviewPort : () -> Cmd msg
+
+
+{-| Volume changed.
+-}
+port volumeChangedPort : Float -> Cmd msg
+
+
+{-| Subscription to record ended.
+-}
+port recordEnded : (Decode.Value -> msg) -> Sub msg
 
 
 {-| Subscription to select a file.
@@ -223,12 +276,15 @@ port selectedTrack : (Decode.Value -> msg) -> Sub msg
 -}
 subs : Sub App.Msg
 subs =
-    selectedTrack
-        (\x ->
-            case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
-                ( Ok y, Ok z ) ->
-                    App.OptionsMsg (Options.TrackUploadReceived y z)
+    Sub.batch
+        [ selectedTrack
+            (\x ->
+                case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
+                    ( Ok y, Ok z ) ->
+                        App.OptionsMsg (Options.TrackUploadReceived y z)
 
-                _ ->
-                    App.Noop
-        )
+                    _ ->
+                        App.Noop
+            )
+        , recordEnded (\_ -> App.OptionsMsg Options.Stop)
+        ]

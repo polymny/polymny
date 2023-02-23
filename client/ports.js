@@ -46,6 +46,12 @@ function init(node, flags) {
     // The id of the video element.
     const videoId = "video";
 
+    // The audio and video for the level checks when adding soundtracks.
+    let soundtrackCheck = {
+        audio: null,
+        video: null,
+    };
+
     // List of possible resolutions for devices.
     const quickScan = [
         { "width": 1920, "height": 1080 }, { "width": 1280, "height":  720 }, { "width":  800, "height":  600 },
@@ -82,7 +88,7 @@ function init(node, flags) {
 
     // Make setTimeout with async/await.
     function sleep(duration) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function(resolve, _reject) {
             setTimeout(resolve, duration);
         })
     }
@@ -697,6 +703,61 @@ function init(node, flags) {
             app.ports.selectedTrack.send(e.target.files[0]);
         };
         input.click();
+    });
+
+    // Play sound track.
+    makePort("playTrackPreview", function(args) {
+        // Extract args.
+        let trackPath = args[0];
+        let recordPath = args[1];
+        let volume = args[2];
+
+        // Nothing to do if no track.
+        if (trackPath === null) {
+            return;
+        }
+
+        // Play track.
+        soundtrackCheck.audio = new Audio();
+        soundtrackCheck.audio.src = trackPath;
+        soundtrackCheck.audio.autoplay = true;
+        soundtrackCheck.audio.hidden = true;
+        soundtrackCheck.audio.loop = true;
+        soundtrackCheck.audio.volume = volume;
+
+        // Track only if no record.
+        if (recordPath === null) {
+            return;
+        }
+
+        // Play record.
+        soundtrackCheck.video = document.createElement('video');
+        soundtrackCheck.video.src = recordPath;
+        soundtrackCheck.video.autoplay = true;
+        soundtrackCheck.video.hidden = true;
+        soundtrackCheck.video.addEventListener('ended', () => {
+            app.ports.recordEnded.send();
+        });
+    });
+
+    // Stop sound track.
+    makePort("stopTrackPreview", function() {
+        if (soundtrackCheck.audio !== null) {
+            soundtrackCheck.audio.pause();
+            soundtrackCheck.audio.currentTime = 0;
+        }
+
+        if (soundtrackCheck.video !== null) {
+            soundtrackCheck.video.pause();
+            soundtrackCheck.video.currentTime = 0;
+        }
+    });
+
+    // Volume changed.
+    makePort("volumeChanged", function(volume) {
+        if (soundtrackCheck.audio !== null) {
+            soundtrackCheck.audio.volume = volume;
+        }
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));

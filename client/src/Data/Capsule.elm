@@ -7,7 +7,7 @@ module Data.Capsule exposing
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
     , decodeEventType, decodeAnchor, decodeSlide, decodePair
-    , SoundTrack, removeTrack
+    , SoundTrack, firstRecordPath, removeTrack, trackPath, trackPreviewPath
     )
 
 {-| This module contains all the data related to capsules.
@@ -189,7 +189,24 @@ recordPath capsule gos =
         Just r ->
             Just <| assetPath capsule (r.uuid ++ ".webm")
 
-        _ ->
+        Nothing ->
+            Nothing
+
+
+{-| Returns the path of the first record of a capsule.
+-}
+firstRecordPath : Capsule -> Maybe String
+firstRecordPath capsule =
+    case capsule.structure of
+        gos :: goss ->
+            case gos.record of
+                Just r ->
+                    Just <| assetPath capsule (r.uuid ++ ".webm")
+
+                Nothing ->
+                    firstRecordPath { capsule | structure = goss }
+
+        [] ->
             Nothing
 
 
@@ -205,6 +222,36 @@ videoPath capsule =
 
     else
         Nothing
+
+
+{-| Returns the path to the track of a capsule.
+
+Returns Nothing if the capsule doesn't have a track.
+
+-}
+trackPath : Capsule -> Maybe String
+trackPath capsule =
+    case capsule.soundTrack of
+        Just track ->
+            Just <| assetPath capsule (track.uuid ++ ".m4a")
+
+        _ ->
+            Nothing
+
+
+{-| Returns the path to the track preview of a capsule.
+
+Returns Nothing if the capsule doesn't have a track.
+
+-}
+trackPreviewPath : Capsule -> Maybe String
+trackPreviewPath capsule =
+    case capsule.soundTrack of
+        Just track ->
+            Just <| assetPath capsule "trackPreview.m4a"
+
+        _ ->
+            Nothing
 
 
 {-| Returns the path to a specific gos that has been produced independantly from the video.

@@ -6,8 +6,10 @@ import Data.Capsule as Data
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html exposing (audio)
 import Html.Attributes
 import Lang exposing (Lang)
 import List exposing (map)
@@ -339,7 +341,7 @@ generalOptions config model =
                     0.0
 
         -- Whether the user can control the volume
-        volumeDisabled =
+        noTrack =
             model.capsule.soundTrack == Nothing
 
         --- UI ELEMENTS ---
@@ -374,18 +376,25 @@ generalOptions config model =
 
         -- Sound track remove button
         soundTrackRemove =
-            Ui.primaryIcon []
+            let
+                action =
+                    if noTrack then
+                        Ui.None
+
+                    else
+                        Ui.Msg <| App.OptionsMsg <| Options.DeleteTrack Utils.Request model.capsule.soundTrack
+            in
+            Ui.secondaryIcon (disableAttrIf noTrack)
                 { icon = Material.Icons.delete
                 , tooltip = Strings.actionsDeleteTrack lang
-                , action = Ui.Msg (App.OptionsMsg (Options.DeleteTrack Utils.Request model.capsule.soundTrack))
+                , action = action
                 }
 
         -- Slider to control volume
         volumeSlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
-                  disableIf volumeDisabled
-                    Input.slider
+                  Input.slider
                     [ Element.behindContent <| Element.el [ Ui.wf, Ui.hpx 2, Ui.cy, Background.color Colors.greyBorder ] Element.none
                     ]
                     { onChange = \x -> App.OptionsMsg <| Options.SetVolume x
@@ -403,19 +412,72 @@ generalOptions config model =
                     |> String.fromInt
                     |> (\x -> x ++ "%")
                     |> Element.text
-                    |> Element.el (Ui.wfp 1 :: Ui.ab :: disableAttrIf volumeDisabled)
+                    |> Element.el [ Ui.wfp 1, Ui.ab ]
                 ]
+
+        -- Play button
+        playButton : Element App.Msg
+        playButton =
+            let
+                attr =
+                    disableAttrIf model.playPreview
+
+                action =
+                    if model.playPreview then
+                        Ui.None
+
+                    else
+                        Ui.Msg (App.OptionsMsg Options.Play)
+            in
+            Ui.secondaryIcon
+                attr
+                { icon = Material.Icons.play_arrow
+                , tooltip = Strings.stepsOptionsPlayPreview lang
+                , action = action
+                }
+
+        -- Stop button
+        stopButton : Element App.Msg
+        stopButton =
+            let
+                attr =
+                    disableAttrIf (not model.playPreview)
+
+                action =
+                    if model.playPreview then
+                        Ui.Msg (App.OptionsMsg Options.Stop)
+
+                    else
+                        Ui.None
+            in
+            Ui.secondaryIcon
+                attr
+                { icon = Material.Icons.stop
+                , tooltip = Strings.stepsOptionsStopPreview lang
+                , action = action
+                }
     in
     Element.column [ Ui.wfp 1, Ui.s 30, Ui.at ]
         [ Element.column [ Ui.s 10 ]
-            [ soundTrackTitle
-            , Element.row [ Ui.s 10 ]
+            ([ soundTrackTitle
+             , Element.row [ Ui.s 10 ]
                 [ soundTrackName
                 , soundTrackUpload
                 , soundTrackRemove
                 ]
-            , volumeSlider
-            ]
+             ]
+                ++ (if noTrack then
+                        []
+
+                    else
+                        [ volumeSlider
+                        , Element.row [ Ui.s 10 ]
+                            [ playButton
+                            , stopButton
+                            ]
+                        ]
+                   )
+            )
         ]
 
 
@@ -428,11 +490,11 @@ deleteTrackConfirmPopup lang model s =
             [ Element.text (Lang.question Strings.actionsConfirmDeleteTrack lang) ]
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
-                { action = mkUiMsg (Options.DeleteTrack Utils.Cancel (Just s))
+                { action = mkUiMsg <| Options.DeleteTrack Utils.Cancel <| Just s
                 , label = Strings.uiCancel lang
                 }
             , Ui.primary []
-                { action = mkUiMsg (Options.DeleteTrack Utils.Confirm (Just s))
+                { action = mkUiMsg <| Options.DeleteTrack Utils.Confirm <| Just s
                 , label = Strings.uiConfirm lang
                 }
             ]
