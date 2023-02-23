@@ -12,8 +12,8 @@ import Api.User as Api
 import App.Types as App
 import App.Utils as App
 import Browser.Navigation
-import Data.User as Data
 import Config
+import Data.User as Data
 import Device
 import Home.Updates as Home
 import NewCapsule.Updates as NewCapsule
@@ -104,6 +104,18 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
+        -- We check if the user exited the options page, in which case we should stop the playing of the soundtrack.
+        stopSoundtrackCmd =
+            case ( model.page, updatedModel.page ) of
+                ( _, App.Options _ ) ->
+                    Cmd.none
+
+                ( App.Options m, _ ) ->
+                    Options.stopTrackPreviewPort ()
+
+                _ ->
+                    Cmd.none
+
         ( updatedModel, updatedCmd ) =
             case msg of
                 App.Noop ->
@@ -181,7 +193,7 @@ updateModel msg model =
                     , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
                     )
     in
-    ( updatedModel, Cmd.batch [ updatedCmd, unbindDevice ] )
+    ( updatedModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, unbindDevice ] )
 
 
 {-| Returns the subscriptions of the app.

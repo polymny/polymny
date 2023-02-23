@@ -48,8 +48,8 @@ function init(node, flags) {
 
     // The audio and video for the level checks when adding soundtracks.
     let soundtrackCheck = {
-        audio: null,
-        video: null,
+        audio: new Audio(),
+        video: document.createElement('video'),
     };
 
     // List of possible resolutions for devices.
@@ -718,7 +718,6 @@ function init(node, flags) {
         }
 
         // Play track.
-        soundtrackCheck.audio = new Audio();
         soundtrackCheck.audio.src = trackPath;
         soundtrackCheck.audio.autoplay = true;
         soundtrackCheck.audio.hidden = true;
@@ -731,26 +730,23 @@ function init(node, flags) {
         }
 
         // Play record.
-        soundtrackCheck.video = document.createElement('video');
         soundtrackCheck.video.src = recordPath;
         soundtrackCheck.video.autoplay = true;
         soundtrackCheck.video.hidden = true;
         soundtrackCheck.video.addEventListener('ended', () => {
+            sountrackCheck.audio.pause();
+            sountrackCheck.audio.currentTime = 0;
             app.ports.recordEnded.send();
         });
     });
 
     // Stop sound track.
     makePort("stopTrackPreview", function() {
-        if (soundtrackCheck.audio !== null) {
-            soundtrackCheck.audio.pause();
-            soundtrackCheck.audio.currentTime = 0;
-        }
+        soundtrackCheck.audio.pause();
+        soundtrackCheck.audio.currentTime = 0;
 
-        if (soundtrackCheck.video !== null) {
-            soundtrackCheck.video.pause();
-            soundtrackCheck.video.currentTime = 0;
-        }
+        soundtrackCheck.video.pause();
+        soundtrackCheck.video.currentTime = 0;
     });
 
     // Volume changed.
