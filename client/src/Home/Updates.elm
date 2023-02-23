@@ -39,10 +39,10 @@ update msg model =
                 Home.Toggle p ->
                     ( { model | user = Data.toggleProject p model.user }, Cmd.none )
 
-                Home.SlideUploadClicked project_name ->
+                Home.SlideUploadClicked projectName ->
                     ( model
                     , Utils.tern (Data.isPremium model.user) [ "application/pdf", "application/zip" ] [ "application/pdf" ]
-                        |> select project_name
+                        |> select projectName
                     )
 
                 Home.SlideUploadReceived project fileValue file ->
@@ -89,7 +89,7 @@ update msg model =
                         project =
                             model.user.projects |> List.filter (\p -> p.name == capsule.project) |> List.head
 
-                        new_project =
+                        newProject =
                             case project of
                                 Just p ->
                                     { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules }
@@ -101,28 +101,28 @@ update msg model =
                         user =
                             model.user
 
-                        new_user =
+                        newUser =
                             let
                                 projects =
                                     user.projects
                                         |> List.filter (\p -> p.name /= capsule.project)
                                         |> List.append
-                                            (if new_project.capsules == [] then
+                                            (if newProject.capsules == [] then
                                                 []
 
                                              else
-                                                [ new_project ]
+                                                [ newProject ]
                                             )
                             in
                             { user | projects = projects }
 
-                        new_model =
+                        newModel =
                             { model
-                                | user = new_user
+                                | user = newUser
                                 , page = App.Home { m | popupType = Nothing }
                             }
                     in
-                    ( new_model, Api.deleteCapsule capsule (\_ -> App.Noop) )
+                    ( newModel, Api.deleteCapsule capsule (\_ -> App.Noop) )
 
                 Home.RenameCapsule Utils.Request capsule ->
                     ( { model | page = App.Home { m | popupType = Just (Home.RenameCapsulePopup capsule) } }, Cmd.none )
@@ -135,7 +135,7 @@ update msg model =
                         project =
                             model.user.projects |> List.filter (\p -> p.name == capsule.project) |> List.head
 
-                        new_project =
+                        newProject =
                             case project of
                                 Just p ->
                                     { p
@@ -158,25 +158,25 @@ update msg model =
                         user =
                             model.user
 
-                        new_user =
+                        newUser =
                             let
                                 projects =
                                     user.projects
                                         |> List.filter (\p -> p.name /= capsule.project)
-                                        |> List.append [ new_project ]
+                                        |> List.append [ newProject ]
                             in
                             { user | projects = projects }
                     in
-                    ( { model | user = new_user, page = App.Home { m | popupType = Nothing } }
+                    ( { model | user = newUser, page = App.Home { m | popupType = Nothing } }
                     , Api.updateCapsule capsule (\_ -> App.Noop)
                     )
 
                 Home.CapsuleNameChanged capsule name ->
                     let
-                        new_capsule =
+                        newCapsule =
                             { capsule | name = name }
                     in
-                    ( { model | page = App.Home { m | popupType = Just (Home.RenameCapsulePopup new_capsule) } }, Cmd.none )
+                    ( { model | page = App.Home { m | popupType = Just (Home.RenameCapsulePopup newCapsule) } }, Cmd.none )
 
                 Home.DeleteProject Utils.Request project ->
                     ( { model | page = App.Home { m | popupType = Just (Home.DeleteProjectPopup project) } }, Cmd.none )
@@ -189,16 +189,16 @@ update msg model =
                         user =
                             model.user
 
-                        new_user =
+                        newUser =
                             { user | projects = List.filter (\p -> p.name /= project.name) user.projects }
 
-                        new_model =
+                        newModel =
                             { model
-                                | user = new_user
+                                | user = newUser
                                 , page = App.Home { m | popupType = Nothing }
                             }
                     in
-                    ( new_model, Api.deleteProject project.name (\_ -> App.Noop) )
+                    ( newModel, Api.deleteProject project.name (\_ -> App.Noop) )
 
                 Home.RenameProject Utils.Request project ->
                     ( { model | page = App.Home { m | popupType = Just (Home.RenameProjectPopup project) } }, Cmd.none )
@@ -208,52 +208,52 @@ update msg model =
 
                 Home.RenameProject Utils.Confirm project ->
                     let
-                        prev_project_name =
+                        prevProjectName =
                             project.capsules
                                 |> List.map (\c -> c.project)
                                 |> List.head
                                 -- Internal error
                                 |> Maybe.withDefault ""
 
-                        capsules_write =
+                        capsulesWrite =
                             project.capsules
                                 |> List.filter (\c -> c.role == Data.Write || c.role == Data.Owner)
                                 |> List.map (\c -> { c | project = project.name })
 
-                        capsules_non_write =
+                        capsulesNonWrite =
                             project.capsules
                                 |> List.filter (\c -> c.role == Data.Read)
 
-                        new_project =
+                        newProject =
                             model.user.projects
                                 |> List.filter (\p -> p.name == project.name)
                                 |> List.head
                                 |> Maybe.withDefault { project | capsules = [], folded = False }
-                                |> (\p -> { p | capsules = p.capsules |> List.append capsules_write })
+                                |> (\p -> { p | capsules = p.capsules |> List.append capsulesWrite })
 
-                        prev_project =
-                            case capsules_non_write of
+                        prevProject =
+                            case capsulesNonWrite of
                                 [] ->
                                     Nothing
 
                                 _ ->
                                     Just
-                                        { name = prev_project_name
-                                        , capsules = capsules_non_write
+                                        { name = prevProjectName
+                                        , capsules = capsulesNonWrite
                                         , folded = False
                                         }
 
                         user =
                             model.user
 
-                        new_user =
+                        newUser =
                             let
                                 projects =
                                     user.projects
-                                        |> List.filter (\p -> p.name /= prev_project_name && p.name /= project.name)
-                                        |> List.append [ new_project ]
+                                        |> List.filter (\p -> p.name /= prevProjectName && p.name /= project.name)
+                                        |> List.append [ newProject ]
                                         |> List.append
-                                            (case prev_project of
+                                            (case prevProject of
                                                 Just p ->
                                                     [ p ]
 
@@ -263,58 +263,58 @@ update msg model =
                             in
                             { user | projects = projects }
 
-                        new_model =
-                            if prev_project_name == project.name then
+                        newModel =
+                            if prevProjectName == project.name then
                                 { model | page = App.Home { m | popupType = Nothing } }
 
                             else
-                                { model | user = new_user, page = App.Home { m | popupType = Nothing } }
+                                { model | user = newUser, page = App.Home { m | popupType = Nothing } }
                     in
-                    ( new_model
-                    , capsules_write
+                    ( newModel
+                    , capsulesWrite
                         |> List.map (\c -> Api.updateCapsule c (\_ -> App.Noop))
                         |> Cmd.batch
                     )
 
                 Home.ProjectNameChanged project name ->
                     let
-                        new_project =
+                        newProject =
                             { project | name = name }
                     in
-                    ( { model | page = App.Home { m | popupType = Just (Home.RenameProjectPopup new_project) } }, Cmd.none )
+                    ( { model | page = App.Home { m | popupType = Just (Home.RenameProjectPopup newProject) } }, Cmd.none )
 
-                Home.SortBy sort_key ->
+                Home.SortBy sortKey ->
                     let
-                        sort_by =
+                        sortBy =
                             model.config.clientConfig.sortBy
 
-                        new_sort_by =
+                        newSortBy =
                             let
                                 key =
-                                    sort_by.key
+                                    sortBy.key
 
                                 ascending =
-                                    sort_by.ascending
+                                    sortBy.ascending
                             in
-                            if key == sort_key then
-                                { sort_by | ascending = not ascending }
+                            if key == sortKey then
+                                { sortBy | ascending = not ascending }
 
                             else
-                                { sort_by | key = sort_key }
+                                { sortBy | key = sortKey }
 
-                        client_config =
+                        clientConfig =
                             model.config.clientConfig
 
-                        new_client_config =
-                            { client_config | sortBy = new_sort_by }
+                        newClientConfig =
+                            { clientConfig | sortBy = newSortBy }
 
                         config =
                             model.config
 
-                        new_config =
-                            { config | clientConfig = new_client_config }
+                        newConfig =
+                            { config | clientConfig = newClientConfig }
                     in
-                    ( { model | config = new_config }, Cmd.none )
+                    ( { model | config = newConfig }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

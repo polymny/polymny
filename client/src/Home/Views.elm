@@ -183,10 +183,10 @@ table config user =
 makeHeader : String -> Config -> Maybe Data.SortKey -> Element App.Msg
 makeHeader text config key =
     let
-        cur_key =
+        curKey =
             config.clientConfig.sortBy.key
 
-        cur_ascending =
+        curAscending =
             config.clientConfig.sortBy.ascending
 
         action =
@@ -197,11 +197,11 @@ makeHeader text config key =
                             Config.SortByChanged <|
                                 { key = k
                                 , ascending =
-                                    if cur_key == k then
-                                        not cur_ascending
+                                    if curKey == k then
+                                        not curAscending
 
                                     else
-                                        cur_ascending
+                                        curAscending
                                 }
 
                 Nothing ->
@@ -210,8 +210,8 @@ makeHeader text config key =
         icon =
             case key of
                 Just k ->
-                    if cur_key == k then
-                        Ui.icon 24 (Utils.tern cur_ascending Icons.arrow_drop_down Icons.arrow_drop_up)
+                    if curKey == k then
+                        Ui.icon 24 (Utils.tern curAscending Icons.arrow_drop_down Icons.arrow_drop_up)
 
                     else
                         Ui.icon 24 Icons.arrow_right
@@ -603,7 +603,7 @@ leaveCapsuleConfirmPopup lang capsule =
 renameCapsulePopup : Lang -> Data.Capsule -> Element App.Msg
 renameCapsulePopup lang capsule =
     let
-        name_input =
+        nameInput =
             Element.Input.text
                 []
                 { onChange = \x -> App.HomeMsg (Home.CapsuleNameChanged capsule x)
@@ -613,7 +613,7 @@ renameCapsulePopup lang capsule =
                 }
     in
     Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
-        [ name_input
+        [ nameInput
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.RenameCapsule Utils.Cancel capsule)
@@ -658,7 +658,7 @@ deleteProjectConfirmPopup lang project =
 renameProjectPopup : Lang -> Data.Project -> Element App.Msg
 renameProjectPopup lang project =
     let
-        name_input =
+        nameInput =
             Element.Input.text
                 []
                 { onChange = \x -> App.HomeMsg (Home.ProjectNameChanged project x)
@@ -668,7 +668,7 @@ renameProjectPopup lang project =
                 }
     in
     Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
-        [ name_input
+        [ nameInput
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Lang.warning Strings.uiWarning lang) ]
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]

@@ -114,13 +114,13 @@ update msg model =
 
                 Options.DeleteTrack Utils.Confirm track ->
                     let
-                        new_capsule =
+                        newCapsule =
                             Data.removeTrack m.capsule
 
                         ( sync, newConfig ) =
-                            ( Api.updateCapsule new_capsule
+                            ( Api.updateCapsule newCapsule
                                 (\_ ->
-                                    RemoteData.Success new_capsule
+                                    RemoteData.Success newCapsule
                                         |> Options.CapsuleUpdate model.config.clientState.lastRequest
                                         |> App.OptionsMsg
                                 )
@@ -128,8 +128,8 @@ update msg model =
                             )
                     in
                     ( { model
-                        | user = Data.updateUser new_capsule model.user
-                        , page = App.Options (Options.init new_capsule)
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Options (Options.init newCapsule)
                         , config = newConfig
                       }
                     , sync
@@ -194,13 +194,13 @@ updateModelWebcamSettings ws model m =
 {-| Changes the current sound track.
 -}
 updateModelSoundTrack : Maybe Data.SoundTrack -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
-updateModelSoundTrack sound_track model m =
+updateModelSoundTrack soundTrack model m =
     let
         capsule =
             m.capsule
 
         newCapsule =
-            { capsule | soundTrack = sound_track }
+            { capsule | soundTrack = soundTrack }
 
         newUser =
             Data.updateUser newCapsule model.user
