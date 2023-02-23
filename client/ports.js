@@ -718,6 +718,7 @@ function init(node, flags) {
         }
 
         // Play track.
+        soundtrackCheck.audio = new Audio();
         soundtrackCheck.audio.src = trackPath;
         soundtrackCheck.audio.autoplay = true;
         soundtrackCheck.audio.hidden = true;
@@ -726,16 +727,21 @@ function init(node, flags) {
 
         // Track only if no record.
         if (recordPath === null) {
+            soundtrackCheck.audio.loop = false;
+            soundtrackCheck.audio.addEventListener('ended', () => {
+                app.ports.recordEnded.send();
+            });
             return;
         }
 
         // Play record.
+        soundtrackCheck.video = document.createElement('video');
         soundtrackCheck.video.src = recordPath;
         soundtrackCheck.video.autoplay = true;
         soundtrackCheck.video.hidden = true;
         soundtrackCheck.video.addEventListener('ended', () => {
-            sountrackCheck.audio.pause();
-            sountrackCheck.audio.currentTime = 0;
+            soundtrackCheck.audio.pause();
+            soundtrackCheck.audio.currentTime = 0;
             app.ports.recordEnded.send();
         });
     });
