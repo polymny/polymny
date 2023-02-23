@@ -15,10 +15,10 @@ import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
+import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
-import Options.Types as Options
 import Route exposing (Route)
 import Settings.Types as Settings
 import Unlogged.Types as Unlogged
@@ -86,13 +86,13 @@ pageFromRoute : Config -> User -> Route -> ( App.Page, Cmd App.Msg )
 pageFromRoute config user route =
     case route of
         Route.Home ->
-            ( App.Home, Cmd.none )
+            ( App.Home Home.init, Cmd.none )
 
         Route.Preparation id ->
             ( Data.getCapsuleById id user
                 |> Maybe.map Preparation.init
                 |> Maybe.map App.Preparation
-                |> Maybe.withDefault App.Home
+                |> Maybe.withDefault (App.Home Home.init)
             , Cmd.none
             )
 
@@ -100,27 +100,27 @@ pageFromRoute config user route =
             Data.getCapsuleById id user
                 |> Maybe.andThen (Acquisition.init gos)
                 |> Maybe.map (\( a, b ) -> ( App.Acquisition a, Cmd.map App.AcquisitionMsg b ))
-                |> Maybe.withDefault ( App.Home, Cmd.none )
+                |> Maybe.withDefault ( App.Home Home.init, Cmd.none )
 
         Route.Production id gos ->
             Data.getCapsuleById id user
                 |> Maybe.andThen (Production.init gos)
                 |> Maybe.map (\( a, b ) -> ( App.Production a, Cmd.map App.ProductionMsg b ))
-                |> Maybe.withDefault ( App.Home, Cmd.none )
+                |> Maybe.withDefault ( App.Home Home.init, Cmd.none )
 
         Route.Publication id ->
             ( Data.getCapsuleById id user
                 |> Maybe.map Publication.init
                 |> Maybe.map App.Publication
-                |> Maybe.withDefault App.Home
+                |> Maybe.withDefault (App.Home Home.init)
             , Cmd.none
             )
-        
+
         Route.Options id ->
             ( Data.getCapsuleById id user
                 |> Maybe.map Options.init
                 |> Maybe.map App.Options
-                |> Maybe.withDefault App.Home
+                |> Maybe.withDefault (App.Home Home.init)
             , Cmd.none
             )
 
@@ -128,4 +128,4 @@ pageFromRoute config user route =
             ( App.Settings Settings.init, Cmd.none )
 
         _ ->
-            ( App.Home, Cmd.none )
+            ( App.Home Home.init, Cmd.none )

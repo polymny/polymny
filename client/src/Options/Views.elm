@@ -481,7 +481,7 @@ generalOptions config model =
         ]
 
 
-{-| Popup to confirm the slide deletion.
+{-| Popup to confirm the track deletion.
 -}
 deleteTrackConfirmPopup : Lang -> Options.Model -> Data.SoundTrack -> Element App.Msg
 deleteTrackConfirmPopup lang model s =
@@ -499,7 +499,7 @@ deleteTrackConfirmPopup lang model s =
                 }
             ]
         ]
-        |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
+        |> Ui.popup 1 (Strings.actionsDeleteTrack lang)
 
 
 {-| Easily creates the Ui.Msg for options msg.

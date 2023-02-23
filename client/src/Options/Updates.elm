@@ -114,18 +114,22 @@ update msg model =
 
                 Options.DeleteTrack Utils.Confirm track ->
                     let
-                        capsule =
+                        newCapsule =
                             Data.removeTrack m.capsule
 
                         ( sync, newConfig ) =
-                            ( Api.updateCapsule capsule
-                                (\_ -> App.OptionsMsg (Options.CapsuleUpdate model.config.clientState.lastRequest (RemoteData.Success capsule)))
+                            ( Api.updateCapsule newCapsule
+                                (\_ ->
+                                    RemoteData.Success newCapsule
+                                        |> Options.CapsuleUpdate model.config.clientState.lastRequest
+                                        |> App.OptionsMsg
+                                )
                             , Config.incrementRequest model.config
                             )
                     in
                     ( { model
-                        | user = Data.updateUser capsule model.user
-                        , page = App.Options (Options.init capsule)
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Options (Options.init newCapsule)
                         , config = newConfig
                       }
                     , sync
@@ -216,13 +220,13 @@ updateModelWebcamSettings ws model m =
 {-| Changes the current sound track.
 -}
 updateModelSoundTrack : Maybe Data.SoundTrack -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
-updateModelSoundTrack sound_track model m =
+updateModelSoundTrack soundTrack model m =
     let
         capsule =
             m.capsule
 
         newCapsule =
-            { capsule | soundTrack = sound_track }
+            { capsule | soundTrack = soundTrack }
 
         newUser =
             Data.updateUser newCapsule model.user
@@ -230,7 +234,7 @@ updateModelSoundTrack sound_track model m =
     ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
     , Cmd.batch
         [ Api.updateCapsule newCapsule (\_ -> App.Noop)
-        , volumeChangedPort (Maybe.withDefault 1.0 (Maybe.map .volume sound_track))
+        , volumeChangedPort (Maybe.withDefault 1.0 (Maybe.map .volume soundTrack))
         ]
     )
 

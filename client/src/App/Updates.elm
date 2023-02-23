@@ -12,6 +12,7 @@ import Api.User as Api
 import App.Types as App
 import App.Utils as App
 import Browser.Navigation
+import Data.User as Data
 import Config
 import Device
 import Home.Updates as Home
@@ -63,6 +64,16 @@ update message model =
                 _ ->
                     Route.push m.config.clientState.key Route.Home
             )
+
+        -- If the sortBy is changed, we need to update the logged model's user
+        ( App.LoggedMsg (App.ConfigMsg (Config.SortByChanged newSortBy)), App.Logged m ) ->
+            let
+                user =
+                    m.user
+            in
+            updateModel (App.ConfigMsg (Config.SortByChanged newSortBy))
+                { m | user = { user | projects = Data.sortProjects newSortBy user.projects } }
+                |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
 
         ( App.LoggedMsg msg, App.Logged m ) ->
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
@@ -182,7 +193,7 @@ subs m =
             Sub.batch
                 [ Sub.map App.ConfigMsg Config.subs
                 , case model.page of
-                    App.Home ->
+                    App.Home _ ->
                         Home.subs
 
                     App.NewCapsule _ ->

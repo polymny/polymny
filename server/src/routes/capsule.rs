@@ -24,7 +24,7 @@ use crate::command::{export_slides, run_command};
 use crate::config::Config;
 use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings, SoundTrack};
 use crate::db::task_status::TaskStatus;
-use crate::db::user::User;
+use crate::db::user::{User, Plan};
 use crate::websockets::WebSockets;
 use crate::{Db, Error, HashId, Result};
 
@@ -190,7 +190,7 @@ pub async fn delete_project(user: User, db: Db, config: &S<Config>, name: String
 
     for (capsule, role) in capsules {
         if role != Role::Owner {
-            continue;
+            leave_aux(&user, HashId(capsule.id), &db).await?;
         }
 
         if capsule.project != name {
@@ -1269,6 +1269,27 @@ pub async fn deinvite(user: User, id: HashId, db: Db, data: Json<Deinvite>) -> R
     capsule.remove_user(&deinvited, &db).await?;
 
     Ok(())
+}
+
+/// Leaves a user from a capsule.
+pub async fn leave_aux(user: &User, id: HashId, db: &Db) -> Result<()> {
+    let (capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Read, &db)
+        .await?;
+
+    if role == Role::Owner && user.plan != Plan::Admin {
+        return Err(Error(Status::BadRequest));
+    }
+
+    capsule.remove_user(&user, &db).await?;
+
+    Ok(())
+}
+
+/// Routes to leave a user from a capsule.
+#[post("/leave/<id>")]
+pub async fn leave(user: User, id: HashId, db: Db) -> Result<()> {
+    leave_aux(&user, id, &db).await
 }
 
 /// Update the capsule's track.

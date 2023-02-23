@@ -17,10 +17,10 @@ import Home.Views as Home
 import Html.Attributes
 import Lang exposing (Lang)
 import NewCapsule.Views as NewCapsule
+import Options.Views as Options
 import Preparation.Views as Preparation
 import Production.Views as Production
 import Publication.Views as Publication
-import Options.Views as Options
 import Settings.Views as Settings
 import Strings
 import Ui.Colors as Colors
@@ -111,8 +111,8 @@ viewContent fullModel =
 viewSuccess : App.Model -> ( Element App.Msg, Element App.Msg )
 viewSuccess model =
     case model.page of
-        App.Home ->
-            Home.view model.config model.user
+        App.Home m ->
+            Home.view model.config model.user m
 
         App.NewCapsule m ->
             NewCapsule.view model.config model.user m
@@ -132,7 +132,7 @@ viewSuccess model =
         App.Publication m ->
             Publication.view model.config model.user m
                 |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
-        
+
         App.Options m ->
             Options.view model.config model.user m
                 |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing

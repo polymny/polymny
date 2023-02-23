@@ -4,6 +4,7 @@ module Api.User exposing (..)
 -}
 
 import Api.Utils as Api
+import Data.Capsule exposing (Capsule)
 import Data.Types as Data
 import Data.User as Data exposing (User)
 import Http
@@ -115,5 +116,41 @@ deleteAccount password toMsg =
     Api.delete
         { url = "/api/delete-user"
         , body = Http.jsonBody <| Encode.object [ ( "current_password", Encode.string password ) ]
+        , toMsg = toMsg
+        }
+
+
+{-| Requests to delete a capsule.
+-}
+deleteCapsule : Capsule -> (WebData () -> msg) -> Cmd msg
+deleteCapsule capsule toMsg =
+    let
+        capsuleId =
+            capsule.id
+
+        isOwner =
+            capsule.role == Data.Owner
+    in
+    if isOwner then
+        Api.delete
+            { url = "/api/capsule/" ++ capsuleId
+            , body = Http.emptyBody
+            , toMsg = toMsg
+            }
+
+    else
+        Api.post
+            { url = "/api/leave/" ++ capsuleId
+            , body = Http.emptyBody
+            , toMsg = toMsg
+            }
+
+{-| Requests to delete a project.
+-}
+deleteProject : String -> (WebData () -> msg) -> Cmd msg
+deleteProject projectId toMsg =
+    Api.delete
+        { url = "/api/project/" ++ projectId
+        , body = Http.emptyBody
         , toMsg = toMsg
         }

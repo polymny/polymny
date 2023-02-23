@@ -117,7 +117,7 @@ fromUrl url =
 fromPage : App.Page -> Route
 fromPage page =
     case page of
-        App.Home ->
+        App.Home m->
             Home
 
         App.NewCapsule _ ->

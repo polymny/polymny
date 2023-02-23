@@ -970,3 +970,59 @@ msgstr "Jouer un aperçu de la musique de fond"
 #. Stop sound track preview.
 msgid "Steps.Options.stopPreview"
 msgstr "Arrêter l'aperçu"
+
+#. Delete project.
+msgid "Actions.deleteProject"
+msgstr "Supprimer le projet"
+
+#. Delete capsule.
+msgid "Actions.deleteCapsule"
+msgstr "Supprimer la capsule"
+
+#. Rename project.
+msgid "Actions.renameProject"
+msgstr "Renommer le projet"
+
+#. Rename capsule.
+msgid "Actions.renameCapsule"
+msgstr "Renommer la capsule"
+
+#. Add capsule.
+msgid "Actions.addCapsule"
+msgstr "Ajouter une capsule"
+
+#. Export capsule.
+msgid "Actions.exportCapsule"
+msgstr "Exporter la capsule"
+
+#. Watch the capsule video.
+msgid "Actions.watchCapsule"
+msgstr "Regarder la vidéo"
+
+#. Delete a capsule.
+msgid "Actions.Confirm.deleteCapsule"
+msgstr "Voulez vous vraiment supprimer la capsule"
+
+#. Leave a capsule.
+msgid "Actions.Confirm.leaveCapsule"
+msgstr "Voulez vous vraiment ne plus participer à la capsule"
+
+#. Leave a capsule.
+msgid "Actions.leaveCapsule"
+msgstr "Ne plus participer à la capsule"
+
+#. Delete a project.
+msgid "Actions.Confirm.deleteProject"
+msgstr "Voulez vous vraiment supprimer le projet"
+
+#. Delete project warning.
+msgid "Actions.Confirm.deleteProjectWarning"
+msgstr "Supprimer un projet supprime toutes les capsules qui y sont liées ou vous désabonne de celles-ci."
+
+#. Warning.
+msgid "Ui.warning"
+msgstr "Attention"
+
+#. Rename project warning.
+msgid "Actions.Confirm.renameProjectWarning"
+msgstr "Renommer un projet renomme toutes les capsules qui y sont liées dont vous avez le droit de modification."

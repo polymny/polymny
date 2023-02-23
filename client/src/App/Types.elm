@@ -74,7 +74,7 @@ type alias Model =
 {-| This type represents the different pages on which a user can be on the application.
 -}
 type Page
-    = Home
+    = Home Home.Model
     | NewCapsule NewCapsule.Model
     | Preparation Preparation.Model
     | Acquisition Acquisition.Model

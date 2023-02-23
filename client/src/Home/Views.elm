@@ -7,7 +7,7 @@ module Home.Views exposing (view)
 -}
 
 import App.Types as App
-import Config exposing (Config)
+import Config exposing (Config, Msg(..))
 import Data.Capsule as Data
 import Data.Types as Data
 import Data.User as Data exposing (User)
@@ -15,11 +15,12 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input exposing (Placeholder)
 import Home.Types as Home
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
-import Strings
+import Strings exposing (actionsLeaveCapsule)
 import Time
 import TimeUtils
 import Ui.Colors as Colors
@@ -30,13 +31,46 @@ import Utils
 
 {-| This function returns the view of the home page.
 -}
-view : Config -> User -> ( Element App.Msg, Element App.Msg )
-view config user =
+view : Config -> User -> Home.Model -> ( Element App.Msg, Element App.Msg )
+view config user model =
+    let
+        lang =
+            config.clientState.lang
+
+        -- Helper to create popup
+        popup : Element App.Msg
+        popup =
+            case model.popupType of
+                Just pt ->
+                    case pt of
+                        Home.DeleteCapsulePopup c ->
+                            let
+                                isOwner =
+                                    c.role == Data.Owner
+                            in
+                            if isOwner then
+                                deleteCapsuleConfirmPopup lang c
+
+                            else
+                                leaveCapsuleConfirmPopup lang c
+
+                        Home.RenameCapsulePopup c ->
+                            renameCapsulePopup lang c
+
+                        Home.DeleteProjectPopup p ->
+                            deleteProjectConfirmPopup lang p
+
+                        Home.RenameProjectPopup p ->
+                            renameProjectPopup lang p
+
+                _ ->
+                    Element.none
+    in
     ( Element.row [ Ui.wf, Ui.hf ]
         [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
         , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop ] (table config user)
         ]
-    , Element.none
+    , popup
     )
 
 
@@ -51,7 +85,7 @@ leftColumn config user =
         uploadSlidesButton =
             Ui.primary [ Ui.wf ]
                 { label = Strings.stepsPreparationSelectPdf config.clientState.lang
-                , action = Ui.Msg (App.HomeMsg Home.SlideUploadClicked)
+                , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked Nothing
                 }
     in
     Element.column
@@ -106,33 +140,39 @@ table config user =
                 , topLeft = 0
                 , topRight = 0
                 }
+
+        sortByName =
+            Just Data.Name
+
+        sortLastModified =
+            Just Data.LastModified
     in
     Element.indexedTable [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder, Border.rounded 20 ]
         { data = data
         , columns =
-            [ { header = makeHeader (Strings.dataProjectProjectName lang)
+            [ { header = makeHeader (Strings.dataProjectProjectName lang) config sortByName
               , width = Element.fill
               , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomLeft ] []) i (name x)
               }
-            , { header = makeHeader (Strings.dataCapsuleProgress lang)
+            , { header = makeHeader (Strings.dataCapsuleProgress lang) config Nothing
               , width = Element.shrink
               , view = \i x -> makeCell [] i (progress lang x)
               }
-            , { header = makeHeader ""
+            , { header = makeHeader "" config Nothing
               , width = Element.fill
               , view = \i x -> makeCell [] i (progressIcons config x)
               }
-            , { header = makeHeader (Strings.dataCapsuleRoleRole lang)
+            , { header = makeHeader (Strings.dataCapsuleRoleRole lang) config Nothing
               , width = Element.shrink
               , view = \i x -> makeCell [] i (role lang x)
               }
-            , { header = makeHeader (Strings.dataCapsuleLastModification lang)
+            , { header = makeHeader (Strings.dataCapsuleLastModification lang) config sortLastModified
               , width = Element.shrink
               , view = \i x -> makeCell [] i (lastModified lang zone x)
               }
-            , { header = makeHeader (Strings.dataCapsuleAction lang 3)
+            , { header = makeHeader (Strings.dataCapsuleAction lang 3) config Nothing
               , width = Element.shrink
-              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i Element.none
+              , view = \i x -> makeCell (Utils.tern (i == len - 1) [ roundBottomRight ] []) i (actions lang x user)
               }
             ]
         }
@@ -140,9 +180,51 @@ table config user =
 
 {-| This functions transforms a text into a header element.
 -}
-makeHeader : String -> Element App.Msg
-makeHeader text =
-    Element.el [ Ui.p 10, Font.bold ] (Element.text text)
+makeHeader : String -> Config -> Maybe Data.SortKey -> Element App.Msg
+makeHeader text config key =
+    let
+        curKey =
+            config.clientConfig.sortBy.key
+
+        curAscending =
+            config.clientConfig.sortBy.ascending
+
+        action =
+            case key of
+                Just k ->
+                    Ui.Msg <|
+                        App.ConfigMsg <|
+                            Config.SortByChanged <|
+                                { key = k
+                                , ascending =
+                                    if curKey == k then
+                                        not curAscending
+
+                                    else
+                                        curAscending
+                                }
+
+                Nothing ->
+                    Ui.Msg App.Noop
+
+        icon =
+            case key of
+                Just k ->
+                    if curKey == k then
+                        Ui.icon 24 (Utils.tern curAscending Icons.arrow_drop_down Icons.arrow_drop_up)
+
+                    else
+                        Ui.icon 24 Icons.arrow_right
+
+                Nothing ->
+                    -- Element.el [ Ui.w 24, Ui.h 24 ] Element.none
+                    Element.none
+    in
+    Ui.navigationElement action [] <|
+        Element.row [ Ui.p 10, Font.bold ]
+            [ Element.el [] icon
+            , Element.text text
+            ]
 
 
 {-| This functions transforms an element into a table cell.
@@ -180,13 +262,103 @@ name : Poc -> Element App.Msg
 name poc =
     case poc of
         Project p ->
-            Ui.link [ Ui.p 10, Font.bold ]
-                { action = Ui.Msg (App.HomeMsg (Home.Toggle p))
-                , label = Utils.tern p.folded "▷ " "▽ " ++ p.name
-                }
+            let
+                action =
+                    Ui.Msg (App.HomeMsg (Home.Toggle p))
+            in
+            Ui.navigationElement action
+                (Ui.addLinkAttr [ Ui.p 10, Font.bold ])
+                (Element.row [ Ui.wf, Ui.hf, Ui.cy ]
+                    [ Utils.tern p.folded (Ui.icon 22 Icons.expand_more) (Ui.icon 22 Icons.expand_less)
+                    , Element.text p.name
+                    ]
+                )
 
         Capsule c ->
             Ui.link [ Ui.pl 30 ] { action = Ui.Route (Route.Preparation c.id), label = Ui.shrink 50 c.name }
+
+
+{-| This functions returns the actions that can be done on a capsule.
+-}
+actions : Lang -> Poc -> User -> Element App.Msg
+actions lang poc user =
+    case poc of
+        Project p ->
+            let
+                isWriter =
+                    List.any (\c -> c.role == Data.Write || c.role == Data.Owner) p.capsules
+            in
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ]
+                [ Ui.secondaryIcon []
+                    { icon = Icons.add
+                    , tooltip = Strings.actionsAddCapsule lang
+                    , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked <| Just p.name
+                    }
+                , if isWriter then
+                    Ui.secondaryIcon []
+                        { icon = Icons.drive_file_rename_outline
+                        , tooltip = Strings.actionsRenameProject lang
+                        , action =
+                            if isWriter then
+                                Ui.Msg (App.HomeMsg (Home.RenameProject Utils.Request p))
+
+                            else
+                                Ui.None
+                        }
+
+                  else
+                    Element.none
+                , Ui.secondaryIcon []
+                    { icon = Icons.delete
+                    , tooltip = Strings.actionsDeleteProject lang
+                    , action = Ui.Msg (App.HomeMsg (Home.DeleteProject Utils.Request p))
+                    }
+                ]
+
+        Capsule c ->
+            let
+                isOwner =
+                    c.role == Data.Owner
+
+                isWriter =
+                    c.role == Data.Write || isOwner
+            in
+            Element.row [ Ui.wf, Ui.hf, Ui.cy, Ui.s 5 ] <|
+                [ Ui.secondaryIcon []
+                    { icon = Icons.ios_share
+                    , tooltip = Strings.actionsExportCapsule lang
+                    , action = Ui.None
+                    }
+                , if isWriter then
+                    Ui.secondaryIcon []
+                        { icon = Icons.drive_file_rename_outline
+                        , tooltip = Strings.actionsRenameCapsule lang
+                        , action =
+                            if isWriter then
+                                Ui.Msg (App.HomeMsg (Home.RenameCapsule Utils.Request c))
+
+                            else
+                                Ui.None
+                        }
+
+                  else
+                    Element.none
+                , Ui.secondaryIcon []
+                    { icon =
+                        if isOwner then
+                            Icons.delete
+
+                        else
+                            Icons.logout
+                    , tooltip =
+                        if isOwner then
+                            Strings.actionsDeleteCapsule lang
+
+                        else
+                            Strings.actionsLeaveCapsule lang
+                    , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
+                    }
+                ]
 
 
 {-| This functions returns the progress bar of the capsule.
@@ -319,6 +491,9 @@ progressIcons config poc =
 
         Capsule c ->
             let
+                lang =
+                    config.clientState.lang
+
                 watch : Element App.Msg
                 watch =
                     case ( c.published, Data.videoPath c ) of
@@ -326,14 +501,14 @@ progressIcons config poc =
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.Route <| Route.Custom <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
-                                , tooltip = "TODO"
+                                , tooltip = Strings.actionsWatchCapsule lang
                                 }
 
                         ( _, Just url ) ->
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
                                 , action = Ui.NewTab url
-                                , tooltip = "TODO"
+                                , tooltip = Strings.actionsWatchCapsule lang
                                 }
 
                         _ ->
@@ -379,3 +554,148 @@ lastModified lang zone poc =
                     c.lastModified
     in
     TimeUtils.formatTime lang zone date |> Element.text
+
+
+{-| Popup to confirm the capsule deletion.
+-}
+deleteCapsuleConfirmPopup : Lang -> Data.Capsule -> Element App.Msg
+deleteCapsuleConfirmPopup lang capsule =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteCapsule lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteCapsule lang)
+
+
+{-| Popup to confirm leaving a capsule.
+-}
+leaveCapsuleConfirmPopup : Lang -> Data.Capsule -> Element App.Msg
+leaveCapsuleConfirmPopup lang capsule =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmLeaveCapsule lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsLeaveCapsule lang)
+
+
+{-| Popup to rename a capsule.
+-}
+renameCapsulePopup : Lang -> Data.Capsule -> Element App.Msg
+renameCapsulePopup lang capsule =
+    let
+        nameInput =
+            Element.Input.text
+                []
+                { onChange = \x -> App.HomeMsg (Home.CapsuleNameChanged capsule x)
+                , text = capsule.name
+                , placeholder = Nothing
+                , label = Element.Input.labelAbove [] (Ui.title (Strings.dataCapsuleCapsuleName lang))
+                }
+    in
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ nameInput
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.RenameCapsule Utils.Cancel capsule)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.RenameCapsule Utils.Confirm capsule)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsRenameCapsule lang)
+
+
+{-| Popup to confirm the project deletion.
+-}
+deleteProjectConfirmPopup : Lang -> Data.Project -> Element App.Msg
+deleteProjectConfirmPopup lang project =
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.warning Strings.uiWarning lang) ]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Strings.actionsConfirmDeleteProjectWarning lang) ]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteProject lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.DeleteProject Utils.Cancel project)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.DeleteProject Utils.Confirm project)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteProject lang)
+
+
+{-| Renames a project.
+-}
+renameProjectPopup : Lang -> Data.Project -> Element App.Msg
+renameProjectPopup lang project =
+    let
+        nameInput =
+            Element.Input.text
+                []
+                { onChange = \x -> App.HomeMsg (Home.ProjectNameChanged project x)
+                , text = project.name
+                , placeholder = Nothing
+                , label = Element.Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName lang))
+                }
+    in
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ nameInput
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.warning Strings.uiWarning lang) ]
+        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Strings.actionsConfirmRenameProjectWarning lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Home.RenameProject Utils.Cancel project)
+                , label = Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Home.RenameProject Utils.Confirm project)
+                , label = Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsRenameProject lang)
+
+
+{-| Easily creates the Ui.Msg for options msg.
+-}
+mkUiMsg : Home.Msg -> Ui.Action App.Msg
+mkUiMsg msg =
+    mkMsg msg |> Ui.Msg
+
+
+{-| Easily creates a options msg.
+-}
+mkMsg : Home.Msg -> App.Msg
+mkMsg msg =
+    App.HomeMsg msg

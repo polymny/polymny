@@ -923,3 +923,59 @@ msgstr ""
 #. Stop sound track preview.
 msgid "Steps.Options.stopPreview"
 msgstr ""
+
+#. Delete project.
+msgid "Actions.deleteProject"
+msgstr ""
+
+#. Delete capsule.
+msgid "Actions.deleteCapsule"
+msgstr ""
+
+#. Rename project.
+msgid "Actions.renameProject"
+msgstr ""
+
+#. Rename capsule.
+msgid "Actions.renameCapsule"
+msgstr ""
+
+#. Add capsule.
+msgid "Actions.addCapsule"
+msgstr ""
+
+#. Export capsule.
+msgid "Actions.exportCapsule"
+msgstr ""
+
+#. Watch the capsule video.
+msgid "Actions.watchCapsule"
+msgstr ""
+
+#. Delete a capsule.
+msgid "Actions.Confirm.deleteCapsule"
+msgstr ""
+
+#. Leave a capsule.
+msgid "Actions.Confirm.leaveCapsule"
+msgstr ""
+
+#. Leave a capsule.
+msgid "Actions.leaveCapsule"
+msgstr ""
+
+#. Delete a project.
+msgid "Actions.Confirm.deleteProject"
+msgstr ""
+
+#. Delete project warning.
+msgid "Actions.Confirm.deleteProjectWarning"
+msgstr ""
+
+#. Warning.
+msgid "Ui.warning"
+msgstr ""
+
+#. Rename project warning.
+msgid "Actions.Confirm.renameProjectWarning"
+msgstr ""

@@ -1,8 +1,8 @@
-module Data.User exposing (User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
+module Data.User exposing (User, decodeUser, isPremium, addCapsule, deleteCapsule, updateUser, sortProjects, getCapsuleById, Project, toggleProject, compareCapsule, compareProject)
 
 {-| This module contains all the data related to the user.
 
-@docs User, decodeUser, isPremium, addCapsule, updateUser, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
+@docs User, decodeUser, isPremium, addCapsule, deleteCapsule, updateUser, sortProjects, getCapsuleById, Project, toggleProject, compareCapsule, compareProject
 
 -}
 
@@ -128,7 +128,7 @@ compareProject { key, ascending } aInput bInput =
     in
     case key of
         Data.Name ->
-            compare aInput.name bInput.name
+            compare a.name b.name
 
         Data.LastModified ->
             compare
@@ -234,6 +234,22 @@ addCapsuleAux capsule finished acc input =
 
             else
                 addCapsuleAux capsule False (h :: acc) t
+
+
+{-| Deletes a capsule in a user.
+-}
+deleteCapsule : Capsule -> User -> User
+deleteCapsule capsule user =
+    let
+        projectMapper : Project -> Project
+        projectMapper project =
+            { project | capsules = List.filter (\c -> c.id /= capsule.id) project.capsules }
+    in
+    { user
+        | projects =
+            List.map projectMapper user.projects
+                |> List.filter (\x -> not <| List.isEmpty x.capsules)
+    }
 
 
 {-| Updates a capsule in a user.
