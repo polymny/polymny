@@ -72,6 +72,7 @@ They are useful because the UI must reflect these settings.
   - `home` is the home page of the app. If the app is running at `https://app.polymny.studio`, a portal can be at
     `https://polymny.studio`.
   - `registrationDisabled` indicates whether the server allows new users to register.
+  - `authMethods` is the list of authentication methods that you can use for Polymny Studio.
 
 -}
 type alias ServerConfig =
@@ -82,14 +83,49 @@ type alias ServerConfig =
     , commit : Maybe String
     , home : Maybe String
     , registrationDisabled : Bool
+    , authMethods : List AuthMethod
     }
+
+
+{-| The different authentication methods supported by Polymny Studio.
+-}
+type AuthMethod
+    = Local
+    | OpenId OpenIdConfig
+
+
+{-| An Open Id configuration.
+-}
+type alias OpenIdConfig =
+    { root : String
+    , client : String
+    }
+
+
+{-| Decodes an OpenID configuration.
+-}
+decodeOpenId : Decoder OpenIdConfig
+decodeOpenId =
+    Decode.map2 OpenIdConfig
+        (Decode.field "root" Decode.string)
+        (Decode.field "client" Decode.string)
+
+
+{-| Decodes an authentication method.
+-}
+decodeAuthMethods : Decoder (List AuthMethod)
+decodeAuthMethods =
+    Decode.maybe (Decode.field "openid" decodeOpenId)
+        |> Decode.map (Maybe.map OpenId)
+        |> Decode.map (Maybe.withDefault Local)
+        |> Decode.map (\x -> [ x ])
 
 
 {-| JSON decoder for [`ServerConfig`](#ServerConfig).
 -}
 decodeServerConfig : Decoder ServerConfig
 decodeServerConfig =
-    Decode.map7 ServerConfig
+    Decode.map8 ServerConfig
         (Decode.field "root" Decode.string)
         (Decode.field "socketRoot" Decode.string)
         (Decode.field "videoRoot" Decode.string)
@@ -97,6 +133,7 @@ decodeServerConfig =
         (Decode.maybe (Decode.field "commit" Decode.string))
         (Decode.maybe (Decode.field "home" Decode.string))
         (Decode.field "registrationDisabled" Decode.bool)
+        decodeAuthMethods
 
 
 {-| This type holds the settings of the client.
