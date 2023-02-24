@@ -431,7 +431,11 @@ msgstr "Les enregistrements non validés seront perdus"
 
 #. Action to play a record.
 msgid "Steps.Acquisition.playRecord"
-msgstr "Jouer l'enregistrement"
+msgstr "Lire l'enregistrement"
+
+#. Action to play a record.
+msgid "Steps.Acquisition.stopRecord"
+msgstr "Arrêter la lecture"
 
 #. Action to validate a record.
 msgid "Steps.Acquisition.validateRecord"

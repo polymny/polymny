@@ -404,6 +404,10 @@ msgstr ""
 msgid "Steps.Acquisition.playRecord"
 msgstr ""
 
+#. Action to play a record.
+msgid "Steps.Acquisition.stopRecord"
+msgstr ""
+
 #. Action to validate a record.
 msgid "Steps.Acquisition.validateRecord"
 msgstr ""

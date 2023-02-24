@@ -431,6 +431,10 @@ msgstr "Non validated records will be lost"
 msgid "Steps.Acquisition.playRecord"
 msgstr "Play record"
 
+#. Action to play a record.
+msgid "Steps.Acquisition.stopRecord"
+msgstr "Stop playing record"
+
 #. Action to validate a record.
 msgid "Steps.Acquisition.validateRecord"
 msgstr "Validate record"

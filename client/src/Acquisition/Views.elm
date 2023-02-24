@@ -164,22 +164,87 @@ view config user model =
 
         recordView : Int -> Acquisition.Record -> Element App.Msg
         recordView index record =
+            let
+                -- Attributes to show things as disabled
+                disableAttr : List (Element.Attribute App.Msg)
+                disableAttr =
+                    [ Font.color Colors.greyFontDisabled ]
+
+                -- Gives disable attributes if element is disabled
+                disableAttrIf : Bool -> List (Element.Attribute App.Msg)
+                disableAttrIf disabled =
+                    if disabled then
+                        disableAttr
+
+                    else
+                        []
+
+                -- Play button
+                playButton : Element App.Msg
+                playButton =
+                    let
+                        isPlaying =
+                            case model.recordPlaying of
+                                Just _ ->
+                                    True
+
+                                Nothing ->
+                                    False
+
+                        attr =
+                            disableAttrIf isPlaying
+
+                        action =
+                            if isPlaying then
+                                Ui.None
+
+                            else
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
+                    in
+                    Ui.secondaryIcon
+                        attr
+                        { icon = Material.Icons.play_arrow
+                        , tooltip = Strings.stepsAcquisitionPlayRecord lang
+                        , action = action
+                        }
+
+                -- Stop button
+                stopButton : Element App.Msg
+                stopButton =
+                    let
+                        isPlaying =
+                            case model.recordPlaying of
+                                Just _ ->
+                                    True
+
+                                Nothing ->
+                                    False
+
+                        attr =
+                            disableAttrIf (not isPlaying)
+
+                        action =
+                            if isPlaying then
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.StopRecord
+
+                            else
+                                Ui.None
+                    in
+                    Ui.secondaryIcon
+                        attr
+                        { icon = Material.Icons.stop
+                        , tooltip = Strings.stepsAcquisitionStopRecord lang
+                        , action = action
+                        }
+            in
             Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
                 Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
                     Element.row [ Ui.wf, Ui.s 10 ]
                         [ Element.text (String.fromInt (index + 1))
                         , Element.column [ Ui.wf ]
                             [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
-                        , Ui.primaryIcon []
-                            { icon =
-                                if model.recordPlaying == Just record then
-                                    Material.Icons.stop
-
-                                else
-                                    Material.Icons.play_arrow
-                            , tooltip = ""
-                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
-                            }
+                        , playButton
+                        , stopButton
                         , Ui.primaryIcon []
                             { icon = Material.Icons.done
                             , tooltip = ""

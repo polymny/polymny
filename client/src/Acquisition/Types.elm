@@ -125,5 +125,6 @@ type Msg
     | RecordArrived Record
     | PlayRecordFinished
     | PlayRecord Record
+    | StopRecord
     | RequestCameraPermission String
     | UploadRecord Record

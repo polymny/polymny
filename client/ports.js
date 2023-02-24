@@ -600,6 +600,12 @@ function init(node, flags) {
         // }
     }
 
+    // Stops the current record.
+    function stopRecord() {
+        app.ports.playRecordFinished.send(null);
+        bindDevice(currentSettings);
+    }
+
     // Uploads a record to the server.
     async function uploadRecord(args) {
         console.log(args);
@@ -769,5 +775,6 @@ function init(node, flags) {
     makePort("startRecording", startRecording);
     makePort("stopRecording", stopRecording);
     makePort("playRecord", playRecord);
+    makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
 }

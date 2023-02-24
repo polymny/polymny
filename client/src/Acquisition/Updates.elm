@@ -79,6 +79,12 @@ update msg model =
                     , playRecord record
                     )
 
+                Acquisition.StopRecord ->
+                    ( { model | page = App.Acquisition { m | recordPlaying = Nothing } }
+                      -- TODO: use port to stop record
+                    , stopRecord
+                    )
+
                 Acquisition.PlayRecordFinished ->
                     ( { model
                         | page =
@@ -340,6 +346,18 @@ playRecord record =
 {-| Port that starts the playing of a record.
 -}
 port playRecordPort : Encode.Value -> Cmd msg
+
+
+{-| Asks to stop playing record.
+-}
+stopRecord : Cmd msg
+stopRecord =
+    stopRecordPort ()
+
+
+{-| Port that stops the playing of the record.
+-}
+port stopRecordPort : () -> Cmd msg
 
 
 {-| Sub to know when the playing of a record is finished.
