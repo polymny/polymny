@@ -231,5 +231,8 @@ subs m =
                 ]
                 |> Sub.map App.LoggedMsg
 
+        App.Unlogged model ->
+            Unlogged.subs |> Sub.map App.UnloggedMsg
+        
         _ ->
             Sub.none
