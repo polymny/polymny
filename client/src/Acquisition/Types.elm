@@ -11,6 +11,7 @@ import Device
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Time
+import Utils
 
 
 {-| The different state of loading in which the acquisition page can be.
@@ -36,6 +37,7 @@ type alias Model =
     , records : List Record
     , recordPlaying : Maybe Record
     , savedRecord : Maybe Data.Record
+    , deleteRecord : Bool
     }
 
 
@@ -104,6 +106,7 @@ init gos capsule =
                   , records = []
                   , recordPlaying = Nothing
                   , savedRecord = h.record
+                  , deleteRecord = False
                   }
                 , Device.detectDevices Nothing
                 )
@@ -130,4 +133,4 @@ type Msg
     | StopRecord
     | RequestCameraPermission String
     | UploadRecord Record
-    | DeleteRecord
+    | DeleteRecord Utils.Confirmation

@@ -20,6 +20,7 @@ import Json.Encode as Encode
 import Keyboard
 import Route
 import Time
+import Utils
 
 
 {-| The update function of the preparation page.
@@ -240,12 +241,26 @@ update msg model =
                         ]
                     )
 
-                Acquisition.DeleteRecord ->
+                Acquisition.DeleteRecord Utils.Request ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = True } }, Cmd.none )
+
+                Acquisition.DeleteRecord Utils.Cancel ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = False } }, Cmd.none )
+
+                Acquisition.DeleteRecord Utils.Confirm ->
                     let
                         gos =
                             m.gos
                     in
-                    ( { model | page = App.Acquisition { m | savedRecord = Nothing, gos = { gos | record = Nothing } } }
+                    ( { model
+                        | page =
+                            App.Acquisition
+                                { m
+                                    | deleteRecord = False
+                                    , savedRecord = Nothing
+                                    , gos = { gos | record = Nothing }
+                                }
+                      }
                     , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
                     )
 

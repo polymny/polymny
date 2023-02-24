@@ -1027,3 +1027,11 @@ msgstr "Warning"
 #. Rename project warning.
 msgid "Actions.Confirm.renameProjectWarning"
 msgstr "Renaming a project renames all its capsules of which you have to write access."
+
+#. Delete record.
+msgid "Actions.deleteRecord"
+msgstr "Delete record"
+
+#. Delete a record.
+msgid "Actions.Confirm.deleteRecord"
+msgstr "Do you really want to delete this record"

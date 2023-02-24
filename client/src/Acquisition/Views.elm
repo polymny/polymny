@@ -28,6 +28,7 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
+import Utils
 
 
 {-| The view function for the preparation page.
@@ -269,12 +270,31 @@ view config user model =
                                 , Ui.secondaryIcon []
                                     { icon = Material.Icons.delete
                                     , tooltip = Strings.stepsAcquisitionDeleteRecord lang
-                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord
+                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord Utils.Request
                                     }
                                 ]
 
                 Nothing ->
                     Element.none
+        
+
+        deleteRecordPopup : Element App.Msg
+        deleteRecordPopup =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                    [ Element.text (Lang.question Strings.actionsConfirmDeleteRecord lang) ]
+                , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                    [ Ui.secondary []
+                        { action = mkUiMsg (Acquisition.DeleteRecord Utils.Cancel)
+                        , label = Strings.uiCancel lang
+                        }
+                    , Ui.primary []
+                        { action = mkUiMsg (Acquisition.DeleteRecord Utils.Confirm)
+                        , label = Strings.uiConfirm lang
+                        }
+                    ]
+                ]
+                |> Ui.popup 1 (Strings.actionsDeleteRecord lang)
 
         rightColumn =
             Element.el [ Ui.wf, Ui.hf, Ui.bl 1, Border.color Colors.greyBorder ] <|
@@ -299,21 +319,17 @@ view config user model =
                     )
 
         settingsPopup =
-            if model.showSettings then
-                Element.column [ Ui.wf, Ui.hf ]
-                    [ Element.row [ Ui.wf, Ui.hf ]
-                        [ Element.el [ Ui.wf ] settings
-                        , Element.el [ Ui.wf ] devicePlayer
-                        ]
-                    , Ui.primary [ Ui.ab, Ui.ar ]
-                        { label = Strings.uiConfirm lang
-                        , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
-                        }
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.row [ Ui.wf, Ui.hf ]
+                    [ Element.el [ Ui.wf ] settings
+                    , Element.el [ Ui.wf ] devicePlayer
                     ]
-                    |> Ui.popup 5 (Strings.navigationSettings lang)
-
-            else
-                Element.none
+                , Ui.primary [ Ui.ab, Ui.ar ]
+                    { label = Strings.uiConfirm lang
+                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
+                    }
+                ]
+                |> Ui.popup 5 (Strings.navigationSettings lang)
 
         currentSlide : Maybe Data.Slide
         currentSlide =
@@ -465,8 +481,20 @@ view config user model =
         content =
             Element.column [ Ui.wf, Ui.hf ]
                 [ promptElement, statusElement, slideElement ]
+        
+
+        popup =
+            if model.showSettings then
+                settingsPopup
+        
+            else
+                if model.deleteRecord then
+                    deleteRecordPopup
+        
+                else
+                    Element.none
     in
-    ( content, rightColumn, settingsPopup )
+    ( content, rightColumn, popup )
 
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe Device.Video -> Element App.Msg
@@ -597,3 +625,16 @@ vumeter ratio value =
         |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
+
+{-| Easily creates the Ui.Msg for options msg.
+-}
+mkUiMsg : Acquisition.Msg -> Ui.Action App.Msg
+mkUiMsg msg =
+    mkMsg msg |> Ui.Msg
+
+
+{-| Easily creates a options msg.
+-}
+mkMsg : Acquisition.Msg -> App.Msg
+mkMsg msg =
+    App.AcquisitionMsg msg

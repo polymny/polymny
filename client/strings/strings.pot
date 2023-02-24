@@ -991,3 +991,11 @@ msgstr ""
 #. Rename project warning.
 msgid "Actions.Confirm.renameProjectWarning"
 msgstr ""
+
+#. Delete record.
+msgid "Actions.deleteRecord"
+msgstr ""
+
+#. Delete a record.
+msgid "Actions.Confirm.deleteRecord"
+msgstr ""
