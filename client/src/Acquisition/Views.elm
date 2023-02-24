@@ -185,8 +185,8 @@ view config user model =
                     let
                         isPlaying =
                             case model.recordPlaying of
-                                Just _ ->
-                                    True
+                                Just rec ->
+                                    rec == record
 
                                 Nothing ->
                                     False
@@ -214,8 +214,8 @@ view config user model =
                     let
                         isPlaying =
                             case model.recordPlaying of
-                                Just _ ->
-                                    True
+                                Just rec ->
+                                    rec == record
 
                                 Nothing ->
                                     False
