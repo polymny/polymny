@@ -429,6 +429,14 @@ msgstr[1] "Enregistrements"
 msgid "Steps.Acquisition.nonValidatedRecordsWillBeLost"
 msgstr "Les enregistrements non validés seront perdus"
 
+#. Saved record label.
+msgid "Steps.Acquisition.savedRecord"
+msgstr "Enregistrement sauvegardé"
+
+#. Saved record label.
+msgid "Steps.Acquisition.deleteRecord"
+msgstr "Supprimer le record enregistré"
+
 #. Action to play a record.
 msgid "Steps.Acquisition.playRecord"
 msgstr "Lire l'enregistrement"

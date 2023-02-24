@@ -427,6 +427,14 @@ msgstr[1] "Records"
 msgid "Steps.Acquisition.nonValidatedRecordsWillBeLost"
 msgstr "Non validated records will be lost"
 
+#. Saved record label.
+msgid "Steps.Acquisition.savedRecord"
+msgstr "Saved record"
+
+#. Saved record label.
+msgid "Steps.Acquisition.deleteRecord"
+msgstr "Delete saved record"
+
 #. Action to play a record.
 msgid "Steps.Acquisition.playRecord"
 msgstr "Play record"

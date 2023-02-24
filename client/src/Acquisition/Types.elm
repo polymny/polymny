@@ -35,6 +35,7 @@ type alias Model =
     , currentSentence : Int
     , records : List Record
     , recordPlaying : Maybe Record
+    , savedRecord : Maybe Data.Record
     }
 
 
@@ -102,6 +103,7 @@ init gos capsule =
                   , currentSentence = 0
                   , records = []
                   , recordPlaying = Nothing
+                  , savedRecord = h.record
                   }
                 , Device.detectDevices Nothing
                 )
@@ -128,3 +130,4 @@ type Msg
     | StopRecord
     | RequestCameraPermission String
     | UploadRecord Record
+    | DeleteRecord

@@ -240,6 +240,15 @@ update msg model =
                         ]
                     )
 
+                Acquisition.DeleteRecord ->
+                    let
+                        gos =
+                            m.gos
+                    in
+                    ( { model | page = App.Acquisition { m | savedRecord = Nothing, gos = { gos | record = Nothing } } }
+                    , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
+                    )
+
         _ ->
             ( model, Cmd.none )
 

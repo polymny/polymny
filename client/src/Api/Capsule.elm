@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack, deleteRecord)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule
+@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack, deleteRecord
 
 -}
 
@@ -105,6 +105,7 @@ publishCapsule capsule toMsg =
         , toMsg = toMsg
         }
 
+
 {-| Uploads a sound track to the server.
 -}
 uploadTrack :
@@ -124,5 +125,16 @@ uploadTrack { capsule, fileValue, file, toMsg } =
         { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
+        , toMsg = toMsg
+        }
+
+
+{-| Delete record from the server.
+-}
+deleteRecord : Data.Capsule -> Int -> (WebData () -> msg) -> Cmd msg
+deleteRecord capsule gosId toMsg =
+    Api.delete
+        { url = "/api/delete-record/" ++ capsule.id ++ "/" ++ String.fromInt gosId
+        , body = Http.emptyBody
         , toMsg = toMsg
         }

@@ -270,6 +270,32 @@ pub async fn upload_record(
     Ok(capsule.to_json(role, &db).await?)
 }
 
+/// The route that deletes a record from a capsule for a specific gos.
+#[delete("/delete-record/<id>/<gos>")]
+pub async fn delete_record(
+    user: User,
+    db: Db,
+    id: HashId,
+    gos: i32,
+) -> Result<Value> {
+    // Check that the user has write access to the capsule.
+    let (mut capsule, role) = user
+        .get_capsule_with_permission(*id, Role::Write, &db)
+        .await?;
+
+    let gos = capsule
+        .structure
+        .0
+        .get_mut(gos as usize)
+        .ok_or(Error(Status::BadRequest))?;
+
+    gos.record = None;
+    capsule.set_changed();
+    capsule.save(&db).await?;
+
+    Ok(capsule.to_json(role, &db).await?)
+}
+
 /// The route that uploads a pointer to a capsule for a specific gos.
 #[post("/upload-pointer/<id>/<gos>", data = "<data>")]
 pub async fn upload_pointer(

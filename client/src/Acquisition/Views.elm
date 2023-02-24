@@ -252,6 +252,30 @@ view config user model =
                             }
                         ]
 
+        savedRecordView : Data.Gos -> Element App.Msg
+        savedRecordView gos =
+            case gos.record of
+                Just rec ->
+                    let
+                        recordLength =
+                            gos.events |> List.reverse |> List.head |> Maybe.map .time |> Maybe.withDefault 0
+                    in
+                    Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
+                        Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
+                            Element.row [ Ui.wf, Ui.s 10 ]
+                                [ Element.text (Strings.stepsAcquisitionSavedRecord lang)
+                                , Element.column [ Ui.wf ]
+                                    [ Element.text (TimeUtils.formatDuration recordLength) ]
+                                , Ui.secondaryIcon []
+                                    { icon = Material.Icons.delete
+                                    , tooltip = Strings.stepsAcquisitionDeleteRecord lang
+                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord
+                                    }
+                                ]
+
+                Nothing ->
+                    Element.none
+
         rightColumn =
             Element.el [ Ui.wf, Ui.hf, Ui.bl 1, Border.color Colors.greyBorder ] <|
                 Element.column
@@ -270,6 +294,7 @@ view config user model =
                             , Border.color Colors.greyBorder
                             ]
                             (Ui.title (Strings.stepsAcquisitionRecordList lang 2))
+                        :: savedRecordView model.gos
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
 
