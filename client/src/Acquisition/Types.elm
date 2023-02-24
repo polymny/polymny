@@ -134,3 +134,4 @@ type Msg
     | RequestCameraPermission String
     | UploadRecord Record
     | DeleteRecord Utils.Confirmation
+    | EscapePressed

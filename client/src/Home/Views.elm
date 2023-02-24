@@ -356,7 +356,7 @@ actions lang poc user =
 
                         else
                             Strings.actionsLeaveCapsule lang
-                    , action = Ui.Msg (App.HomeMsg (Home.DeleteCapsule Utils.Request c))
+                    , action = Ui.Msg <| App.HomeMsg <| Home.DeleteCapsule Utils.Request c
                     }
                 ]
 

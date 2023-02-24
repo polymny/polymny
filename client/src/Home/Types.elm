@@ -31,6 +31,7 @@ type Msg
     | RenameProject Utils.Confirmation Data.Project
     | ProjectNameChanged Data.Project String
     | SortBy Data.SortKey
+    | EscapePressed
 
 
 type PopupType

@@ -82,7 +82,6 @@ update msg model =
 
                 Acquisition.StopRecord ->
                     ( { model | page = App.Acquisition { m | recordPlaying = Nothing } }
-                      -- TODO: use port to stop record
                     , stopRecord
                     )
 
@@ -264,6 +263,11 @@ update msg model =
                     , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
                     )
 
+                Acquisition.EscapePressed ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = False } }
+                    , Cmd.none
+                    )
+
         _ ->
             ( model, Cmd.none )
 
@@ -275,6 +279,9 @@ shortcuts msg =
     case Keyboard.rawValue msg of
         "ArrowRight" ->
             App.AcquisitionMsg <| Acquisition.NextSentence True
+
+        "Escape" ->
+            App.AcquisitionMsg <| Acquisition.EscapePressed
 
         _ ->
             App.Noop

@@ -194,6 +194,9 @@ update msg model =
                 Options.Stop ->
                     ( { model | page = App.Options { m | playPreview = False } }, stopTrackPreviewPort () )
 
+                Options.EscapePressed ->
+                    ( { model | page = App.Options { m | deleteTrack = Nothing } }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 

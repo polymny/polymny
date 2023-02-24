@@ -87,6 +87,18 @@ update msg model =
                     in
                     ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
 
+                Preparation.EscapePressed ->
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | editPrompt = Nothing
+                                    , deleteSlide = Nothing
+                                }
+                      }
+                    , Cmd.none
+                    )
+
         _ ->
             ( model, Cmd.none )
 

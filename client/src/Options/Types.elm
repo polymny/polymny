@@ -10,6 +10,7 @@ import FileValue exposing (File)
 import RemoteData exposing (WebData)
 import Utils
 import Html exposing (track)
+import Acquisition.Types exposing (Msg(..))
 
 
 {-| Message type of the app.
@@ -28,6 +29,7 @@ type Msg
     | SetVolume Float
     | Play
     | Stop
+    | EscapePressed
 
 
 {-| The model for the Option module.
