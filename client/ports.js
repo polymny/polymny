@@ -55,11 +55,6 @@ function init(node, flags) {
         video: document.createElement('video'),
     };
 
-    // Canvas on which the pointer will be drawn.
-    // let pointerCanvas = document.createElement('canvas');
-    // pointerCanvas.width = 1920;
-    // pointerCanvas.height = 1080;
-    //
     // The information about the pointer.
     let pointer = {
         style: "Pointer",
@@ -81,6 +76,17 @@ function init(node, flags) {
 
     // Whether the pointer has been touched at some point and we need to take pointer blob into consideraton.
     let pointerExists = false;
+
+    // Video of the pointer for replaying a record with pointer.
+    let pointerVideo = document.createElement('video');
+
+    // A temporary canvas to use as a transition before rendering the replay of the pointer.
+    let tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = 1920;
+    tmpCanvas.height = 1080;
+
+    // The context of the temporary canvas.
+    let tmpCtx = tmpCanvas.getContext('2d');
 
     // List of possible resolutions for devices.
     const quickScan = [
@@ -520,7 +526,8 @@ function init(node, flags) {
 
     // Plays a specific record.
     async function playRecord(record) {
-        // let pointerCanvas;
+        let pointerCanvas = null, pointerCtx = null;
+
         let video = document.getElementById(videoId);
         video.srcObject = null;
         video.muted = false;
@@ -543,15 +550,15 @@ function init(node, flags) {
         };
 
         // Manage pointer
-        // if (record.pointer_blob !== null) {
-        //     pointerCanvas = document.getElementById('pointer-canvas');
+        if (record.pointer_blob !== null) {
+            pointerCanvas = document.getElementById('pointer-canvas');
 
-        //     if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
-        //         pointerVideo.src = record.pointer_blob;
-        //     } else {
-        //         pointerVideo.src = URL.createObjectURL(record.pointer_blob);
-        //     }
-        // }
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
+                pointerVideo.src = record.pointer_blob;
+            } else {
+                pointerVideo.src = URL.createObjectURL(record.pointer_blob);
+            }
+        }
 
         // Manage slides
         // // Skip last transition which is the end of the video.
@@ -589,37 +596,38 @@ function init(node, flags) {
         video.play();
 
         // Render pointer
-        // if (pointerCanvas !== undefined) {
-        //     pointerVideo.play();
-        //     renderPointer();
-        // }
+        if (pointerCanvas !== null) {
+            pointerCtx = pointerCanvas.getContext('2d');
+            pointerVideo.play();
+            renderPointer();
+        }
 
-        // function renderPointer() {
-        //     if (video.paused || video.ended) {
-        //         ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
-        //         return;
-        //     }
+        function renderPointer() {
+            if (video.paused || video.ended) {
+                pointerCtx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+                return;
+            }
 
-        //     tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
-        //     tmpCtx.drawImage(pointerVideo, 0, 0);
-        //     let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
-        //     let length = frame.data.length;
-        //     let data = frame.data;
+            tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+            tmpCtx.drawImage(pointerVideo, 0, 0);
+            let frame = tmpCtx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+            let length = frame.data.length;
+            let data = frame.data;
 
-        //     for (let i = 0; i < length; i += 4) {
-        //         let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
-        //         let threshold = channelAvg > 50;
-        //         if (!threshold) {
-        //             data[i+3] = 0;
-        //         }
-        //     }
+            for (let i = 0; i < length; i += 4) {
+                let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
+                let threshold = channelAvg > 50;
+                if (!threshold) {
+                    data[i+3] = 0;
+                }
+            }
 
-        //     ctx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
-        //     ctx.putImageData(frame, 0, 0);
+            pointerCtx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+            pointerCtx.putImageData(frame, 0, 0);
 
-        //     requestAnimationFrame(renderPointer);
+            requestAnimationFrame(renderPointer);
 
-        // }
+        }
     }
 
     // Stops the current record.
