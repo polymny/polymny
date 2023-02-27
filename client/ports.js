@@ -1,8 +1,11 @@
 function init(node, flags) {
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////// GLOBAL VARIABLES FOR THE ACQUISITION PHASE ////////////////////////////////////
+    /////////////////////////////////// GLOBAL VARIABLES FOR THE ACQUISITION PHASE ////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Whether the user has premium account or not.
+    let isPremium = flags.user.plan !== 'free';
 
     // The stream of the device.
     let stream = null;
@@ -51,6 +54,33 @@ function init(node, flags) {
         audio: new Audio(),
         video: document.createElement('video'),
     };
+
+    // Canvas on which the pointer will be drawn.
+    // let pointerCanvas = document.createElement('canvas');
+    // pointerCanvas.width = 1920;
+    // pointerCanvas.height = 1080;
+    //
+    // The information about the pointer.
+    let pointer = {
+        style: "Pointer",
+        color: "rgb(255, 0, 0)",
+        size: 10,
+        position: { x: 0, y: 0 },
+        oldPosition: null,
+        down: false,
+    };
+
+    // The recorder that will record the pointer.
+    let pointerRecorder = null;
+
+    // The video that was recording on the canvas in which the user may have or may have not drawn.
+    let pointerArrived = null;
+
+    // Which record are we recording the pointer to, null if its a new record.
+    let recordingPointerForRecord = null;
+
+    // Whether the pointer has been touched at some point and we need to take pointer blob into consideraton.
+    let pointerExists = false;
 
     // List of possible resolutions for devices.
     const quickScan = [
@@ -403,15 +433,15 @@ function init(node, flags) {
     function startRecording() {
         if (recorder !== undefined && !recording) {
 
-            // pointerExists = false;
-            // recordingPointerForRecord = null;
+            pointerExists = false;
+            recordingPointerForRecord = null;
 
             recording = true;
             recorder.start();
 
-            // if (isPremium) {
-            //     pointerRecorder.start();
-            // }
+            if (isPremium) {
+                pointerRecorder.start();
+            }
 
             currentEvents = [{
                 time: Math.round(window.performance.now()),
@@ -455,9 +485,9 @@ function init(node, flags) {
             currentEvents[0].time = 0;
             recorder.stop();
 
-            // if (isPremium) {
-            //     pointerRecorder.stop();
-            // }
+            if (isPremium) {
+                pointerRecorder.stop();
+            }
 
             recording = false;
         }
@@ -465,27 +495,19 @@ function init(node, flags) {
 
     // Sends the record and all the information so that elm can manage it.
     function sendRecordToElmIfReady() {
-        // if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
-        //     return;
-        // }
+        if ((recordArrived === null && recordingPointerForRecord === null) || (isPremium && pointerArrived === null)) {
+            return;
+        }
 
-        // let port = recordingPointerForRecord === null ? app.ports.recordArrived : app.ports.pointerRecordArrived;
-        // port.send({
-        //     webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
-        //     pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
-        //     events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
-        //     matted: 'idle',
-        // });
-
-        let port = app.ports.recordArrived;
-        port.send({
-            webcam_blob: recordArrived,
-            events: currentEvents,
+        app.ports.recordArrived.send({
+            webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
+            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+            events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
             matted: 'idle',
         });
 
         recordArrived = null;
-        // pointerArrived = null;
+        pointerArrived = null;
     }
 
     // Registers an event in the currentEvents array.
@@ -613,42 +635,178 @@ function init(node, flags) {
         let gos = args[1];
         let record = args[2];
 
-        console.log("upload record");
-        let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
-            app.ports.taskProgress.send({
-                "task": {
-                    "type": "UploadRecord",
-                    "capsuleId": capsuleId,
-                    "gos": gos,
-                    "value": record,
-                },
-                "progress": 0.01 // e.loaded / e.total
-            });
-        });
+        if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
 
-        let capsule = JSON.parse(xhr.responseText);
-        capsule.structure[gos].events = record.events;
-        await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+            if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
 
-        // Debug thingy where we pretend the request is slow.
-        for (let i = 1; i <= 50; i++) {
-            await sleep(200);
-            app.ports.taskProgress.send({
-                "task": {
-                    "type": "UploadRecord",
-                    "capsuleId": capsuleId,
-                    "gos": gos,
-                    "value": record,
-                },
-                "progress": i / 50,
-                "finished": i === 50,
-            });
+                // User wants to validate the old record, don't need to do anything,
+                // just send the message to let them know it's done
+                // app.ports.capsuleUpdated.send(null);
+
+            } else {
+
+                // User just want to send the pointer blob
+                if (record.pointer_blob !== null) {
+                    try {
+                        xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                            app.ports.progressReceived.send(e.loaded / e.total);
+                        });
+                        let capsule = JSON.parse(xhr.responseText);
+                        // app.ports.capsuleUpdated.send(capsule);
+                    } catch (e) {
+                        console.log(e)
+                        app.ports.uploadRecordFailed.send(null);
+                    }
+                }
+
+            }
+
+        } else {
+
+            try {
+                let factor = record.pointer_blob === null ? 1 : 2;
+                console.log("upload new record");
+                let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+                    app.ports.taskProgress.send({
+                        "task": {
+                            "type": "UploadRecord",
+                            "capsuleId": capsuleId,
+                            "gos": gos,
+                            "value": record,
+                        },
+                        progress: e.loaded / e.total  * (record.pointer_blob === null ? 1 : 0.5),
+                    });
+                });
+
+                if (record.pointer_blob !== null) {
+                    console.log("upload pointer");
+                    xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                        app.ports.taskProgress.send({
+                            "task": {
+                                "type": "UploadRecord",
+                                "capsuleId": capsuleId,
+                                "gos": gos,
+                                "value": record,
+                            },
+                            progress: 0.5 + (e.loaded / e.total) / 2,
+                        });
+                    });
+                }
+
+                app.ports.taskProgress.send({
+                    "task": {
+                        "type": "UploadRecord",
+                        "capsuleId": capsuleId,
+                        "gos": gos,
+                        "value": record,
+                    },
+                    progress: 1,
+                    finished: true,
+                });
+
+                let capsule = JSON.parse(xhr.responseText);
+                capsule.structure[gos].events = record.events;
+
+                await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
+                // app.ports.capsuleUpdated.send(capsule);
+            } catch (e) {
+                console.log(e)
+                app.ports.uploadRecordFailed.send(null);
+            }
+
         }
 
-        // app.ports.capsuleUpdated.send(capsule);
     }
 
+    // Sets up the canvas for pointer or drawing on the slide during recording.
+    async function setupCanvas(canvasId) {
 
+        // Wait a second so that the canvas appear in the HTML DOM.
+        await new Promise(requestAnimationFrame);
+
+        let canvas = document.getElementById(canvasId);
+        canvas.width = 1920;
+        canvas.height = 1080;
+
+        let ctx = canvas.getContext('2d');
+
+        pointerStream = canvas.captureStream(30);
+
+        canvas.addEventListener('pointerdown', function(event) {
+            pointer.down = true;
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas, ctx);
+            canvas.setPointerCapture(event.pointerId);
+        });
+
+        canvas.addEventListener('pointerup', function(event) {
+            pointer.down = false;
+            refresh(canvas, ctx);
+            canvas.releasePointerCapture(event.pointerId);
+        });
+
+        canvas.addEventListener('pointermove', function(event) {
+            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            refresh(canvas, ctx);
+        });
+
+        let pointerOptions = {
+            videoBitsPerSecond : 2500000,
+            mimeType : 'video/webm;codecs=vp8'
+        };
+
+        pointerRecorder = new MediaRecorder(pointerStream, pointerOptions);
+        pointerRecorder.ondataavailable = (data) => {
+            pointerArrived = data.data;
+            sendRecordToElmIfReady();
+        };
+
+        pointerRecorder.onerror = (err) => {
+            console.log(err);
+        };
+    }
+
+    // Fully refreshes the canvas.
+    function refresh(canvas, ctx) {
+        if (pointer.style === "Pointer") {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (pointer.down) {
+            pointerExists = true;
+            // let gradient = ctx.createRadialGradient(
+            //     pointer.x, pointer.y, 3,
+            //     pointer.x, pointer.y, 10
+            // );
+            // gradient.addColorStop(0, color);
+            // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.strokeStyle = pointer.color;
+            ctx.fillStyle = pointer.color;
+
+            ctx.beginPath();
+            ctx.arc(pointer.x, pointer.y, pointer.size, 0, 2 * Math.PI);
+            ctx.fill();
+
+            if (pointer.style === "Brush") {
+                ctx.lineWidth = 2 * pointer.size;
+
+                if (pointer.oldPosition === null) {
+                    pointer.oldPosition = pointer;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(pointer.oldPosition.x, pointer.oldPosition.y);
+                ctx.lineTo(pointer.x, pointer.y);
+                ctx.stroke();
+            }
+
+            pointer.oldPosition = { x: pointer.position.x, y: pointer.position.y };
+        } else {
+            pointer.oldPosition = null;
+        }
+    }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
@@ -777,4 +935,5 @@ function init(node, flags) {
     makePort("playRecord", playRecord);
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
+    makePort("setupCanvas", setupCanvas);
 }

@@ -276,7 +276,6 @@ view config user model =
 
                 Nothing ->
                     Element.none
-        
 
         deleteRecordPopup : Element App.Msg
         deleteRecordPopup =
@@ -470,8 +469,10 @@ view config user model =
                     Element.el
                         [ Ui.wf
                         , Ui.hfp 2
-                        , Background.uncropped
-                            (Data.slidePath model.capsule s)
+                        , Background.uncropped (Data.slidePath model.capsule s)
+                        , Element.html (Html.canvas [ Html.Attributes.id Acquisition.pointerCanvasId ] [])
+                            |> Element.el [ Ui.wf, Ui.cy ]
+                            |> Element.inFront
                         ]
                         Element.none
 
@@ -481,18 +482,16 @@ view config user model =
         content =
             Element.column [ Ui.wf, Ui.hf ]
                 [ promptElement, statusElement, slideElement ]
-        
 
         popup =
             if model.showSettings then
                 settingsPopup
-        
+
+            else if model.deleteRecord then
+                deleteRecordPopup
+
             else
-                if model.deleteRecord then
-                    deleteRecordPopup
-        
-                else
-                    Element.none
+                Element.none
     in
     ( content, rightColumn, popup )
 
@@ -625,6 +624,7 @@ vumeter ratio value =
         |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
+
 
 {-| Easily creates the Ui.Msg for options msg.
 -}

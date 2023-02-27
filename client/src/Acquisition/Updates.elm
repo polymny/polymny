@@ -216,7 +216,30 @@ update msg model =
                             )
 
                 Acquisition.RecordArrived record ->
-                    ( { model | page = App.Acquisition { m | records = record :: m.records } }, Cmd.none )
+                    let
+                        -- Updates a record if they share the same deviceBlob (pointerBlob has changed).
+                        -- The bool indicates whether it changed or not
+                        updater : Acquisition.Record -> ( Acquisition.Record, Bool )
+                        updater old =
+                            if old.deviceBlob == record.deviceBlob then
+                                ( Debug.log "changed" record, True )
+
+                            else
+                                ( old, False )
+
+                        updatedRecords =
+                            List.map updater m.records
+
+                        newRecords =
+                            if List.any Tuple.second updatedRecords then
+                                -- A record changed, so just return the updated value
+                                updatedRecords |> List.map Tuple.first
+
+                            else
+                                -- No record changed, which means we received a new record, add it to the list
+                                Debug.log "new" record :: m.records
+                    in
+                    ( { model | page = App.Acquisition { m | records = newRecords } }, Cmd.none )
 
                 Acquisition.UploadRecord record ->
                     let
@@ -304,6 +327,14 @@ subs model =
 
                     _ ->
                         App.Noop
+        , pointerRecordArrived <|
+            \x ->
+                case Decode.decodeValue Acquisition.decodeRecord x of
+                    Ok record ->
+                        App.AcquisitionMsg <| Acquisition.RecordArrived record
+
+                    _ ->
+                        App.Noop
         , Keyboard.ups shortcuts
         ]
 
@@ -365,6 +396,11 @@ port stopRecordingPort : () -> Cmd msg
 {-| Receives the record when they're finished.
 -}
 port recordArrived : (Decode.Value -> msg) -> Sub msg
+
+
+{-| Received a record as well as a pointer video.
+-}
+port pointerRecordArrived : (Decode.Value -> msg) -> Sub msg
 
 
 {-| Asks to play a specific record.

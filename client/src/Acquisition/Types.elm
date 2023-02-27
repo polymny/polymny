@@ -1,8 +1,8 @@
-module Acquisition.Types exposing (Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..))
+port module Acquisition.Types exposing (Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId)
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
 
-@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg
+@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId
 
 -}
 
@@ -46,6 +46,7 @@ type alias Model =
 type alias Record =
     { events : List Data.Event
     , deviceBlob : Encode.Value
+    , pointerBlob : Maybe Encode.Value
     , old : Bool
     }
 
@@ -65,10 +66,10 @@ recordDuration record =
 -}
 decodeRecord : Decoder Record
 decodeRecord =
-    Decode.map3 Record
+    Decode.map4 Record
         (Decode.field "events" (Decode.list Data.decodeEvent))
         (Decode.field "webcam_blob" Decode.value)
-        -- (Decode.field "pointer_blob" (Decode.nullable Decode.value))
+        (Decode.field "pointer_blob" (Decode.nullable Decode.value))
         (Decode.succeed False)
 
 
@@ -79,8 +80,7 @@ encodeRecord record =
     Encode.object
         [ ( "events", Encode.list Data.encodeEvent record.events )
         , ( "webcam_blob", record.deviceBlob )
-
-        -- , ( "pointer_blob", record.pointerBlob |> Maybe.withDefault Encode.null )
+        , ( "pointer_blob", record.pointerBlob |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -108,7 +108,7 @@ init gos capsule =
                   , savedRecord = h.record
                   , deleteRecord = False
                   }
-                , Device.detectDevices Nothing
+                , Cmd.batch [ Device.detectDevices Nothing, setupCanvas ]
                 )
 
         _ ->
@@ -135,3 +135,22 @@ type Msg
     | UploadRecord Record
     | DeleteRecord Utils.Confirmation
     | EscapePressed
+
+
+{-| Alias for the setup canvas port.
+-}
+setupCanvas : Cmd msg
+setupCanvas =
+    setupCanvasPort pointerCanvasId
+
+
+{-| Port for initializing the canvas on which the user can draw or point.
+-}
+port setupCanvasPort : String -> Cmd msg
+
+
+{-| Id of the canvas on which the pointer will be drawn.
+-}
+pointerCanvasId : String
+pointerCanvasId =
+    "pointer-canvas"
