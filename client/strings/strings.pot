@@ -400,8 +400,20 @@ msgstr[0] ""
 msgid "Steps.Acquisition.nonValidatedRecordsWillBeLost"
 msgstr ""
 
+#. Saved record label.
+msgid "Steps.Acquisition.savedRecord"
+msgstr ""
+
+#. Saved record label.
+msgid "Steps.Acquisition.deleteRecord"
+msgstr ""
+
 #. Action to play a record.
 msgid "Steps.Acquisition.playRecord"
+msgstr ""
+
+#. Action to play a record.
+msgid "Steps.Acquisition.stopRecord"
 msgstr ""
 
 #. Action to validate a record.
@@ -978,4 +990,12 @@ msgstr ""
 
 #. Rename project warning.
 msgid "Actions.Confirm.renameProjectWarning"
+msgstr ""
+
+#. Delete record.
+msgid "Actions.deleteRecord"
+msgstr ""
+
+#. Delete a record.
+msgid "Actions.Confirm.deleteRecord"
 msgstr ""

@@ -28,6 +28,7 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
+import Utils
 
 
 {-| The view function for the preparation page.
@@ -164,28 +165,136 @@ view config user model =
 
         recordView : Int -> Acquisition.Record -> Element App.Msg
         recordView index record =
+            let
+                -- Attributes to show things as disabled
+                disableAttr : List (Element.Attribute App.Msg)
+                disableAttr =
+                    [ Font.color Colors.greyFontDisabled ]
+
+                -- Gives disable attributes if element is disabled
+                disableAttrIf : Bool -> List (Element.Attribute App.Msg)
+                disableAttrIf disabled =
+                    if disabled then
+                        disableAttr
+
+                    else
+                        []
+
+                -- Play button
+                playButton : Element App.Msg
+                playButton =
+                    let
+                        isPlaying =
+                            case model.recordPlaying of
+                                Just rec ->
+                                    rec == record
+
+                                Nothing ->
+                                    False
+
+                        attr =
+                            disableAttrIf isPlaying
+
+                        action =
+                            if isPlaying then
+                                Ui.None
+
+                            else
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
+                    in
+                    Ui.secondaryIcon
+                        attr
+                        { icon = Material.Icons.play_arrow
+                        , tooltip = Strings.stepsAcquisitionPlayRecord lang
+                        , action = action
+                        }
+
+                -- Stop button
+                stopButton : Element App.Msg
+                stopButton =
+                    let
+                        isPlaying =
+                            case model.recordPlaying of
+                                Just rec ->
+                                    rec == record
+
+                                Nothing ->
+                                    False
+
+                        attr =
+                            disableAttrIf (not isPlaying)
+
+                        action =
+                            if isPlaying then
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.StopRecord
+
+                            else
+                                Ui.None
+                    in
+                    Ui.secondaryIcon
+                        attr
+                        { icon = Material.Icons.stop
+                        , tooltip = Strings.stepsAcquisitionStopRecord lang
+                        , action = action
+                        }
+            in
             Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
                 Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
                     Element.row [ Ui.wf, Ui.s 10 ]
                         [ Element.text (String.fromInt (index + 1))
                         , Element.column [ Ui.wf ]
                             [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
-                        , Ui.primaryIcon []
-                            { icon =
-                                if model.recordPlaying == Just record then
-                                    Material.Icons.stop
-
-                                else
-                                    Material.Icons.play_arrow
-                            , tooltip = ""
-                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
-                            }
+                        , playButton
+                        , stopButton
                         , Ui.primaryIcon []
                             { icon = Material.Icons.done
                             , tooltip = ""
                             , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.UploadRecord record
                             }
                         ]
+
+        savedRecordView : Data.Gos -> Element App.Msg
+        savedRecordView gos =
+            case gos.record of
+                Just rec ->
+                    let
+                        recordLength =
+                            gos.events |> List.reverse |> List.head |> Maybe.map .time |> Maybe.withDefault 0
+                    in
+                    Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
+                        Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
+                            Element.row [ Ui.wf, Ui.s 10 ]
+                                [ Element.text (Strings.stepsAcquisitionSavedRecord lang)
+                                , Element.column [ Ui.wf ]
+                                    [ Element.text (TimeUtils.formatDuration recordLength) ]
+                                , Ui.secondaryIcon []
+                                    { icon = Material.Icons.delete
+                                    , tooltip = Strings.stepsAcquisitionDeleteRecord lang
+                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord Utils.Request
+                                    }
+                                ]
+
+                Nothing ->
+                    Element.none
+        
+
+        deleteRecordPopup : Element App.Msg
+        deleteRecordPopup =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                    [ Element.text (Lang.question Strings.actionsConfirmDeleteRecord lang) ]
+                , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                    [ Ui.secondary []
+                        { action = mkUiMsg (Acquisition.DeleteRecord Utils.Cancel)
+                        , label = Strings.uiCancel lang
+                        }
+                    , Ui.primary []
+                        { action = mkUiMsg (Acquisition.DeleteRecord Utils.Confirm)
+                        , label = Strings.uiConfirm lang
+                        }
+                    ]
+                ]
+                |> Ui.popup 1 (Strings.actionsDeleteRecord lang)
 
         rightColumn =
             Element.el [ Ui.wf, Ui.hf, Ui.bl 1, Border.color Colors.greyBorder ] <|
@@ -205,25 +314,22 @@ view config user model =
                             , Border.color Colors.greyBorder
                             ]
                             (Ui.title (Strings.stepsAcquisitionRecordList lang 2))
+                        :: savedRecordView model.gos
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
 
         settingsPopup =
-            if model.showSettings then
-                Element.column [ Ui.wf, Ui.hf ]
-                    [ Element.row [ Ui.wf, Ui.hf ]
-                        [ Element.el [ Ui.wf ] settings
-                        , Element.el [ Ui.wf ] devicePlayer
-                        ]
-                    , Ui.primary [ Ui.ab, Ui.ar ]
-                        { label = Strings.uiConfirm lang
-                        , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
-                        }
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.row [ Ui.wf, Ui.hf ]
+                    [ Element.el [ Ui.wf ] settings
+                    , Element.el [ Ui.wf ] devicePlayer
                     ]
-                    |> Ui.popup 5 (Strings.navigationSettings lang)
-
-            else
-                Element.none
+                , Ui.primary [ Ui.ab, Ui.ar ]
+                    { label = Strings.uiConfirm lang
+                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
+                    }
+                ]
+                |> Ui.popup 5 (Strings.navigationSettings lang)
 
         currentSlide : Maybe Data.Slide
         currentSlide =
@@ -375,8 +481,20 @@ view config user model =
         content =
             Element.column [ Ui.wf, Ui.hf ]
                 [ promptElement, statusElement, slideElement ]
+        
+
+        popup =
+            if model.showSettings then
+                settingsPopup
+        
+            else
+                if model.deleteRecord then
+                    deleteRecordPopup
+        
+                else
+                    Element.none
     in
-    ( content, rightColumn, settingsPopup )
+    ( content, rightColumn, popup )
 
 
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe Device.Video -> Element App.Msg
@@ -507,3 +625,16 @@ vumeter ratio value =
         |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
+
+{-| Easily creates the Ui.Msg for options msg.
+-}
+mkUiMsg : Acquisition.Msg -> Ui.Action App.Msg
+mkUiMsg msg =
+    mkMsg msg |> Ui.Msg
+
+
+{-| Easily creates a options msg.
+-}
+mkMsg : Acquisition.Msg -> App.Msg
+mkMsg msg =
+    App.AcquisitionMsg msg

@@ -23,10 +23,12 @@ import File
 import FileValue
 import Home.Types as Home
 import Json.Decode as Decode
+import Keyboard
 import NewCapsule.Types as NewCapsule
 import RemoteData exposing (RemoteData)
 import Strings
 import Utils
+import Data.Capsule exposing (Capsule)
 
 
 {-| The update function of the home view.
@@ -80,7 +82,7 @@ update msg model =
 
                 Home.DeleteCapsule Utils.Request capsule ->
                     ( { model | page = App.Home { m | popupType = Just (Home.DeleteCapsulePopup capsule) } }, Cmd.none )
-
+            
                 Home.DeleteCapsule Utils.Cancel _ ->
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
@@ -315,6 +317,9 @@ update msg model =
                             { config | clientConfig = newClientConfig }
                     in
                     ( { model | config = newConfig }, Cmd.none )
+            
+                Home.EscapePressed ->
+                    ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -336,17 +341,30 @@ port selectPort : ( Maybe String, List String ) -> Cmd msg
 -}
 port selected : (( Maybe String, Decode.Value ) -> msg) -> Sub msg
 
+{-| Keyboard shortcuts of the home page.
+-}
+shortcuts : Keyboard.RawKey -> App.Msg
+shortcuts msg =
+    case Keyboard.rawValue msg of
+        "Escape" ->
+            App.HomeMsg <| Home.EscapePressed
+
+        _ ->
+            App.Noop
 
 {-| Subscriptions of the page.
 -}
 subs : Sub App.Msg
 subs =
-    selected
-        (\( p, x ) ->
-            case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
-                ( Ok y, Ok z ) ->
-                    App.HomeMsg (Home.SlideUploadReceived p y z)
+    Sub.batch
+        [ selected
+            (\( p, x ) ->
+                case ( Decode.decodeValue FileValue.decoder x, Decode.decodeValue File.decoder x ) of
+                    ( Ok y, Ok z ) ->
+                        App.HomeMsg (Home.SlideUploadReceived p y z)
 
-                _ ->
-                    App.Noop
-        )
+                    _ ->
+                        App.Noop
+            )
+        , Keyboard.ups shortcuts
+        ]

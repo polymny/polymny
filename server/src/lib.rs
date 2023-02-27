@@ -484,6 +484,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
                 routes::capsule::delete_capsule,
                 routes::capsule::delete_project,
                 routes::capsule::upload_record,
+                routes::capsule::delete_record,
                 routes::capsule::upload_pointer,
                 routes::capsule::replace_slide,
                 routes::capsule::add_slide,

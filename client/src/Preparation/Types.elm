@@ -74,6 +74,7 @@ type Msg
     | Extra ExtraMsg
     | EditPrompt Data.Slide
     | PromptChanged Utils.Confirmation Data.Slide
+    | EscapePressed
 
 
 {-| The type that handles all file upload.

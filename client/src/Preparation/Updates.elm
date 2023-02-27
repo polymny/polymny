@@ -14,6 +14,7 @@ import Data.User as Data
 import Dict exposing (Dict)
 import File
 import File.Select as Select
+import Keyboard
 import List.Extra
 import Preparation.Types as Preparation
 import RemoteData
@@ -86,6 +87,18 @@ update msg model =
                                 (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                     in
                     ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
+
+                Preparation.EscapePressed ->
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | editPrompt = Nothing
+                                    , deleteSlide = Nothing
+                                }
+                      }
+                    , Cmd.none
+                    )
 
         _ ->
             ( model, Cmd.none )
@@ -275,13 +288,28 @@ fixStructure old new =
     ( broken, ret )
 
 
+{-| Keyboard shortcuts of the preparation page.
+-}
+shortcuts : Keyboard.RawKey -> App.Msg
+shortcuts msg =
+    case Keyboard.rawValue msg of
+        "Escape" ->
+            App.PreparationMsg <| Preparation.EscapePressed
+
+        _ ->
+            App.Noop
+
+
 {-| Subscriptions for the prepration view.
 -}
 subs : Preparation.Model -> Sub App.Msg
 subs model =
     Sub.batch
-        [ Preparation.slideSystem.subscriptions model.slideModel
-        , Preparation.gosSystem.subscriptions model.gosModel
+        [ Sub.batch
+            [ Preparation.slideSystem.subscriptions model.slideModel
+            , Preparation.gosSystem.subscriptions model.gosModel
+            ]
+            |> Sub.map Preparation.DnD
+            |> Sub.map App.PreparationMsg
+        , Keyboard.ups shortcuts
         ]
-        |> Sub.map Preparation.DnD
-        |> Sub.map App.PreparationMsg

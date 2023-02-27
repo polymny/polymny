@@ -20,6 +20,7 @@ import Json.Encode as Encode
 import Keyboard
 import Route
 import Time
+import Utils
 
 
 {-| The update function of the preparation page.
@@ -77,6 +78,11 @@ update msg model =
                 Acquisition.PlayRecord record ->
                     ( { model | page = App.Acquisition { m | recordPlaying = Just record, currentSlide = 0, currentSentence = 0 } }
                     , playRecord record
+                    )
+
+                Acquisition.StopRecord ->
+                    ( { model | page = App.Acquisition { m | recordPlaying = Nothing } }
+                    , stopRecord
                     )
 
                 Acquisition.PlayRecordFinished ->
@@ -234,6 +240,34 @@ update msg model =
                         ]
                     )
 
+                Acquisition.DeleteRecord Utils.Request ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = True } }, Cmd.none )
+
+                Acquisition.DeleteRecord Utils.Cancel ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = False } }, Cmd.none )
+
+                Acquisition.DeleteRecord Utils.Confirm ->
+                    let
+                        gos =
+                            m.gos
+                    in
+                    ( { model
+                        | page =
+                            App.Acquisition
+                                { m
+                                    | deleteRecord = False
+                                    , savedRecord = Nothing
+                                    , gos = { gos | record = Nothing }
+                                }
+                      }
+                    , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
+                    )
+
+                Acquisition.EscapePressed ->
+                    ( { model | page = App.Acquisition { m | deleteRecord = False } }
+                    , Cmd.none
+                    )
+
         _ ->
             ( model, Cmd.none )
 
@@ -245,6 +279,9 @@ shortcuts msg =
     case Keyboard.rawValue msg of
         "ArrowRight" ->
             App.AcquisitionMsg <| Acquisition.NextSentence True
+
+        "Escape" ->
+            App.AcquisitionMsg <| Acquisition.EscapePressed
 
         _ ->
             App.Noop
@@ -340,6 +377,18 @@ playRecord record =
 {-| Port that starts the playing of a record.
 -}
 port playRecordPort : Encode.Value -> Cmd msg
+
+
+{-| Asks to stop playing record.
+-}
+stopRecord : Cmd msg
+stopRecord =
+    stopRecordPort ()
+
+
+{-| Port that stops the playing of the record.
+-}
+port stopRecordPort : () -> Cmd msg
 
 
 {-| Sub to know when the playing of a record is finished.

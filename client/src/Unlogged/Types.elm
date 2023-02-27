@@ -73,6 +73,7 @@ type Msg
     | ResetPasswordRequestChanged (RemoteData.WebData User)
     | SignUpRequestChanged (RemoteData.WebData ())
     | ButtonClicked
+    | Noop
 
 
 {-| Initializes the unlogged model.

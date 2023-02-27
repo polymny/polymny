@@ -8,6 +8,7 @@ import Data.User as Data
 import File
 import FileValue
 import Json.Decode as Decode
+import Keyboard
 import Options.Types as Options exposing (init)
 import RemoteData
 import Utils
@@ -194,6 +195,9 @@ update msg model =
                 Options.Stop ->
                     ( { model | page = App.Options { m | playPreview = False } }, stopTrackPreviewPort () )
 
+                Options.EscapePressed ->
+                    ( { model | page = App.Options { m | deleteTrack = Nothing } }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -276,6 +280,18 @@ port selectTrackPort : List String -> Cmd msg
 port selectedTrack : (Decode.Value -> msg) -> Sub msg
 
 
+{-| Keyboard shortcuts of the options page.
+-}
+shortcuts : Keyboard.RawKey -> App.Msg
+shortcuts msg =
+    case Keyboard.rawValue msg of
+        "Escape" ->
+            App.OptionsMsg <| Options.EscapePressed
+
+        _ ->
+            App.Noop
+
+
 {-| Subscriptions of the page.
 -}
 subs : Sub App.Msg
@@ -291,4 +307,5 @@ subs =
                         App.Noop
             )
         , recordEnded (\_ -> App.OptionsMsg Options.Stop)
+        , Keyboard.ups shortcuts
         ]
