@@ -103,7 +103,18 @@ init gos capsule =
                   , recording = Nothing
                   , currentSlide = 0
                   , currentSentence = 0
-                  , records = []
+                  , records =
+                        case Data.recordPath capsule h of
+                            Just recordPath ->
+                                [ { events = h.events
+                                  , deviceBlob = Encode.string recordPath
+                                  , pointerBlob = Data.pointerPath capsule h |> Maybe.map Encode.string
+                                  , old = True
+                                  }
+                                ]
+
+                            _ ->
+                                []
                   , recordPlaying = Nothing
                   , savedRecord = h.record
                   , deleteRecord = False

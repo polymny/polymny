@@ -1,7 +1,7 @@
 module Data.Capsule exposing
     ( Capsule, assetPath, iframeHtml
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString, updateGos
-    , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
+    , Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
@@ -25,7 +25,7 @@ module Data.Capsule exposing
 
 ## Slides
 
-@docs Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
+@docs Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
 
 
 ## Records
@@ -185,12 +185,17 @@ slidePath capsule slide =
 -}
 recordPath : Capsule -> Gos -> Maybe String
 recordPath capsule gos =
-    case gos.record of
-        Just r ->
-            Just <| assetPath capsule (r.uuid ++ ".webm")
+    gos.record
+        |> Maybe.andThen (\x -> Just <| assetPath capsule (x.uuid ++ ".webm"))
 
-        Nothing ->
-            Nothing
+
+{-| Returns the path to the pointer record of a gos.
+-}
+pointerPath : Capsule -> Gos -> Maybe String
+pointerPath capsule gos =
+    gos.record
+        |> Maybe.andThen .pointerUuid
+        |> Maybe.andThen (\x -> Just <| assetPath capsule (x ++ ".webm"))
 
 
 {-| Returns the path of the first record of a capsule.

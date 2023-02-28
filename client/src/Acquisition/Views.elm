@@ -241,7 +241,11 @@ view config user model =
             Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
                 Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
                     Element.row [ Ui.wf, Ui.s 10 ]
-                        [ Element.text (String.fromInt (index + 1))
+                        [ if record.old then
+                            Element.text <| Strings.stepsAcquisitionSavedRecord lang
+
+                          else
+                            Element.text (String.fromInt (index + 1))
                         , Element.column [ Ui.wf ]
                             [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
                         , playButton
@@ -252,30 +256,6 @@ view config user model =
                             , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.UploadRecord record
                             }
                         ]
-
-        savedRecordView : Data.Gos -> Element App.Msg
-        savedRecordView gos =
-            case gos.record of
-                Just rec ->
-                    let
-                        recordLength =
-                            gos.events |> List.reverse |> List.head |> Maybe.map .time |> Maybe.withDefault 0
-                    in
-                    Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
-                        Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
-                            Element.row [ Ui.wf, Ui.s 10 ]
-                                [ Element.text (Strings.stepsAcquisitionSavedRecord lang)
-                                , Element.column [ Ui.wf ]
-                                    [ Element.text (TimeUtils.formatDuration recordLength) ]
-                                , Ui.secondaryIcon []
-                                    { icon = Material.Icons.delete
-                                    , tooltip = Strings.stepsAcquisitionDeleteRecord lang
-                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord Utils.Request
-                                    }
-                                ]
-
-                Nothing ->
-                    Element.none
 
         deleteRecordPopup : Element App.Msg
         deleteRecordPopup =
@@ -313,7 +293,6 @@ view config user model =
                             , Border.color Colors.greyBorder
                             ]
                             (Ui.title (Strings.stepsAcquisitionRecordList lang 2))
-                        :: savedRecordView model.gos
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
 
