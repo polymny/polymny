@@ -26,10 +26,10 @@ import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
 import NewCapsule.Types as NewCapsule
+import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
-import Options.Types as Options
 import Settings.Types as Settings
 import Unlogged.Types as Unlogged
 import Url
@@ -101,7 +101,7 @@ getCapsule page =
 
         Publication m ->
             Just m.capsule
-        
+
         Options m ->
             Just m.capsule
 

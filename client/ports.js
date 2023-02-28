@@ -638,7 +638,6 @@ function init(node, flags) {
 
     // Uploads a record to the server.
     async function uploadRecord(args) {
-        console.log(args);
         let capsuleId = args[0];
         let gos = args[1];
         let record = args[2];
@@ -657,7 +656,16 @@ function init(node, flags) {
                 if (record.pointer_blob !== null) {
                     try {
                         xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
-                            app.ports.progressReceived.send(e.loaded / e.total);
+                            app.ports.taskProgress.send({
+                                "task": {
+                                    "type": "UploadRecord",
+                                    "capsuleId": capsuleId,
+                                    "gos": gos,
+                                    "value": null,
+                                },
+                                progress: e.loaded / e.total  * (record.pointer_blob === null ? 1 : 0.5),
+                                finished: false,
+                            });
                         });
                         let capsule = JSON.parse(xhr.responseText);
                         // app.ports.capsuleUpdated.send(capsule);
@@ -680,9 +688,10 @@ function init(node, flags) {
                             "type": "UploadRecord",
                             "capsuleId": capsuleId,
                             "gos": gos,
-                            "value": record,
+                            "value": null,
                         },
                         progress: e.loaded / e.total  * (record.pointer_blob === null ? 1 : 0.5),
+                        finished: false,
                     });
                 });
 
@@ -694,26 +703,27 @@ function init(node, flags) {
                                 "type": "UploadRecord",
                                 "capsuleId": capsuleId,
                                 "gos": gos,
-                                "value": record,
+                                "value": null,
                             },
                             progress: 0.5 + (e.loaded / e.total) / 2,
+                            finished: false,
                         });
                     });
                 }
+
+                let capsule = JSON.parse(xhr.responseText);
+                capsule.structure[gos].events = record.events;
 
                 app.ports.taskProgress.send({
                     "task": {
                         "type": "UploadRecord",
                         "capsuleId": capsuleId,
                         "gos": gos,
-                        "value": record,
+                        "value": capsule.structure[gos].record,
                     },
                     progress: 1,
                     finished: true,
                 });
-
-                let capsule = JSON.parse(xhr.responseText);
-                capsule.structure[gos].events = record.events;
 
                 await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
 

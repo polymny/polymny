@@ -1,9 +1,9 @@
-module App.Utils exposing (init, pageFromRoute)
+module App.Utils exposing (init, pageFromRoute, capsuleFromPage, updatePage)
 
 {-| This module contains some util functions that should really be in App/Types.elm but that can't be there because elm
 doesn't allow circular module imports...
 
-@docs init, pageFromRoute
+@docs init, pageFromRoute, capsuleFromPage, updatePage
 
 -}
 
@@ -11,6 +11,7 @@ import Acquisition.Types as Acquisition
 import App.Types as App
 import Browser.Navigation
 import Config exposing (Config)
+import Data.Capsule as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
@@ -78,6 +79,54 @@ init flags url key =
                     ( App.Error (App.DecodeError u), Cmd.none )
     in
     ( model, cmd )
+
+
+{-| Extracts the capsule from a page.
+-}
+capsuleFromPage : App.Page -> Maybe Data.Capsule
+capsuleFromPage page =
+    case page of
+        App.Preparation { capsule } ->
+            Just capsule
+
+        App.Acquisition { capsule } ->
+            Just capsule
+
+        App.Production { capsule } ->
+            Just capsule
+
+        App.Publication { capsule } ->
+            Just capsule
+
+        App.Options { capsule } ->
+            Just capsule
+
+        _ ->
+            Nothing
+
+
+{-| Updates the capsule inside a page.
+-}
+updatePage : Data.Capsule -> App.Page -> App.Page
+updatePage capsule page =
+    case page of
+        App.Preparation model ->
+            App.Preparation { model | capsule = capsule }
+
+        App.Acquisition model ->
+            App.Acquisition { model | capsule = capsule }
+
+        App.Production model ->
+            App.Production { model | capsule = capsule }
+
+        App.Publication model ->
+            App.Publication { model | capsule = capsule }
+
+        App.Options model ->
+            App.Options { model | capsule = capsule }
+
+        _ ->
+            page
 
 
 {-| Finds a page from the route and the context.

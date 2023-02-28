@@ -231,7 +231,7 @@ leftColumn lang page capsule selectedGos =
 
                         App.Publication _ ->
                             id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
-                        
+
                         App.Options _ ->
                             Route.Production capsule.id id |> Ui.Route
 

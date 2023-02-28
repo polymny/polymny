@@ -14,6 +14,7 @@ import Api.Capsule as Api
 import App.Types as App
 import Config
 import Data.Capsule as Data exposing (Capsule)
+import Data.User as Data
 import Device
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -273,15 +274,18 @@ update msg model =
                     let
                         gos =
                             m.gos
+
+                        newGos =
+                            { gos | events = [], record = Nothing }
+
+                        newCapsule =
+                            Data.updateGos m.gosId newGos m.capsule
                     in
                     ( { model
                         | page =
                             App.Acquisition
-                                { m
-                                    | deleteRecord = False
-                                    , savedRecord = Nothing
-                                    , gos = { gos | record = Nothing }
-                                }
+                                { m | deleteRecord = False, savedRecord = Nothing, gos = newGos, capsule = newCapsule }
+                        , user = Data.updateUser newCapsule model.user
                       }
                     , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
                     )

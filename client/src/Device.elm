@@ -372,9 +372,9 @@ device.
 encodeRecordingSettings : Device -> Encode.Value
 encodeRecordingSettings device =
     case ( device.video, device.audio ) of
-        ( Just _, Just _ ) ->
+        ( Just ( _, resolution ), Just _ ) ->
             Encode.object
-                [ ( "videoBitsPerSecond", Encode.int 2500000 )
+                [ ( "videoBitsPerSecond", Encode.int <| bitrate resolution )
                 , ( "audioBitsPerSecond", Encode.int 128000 )
                 , ( "mimeType", Encode.string "video/webm;codecs=opus,vp8" )
                 ]
@@ -385,14 +385,31 @@ encodeRecordingSettings device =
                 , ( "mimeType", Encode.string "video/webm;codecs=opus" )
                 ]
 
-        ( Just _, Nothing ) ->
+        ( Just ( _, resolution ), Nothing ) ->
             Encode.object
-                [ ( "videoBitsPerSecond", Encode.int 2500000 )
+                [ ( "videoBitsPerSecond", Encode.int <| bitrate resolution )
                 , ( "mimeType", Encode.string "video/webm;codecs=vp8" )
                 ]
 
         _ ->
             Encode.object []
+
+
+{-| Returns the bitrate depending on the webcam resolution.
+-}
+bitrate : Resolution -> Int
+bitrate resolution =
+    if resolution.height >= 1080 then
+        4500000
+
+    else if resolution.height >= 720 then
+        3000000
+
+    else if resolution.height >= 480 then
+        1500000
+
+    else
+        1000000
 
 
 {-| Encodes the full settings that can be given to JavaScript in order to bind the device and setup the recording.

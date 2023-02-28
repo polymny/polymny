@@ -13,9 +13,11 @@ import App.Types as App
 import App.Utils as App
 import Browser.Navigation
 import Config
+import Data.Capsule as Data
 import Data.User as Data
 import Device
 import Home.Updates as Home
+import Json.Decode as Decode
 import NewCapsule.Updates as NewCapsule
 import Options.Types as Options
 import Options.Updates as Options
@@ -74,6 +76,58 @@ update message model =
             updateModel (App.ConfigMsg (Config.SortByChanged newSortBy))
                 { m | user = { user | projects = Data.sortProjects newSortBy user.projects } }
                 |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
+
+        -- If a config msg indicates that an upload record is finished
+        ( App.LoggedMsg (App.ConfigMsg (Config.UpdateTaskStatus t)), App.Logged inputModel ) ->
+            let
+                ( m, cmd ) =
+                    updateModel (App.ConfigMsg (Config.UpdateTaskStatus t)) inputModel
+            in
+            case ( t.finished, t.task ) of
+                ( True, Config.UploadRecord id gosId value ) ->
+                    let
+                        record : Maybe Data.Record
+                        record =
+                            case Decode.decodeValue Data.decodeRecord value of
+                                Ok r ->
+                                    Just r
+
+                                _ ->
+                                    Nothing
+
+                        capsule : Maybe Data.Capsule
+                        capsule =
+                            Data.getCapsuleById id m.user
+
+                        gos : Maybe Data.Gos
+                        gos =
+                            capsule
+                                |> Maybe.andThen (\x -> List.drop gosId x.structure |> List.head)
+                                |> Maybe.map (\x -> { x | record = record })
+
+                        newCapsule : Maybe Data.Capsule
+                        newCapsule =
+                            case ( capsule, gos ) of
+                                ( Just c, Just g ) ->
+                                    Just <| Data.updateGos gosId g c
+
+                                _ ->
+                                    capsule
+
+                        newPage : App.Page
+                        newPage =
+                            Maybe.map (\x -> App.updatePage x m.page) newCapsule
+                                |> Maybe.withDefault m.page
+
+                        user : Data.User
+                        user =
+                            Maybe.map (\x -> Data.updateUser x m.user) newCapsule
+                                |> Maybe.withDefault m.user
+                    in
+                    ( App.Logged { m | user = user, page = newPage }, Cmd.map App.LoggedMsg cmd )
+
+                _ ->
+                    ( App.Logged m, Cmd.map App.LoggedMsg cmd )
 
         ( App.LoggedMsg msg, App.Logged m ) ->
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
@@ -233,6 +287,6 @@ subs m =
 
         App.Unlogged model ->
             Unlogged.subs |> Sub.map App.UnloggedMsg
-        
+
         _ ->
             Sub.none

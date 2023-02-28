@@ -1,6 +1,6 @@
 module Data.Capsule exposing
     ( Capsule, assetPath, iframeHtml
-    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString
+    , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString, updateGos
     , Slide, slidePath, videoPath, recordPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
@@ -20,7 +20,7 @@ module Data.Capsule exposing
 
 # The GoS (Group of Slides) type
 
-@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor, Event, EventType, eventTypeToString
+@docs Gos, gosFromSlides, WebcamSettings, defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor, Event, EventType, eventTypeToString, updateGos
 
 
 ## Slides
@@ -295,9 +295,13 @@ updateSlide slide capsule =
 
 {-| Updates a specific gos in a capsule.
 -}
-updateGos : Gos -> Capsule -> Capsule
-updateGos gos capsule =
-    capsule
+updateGos : Int -> Gos -> Capsule -> Capsule
+updateGos id gos capsule =
+    let
+        newStructure =
+            List.take id capsule.structure ++ (gos :: List.drop (id + 1) capsule.structure)
+    in
+    { capsule | structure = newStructure }
 
 
 {-| This type represents a record done by a webcam.

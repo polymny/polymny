@@ -239,7 +239,7 @@ type alias ClientState =
 
 -}
 type Task
-    = UploadRecord String Int Encode.Value
+    = UploadRecord String Int Decode.Value
 
 
 {-| Decodes a task.
