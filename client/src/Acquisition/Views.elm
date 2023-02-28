@@ -519,6 +519,8 @@ view config user model =
     ( content, rightColumn, popup )
 
 
+{-| Displays a button to select a specific video device.
+-}
 videoView : Lang -> Maybe ( Device.Video, Device.Resolution ) -> Maybe Device.Video -> Element App.Msg
 videoView lang preferredVideo video =
     let
@@ -557,6 +559,8 @@ videoView lang preferredVideo video =
     button
 
 
+{-| Displays a button to select a specific video resolution.
+-}
 videoResolutionView : Lang -> ( Device.Video, Device.Resolution ) -> Device.Resolution -> Element App.Msg
 videoResolutionView lang ( preferredVideo, preferredResolution ) resolution =
     let
@@ -576,6 +580,8 @@ videoResolutionView lang ( preferredVideo, preferredResolution ) resolution =
         }
 
 
+{-| Displays a button to select a specific audio device.
+-}
 audioView : Maybe Device.Audio -> Device.Audio -> Element App.Msg
 audioView preferredAudio audio =
     let
@@ -601,6 +607,8 @@ audioView preferredAudio audio =
     makeButton [] { label = audio.label, action = action }
 
 
+{-| Displays a nice VuMeter : a gauge that show the volume of the audio input.
+-}
 vumeter : Int -> Float -> Element App.Msg
 vumeter ratio value =
     let
