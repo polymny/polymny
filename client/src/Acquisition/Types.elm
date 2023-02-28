@@ -1,8 +1,11 @@
-port module Acquisition.Types exposing (Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId)
+port module Acquisition.Types exposing
+    ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, encodePointerStyle
+    , setPointerStyle
+    )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
 
-@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId
+@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId, PointerStyle, encodePointerStyle
 
 -}
 
@@ -38,6 +41,7 @@ type alias Model =
     , recordPlaying : Maybe Record
     , savedRecord : Maybe Data.Record
     , deleteRecord : Bool
+    , pointerStyle : PointerStyle
     }
 
 
@@ -84,6 +88,56 @@ encodeRecord record =
         ]
 
 
+{-| The style of the pointer.
+-}
+type alias PointerStyle =
+    { mode : PointerMode
+    , color : String
+    , size : Int
+    }
+
+
+{-| The mode of the pointer: pointer or brush.
+-}
+type PointerMode
+    = Pointer
+    | Brush
+
+
+{-| Encodes a pointer mode in json.
+-}
+encodePointerMode : PointerMode -> Encode.Value
+encodePointerMode mode =
+    Encode.string <|
+        case mode of
+            Pointer ->
+                "Pointer"
+
+            Brush ->
+                "Brush"
+
+
+{-| Encodes a pointer style in json.
+-}
+encodePointerStyle : PointerStyle -> Encode.Value
+encodePointerStyle style =
+    Encode.object
+        [ ( "mode", encodePointerMode style.mode )
+        , ( "color", Encode.string style.color )
+        , ( "size", Encode.int style.size )
+        ]
+
+
+{-| The default pointer style value.
+-}
+defaultPointerStyle : PointerStyle
+defaultPointerStyle =
+    { mode = Pointer
+    , size = 10
+    , color = "rgb(255, 0, 0)"
+    }
+
+
 {-| Initializes a model from the capsule and the grain we want to record.
 
 It returns Nothing if the grain is not in the capsule.
@@ -118,8 +172,9 @@ init gos capsule =
                   , recordPlaying = Nothing
                   , savedRecord = h.record
                   , deleteRecord = False
+                  , pointerStyle = defaultPointerStyle
                   }
-                , Cmd.batch [ Device.detectDevices Nothing, setupCanvas ]
+                , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
 
         _ ->
@@ -146,6 +201,9 @@ type Msg
     | UploadRecord Record
     | DeleteRecord Utils.Confirmation
     | EscapePressed
+    | SetPointerMode PointerMode
+    | SetPointerColor String
+    | SetPointerSize Int
 
 
 {-| Alias for the setup canvas port.
@@ -165,3 +223,15 @@ port setupCanvasPort : String -> Cmd msg
 pointerCanvasId : String
 pointerCanvasId =
     "pointer-canvas"
+
+
+{-| Helper to change the pointer style.
+-}
+setPointerStyle : PointerStyle -> Cmd msg
+setPointerStyle style =
+    setPointerStylePort <| encodePointerStyle style
+
+
+{-| Port to change the pointer style.
+-}
+port setPointerStylePort : Encode.Value -> Cmd msg

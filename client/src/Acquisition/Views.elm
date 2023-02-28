@@ -460,7 +460,16 @@ view config user model =
 
         content =
             Element.column [ Ui.wf, Ui.hf ]
-                [ promptElement, statusElement, slideElement ]
+                [ promptElement
+                , statusElement
+                , Element.row
+                    [ Ui.wf, Ui.hf ]
+                    [ palette
+                        |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
+                        |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
+                    , slideElement
+                    ]
+                ]
 
         popup =
             if model.showSettings then
@@ -603,6 +612,56 @@ vumeter ratio value =
         |> Element.column [ Ui.hfp 1, Ui.s 2, Ui.wpx 20, Ui.ab ]
     ]
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
+
+
+{-| Palette of colors that can be used for pointer.
+-}
+palette : List ( Element.Color, Element.Color )
+palette =
+    [ ( Element.rgb255 255 0 0, Element.rgb255 128 0 0 )
+    , ( Element.rgb255 255 128 0, Element.rgb255 128 64 0 )
+    , ( Element.rgb255 255 255 0, Element.rgb255 128 128 0 )
+    , ( Element.rgb255 0 255 0, Element.rgb255 0 128 0 )
+    , ( Element.rgb255 0 255 255, Element.rgb255 0 128 128 )
+    , ( Element.rgb255 0 0 255, Element.rgb255 0 0 128 )
+    , ( Element.rgb255 255 0 255, Element.rgb255 128 0 128 )
+    , ( Element.rgb255 255 128 128, Element.rgb255 128 128 255 )
+    , ( Element.rgb255 128 255 128, Element.rgb255 255 255 128 )
+    ]
+
+
+{-| Convers an element color to a css string.
+-}
+colorToString : Element.Color -> String
+colorToString color =
+    let
+        { red, green, blue } =
+            Element.toRgb color
+
+        r =
+            floor (255 * red) |> String.fromInt
+
+        g =
+            floor (255 * green) |> String.fromInt
+
+        b =
+            floor (255 * blue) |> String.fromInt
+    in
+    "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
+
+
+{-| Convers an element color to an input button.
+-}
+colorToButton : Element.Color -> Element App.Msg
+colorToButton color =
+    Input.button [ Ui.wf, Element.height (Element.px 45) ]
+        { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
+        , onPress =
+            colorToString color
+                |> Acquisition.SetPointerColor
+                |> App.AcquisitionMsg
+                |> Just
+        }
 
 
 {-| Easily creates the Ui.Msg for options msg.

@@ -37,6 +37,10 @@ update msg model =
     in
     case model.page of
         App.Acquisition m ->
+            let
+                { pointerStyle } =
+                    m
+            in
             case msg of
                 Acquisition.RequestCameraPermission deviceId ->
                     ( { model | page = App.Acquisition { m | state = Acquisition.DetectingDevices } }, Device.detectDevices (Just deviceId) )
@@ -293,6 +297,33 @@ update msg model =
                 Acquisition.EscapePressed ->
                     ( { model | page = App.Acquisition { m | deleteRecord = False } }
                     , Cmd.none
+                    )
+
+                Acquisition.SetPointerMode newMode ->
+                    let
+                        newPointerStyle =
+                            { pointerStyle | mode = newMode }
+                    in
+                    ( { model | page = App.Acquisition { m | pointerStyle = newPointerStyle } }
+                    , Acquisition.setPointerStyle newPointerStyle
+                    )
+
+                Acquisition.SetPointerColor newColor ->
+                    let
+                        newPointerStyle =
+                            { pointerStyle | color = newColor }
+                    in
+                    ( { model | page = App.Acquisition { m | pointerStyle = newPointerStyle } }
+                    , Acquisition.setPointerStyle newPointerStyle
+                    )
+
+                Acquisition.SetPointerSize newSize ->
+                    let
+                        newPointerStyle =
+                            { pointerStyle | size = newSize }
+                    in
+                    ( { model | page = App.Acquisition { m | pointerStyle = newPointerStyle } }
+                    , Acquisition.setPointerStyle newPointerStyle
                     )
 
         _ ->

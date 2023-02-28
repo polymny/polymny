@@ -57,7 +57,7 @@ function init(node, flags) {
 
     // The information about the pointer.
     let pointer = {
-        style: "Pointer",
+        mode: "Pointer",
         color: "rgb(255, 0, 0)",
         size: 10,
         position: { x: 0, y: 0 },
@@ -753,8 +753,8 @@ function init(node, flags) {
 
         canvas.addEventListener('pointerdown', function(event) {
             pointer.down = true;
-            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
-            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            pointer.position.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.position.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
             refresh(canvas, ctx);
             canvas.setPointerCapture(event.pointerId);
         });
@@ -766,8 +766,8 @@ function init(node, flags) {
         });
 
         canvas.addEventListener('pointermove', function(event) {
-            pointer.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
-            pointer.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
+            pointer.position.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
+            pointer.position.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
             refresh(canvas, ctx);
         });
 
@@ -789,14 +789,14 @@ function init(node, flags) {
 
     // Fully refreshes the canvas.
     function refresh(canvas, ctx) {
-        if (pointer.style === "Pointer") {
+        if (pointer.mode === "Pointer") {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         if (pointer.down) {
             pointerExists = true;
             // let gradient = ctx.createRadialGradient(
-            //     pointer.x, pointer.y, 3,
-            //     pointer.x, pointer.y, 10
+            //     pointer.position.x, pointer.position.y, 3,
+            //     pointer.position.x, pointer.position.y, 10
             // );
             // gradient.addColorStop(0, color);
             // gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
@@ -804,19 +804,19 @@ function init(node, flags) {
             ctx.fillStyle = pointer.color;
 
             ctx.beginPath();
-            ctx.arc(pointer.x, pointer.y, pointer.size, 0, 2 * Math.PI);
+            ctx.arc(pointer.position.x, pointer.position.y, pointer.size, 0, 2 * Math.PI);
             ctx.fill();
 
-            if (pointer.style === "Brush") {
+            if (pointer.mode === "Brush") {
                 ctx.lineWidth = 2 * pointer.size;
 
                 if (pointer.oldPosition === null) {
-                    pointer.oldPosition = pointer;
+                    pointer.oldPosition = pointer.position;
                 }
 
                 ctx.beginPath();
                 ctx.moveTo(pointer.oldPosition.x, pointer.oldPosition.y);
-                ctx.lineTo(pointer.x, pointer.y);
+                ctx.lineTo(pointer.position.x, pointer.position.y);
                 ctx.stroke();
             }
 
@@ -942,6 +942,13 @@ function init(node, flags) {
         if (soundtrackCheck.audio !== null) {
             soundtrackCheck.audio.volume = volume;
         }
+    });
+
+    // Change the mode of the pointer.
+    makePort("setPointerStyle", function(argument) {
+        pointer.mode = argument.mode;
+        pointer.color = argument.color;
+        pointer.size = argument.size;
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
