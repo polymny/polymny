@@ -6,7 +6,7 @@ port module Config exposing
     , Msg(..)
     , update, subs
     , saveStorage
-    , decodeTaskStatus, taskProgress
+    , ClientTask(..), ServerTask(..), decodeTaskStatus, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -48,12 +48,14 @@ at all times in the client.
 
 -}
 
+import Browser.Dom as Dom
 import Browser.Navigation
 import Data.Types as Data
 import Device
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Lang exposing (Lang)
+import Task
 import Time
 
 
@@ -220,6 +222,7 @@ It is not in the client config since it cannot be persisted, and is recreated wi
   - `lastRequest` is the number of the last request sent. It allows us to ignore responses to old requests.
   - `tasks` is the list of tasks being run by the client;
   - `showLangPicker` is a bool that tells us whether we should show the lang picker or not.
+  - `showNotificationPanel` is a bool that tells us whether we should show the notification panel or not.
 
 -}
 type alias ClientState =
@@ -230,7 +233,17 @@ type alias ClientState =
     , lastRequest : Int
     , tasks : List TaskStatus
     , showLangPicker : Bool
+    , showTaskPanel : Bool
     }
+
+
+{-| The task that are running on the server to keep the user informed.
+
+  - `Production` means that the production is running.
+
+-}
+type ServerTask
+    = Production
 
 
 {-| The tasks that are running in the background while the user is using the app.
@@ -238,27 +251,30 @@ type alias ClientState =
   - `UploadRecord` means that the user is uploading a record on a specific gos of a specific capsule.
 
 -}
-type Task
+type ClientTask
     = UploadRecord String Int Encode.Value
+
+
+{-| All the task that the user can see
+-}
+type Task
+    = ClientTask ClientTask
+    | ServerTask ServerTask
 
 
 {-| Decodes a task.
 -}
 decodeTask : Decoder Task
 decodeTask =
-    Decode.field "type" Decode.string
-        |> Decode.andThen
-            (\x ->
-                case x of
-                    "UploadRecord" ->
-                        Decode.map3 UploadRecord
-                            (Decode.field "capsuleId" Decode.string)
-                            (Decode.field "gos" Decode.int)
-                            (Decode.field "value" Decode.value)
-
-                    _ ->
-                        Decode.fail <| "type " ++ x ++ " not recognized as task type"
-            )
+    Decode.oneOf
+        [ Decode.map ClientTask <|
+            Decode.map3 UploadRecord
+                (Decode.field "capsule" Decode.string)
+                (Decode.field "gos" Decode.int)
+                (Decode.field "record" Decode.value)
+        , Decode.map ServerTask
+            (Decode.succeed Production)
+        ]
 
 
 {-| The status of a task, containing the task and its progress if available.
@@ -291,6 +307,7 @@ initClientState key lang =
     , lastRequest = 0
     , tasks = []
     , showLangPicker = False
+    , showTaskPanel = False
     }
 
 
@@ -333,8 +350,11 @@ addTask task { serverConfig, clientConfig, clientState } =
 compareTasks : Task -> Task -> Bool
 compareTasks t1 t2 =
     case ( t1, t2 ) of
-        ( UploadRecord c1 g1 _, UploadRecord c2 g2 _ ) ->
+        ( ClientTask (UploadRecord c1 g1 _), ClientTask (UploadRecord c2 g2 _) ) ->
             c1 == c2 && g1 == g2
+
+        _ ->
+            False
 
 
 {-| This type contains all the messages that trigger a modification of the config.
@@ -352,6 +372,9 @@ type Msg
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
     | UpdateTaskStatus TaskStatus
     | ToggleLangPicker
+    | ToggleTaskPanel
+    | FocusResult (Result Dom.Error ())
+    | DisableTaskPanel
 
 
 {-| This functions updates the config.
@@ -359,10 +382,10 @@ type Msg
 It also sends a command to save the part of the config that requires saving.
 
 -}
-update : Msg -> Config -> ( Config, Cmd msg )
+update : Msg -> Config -> ( Config, Cmd Msg )
 update msg { serverConfig, clientConfig, clientState } =
     let
-        ( newConfig, saveRequired ) =
+        ( newConfig, saveRequired, extraCmd ) =
             case msg of
                 Noop ->
                     ( { serverConfig = serverConfig
@@ -370,6 +393,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , False
+                    , Cmd.none
                     )
 
                 Time time ->
@@ -378,6 +402,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | time = time }
                       }
                     , False
+                    , Cmd.none
                     )
 
                 ZoneChanged zone ->
@@ -386,6 +411,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | zone = zone }
                       }
                     , False
+                    , Cmd.none
                     )
 
                 LangChanged lang ->
@@ -394,6 +420,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | lang = lang }
                       }
                     , True
+                    , Cmd.none
                     )
 
                 ZoomLevelChanged zoomLevel ->
@@ -402,6 +429,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 PromptSizeChanged promptSize ->
@@ -410,6 +438,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 SortByChanged sortBy ->
@@ -418,6 +447,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 DetectDevicesResponse devices preferredDevice ->
@@ -448,6 +478,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 SetAudio audio ->
@@ -463,6 +494,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 SetVideo video ->
@@ -478,6 +510,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , Cmd.none
                     )
 
                 UpdateTaskStatus task ->
@@ -511,6 +544,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | tasks = newTasks }
                       }
                     , False
+                    , Cmd.none
                     )
 
                 ToggleLangPicker ->
@@ -519,16 +553,67 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | showLangPicker = not clientState.showLangPicker }
                       }
                     , False
+                    , Cmd.none
                     )
 
+                ToggleTaskPanel ->
+                    let
+                        showTaskPanel : Bool
+                        showTaskPanel =
+                            not clientState.showTaskPanel
+
+                        focusCmd : Cmd Msg
+                        focusCmd =
+                            if showTaskPanel then
+                                Dom.focus "task-panel" |> Task.attempt FocusResult
+
+                            else
+                                Cmd.none
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | showTaskPanel = showTaskPanel }
+                      }
+                    , False
+                    , focusCmd
+                    )
+
+                FocusResult result ->
+                    -- case result of
+                    --     Err (Dom.NotFound id) ->
+                    --         -- unable to find dom 'id'
+                    --     Ok () ->
+                    --         -- successfully focus the dom
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = clientState
+                      }
+                    , False
+                    , Cmd.none
+                    )
+
+                DisableTaskPanel ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | showTaskPanel = False }
+                      }
+                    , False
+                    , Cmd.none
+                    )
+
+        saveCmd : Cmd Msg
         saveCmd =
             if saveRequired then
                 saveStorage newConfig.clientConfig
 
             else
                 Cmd.none
+
+        cmd : Cmd Msg
+        cmd =
+            Cmd.batch [ saveCmd, extraCmd ]
     in
-    ( newConfig, saveCmd )
+    ( newConfig, cmd )
 
 
 {-| The subscriptions for the config.

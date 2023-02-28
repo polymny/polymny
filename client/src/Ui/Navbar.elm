@@ -7,7 +7,7 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 -}
 
 import App.Types as App
-import Config exposing (Config)
+import Config exposing (ClientState, Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User exposing (User)
@@ -15,6 +15,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html.Events
 import Lang exposing (Lang)
 import Material.Icons
 import Route exposing (Route)
@@ -24,6 +25,7 @@ import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
 import Utils
+import Html.Attributes
 
 
 {-| This function creates the navbar of the application.
@@ -85,6 +87,15 @@ navbar config page user =
             Just u ->
                 Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
                     [ tasksElement
+                    , Element.el
+                        [ Ui.hf
+                        , Element.below <| taskPanel <| Maybe.map .clientState <| config
+                        ]
+                        (Ui.navigationElement
+                            (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
+                            [ Font.color Colors.white, Ui.cy ]
+                            (Ui.icon 25 Material.Icons.event_note)
+                        )
                     , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
                         Ui.icon 25 Material.Icons.settings
                     , Element.text u.username
@@ -97,6 +108,54 @@ navbar config page user =
             _ ->
                 Element.none
         ]
+
+
+taskPanel : Maybe ClientState -> Element App.Msg
+taskPanel clientState =
+    let
+        showTaskPanel : Bool
+        showTaskPanel =
+            clientState
+                |> Maybe.map .showTaskPanel
+                |> Maybe.withDefault False
+
+        taskView : Element App.Msg
+        taskView =
+            Element.row
+                [ Ui.p 10
+                , Ui.b 1
+                , Border.color <| Colors.alphaColor 0.8 Colors.greyFont
+                , Border.shadow
+                    { offset = ( 0.0, 0.0 )
+                    , size = 3.0
+                    , blur = 3.0
+                    , color = Colors.alphaColor 0.1 Colors.black
+                    }
+                , Border.roundEach
+                    { bottomLeft = 5
+                    , bottomRight = 5
+                    , topLeft = 5
+                    , topRight = 5
+                    }
+                , Background.color Colors.white
+                ]
+                [Element.text "TODO"
+                , Ui.secondary []
+                    { action = Ui.Msg App.Noop
+                    , label = "Close"
+                    }]
+    in
+    if showTaskPanel then
+        Ui.navigationElement (Ui.Msg App.Noop)
+            [ Ui.pt 5
+            , Ui.id "task-panel"
+            , Element.htmlAttribute <| Html.Events.onBlur <| App.ConfigMsg Config.DisableTaskPanel
+            , Element.focused []
+            ]
+            taskView
+
+    else
+        Element.none
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.
@@ -231,7 +290,7 @@ leftColumn lang page capsule selectedGos =
 
                         App.Publication _ ->
                             id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
-                        
+
                         App.Options _ ->
                             Route.Production capsule.id id |> Ui.Route
 

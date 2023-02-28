@@ -1,7 +1,7 @@
 module Ui.Elements exposing
     ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
-    , spinner, spinningSpinner, popup, addLinkAttr
-    , errorModal, successModal
+    , spinner, spinningSpinner, popup
+    , addLinkAttr, errorModal, successModal
     )
 
 {-| This module contains helpers to easily make buttons.
@@ -27,6 +27,7 @@ import Svg exposing (Svg, g, svg)
 import Svg.Attributes exposing (..)
 import Ui.Colors as Colors
 import Ui.Utils as Ui
+import Element exposing (Color)
 
 
 {-| The different actions a button can have.
@@ -255,9 +256,22 @@ popup size titleText content =
         [ Element.el [ Ui.wfp 1 ] Element.none
         , Element.column [ Ui.hf, Ui.wfp size ]
             [ Element.el [ Ui.hfp 1 ] Element.none
-            , Element.column [ Ui.wf, Ui.hfp size, Background.color Colors.green2 ]
+            , Element.column
+                [ Ui.wf
+                , Ui.hfp size
+                , Background.color Colors.green2
+                , Ui.r 10
+                , Ui.b 1
+                , Border.color <| Colors.alphaColor 0.8 Colors.greyFont
+                , Border.shadow
+                    { offset = ( 0.0, 0.0 )
+                    , size = 3.0
+                    , blur = 3.0
+                    , color = Colors.alphaColor 0.1 Colors.black
+                    }
+                ]
                 [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)
-                , Element.el [ Ui.wf, Ui.hf, Background.color Colors.greyBackground, Ui.p 10 ] content
+                , Element.el [ Ui.wf, Ui.hf, Background.color Colors.greyBackground, Ui.p 10, Ui.r 10 ] content
                 ]
             , Element.el [ Ui.hfp 1 ] Element.none
             ]

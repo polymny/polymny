@@ -136,10 +136,10 @@ updateModel msg model =
                                     ( tmpModel, tmpCmd ) =
                                         updateModel (App.AcquisitionMsg Acquisition.DeviceChanged) { model | config = nextConfig }
                                 in
-                                ( tmpModel, Cmd.batch [ tmpCmd, nextCmd ] )
+                                ( tmpModel, Cmd.batch [ tmpCmd, Cmd.map App.ConfigMsg nextCmd ] )
 
                             else
-                                ( { model | config = nextConfig }, nextCmd )
+                                ( { model | config = nextConfig }, Cmd.map App.ConfigMsg nextCmd )
                     in
                     ( newModel, newCmd )
 
@@ -233,6 +233,6 @@ subs m =
 
         App.Unlogged model ->
             Unlogged.subs |> Sub.map App.UnloggedMsg
-        
+
         _ ->
             Sub.none
