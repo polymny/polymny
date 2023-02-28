@@ -38,7 +38,7 @@ update msg model =
     case model.page of
         App.Acquisition m ->
             let
-                { pointerStyle } =
+                { pointerStyle, gos } =
                     m
             in
             case msg of
@@ -276,9 +276,6 @@ update msg model =
 
                 Acquisition.DeleteRecord Utils.Confirm ->
                     let
-                        gos =
-                            m.gos
-
                         newGos =
                             { gos | events = [], record = Nothing }
 

@@ -43,48 +43,64 @@ as the left column.
 view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg, Element App.Msg )
 view config user model =
     let
+        --- HELPERS ---
+        -- Shortcut for lang
         lang =
             config.clientState.lang
 
+        -- Shortcut for the preferred video device
+        preferredVideo : Maybe ( Device.Video, Device.Resolution )
         preferredVideo =
             Maybe.andThen .video config.clientConfig.preferredDevice
 
+        -- Shortcut for the preferred audio device
+        preferredAudio : Maybe Device.Audio
         preferredAudio =
             Maybe.andThen .audio config.clientConfig.preferredDevice
 
-        disableVideo =
-            videoView lang preferredVideo Nothing
-
+        --- UI ELEMENTS ---
+        -- Title of the video part of the device settings
+        videoTitle : Element App.Msg
         videoTitle =
             Ui.title (Strings.deviceWebcam lang)
 
+        -- Button to disable the video
+        disableVideo : Element App.Msg
+        disableVideo =
+            videoView lang preferredVideo Nothing
+
+        -- Column with buttons that let the user select their webcam
+        video : Element App.Msg
         video =
             (disableVideo :: List.map (\x -> videoView lang preferredVideo (Just x)) config.clientConfig.devices.video)
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        -- Title of the resolution part of the device settings
+        resolutionTitle : Element App.Msg
         resolutionTitle =
-            if preferredVideo == Nothing then
-                Element.none
+            Ui.title (Strings.deviceResolution lang)
+                |> Utils.tern (preferredVideo == Nothing) Element.none
 
-            else
-                Ui.title (Strings.deviceResolution lang)
-
+        -- Column with buttons that let the user select the resolution of their webcam
+        resolution : Element App.Msg
         resolution =
-            case preferredVideo of
-                Just ( v, r ) ->
-                    List.map (videoResolutionView lang ( v, r )) v.resolutions
-                        |> Element.column [ Ui.s 10, Ui.pb 10 ]
+            preferredVideo
+                |> Maybe.map (\( v, r ) -> List.map (videoResolutionView lang ( v, r )) v.resolutions)
+                |> Maybe.map (Element.column [ Ui.s 10, Ui.pb 10 ])
+                |> Maybe.withDefault Element.none
 
-                _ ->
-                    Element.none
-
+        -- Title of the audio input part of the device settings
+        audioTitle : Element App.Msg
         audioTitle =
             Ui.title (Strings.deviceMicrophone lang)
 
+        -- Column with the buttons that let the user pick their audio input
         audio =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        -- Element that contains all the device settings
+        settings : Element App.Msg
         settings =
             Element.column [ Ui.wf, Ui.at, Ui.s 10 ]
                 [ videoTitle
@@ -95,6 +111,8 @@ view config user model =
                 , audio
                 ]
 
+        -- Element that displays the info about the seleected device
+        deviceInfo : Element App.Msg
         deviceInfo =
             Element.column [ Ui.wf, Ui.px 10, Ui.s 5, Ui.at ]
                 [ Ui.title (Strings.deviceWebcam lang)
@@ -102,67 +120,79 @@ view config user model =
                     |> Maybe.map Tuple.first
                     |> Maybe.map .label
                     |> Maybe.withDefault (Strings.deviceDisabled lang)
-                    |> Element.text
-                    |> (\x -> Element.paragraph [] [ x ])
+                    |> Ui.paragraph []
                 , preferredVideo
                     |> Maybe.map (\_ -> Ui.title (Strings.deviceResolution lang))
                     |> Maybe.withDefault Element.none
                 , preferredVideo
                     |> Maybe.map Tuple.second
                     |> Maybe.map (\r -> String.fromInt r.width ++ "x" ++ String.fromInt r.height)
-                    |> Maybe.map Element.text
-                    |> Maybe.map (\x -> Element.paragraph [] [ x ])
+                    |> Maybe.map (Ui.paragraph [])
                     |> Maybe.withDefault Element.none
                 , Ui.title (Strings.deviceMicrophone lang)
                 , preferredAudio
                     |> Maybe.map .label
                     |> Maybe.withDefault (Strings.deviceDisabled lang)
-                    |> Element.text
-                    |> (\x -> Element.paragraph [] [ x ])
+                    |> Ui.paragraph []
                 ]
 
+        -- VuMeter element that shows the volume of the audio input
+        vumeterElement : Element App.Msg
+        vumeterElement =
+            case ( model.state == Acquisition.Ready && model.recordPlaying == Nothing, model.deviceLevel, model.showSettings ) of
+                ( True, Just level, False ) ->
+                    vumeter 2 level
+
+                ( True, Just level, True ) ->
+                    vumeter 4 level
+
+                _ ->
+                    Element.none
+
+        -- Element displayed in front of the device feedback during loading or when camera is disabled
+        inFrontElement : Element App.Msg
+        inFrontElement =
+            case ( model.state /= Acquisition.Ready, preferredVideo ) of
+                ( True, _ ) ->
+                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                    , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
+                    ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                ( _, Nothing ) ->
+                    [ Ui.icon 50 Material.Icons.videocam_off ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                _ ->
+                    Element.none
+
+        -- Element displayed in front of the device feedback with some buttons to manage the device settings
+        settingsElement : Element App.Msg
+        settingsElement =
+            if model.state == Acquisition.Ready && not model.showSettings then
+                Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
+                    [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]
+                    (Ui.icon 25 Material.Icons.settings)
+
+            else
+                Element.none
+
+        -- Element that shows the device feedback to the user
+        devicePlayer : Element App.Msg
         devicePlayer =
             Element.el
                 [ Ui.wf
                 , Ui.at
-                , Element.inFront <|
-                    case ( model.state /= Acquisition.Ready, preferredVideo ) of
-                        ( True, _ ) ->
-                            [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                            , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
-                            ]
-                                |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-
-                        ( _, Nothing ) ->
-                            [ Ui.icon 50 Material.Icons.videocam_off ]
-                                |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                                |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-
-                        _ ->
-                            Element.none
-                , Element.inFront <|
-                    case ( model.state == Acquisition.Ready && model.recordPlaying == Nothing, model.deviceLevel, model.showSettings ) of
-                        ( True, Just level, False ) ->
-                            vumeter 2 level
-
-                        ( True, Just level, True ) ->
-                            vumeter 4 level
-
-                        _ ->
-                            Element.none
-                , Element.inFront <|
-                    if model.state == Acquisition.Ready && not model.showSettings then
-                        Ui.navigationElement
-                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
-                            [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]
-                            (Ui.icon 25 Material.Icons.settings)
-
-                    else
-                        Element.none
+                , Element.inFront inFrontElement
+                , Element.inFront vumeterElement
+                , Element.inFront settingsElement
                 ]
-                videoElement
+                (Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] []))
 
+        -- Formats a view of a record, whether it is on the client or on the server
         recordView : Int -> Acquisition.Record -> Element App.Msg
         recordView index record =
             let
@@ -257,6 +287,7 @@ view config user model =
                             }
                         ]
 
+        -- Popup to ask the user to confirm if they want to delete the current record
         deleteRecordPopup : Element App.Msg
         deleteRecordPopup =
             Element.column [ Ui.wf, Ui.hf ]
@@ -275,6 +306,8 @@ view config user model =
                 ]
                 |> Ui.popup 1 (Strings.actionsDeleteRecord lang)
 
+        -- Column that contains the device feedback element, the info, and the list of records
+        rightColumn : Element App.Msg
         rightColumn =
             Element.el [ Ui.wf, Ui.hf, Ui.bl 1, Border.color Colors.greyBorder ] <|
                 Element.column
@@ -296,6 +329,8 @@ view config user model =
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
 
+        -- Popup where the user can customize their device settings
+        settingsPopup : Element App.Msg
         settingsPopup =
             Element.column [ Ui.wf, Ui.hf ]
                 [ Element.row [ Ui.wf, Ui.hf ]
@@ -564,11 +599,6 @@ audioView preferredAudio audio =
                 Ui.None
     in
     makeButton [] { label = audio.label, action = action }
-
-
-videoElement : Element App.Msg
-videoElement =
-    Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] [])
 
 
 vumeter : Int -> Float -> Element App.Msg
