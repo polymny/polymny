@@ -1035,3 +1035,7 @@ msgstr "Delete record"
 #. Delete a record.
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Do you really want to delete this record"
+
+#. Tasks.
+msgid "Ui.tasks"
+msgstr "Running tasks"

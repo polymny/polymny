@@ -654,7 +654,7 @@ function init(node, flags) {
         if (!panel.contains(event.relatedTarget)) {
             app.ports.panelBlur.send(id);
         } else {
-            event.relatedTarget.onblur = event => handleBlur(event, id);
+            panel.focus();
         }
     }
 

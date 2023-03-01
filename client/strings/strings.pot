@@ -999,3 +999,7 @@ msgstr ""
 #. Delete a record.
 msgid "Actions.Confirm.deleteRecord"
 msgstr ""
+
+#. Tasks.
+msgid "Ui.tasks"
+msgstr ""

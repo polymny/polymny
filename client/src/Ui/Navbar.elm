@@ -7,14 +7,14 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 -}
 
 import App.Types as App
-import Config exposing (ClientState, Config)
+import Config exposing (ClientState, ClientTask(..), Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User exposing (User)
-import Element exposing (Element)
+import Element exposing (Element, mouseOver)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font
+import Element.Font as Font exposing (Font)
 import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
@@ -131,16 +131,74 @@ navbar config page user =
 taskPanel : Maybe ClientState -> Element App.Msg
 taskPanel clientState =
     let
+        lang : Lang
+        lang =
+            clientState
+                |> Maybe.map .lang
+                |> Maybe.withDefault Lang.default
+
         showTaskPanel : Bool
         showTaskPanel =
             clientState
                 |> Maybe.map .showTaskPanel
                 |> Maybe.withDefault False
 
+        tasks : List Config.TaskStatus
+        tasks =
+            clientState
+                |> Maybe.map .tasks
+                |> Maybe.withDefault []
+
+        head : Element App.Msg
+        head =
+            Element.el [ Font.bold, Ui.cy ] <| Element.text <| Strings.uiTasks lang
+
+        taskInfo : Config.TaskStatus -> Element App.Msg
+        taskInfo taskStatus =
+            let
+                name : String
+                name =
+                    case taskStatus.task of
+                        Config.ClientTask (Config.UploadRecord _ _ _) ->
+                            "Upload Record"
+
+                        _ ->
+                            "Unknown Task"
+
+                progress : Float
+                progress =
+                    taskStatus.progress
+                        |> Maybe.withDefault 0.0
+                        |> (\x -> x * 100)
+
+                color : Element.Color
+                color =
+                    if taskStatus.finished then
+                        Colors.green2
+
+                    else
+                        Colors.redLight
+            in
+            Element.column [ Ui.s 10 ]
+                [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
+                , Element.text name
+                , Element.row [ Ui.s 10 ]
+                    [ Element.row []
+                        [ Element.el [ Ui.w <| round progress, Ui.h 3, Background.color color ] Element.none
+                        , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
+                        ]
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ConfigMsg <| Config.RemoveTask taskStatus.task)
+                        [ Element.focused [], Ui.r 1000, Ui.p 4, Element.mouseOver [ Background.color Colors.greyBackground ] ]
+                        (Ui.icon 20 Material.Icons.close)
+                    ]
+                ]
+
         taskView : Element App.Msg
         taskView =
-            Element.row
-                [ Ui.p 10
+            Element.column
+                [ Ui.p 8
+                , Ui.s 10
                 , Ui.b 1
                 , Border.color <| Colors.alphaColor 0.8 Colors.greyFont
                 , Border.shadow
@@ -157,12 +215,7 @@ taskPanel clientState =
                     }
                 , Background.color Colors.white
                 ]
-                [ Element.text "TODO"
-                , Ui.secondary []
-                    { action = Ui.Msg App.Noop
-                    , label = "Close"
-                    }
-                ]
+                (head :: List.map taskInfo tasks)
     in
     Element.el [ Ui.pt 5 ] <|
         if showTaskPanel then

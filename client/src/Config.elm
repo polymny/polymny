@@ -266,15 +266,23 @@ type Task
 -}
 decodeTask : Decoder Task
 decodeTask =
-    Decode.oneOf
-        [ Decode.map ClientTask <|
-            Decode.map3 UploadRecord
-                (Decode.field "capsule" Decode.string)
-                (Decode.field "gos" Decode.int)
-                (Decode.field "record" Decode.value)
-        , Decode.map ServerTask
-            (Decode.succeed Production)
-        ]
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\x ->
+                case x of
+                    "UploadRecord" ->
+                        Decode.map ClientTask <|
+                            Decode.map3 UploadRecord
+                                (Decode.field "capsuleId" Decode.string)
+                                (Decode.field "gos" Decode.int)
+                                (Decode.field "value" Decode.value)
+
+                    "Production" ->
+                        Decode.succeed (ServerTask Production)
+
+                    _ ->
+                        Decode.fail <| "type " ++ x ++ " not recognized as task type"
+            )
 
 
 {-| The status of a task, containing the task and its progress if available.
@@ -375,6 +383,7 @@ type Msg
     | ToggleTaskPanel
     | FocusResult (Result Dom.Error ())
     | DisableTaskPanel
+    | RemoveTask Task
 
 
 {-| This functions updates the config.
@@ -598,6 +607,20 @@ update msg { serverConfig, clientConfig, clientState } =
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
                       , clientState = { clientState | showTaskPanel = False }
+                      }
+                    , False
+                    , []
+                    )
+                
+                RemoveTask task ->
+                    let
+                        newTasks : List TaskStatus
+                        newTasks =
+                            List.filter (\t -> not (compareTasks t.task task)) clientState.tasks
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | tasks = newTasks }
                       }
                     , False
                     , []
