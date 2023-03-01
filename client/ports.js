@@ -648,6 +648,15 @@ function init(node, flags) {
         // app.ports.capsuleUpdated.send(capsule);
     }
 
+    // Blur event handler.
+    function handleBlur(event, id) {
+        let panel = document.getElementById(id);
+        if (!panel.contains(event.relatedTarget)) {
+            app.ports.panelBlur.send(id);
+        } else {
+            event.relatedTarget.onblur = event => handleBlur(event, id);
+        }
+    }
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -766,6 +775,12 @@ function init(node, flags) {
         if (soundtrackCheck.audio !== null) {
             soundtrackCheck.audio.volume = volume;
         }
+    });
+
+    // Handle panel blur.
+    makePort("addBlurHandler", id => {
+        let panel = document.getElementById(id);
+        panel.onblur = event => handleBlur(event, id);
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));

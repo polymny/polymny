@@ -15,7 +15,9 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import Lang exposing (Lang)
 import Material.Icons
 import Route exposing (Route)
@@ -25,7 +27,6 @@ import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
 import Utils
-import Html.Attributes
 
 
 {-| This function creates the navbar of the application.
@@ -85,15 +86,32 @@ navbar config page user =
                 Element.none
         , case user of
             Just u ->
+                let
+                    panelButtonColor =
+                        if config |> Maybe.map (\x -> x.clientState.showTaskPanel) |> Maybe.withDefault False then
+                            Background.color <| Colors.alphaColor 0.3 Colors.green1
+
+                        else
+                            Background.color Colors.green2
+                in
                 Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
                     [ tasksElement
                     , Element.el
                         [ Ui.hf
+                        , Ui.id "task-panel"
+                        , Element.focused []
+                        , Element.htmlAttribute <| Html.Attributes.tabindex 0
                         , Element.below <| taskPanel <| Maybe.map .clientState <| config
                         ]
                         (Ui.navigationElement
                             (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
-                            [ Font.color Colors.white, Ui.cy ]
+                            [ Font.color Colors.white
+                            , Ui.cy
+                            , panelButtonColor
+                            , Ui.r 1000
+                            , Ui.p 4
+                            , Element.focused []
+                            ]
                             (Ui.icon 25 Material.Icons.event_note)
                         )
                     , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
@@ -139,23 +157,19 @@ taskPanel clientState =
                     }
                 , Background.color Colors.white
                 ]
-                [Element.text "TODO"
+                [ Element.text "TODO"
                 , Ui.secondary []
                     { action = Ui.Msg App.Noop
                     , label = "Close"
-                    }]
+                    }
+                ]
     in
-    if showTaskPanel then
-        Ui.navigationElement (Ui.Msg App.Noop)
-            [ Ui.pt 5
-            , Ui.id "task-panel"
-            , Element.htmlAttribute <| Html.Events.onBlur <| App.ConfigMsg Config.DisableTaskPanel
-            , Element.focused []
-            ]
+    Element.el [ Ui.pt 5 ] <|
+        if showTaskPanel then
             taskView
 
-    else
-        Element.none
+        else
+            Element.none
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.

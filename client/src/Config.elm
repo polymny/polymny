@@ -393,7 +393,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 Time time ->
@@ -402,7 +402,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | time = time }
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 ZoneChanged zone ->
@@ -411,7 +411,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | zone = zone }
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 LangChanged lang ->
@@ -420,7 +420,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | lang = lang }
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 ZoomLevelChanged zoomLevel ->
@@ -429,7 +429,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 PromptSizeChanged promptSize ->
@@ -438,7 +438,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 SortByChanged sortBy ->
@@ -447,7 +447,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 DetectDevicesResponse devices preferredDevice ->
@@ -478,7 +478,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 SetAudio audio ->
@@ -494,7 +494,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 SetVideo video ->
@@ -510,7 +510,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
-                    , Cmd.none
+                    , []
                     )
 
                 UpdateTaskStatus task ->
@@ -544,7 +544,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | tasks = newTasks }
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 ToggleLangPicker ->
@@ -553,7 +553,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | showLangPicker = not clientState.showLangPicker }
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 ToggleTaskPanel ->
@@ -562,13 +562,15 @@ update msg { serverConfig, clientConfig, clientState } =
                         showTaskPanel =
                             not clientState.showTaskPanel
 
-                        focusCmd : Cmd Msg
+                        focusCmd : List (Cmd Msg)
                         focusCmd =
                             if showTaskPanel then
-                                Dom.focus "task-panel" |> Task.attempt FocusResult
+                                [ Dom.focus "task-panel" |> Task.attempt FocusResult
+                                , addBlurHandlerPort "task-panel"
+                                ]
 
                             else
-                                Cmd.none
+                                []
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
@@ -589,7 +591,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
                 DisableTaskPanel ->
@@ -598,20 +600,20 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | showTaskPanel = False }
                       }
                     , False
-                    , Cmd.none
+                    , []
                     )
 
-        saveCmd : Cmd Msg
+        saveCmd : List (Cmd Msg)
         saveCmd =
             if saveRequired then
-                saveStorage newConfig.clientConfig
+                [ saveStorage newConfig.clientConfig ]
 
             else
-                Cmd.none
+                []
 
         cmd : Cmd Msg
         cmd =
-            Cmd.batch [ saveCmd, extraCmd ]
+            Cmd.batch <| saveCmd ++ extraCmd
     in
     ( newConfig, cmd )
 
@@ -640,6 +642,15 @@ subs =
                     _ ->
                         Noop
             )
+        , panelBlur
+            (\x ->
+                case Decode.decodeValue Decode.string x of
+                    Ok "task-panel" ->
+                        DisableTaskPanel
+
+                    _ ->
+                        Noop
+            )
         ]
 
 
@@ -658,3 +669,13 @@ port saveStoragePort : Encode.Value -> Cmd msg
 {-| Subscription that received progress on tasks.
 -}
 port taskProgress : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Add blur handler to the panel.
+-}
+port addBlurHandlerPort : String -> Cmd msg
+
+
+{-| Blured panel.
+-}
+port panelBlur : (Encode.Value -> msg) -> Sub msg
