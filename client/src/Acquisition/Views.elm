@@ -43,154 +43,9 @@ as the left column.
 view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg, Element App.Msg )
 view config user model =
     let
-        --- HELPERS ---
         -- Shortcut for lang
         lang =
             config.clientState.lang
-
-        -- Shortcut for the preferred video device
-        preferredVideo : Maybe ( Device.Video, Device.Resolution )
-        preferredVideo =
-            Maybe.andThen .video config.clientConfig.preferredDevice
-
-        -- Shortcut for the preferred audio device
-        preferredAudio : Maybe Device.Audio
-        preferredAudio =
-            Maybe.andThen .audio config.clientConfig.preferredDevice
-
-        --- UI ELEMENTS ---
-        -- Title of the video part of the device settings
-        videoTitle : Element App.Msg
-        videoTitle =
-            Ui.title (Strings.deviceWebcam lang)
-
-        -- Button to disable the video
-        disableVideo : Element App.Msg
-        disableVideo =
-            videoView lang preferredVideo Nothing
-
-        -- Column with buttons that let the user select their webcam
-        video : Element App.Msg
-        video =
-            (disableVideo :: List.map (\x -> videoView lang preferredVideo (Just x)) config.clientConfig.devices.video)
-                |> Element.column [ Ui.s 10, Ui.pb 10 ]
-
-        -- Title of the resolution part of the device settings
-        resolutionTitle : Element App.Msg
-        resolutionTitle =
-            Ui.title (Strings.deviceResolution lang)
-                |> Utils.tern (preferredVideo == Nothing) Element.none
-
-        -- Column with buttons that let the user select the resolution of their webcam
-        resolution : Element App.Msg
-        resolution =
-            preferredVideo
-                |> Maybe.map (\( v, r ) -> List.map (videoResolutionView lang ( v, r )) v.resolutions)
-                |> Maybe.map (Element.column [ Ui.s 10, Ui.pb 10 ])
-                |> Maybe.withDefault Element.none
-
-        -- Title of the audio input part of the device settings
-        audioTitle : Element App.Msg
-        audioTitle =
-            Ui.title (Strings.deviceMicrophone lang)
-
-        -- Column with the buttons that let the user pick their audio input
-        audio =
-            List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
-                |> Element.column [ Ui.s 10, Ui.pb 10 ]
-
-        -- Element that contains all the device settings
-        settings : Element App.Msg
-        settings =
-            Element.column [ Ui.wf, Ui.at, Ui.s 10 ]
-                [ videoTitle
-                , video
-                , resolutionTitle
-                , resolution
-                , audioTitle
-                , audio
-                ]
-
-        -- Element that displays the info about the seleected device
-        deviceInfo : Element App.Msg
-        deviceInfo =
-            Element.column [ Ui.wf, Ui.px 10, Ui.s 5, Ui.at ]
-                [ Ui.title (Strings.deviceWebcam lang)
-                , preferredVideo
-                    |> Maybe.map Tuple.first
-                    |> Maybe.map .label
-                    |> Maybe.withDefault (Strings.deviceDisabled lang)
-                    |> Ui.paragraph []
-                , preferredVideo
-                    |> Maybe.map (\_ -> Ui.title (Strings.deviceResolution lang))
-                    |> Maybe.withDefault Element.none
-                , preferredVideo
-                    |> Maybe.map Tuple.second
-                    |> Maybe.map (\r -> String.fromInt r.width ++ "x" ++ String.fromInt r.height)
-                    |> Maybe.map (Ui.paragraph [])
-                    |> Maybe.withDefault Element.none
-                , Ui.title (Strings.deviceMicrophone lang)
-                , preferredAudio
-                    |> Maybe.map .label
-                    |> Maybe.withDefault (Strings.deviceDisabled lang)
-                    |> Ui.paragraph []
-                ]
-
-        -- VuMeter element that shows the volume of the audio input
-        vumeterElement : Element App.Msg
-        vumeterElement =
-            case ( model.state == Acquisition.Ready && model.recordPlaying == Nothing, model.deviceLevel, model.showSettings ) of
-                ( True, Just level, False ) ->
-                    vumeter 2 level
-
-                ( True, Just level, True ) ->
-                    vumeter 4 level
-
-                _ ->
-                    Element.none
-
-        -- Element displayed in front of the device feedback during loading or when camera is disabled
-        inFrontElement : Element App.Msg
-        inFrontElement =
-            case ( model.state /= Acquisition.Ready, preferredVideo ) of
-                ( True, _ ) ->
-                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                    , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
-                    ]
-                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-
-                ( _, Nothing ) ->
-                    [ Ui.icon 50 Material.Icons.videocam_off ]
-                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
-                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
-
-                _ ->
-                    Element.none
-
-        -- Element displayed in front of the device feedback with some buttons to manage the device settings
-        settingsElement : Element App.Msg
-        settingsElement =
-            if model.state == Acquisition.Ready && not model.showSettings then
-                Ui.navigationElement
-                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
-                    [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]
-                    (Ui.icon 25 Material.Icons.settings)
-
-            else
-                Element.none
-
-        -- Element that shows the device feedback to the user
-        devicePlayer : Element App.Msg
-        devicePlayer =
-            Element.el
-                [ Ui.wf
-                , Ui.at
-                , Element.inFront inFrontElement
-                , Element.inFront vumeterElement
-                , Element.inFront settingsElement
-                ]
-                (Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] []))
 
         -- Formats a view of a record, whether it is on the client or on the server
         recordView : Int -> Acquisition.Record -> Element App.Msg
@@ -313,12 +168,12 @@ view config user model =
                 Element.column
                     [ Ui.wf, Ui.s 10 ]
                     ((if not model.showSettings then
-                        devicePlayer
+                        devicePlayer config model
 
                       else
                         Element.none
                      )
-                        :: deviceInfo
+                        :: deviceInfo config
                         :: Element.el
                             [ Ui.wf
                             , Element.paddingEach { top = 10, bottom = 0, left = 10, right = 10 }
@@ -328,21 +183,6 @@ view config user model =
                             (Ui.title (Strings.stepsAcquisitionRecordList lang 2))
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
-
-        -- Popup where the user can customize their device settings
-        settingsPopup : Element App.Msg
-        settingsPopup =
-            Element.column [ Ui.wf, Ui.hf ]
-                [ Element.row [ Ui.wf, Ui.hf ]
-                    [ Element.el [ Ui.wf ] settings
-                    , Element.el [ Ui.wf ] devicePlayer
-                    ]
-                , Ui.primary [ Ui.ab, Ui.ar ]
-                    { label = Strings.uiConfirm lang
-                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
-                    }
-                ]
-                |> Ui.popup 5 (Strings.navigationSettings lang)
 
         currentSlide : Maybe Data.Slide
         currentSlide =
@@ -508,7 +348,7 @@ view config user model =
 
         popup =
             if model.showSettings then
-                settingsPopup
+                settingsPopup config model
 
             else if model.deleteRecord then
                 deleteRecordPopup
@@ -517,6 +357,213 @@ view config user model =
                 Element.none
     in
     ( content, rightColumn, popup )
+
+
+{-| Element that displays the info about the seleected device
+-}
+deviceInfo : Config -> Element App.Msg
+deviceInfo config =
+    let
+        -- Shortcut for lang
+        lang =
+            config.clientState.lang
+
+        -- Shortcut for the preferred video device
+        preferredVideo : Maybe ( Device.Video, Device.Resolution )
+        preferredVideo =
+            Maybe.andThen .video config.clientConfig.preferredDevice
+
+        -- Shortcut for the preferred audio device
+        preferredAudio : Maybe Device.Audio
+        preferredAudio =
+            Maybe.andThen .audio config.clientConfig.preferredDevice
+
+        -- Text that displays the preferred video device
+        preferredVideoElement : Element App.Msg
+        preferredVideoElement =
+            preferredVideo
+                |> Maybe.map Tuple.first
+                |> Maybe.map .label
+                |> Maybe.withDefault (Strings.deviceDisabled lang)
+                |> Ui.paragraph []
+
+        -- Text that displays the preferred resolution
+        preferredResolutionElement : Element App.Msg
+        preferredResolutionElement =
+            preferredVideo
+                |> Maybe.map Tuple.second
+                |> Maybe.map (\r -> String.fromInt r.width ++ "x" ++ String.fromInt r.height)
+                |> Maybe.map (Ui.paragraph [])
+                |> Maybe.withDefault Element.none
+
+        -- Text that displays the preferred audio device
+        preferredAudioElement : Element App.Msg
+        preferredAudioElement =
+            preferredAudio
+                |> Maybe.map .label
+                |> Maybe.withDefault (Strings.deviceDisabled lang)
+                |> Ui.paragraph []
+    in
+    Element.column [ Ui.wf, Ui.px 10, Ui.s 5, Ui.at ]
+        [ Ui.title (Strings.deviceWebcam lang)
+        , preferredVideoElement
+        , Ui.title (Strings.deviceResolution lang) |> Utils.tern (preferredVideo == Nothing) Element.none
+        , preferredResolutionElement
+        , Ui.title (Strings.deviceMicrophone lang)
+        , preferredAudioElement
+        ]
+
+
+{-| Creates a HTML video element on which the device feedback will be displayed.
+-}
+devicePlayer : Config -> Acquisition.Model -> Element App.Msg
+devicePlayer config model =
+    let
+        -- Shortcut for lang
+        lang =
+            config.clientState.lang
+
+        -- Shortcut for the preferred video device
+        preferredVideo : Maybe ( Device.Video, Device.Resolution )
+        preferredVideo =
+            Maybe.andThen .video config.clientConfig.preferredDevice
+
+        -- VuMeter element that shows the volume of the audio input
+        vumeterElement : Element App.Msg
+        vumeterElement =
+            case ( model.state == Acquisition.Ready && model.recordPlaying == Nothing, model.deviceLevel, model.showSettings ) of
+                ( True, Just level, False ) ->
+                    vumeter 2 level
+
+                ( True, Just level, True ) ->
+                    vumeter 4 level
+
+                _ ->
+                    Element.none
+
+        -- Element displayed in front of the device feedback during loading or when camera is disabled
+        inFrontElement : Element App.Msg
+        inFrontElement =
+            case ( model.state /= Acquisition.Ready, preferredVideo ) of
+                ( True, _ ) ->
+                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                    , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
+                    ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                ( _, Nothing ) ->
+                    [ Ui.icon 50 Material.Icons.videocam_off ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                _ ->
+                    Element.none
+
+        -- Element displayed in front of the device feedback with some buttons to manage the device settings
+        settingsElement : Element App.Msg
+        settingsElement =
+            if model.state == Acquisition.Ready && not model.showSettings then
+                Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
+                    [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]
+                    (Ui.icon 25 Material.Icons.settings)
+
+            else
+                Element.none
+
+        -- Element that shows the device feedback to the user
+        player : Element App.Msg
+        player =
+            Element.el
+                [ Ui.wf
+                , Ui.at
+                , Element.inFront inFrontElement
+                , Element.inFront vumeterElement
+                , Element.inFront settingsElement
+                ]
+                (Element.html (Html.video [ Html.Attributes.class "wf", Html.Attributes.id "video" ] []))
+    in
+    player
+
+
+{-| Creates the settings popup, with all the information about the different devices.
+-}
+settingsPopup : Config -> Acquisition.Model -> Element App.Msg
+settingsPopup config model =
+    let
+        -- Shortcut for lang
+        lang =
+            config.clientState.lang
+
+        -- Shortcut for the preferred video device
+        preferredVideo : Maybe ( Device.Video, Device.Resolution )
+        preferredVideo =
+            Maybe.andThen .video config.clientConfig.preferredDevice
+
+        -- Title of the video part of the device settings
+        videoTitle : Element App.Msg
+        videoTitle =
+            Ui.title (Strings.deviceWebcam lang)
+
+        -- Button to disable the video
+        disableVideo : Element App.Msg
+        disableVideo =
+            videoView lang preferredVideo Nothing
+
+        -- Column with buttons that let the user select their webcam
+        video : Element App.Msg
+        video =
+            (disableVideo :: List.map (\x -> videoView lang preferredVideo (Just x)) config.clientConfig.devices.video)
+                |> Element.column [ Ui.s 10, Ui.pb 10 ]
+
+        -- Title of the resolution part of the device settings
+        resolutionTitle : Element App.Msg
+        resolutionTitle =
+            Ui.title (Strings.deviceResolution lang)
+                |> Utils.tern (preferredVideo == Nothing) Element.none
+
+        -- Column with buttons that let the user select the resolution of their webcam
+        resolution : Element App.Msg
+        resolution =
+            preferredVideo
+                |> Maybe.map (\( v, r ) -> List.map (videoResolutionView lang ( v, r )) v.resolutions)
+                |> Maybe.map (Element.column [ Ui.s 10, Ui.pb 10 ])
+                |> Maybe.withDefault Element.none
+
+        -- Title of the audio input part of the device settings
+        audioTitle : Element App.Msg
+        audioTitle =
+            Ui.title (Strings.deviceMicrophone lang)
+
+        -- Column with the buttons that let the user pick their audio input
+        audio =
+            List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
+                |> Element.column [ Ui.s 10, Ui.pb 10 ]
+
+        -- Element that contains all the device settings
+        settings : Element App.Msg
+        settings =
+            Element.column [ Ui.wf, Ui.at, Ui.s 10 ]
+                [ videoTitle
+                , video
+                , resolutionTitle
+                , resolution
+                , audioTitle
+                , audio
+                ]
+    in
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.row [ Ui.wf, Ui.hf ]
+            [ Element.el [ Ui.wf ] settings
+            , Element.el [ Ui.wf ] <| devicePlayer config model
+            ]
+        , Ui.primary [ Ui.ab, Ui.ar ]
+            { label = Strings.uiConfirm lang
+            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
+            }
+        ]
+        |> Ui.popup 5 (Strings.navigationSettings lang)
 
 
 {-| Displays a button to select a specific video device.
@@ -694,11 +741,7 @@ colorToButton : Element.Color -> Element App.Msg
 colorToButton color =
     Input.button [ Ui.wf, Element.height (Element.px 45) ]
         { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
-        , onPress =
-            colorToString color
-                |> Acquisition.SetPointerColor
-                |> App.AcquisitionMsg
-                |> Just
+        , onPress = colorToString color |> Acquisition.SetPointerColor |> mkMsg |> Just
         }
 
 
