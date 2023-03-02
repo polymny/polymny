@@ -12,7 +12,7 @@ module Ui.Elements exposing
 
 -}
 
-import Element exposing (Element)
+import Element exposing (Color, Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -27,7 +27,6 @@ import Svg exposing (Svg, g, svg)
 import Svg.Attributes exposing (..)
 import Ui.Colors as Colors
 import Ui.Utils as Ui
-import Element exposing (Color)
 
 
 {-| The different actions a button can have.
