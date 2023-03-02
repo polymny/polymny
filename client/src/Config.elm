@@ -291,6 +291,7 @@ type alias TaskStatus =
     { task : Task
     , progress : Maybe Float
     , finished : Bool
+    , aborted : Bool
     }
 
 
@@ -298,10 +299,11 @@ type alias TaskStatus =
 -}
 decodeTaskStatus : Decoder TaskStatus
 decodeTaskStatus =
-    Decode.map3 TaskStatus
+    Decode.map4 TaskStatus
         (Decode.field "task" decodeTask)
         (Decode.maybe (Decode.field "progress" Decode.float))
         (Decode.field "finished" Decode.bool)
+        (Decode.field "aborted" Decode.bool)
 
 
 {-| Initializes a client state.
@@ -384,6 +386,7 @@ type Msg
     | FocusResult (Result Dom.Error ())
     | DisableTaskPanel
     | RemoveTask Task
+    | AbortTask Task
 
 
 {-| This functions updates the config.
@@ -611,7 +614,26 @@ update msg { serverConfig, clientConfig, clientState } =
                     , False
                     , []
                     )
-                
+
+                AbortTask task ->
+                    let
+                        url : String
+                        url =
+                            case task of
+                                ClientTask (UploadRecord capsuleId gosId _) ->
+                                    "/api/upload-record/" ++ capsuleId ++ "/" ++ String.fromInt gosId
+
+                                _ ->
+                                    ""
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = clientState
+                      }
+                    , False
+                    , [ abortTaskPort url ]
+                    )
+
                 RemoveTask task ->
                     let
                         newTasks : List TaskStatus
@@ -702,3 +724,8 @@ port addBlurHandlerPort : String -> Cmd msg
 {-| Blured panel.
 -}
 port panelBlur : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Remove a task.
+-}
+port abortTaskPort : String -> Cmd msg

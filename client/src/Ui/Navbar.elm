@@ -19,7 +19,8 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Lang exposing (Lang)
-import Material.Icons
+import Material.Icons as Icons
+import Material.Icons.Types as Icons
 import Route exposing (Route)
 import Strings
 import Ui.Colors as Colors
@@ -112,10 +113,10 @@ navbar config page user =
                             , Ui.p 4
                             , Element.focused []
                             ]
-                            (Ui.icon 25 Material.Icons.event_note)
+                            (Ui.icon 25 Icons.event_note)
                         )
                     , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
-                        Ui.icon 25 Material.Icons.settings
+                        Ui.icon 25 Icons.settings
                     , Element.text u.username
                     , Ui.secondary []
                         { action = Ui.Msg App.Logout
@@ -169,15 +170,34 @@ taskPanel clientState =
                 progress =
                     taskStatus.progress
                         |> Maybe.withDefault 0.0
-                        |> (\x -> x * 100)
+                        |> (\x -> x * 100.0)
 
                 color : Element.Color
                 color =
-                    if taskStatus.finished then
+                    if taskStatus.aborted then
+                        Colors.red
+
+                    else if taskStatus.finished then
                         Colors.green2
 
                     else
                         Colors.redLight
+                
+                icon : Icons.Icon msg
+                icon =
+                    if taskStatus.finished then
+                        Icons.close
+
+                    else
+                        Icons.cancel
+                
+                action : Ui.Action App.Msg
+                action =
+                    if taskStatus.finished then
+                        Ui.Msg <| App.ConfigMsg <| Config.RemoveTask taskStatus.task
+
+                    else
+                        Ui.Msg <| App.ConfigMsg <| Config.AbortTask taskStatus.task
             in
             Element.column [ Ui.s 10 ]
                 [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
@@ -187,10 +207,9 @@ taskPanel clientState =
                         [ Element.el [ Ui.w <| round progress, Ui.h 3, Background.color color ] Element.none
                         , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
                         ]
-                    , Ui.navigationElement
-                        (Ui.Msg <| App.ConfigMsg <| Config.RemoveTask taskStatus.task)
+                    , Ui.navigationElement action
                         [ Element.focused [], Ui.r 1000, Ui.p 4, Element.mouseOver [ Background.color Colors.greyBackground ] ]
-                        (Ui.icon 20 Material.Icons.close)
+                        (Ui.icon 20 icon)
                     ]
                 ]
 
@@ -327,7 +346,7 @@ leftColumn lang page capsule selectedGos =
                             Just url ->
                                 Ui.primaryIcon []
                                     { action = Ui.NewTab url
-                                    , icon = Material.Icons.theaters
+                                    , icon = Icons.theaters
                                     , tooltip = ""
                                     }
 
@@ -335,7 +354,7 @@ leftColumn lang page capsule selectedGos =
                                 Element.none
                         , Ui.primaryIcon []
                             { action = Ui.Route (Route.Acquisition capsule.id id)
-                            , icon = Material.Icons.videocam
+                            , icon = Icons.videocam
                             , tooltip = ""
                             }
                         ]

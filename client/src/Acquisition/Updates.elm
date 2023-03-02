@@ -221,9 +221,10 @@ update msg model =
                 Acquisition.UploadRecord record ->
                     let
                         task =
-                            { task = Config.ClientTask <| Config.UploadRecord m.capsule.id m.gosId (Acquisition.encodeRecord record)
+                            { task = Config.ClientTask <| Config.UploadRecord m.capsule.id m.gosId <| Acquisition.encodeRecord record
                             , progress = Just 0.0
                             , finished = False
+                            , aborted = False
                             }
 
                         nextRoute =

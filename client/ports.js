@@ -54,9 +54,12 @@ function init(node, flags) {
 
     // List of possible resolutions for devices.
     const quickScan = [
-        { "width": 1920, "height": 1080 }, { "width": 1280, "height":  720 }, { "width":  800, "height":  600 },
-        { "width":  640, "height":  480 }, { "width":  640, "height":  360 }, { "width":  320, "height":  240 },
+        { "width": 1920, "height": 1080 }, { "width": 1280, "height": 720 }, { "width": 800, "height": 600 },
+        { "width": 640, "height": 480 }, { "width": 640, "height": 360 }, { "width": 320, "height": 240 },
     ];
+
+    // The list of requests.
+    let requests = {};
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////// CLIENT INITIALIZATION //////////////////////////////////////////////
@@ -88,7 +91,7 @@ function init(node, flags) {
 
     // Make setTimeout with async/await.
     function sleep(duration) {
-        return new Promise(function(resolve, _reject) {
+        return new Promise(function (resolve, _reject) {
             setTimeout(resolve, duration);
         })
     }
@@ -118,6 +121,9 @@ function init(node, flags) {
                 xhr.upload.onprogress = onprogress;
             }
             xhr.send(data);
+            if (url in requests) {
+                requests[url]["xhr"] = xhr;
+            }
         });
     }
 
@@ -214,9 +220,9 @@ function init(node, flags) {
             tmp.getTracks().forEach(track => track.stop());
         }
 
-        let response = {audio: [], video: []};
+        let response = { audio: [], video: [] };
 
-        for(let i = 0; i < devices.length; i ++) {
+        for (let i = 0; i < devices.length; i++) {
             let d = devices[i];
 
             if (d.kind === 'videoinput') {
@@ -613,37 +619,37 @@ function init(node, flags) {
         let gos = args[1];
         let record = args[2];
 
+        let task = {
+            "type": "UploadRecord",
+            "capsuleId": capsuleId,
+            "gos": gos,
+            "value": record,
+        };
+        let url = "/api/upload-record/" + capsuleId + "/" + gos;
+
+        requests[url] = {
+            "task": task,
+            "xhr": null,
+        };
+
         console.log("upload record");
-        let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+        let xhr = await makeRequest("POST", url, record.webcam_blob, (e) => {
+            let progress = e.loaded / e.total;
+            let finished = e.loaded === e.total;
+
             app.ports.taskProgress.send({
-                "task": {
-                    "type": "UploadRecord",
-                    "capsuleId": capsuleId,
-                    "gos": gos,
-                    "value": record,
-                },
-                "progress": 0.01 // e.loaded / e.total
+                "task": task,
+                "progress": progress,
+                "finished": finished,
+                "aborted": false
             });
+
+            if (finished) delete requests[url];
         });
 
         let capsule = JSON.parse(xhr.responseText);
         capsule.structure[gos].events = record.events;
         await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
-
-        // Debug thingy where we pretend the request is slow.
-        for (let i = 1; i <= 50; i++) {
-            await sleep(200);
-            app.ports.taskProgress.send({
-                "task": {
-                    "type": "UploadRecord",
-                    "capsuleId": capsuleId,
-                    "gos": gos,
-                    "value": record,
-                },
-                "progress": i / 50,
-                "finished": i === 50,
-            });
-        }
 
         // app.ports.capsuleUpdated.send(capsule);
     }
@@ -679,18 +685,18 @@ function init(node, flags) {
     }
 
     // Saves the client config into the local storage.
-    makePort("saveStorage", function(clientConfig) {
+    makePort("saveStorage", function (clientConfig) {
         localStorage.setItem('clientConfig', JSON.stringify(clientConfig));
     });
 
     // Open the file select popup.
-    makePort("select", function(args) {
+    makePort("select", function (args) {
         let project = args[0];
         let mimes = args[1];
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = mimes.join(',');
-        input.onchange = function(e) {
+        input.onchange = function (e) {
             app.ports.selected.send([project, e.target.files[0]]);
         };
         input.click();
@@ -710,18 +716,18 @@ function init(node, flags) {
     });
 
     // Open the file select popup.
-    makePort("selectTrack", function(mimes) {
+    makePort("selectTrack", function (mimes) {
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = mimes.join(',');
-        input.onchange = function(e) {
+        input.onchange = function (e) {
             app.ports.selectedTrack.send(e.target.files[0]);
         };
         input.click();
     });
 
     // Play sound track.
-    makePort("playTrackPreview", function(args) {
+    makePort("playTrackPreview", function (args) {
         // Extract args.
         let trackPath = args[0];
         let recordPath = args[1];
@@ -762,7 +768,7 @@ function init(node, flags) {
     });
 
     // Stop sound track.
-    makePort("stopTrackPreview", function() {
+    makePort("stopTrackPreview", function () {
         soundtrackCheck.audio.pause();
         soundtrackCheck.audio.currentTime = 0;
 
@@ -771,7 +777,7 @@ function init(node, flags) {
     });
 
     // Volume changed.
-    makePort("volumeChanged", function(volume) {
+    makePort("volumeChanged", function (volume) {
         if (soundtrackCheck.audio !== null) {
             soundtrackCheck.audio.volume = volume;
         }
@@ -781,6 +787,20 @@ function init(node, flags) {
     makePort("addBlurHandler", id => {
         let panel = document.getElementById(id);
         panel.onblur = event => handleBlur(event, id);
+    });
+
+    // Remove task.
+    makePort("abortTask", url => {
+        if (url in requests) {
+            requests[url]["xhr"].abort();
+            app.ports.taskProgress.send({
+                "task": requests[url]["task"],
+                "progress": 1,
+                "finished": true,
+                "aborted": true
+            });
+            delete requests[url];
+        }
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
