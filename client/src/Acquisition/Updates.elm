@@ -317,11 +317,14 @@ update msg model =
                 Acquisition.SetPointerSize newSize ->
                     let
                         newPointerStyle =
-                            { pointerStyle | size = newSize }
+                            { pointerStyle | size = newSize |> min 20 |> max 5 }
                     in
                     ( { model | page = App.Acquisition { m | pointerStyle = newPointerStyle } }
                     , Acquisition.setPointerStyle newPointerStyle
                     )
+
+                Acquisition.ClearPointer ->
+                    ( model, Acquisition.clearPointer )
 
         _ ->
             ( model, Cmd.none )

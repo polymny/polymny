@@ -226,9 +226,7 @@ view config user model =
                 , statusElement
                 , Element.row
                     [ Ui.wf, Ui.hf ]
-                    [ palette
-                        |> List.map (\( x, y ) -> Element.row [ Element.spacing 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
-                        |> Element.column [ Element.width (Element.px 100), Element.spacing 5, Element.padding 5 ]
+                    [ pointerControl model
                     , slideElement
                     ]
                 ]
@@ -721,6 +719,46 @@ vumeter ratio value =
         |> Element.column [ Ui.al, Ui.ab, Ui.p 10, Ui.hf ]
 
 
+{-| Element to control the style of the pointer.
+-}
+pointerControl : Acquisition.Model -> Element App.Msg
+pointerControl model =
+    Element.column [ Ui.cy, Ui.p 5 ]
+        [ Element.column [ Ui.wpx 100, Ui.s 5 ]
+            [ Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
+                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
+                    { label = Ui.icon 40 Material.Icons.gps_fixed
+                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Pointer
+                    }
+                , Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
+                    { label = Ui.icon 40 Material.Icons.brush
+                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Brush
+                    }
+                ]
+            , Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
+                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
+                    { label = Ui.icon 40 Material.Icons.format_color_fill
+                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.ClearPointer
+                    }
+                , Element.el [ Ui.wf, Ui.hpx 45 ] Element.none
+                ]
+            , Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
+                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
+                    { label = Ui.icon 40 Material.Icons.remove
+                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size - 5
+                    }
+                , Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
+                    { label = Ui.icon 40 Material.Icons.add
+                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size + 5
+                    }
+                ]
+            ]
+        , palette
+            |> List.map (\( x, y ) -> Element.row [ Ui.s 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
+            |> Element.column [ Ui.wpx 100, Ui.s 5 ]
+        ]
+
+
 {-| Palette of colors that can be used for pointer.
 -}
 palette : List ( Element.Color, Element.Color )
@@ -761,7 +799,7 @@ colorToString color =
 -}
 colorToButton : Element.Color -> Element App.Msg
 colorToButton color =
-    Input.button [ Ui.wf, Element.height (Element.px 45) ]
+    Input.button [ Ui.wf, Ui.hpx 45 ]
         { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
         , onPress = colorToString color |> Acquisition.SetPointerColor |> mkMsg |> Just
         }

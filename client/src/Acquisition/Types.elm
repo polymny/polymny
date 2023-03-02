@@ -1,11 +1,11 @@
 port module Acquisition.Types exposing
-    ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, encodePointerStyle
-    , setPointerStyle
+    ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
+    , clearPointer, setPointerStyle
     )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
 
-@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId, PointerStyle, encodePointerStyle
+@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId, PointerStyle, PointerMode, encodePointerStyle
 
 -}
 
@@ -204,6 +204,7 @@ type Msg
     | SetPointerMode PointerMode
     | SetPointerColor String
     | SetPointerSize Int
+    | ClearPointer
 
 
 {-| Alias for the setup canvas port.
@@ -235,3 +236,15 @@ setPointerStyle style =
 {-| Port to change the pointer style.
 -}
 port setPointerStylePort : Encode.Value -> Cmd msg
+
+
+{-| Helper to clear the pointer canvas.
+-}
+clearPointer : Cmd msg
+clearPointer =
+    clearPointerPort pointerCanvasId
+
+
+{-| Port to clear the canvas.
+-}
+port clearPointerPort : String -> Cmd msg

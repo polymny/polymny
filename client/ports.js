@@ -951,6 +951,13 @@ function init(node, flags) {
         pointer.size = argument.size;
     });
 
+    // Clears the canvas.
+    makePort("clearPointer", function(canvasId) {
+        let canvas = document.getElementById(canvasId);
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);
