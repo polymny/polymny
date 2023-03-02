@@ -184,122 +184,7 @@ view config user model =
                         :: List.indexedMap recordView (List.reverse model.records)
                     )
 
-        currentSlide : Maybe Data.Slide
-        currentSlide =
-            List.head (List.drop model.currentSlide model.gos.slides)
-
-        nextSlide : Maybe Data.Slide
-        nextSlide =
-            List.head (List.drop (model.currentSlide + 1) model.gos.slides)
-
-        getLine : Int -> Data.Slide -> Maybe String
-        getLine n x =
-            List.head (List.drop n (String.split "\n" x.prompt))
-
-        previousSentence : Maybe String
-        previousSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence - 1)) currentSlide)
-
-        currentSentence : Maybe String
-        currentSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
-
-        nextSentenceCurrentSlide : Maybe String
-        nextSentenceCurrentSlide =
-            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence + 1)) currentSlide)
-
-        nextSentence : Maybe String
-        nextSentence =
-            let
-                tmp =
-                    nextSlide
-                        |> Maybe.map (\x -> List.head (String.split "\n" x.prompt))
-                        |> Maybe.withDefault Nothing
-            in
-            case nextSentenceCurrentSlide of
-                Nothing ->
-                    tmp
-
-                x ->
-                    x
-
-        nextSlideIcon =
-            if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
-                Ui.icon 40 Material.Icons.arrow_circle_right
-                    |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
-
-            else
-                Element.none
-
-        promptElement : Element App.Msg
-        promptElement =
-            case ( Maybe.map .prompt currentSlide, currentSentence ) of
-                ( Just "", _ ) ->
-                    Element.none
-
-                ( _, Just s ) ->
-                    Element.column [ Ui.hfp 1, Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
-                        [ Element.el [ Ui.cx, Font.center, Font.size 40 ]
-                            (Input.multiline
-                                [ Background.color Colors.black
-                                , Ui.b 0
-                                , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
-                                , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
-                                ]
-                                { label = Input.labelHidden ""
-                                , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)
-                                , placeholder = Nothing
-                                , text = s
-                                , spellcheck = False
-                                }
-                            )
-                        , case nextSentence of
-                            Just s2 ->
-                                Element.el [ Ui.cx, Font.center, Font.size 40, Font.color (Colors.grey 5) ]
-                                    (Input.multiline [ Font.center, Background.color Colors.black, Ui.b 0 ]
-                                        { label = Input.labelHidden ""
-                                        , onChange = \_ -> App.Noop
-                                        , placeholder = Nothing
-                                        , spellcheck = False
-                                        , text = s2
-                                        }
-                                    )
-
-                            -- [ nextSlideIcon, Element.text s2 ]
-                            _ ->
-                                Element.none
-                        , Element.row
-                            [ Ui.ab
-                            , Ui.wf
-                            ]
-                            [ case ( model.recording, model.currentSentence > 0 ) of
-                                ( Nothing, True ) ->
-                                    Ui.navigationElement
-                                        (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
-                                        [ Ui.al ]
-                                        (Ui.icon 25 Material.Icons.navigate_before)
-
-                                _ ->
-                                    Element.none
-                            , if model.recording == Nothing then
-                                Ui.navigationElement
-                                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
-                                    [ Ui.ar ]
-                                    (if nextSentence /= Nothing then
-                                        Ui.icon 25 Material.Icons.navigate_next
-
-                                     else
-                                        Ui.icon 25 Material.Icons.replay
-                                    )
-
-                              else
-                                Element.none
-                            ]
-                        ]
-
-                _ ->
-                    Element.none
-
+        -- Displays the recording status
         statusElement : Element App.Msg
         statusElement =
             Element.row [ Ui.wf, Ui.p 10 ]
@@ -316,9 +201,10 @@ view config user model =
                             Element.text (Strings.stepsAcquisitionReadyForRecording lang)
                 ]
 
+        -- Displays the current slide
         slideElement : Element App.Msg
         slideElement =
-            case currentSlide of
+            case List.head (List.drop model.currentSlide model.gos.slides) of
                 Just s ->
                     Element.el
                         [ Ui.wf
@@ -333,9 +219,10 @@ view config user model =
                 _ ->
                     Element.none
 
+        -- Full content of the page
         content =
             Element.column [ Ui.wf, Ui.hf ]
-                [ promptElement
+                [ promptElement config model
                 , statusElement
                 , Element.row
                     [ Ui.wf, Ui.hf ]
@@ -346,6 +233,7 @@ view config user model =
                     ]
                 ]
 
+        -- Settings popup or popup to confirm the deletion of a record
         popup =
             if model.showSettings then
                 settingsPopup config model
@@ -357,6 +245,140 @@ view config user model =
                 Element.none
     in
     ( content, rightColumn, popup )
+
+
+{-| Shows the element that contains the prompt text.
+-}
+promptElement : Config -> Acquisition.Model -> Element App.Msg
+promptElement config model =
+    let
+        -- The current slide (Nothing should be unreachable)
+        currentSlide : Maybe Data.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide model.gos.slides)
+
+        -- The next slide of the grain if the current slide is not the last one
+        nextSlide : Maybe Data.Slide
+        nextSlide =
+            List.head (List.drop (model.currentSlide + 1) model.gos.slides)
+
+        -- Helper to extract the nth line of the prompt text of a slide
+        getLine : Int -> Data.Slide -> Maybe String
+        getLine n x =
+            List.head (List.drop n (String.split "\n" x.prompt))
+
+        -- The sentence that is just before the current sentence
+        previousSentence : Maybe String
+        previousSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence - 1)) currentSlide)
+
+        -- The current sentence
+        currentSentence : Maybe String
+        currentSentence =
+            Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
+
+        -- The next sentence of the current slide if any
+        nextSentenceCurrentSlide : Maybe String
+        nextSentenceCurrentSlide =
+            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence + 1)) currentSlide)
+
+        -- Either the next sentence of the current slide if the current slide has a next sentence, or the first sentence
+        -- of the next slide of the same grain if there is a next slide that has a prompt
+        nextSentence : Maybe String
+        nextSentence =
+            let
+                tmp =
+                    nextSlide
+                        |> Maybe.map (\x -> List.head (String.split "\n" x.prompt))
+                        |> Maybe.withDefault Nothing
+            in
+            case nextSentenceCurrentSlide of
+                Nothing ->
+                    tmp
+
+                x ->
+                    x
+
+        -- A small icon that indicates to the speaker that the next sentence belongs to the next slide
+        nextSlideIcon =
+            if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
+                Ui.icon 40 Material.Icons.arrow_circle_right
+                    |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
+
+            else
+                Element.none
+
+        -- Display navigation buttons that let the user move around the prompt text even if they're not recording
+        navigationButtons =
+            Element.row [ Ui.ab, Ui.wf ]
+                [ case ( model.recording, model.currentSentence > 0 ) of
+                    ( Nothing, True ) ->
+                        Ui.navigationElement
+                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                            [ Ui.al ]
+                            (Ui.icon 25 Material.Icons.navigate_before)
+
+                    _ ->
+                        Element.none
+                , if model.recording == Nothing then
+                    Ui.navigationElement
+                        (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                        [ Ui.ar ]
+                        (if nextSentence /= Nothing then
+                            Ui.icon 25 Material.Icons.navigate_next
+
+                         else
+                            Ui.icon 25 Material.Icons.replay
+                        )
+
+                  else
+                    Element.none
+                ]
+
+        -- Displays the current line of the prompt text
+        currentSentencePrompt : String -> Element App.Msg
+        currentSentencePrompt s =
+            Element.el [ Ui.cx, Font.center, Font.size 40 ]
+                (Input.multiline
+                    [ Background.color Colors.black
+                    , Ui.b 0
+                    , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
+                    , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
+                    ]
+                    { label = Input.labelHidden ""
+                    , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)
+                    , placeholder = Nothing
+                    , text = s
+                    , spellcheck = False
+                    }
+                )
+
+        -- Displays the next line of the prompt text
+        nextSentencePrompt : String -> Element App.Msg
+        nextSentencePrompt s =
+            Element.el [ Ui.cx, Font.center, Font.size 40, Font.color (Colors.grey 5) ]
+                (Input.multiline [ Font.center, Background.color Colors.black, Ui.b 0 ]
+                    { label = Input.labelHidden ""
+                    , onChange = \_ -> App.Noop
+                    , placeholder = Nothing
+                    , spellcheck = False
+                    , text = s
+                    }
+                )
+    in
+    case ( Maybe.map .prompt currentSlide, currentSentence ) of
+        ( Just "", _ ) ->
+            Element.none
+
+        ( _, Just s ) ->
+            Element.column [ Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
+                [ currentSentencePrompt s
+                , Maybe.map nextSentencePrompt nextSentence |> Maybe.withDefault Element.none
+                , navigationButtons
+                ]
+
+        _ ->
+            Element.none
 
 
 {-| Element that displays the info about the seleected device
