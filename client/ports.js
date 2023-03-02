@@ -614,11 +614,12 @@ function init(node, flags) {
 
     // Uploads a record to the server.
     async function uploadRecord(args) {
-        console.log(args);
+        // Get arguments.
         let capsuleId = args[0];
         let gos = args[1];
         let record = args[2];
 
+        // Create request elements.
         let task = {
             "type": "UploadRecord",
             "capsuleId": capsuleId,
@@ -626,17 +627,17 @@ function init(node, flags) {
             "value": record,
         };
         let url = "/api/upload-record/" + capsuleId + "/" + gos;
-
         requests[url] = {
             "task": task,
             "xhr": null,
         };
 
-        console.log("upload record");
+        // Send request.
         let xhr = await makeRequest("POST", url, record.webcam_blob, (e) => {
             let progress = e.loaded / e.total;
             let finished = e.loaded === e.total;
 
+            // Send progress.
             app.ports.taskProgress.send({
                 "task": task,
                 "progress": progress,
@@ -644,9 +645,11 @@ function init(node, flags) {
                 "aborted": false
             });
 
+            // Delete request if finished.
             if (finished) delete requests[url];
         });
 
+        // Update capsule.
         let capsule = JSON.parse(xhr.responseText);
         capsule.structure[gos].events = record.events;
         await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
@@ -658,8 +661,10 @@ function init(node, flags) {
     function handleBlur(event, id) {
         let panel = document.getElementById(id);
         if (!panel.contains(event.relatedTarget)) {
+            // Blur the panel.
             app.ports.panelBlur.send(id);
         } else {
+            // Re-focus the panel.
             panel.focus();
         }
     }
@@ -792,13 +797,18 @@ function init(node, flags) {
     // Remove task.
     makePort("abortTask", url => {
         if (url in requests) {
+            // Abort request. 
             requests[url]["xhr"].abort();
+
+            // Send abort message.
             app.ports.taskProgress.send({
                 "task": requests[url]["task"],
                 "progress": 1,
                 "finished": true,
                 "aborted": true
             });
+
+            // Delete request.
             delete requests[url];
         }
     });

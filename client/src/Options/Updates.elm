@@ -74,6 +74,7 @@ update msg model =
 
                 Options.TrackUploadReceived fileValue file ->
                     let
+                        isAudio : Bool
                         isAudio =
                             fileValue.mime |> String.startsWith "audio/"
                     in

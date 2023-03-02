@@ -161,10 +161,13 @@ taskPanel clientState =
                 name =
                     case taskStatus.task of
                         Config.ClientTask (Config.UploadRecord _ _ _) ->
-                            "Upload Record"
+                            Strings.tasksUploadRecord lang
 
+                        Config.ClientTask Config.UploadTrack ->
+                            Strings.tasksUploadTrack lang
+                    
                         _ ->
-                            "Unknown Task"
+                            Strings.tasksUnknown lang
 
                 progress : Float
                 progress =

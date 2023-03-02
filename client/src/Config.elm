@@ -52,6 +52,7 @@ import Browser.Dom as Dom
 import Browser.Navigation
 import Data.Types as Data
 import Device
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Lang exposing (Lang)
@@ -253,6 +254,7 @@ type ServerTask
 -}
 type ClientTask
     = UploadRecord String Int Encode.Value
+    | UploadTrack
 
 
 {-| All the task that the user can see
@@ -362,6 +364,12 @@ compareTasks t1 t2 =
     case ( t1, t2 ) of
         ( ClientTask (UploadRecord c1 g1 _), ClientTask (UploadRecord c2 g2 _) ) ->
             c1 == c2 && g1 == g2
+
+        ( ClientTask UploadTrack, ClientTask UploadTrack ) ->
+            True
+
+        ( ServerTask Production, ServerTask Production ) ->
+            True
 
         _ ->
             False
@@ -625,13 +633,37 @@ update msg { serverConfig, clientConfig, clientState } =
 
                                 _ ->
                                     ""
+
+                        abortCmd : Cmd msg
+                        abortCmd =
+                            case task of
+                                ClientTask (UploadRecord _ _ _) ->
+                                    abortTaskPort url
+
+                                ClientTask UploadTrack ->
+                                    Http.cancel "sound-track"
+
+                                _ ->
+                                    Cmd.none
+
+                        newTaskStatus : TaskStatus
+                        newTaskStatus =
+                                { task = task
+                                , progress = Just 1.0
+                                , finished = True
+                                , aborted = True
+                                }
+                        
+                        newTasks : List TaskStatus
+                        newTasks =
+                            List.map (\t -> if compareTasks t.task task then newTaskStatus else t) clientState.tasks
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
-                      , clientState = clientState
+                      , clientState = { clientState | tasks = newTasks }
                       }
                     , False
-                    , [ abortTaskPort url ]
+                    , [ abortCmd ]
                     )
 
                 RemoveTask task ->
@@ -692,6 +724,33 @@ subs =
                 case Decode.decodeValue Decode.string x of
                     Ok "task-panel" ->
                         DisableTaskPanel
+
+                    _ ->
+                        Noop
+            )
+        , Http.track "sound-track"
+            (\progress ->
+                case progress of
+                    Http.Sending { sent, size } ->
+                        let
+                            progressValue : Float
+                            progressValue =
+                                if size == 0 then
+                                    0
+
+                                else
+                                    toFloat sent / toFloat size
+
+                            finished : Bool
+                            finished =
+                                progressValue == 1
+                        in
+                        UpdateTaskStatus
+                            { task = ClientTask UploadTrack
+                            , finished = finished
+                            , progress = Just progressValue
+                            , aborted = False
+                            }
 
                     _ ->
                         Noop
