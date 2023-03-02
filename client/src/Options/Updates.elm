@@ -114,7 +114,7 @@ update msg model =
                         Nothing ->
                             ( model, Cmd.none )
 
-                Options.DeleteTrack Utils.Confirm track ->
+                Options.DeleteTrack Utils.Confirm _ ->
                     let
                         newCapsule =
                             Data.removeTrack m.capsule

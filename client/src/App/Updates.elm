@@ -30,6 +30,7 @@ import Settings.Types as Settings
 import Settings.Updates as Settings
 import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
+import Utils
 
 
 {-| Updates the model from a message, and returns the new model as well as the command to send.
@@ -74,6 +75,22 @@ update message model =
             updateModel (App.ConfigMsg (Config.SortByChanged newSortBy))
                 { m | user = { user | projects = Data.sortProjects newSortBy user.projects } }
                 |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
+
+        -- If the user cancel the track upload.
+        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask task)), App.Logged { config, page, user } ) ->
+            case page of
+                App.Options m ->
+                    let
+                        ( newConfig, cmdConfig ) =
+                            Config.update (Config.AbortTask task) config
+
+                        ( newModel, cmdOptions ) =
+                            Options.update (Options.DeleteTrack Utils.Confirm Nothing) { config = newConfig, page = page, user = user }
+                    in
+                    ( App.Logged newModel, Cmd.map App.LoggedMsg <| Cmd.batch [ Cmd.map App.ConfigMsg cmdConfig, cmdOptions ] )
+
+                _ ->
+                    ( model, Cmd.none )
 
         ( App.LoggedMsg msg, App.Logged m ) ->
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)

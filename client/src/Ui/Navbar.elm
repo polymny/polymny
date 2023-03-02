@@ -22,6 +22,7 @@ import Lang exposing (Lang)
 import Material.Icons as Icons
 import Material.Icons.Types as Icons
 import Route exposing (Route)
+import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -88,12 +89,25 @@ navbar config page user =
         , case user of
             Just u ->
                 let
+                    showPanel : Bool
+                    showPanel =
+                        config |> Maybe.map (\x -> x.clientState.showTaskPanel) |> Maybe.withDefault False
+
+                    panelButtonColor : Element.Attr decorative msg
                     panelButtonColor =
-                        if config |> Maybe.map (\x -> x.clientState.showTaskPanel) |> Maybe.withDefault False then
-                            Background.color <| Colors.alphaColor 0.3 Colors.green1
+                        if showPanel then
+                            Background.color <| Colors.alphaColor 0.3 Colors.black
 
                         else
                             Background.color Colors.green2
+
+                    panelButtonOver : List (Element.Attr decorative msg)
+                    panelButtonOver =
+                        if showPanel then
+                            []
+
+                        else
+                            [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                 in
                 Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
                     [ tasksElement
@@ -108,10 +122,15 @@ navbar config page user =
                             (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
                             [ Font.color Colors.white
                             , Ui.cy
-                            , panelButtonColor
                             , Ui.r 1000
                             , Ui.p 4
                             , Element.focused []
+                            , panelButtonColor
+                            , Element.mouseOver panelButtonOver
+                            , Transition.properties
+                                [ Transition.backgroundColor 200 []
+                                ]
+                                |> Element.htmlAttribute
                             ]
                             (Ui.icon 25 Icons.event_note)
                         )
@@ -165,7 +184,7 @@ taskPanel clientState =
 
                         Config.ClientTask Config.UploadTrack ->
                             Strings.tasksUploadTrack lang
-                    
+
                         _ ->
                             Strings.tasksUnknown lang
 
@@ -185,7 +204,7 @@ taskPanel clientState =
 
                     else
                         Colors.redLight
-                
+
                 icon : Icons.Icon msg
                 icon =
                     if taskStatus.finished then
@@ -193,7 +212,7 @@ taskPanel clientState =
 
                     else
                         Icons.cancel
-                
+
                 action : Ui.Action App.Msg
                 action =
                     if taskStatus.finished then
@@ -211,7 +230,15 @@ taskPanel clientState =
                         , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
                         ]
                     , Ui.navigationElement action
-                        [ Element.focused [], Ui.r 1000, Ui.p 4, Element.mouseOver [ Background.color Colors.greyBackground ] ]
+                        [ Element.focused []
+                        , Ui.r 1000
+                        , Ui.p 4
+                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Transition.properties
+                            [ Transition.backgroundColor 200 []
+                            ]
+                            |> Element.htmlAttribute
+                        ]
                         (Ui.icon 20 icon)
                     ]
                 ]

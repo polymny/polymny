@@ -648,15 +648,23 @@ update msg { serverConfig, clientConfig, clientState } =
 
                         newTaskStatus : TaskStatus
                         newTaskStatus =
-                                { task = task
-                                , progress = Just 1.0
-                                , finished = True
-                                , aborted = True
-                                }
-                        
+                            { task = task
+                            , progress = Just 1.0
+                            , finished = True
+                            , aborted = True
+                            }
+
                         newTasks : List TaskStatus
                         newTasks =
-                            List.map (\t -> if compareTasks t.task task then newTaskStatus else t) clientState.tasks
+                            List.map
+                                (\t ->
+                                    if compareTasks t.task task then
+                                        newTaskStatus
+
+                                    else
+                                        t
+                                )
+                                clientState.tasks
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
