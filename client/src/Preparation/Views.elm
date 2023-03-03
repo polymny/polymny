@@ -244,11 +244,11 @@ deleteSlideConfirmPopup lang model s =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Preparation.DeleteSlide Utils.Cancel s)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Preparation.DeleteSlide Utils.Confirm s)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]
@@ -276,11 +276,11 @@ promptPopup lang model slide =
                 }
             , Element.row [ Ui.ar, Ui.s 10 ]
                 [ Ui.secondary []
-                    { label = Strings.uiCancel lang
+                    { label = Element.text <| Strings.uiCancel lang
                     , action = mkUiMsg (Preparation.PromptChanged Utils.Cancel slide)
                     }
                 , Ui.primary []
-                    { label = Strings.uiConfirm lang
+                    { label = Element.text <| Strings.uiConfirm lang
                     , action = mkUiMsg (Preparation.PromptChanged Utils.Confirm slide)
                     }
                 ]
@@ -341,18 +341,18 @@ selectPageNumberPopup lang model f =
             Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
                 (case model.changeSlide of
                     RemoteData.Loading _ ->
-                        [ Ui.primaryGeneric [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
+                        [ Ui.primary [] { action = Ui.None, label = Ui.spinningSpinner [] 24 } ]
 
                     _ ->
                         [ Ui.secondary []
                             { action = mkUiExtra Preparation.PageCancel
-                            , label = Strings.uiCancel lang
+                            , label = Element.text <| Strings.uiCancel lang
                             }
                         , case page of
                             Just p ->
                                 Ui.primary []
                                     { action = mkUiExtra (Preparation.Selected f.slide f.file (Just p))
-                                    , label = Strings.uiConfirm lang
+                                    , label = Element.text <| Strings.uiConfirm lang
                                     }
 
                             _ ->

@@ -65,15 +65,15 @@ view config user model =
                     Element.row [ Ui.wf, Element.spacing 10 ]
                         [ Ui.secondary []
                             { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Cancel
-                            , label = Strings.uiCancel config.clientState.lang
+                            , label = Element.text <| Strings.uiCancel config.clientState.lang
                             }
                         , Ui.secondary [ Element.alignRight ]
                             { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Submit <| NewCapsule.Preparation
-                            , label = Strings.stepsPreparationOrganizeSlides config.clientState.lang
+                            , label = Element.text <| Strings.stepsPreparationOrganizeSlides config.clientState.lang
                             }
                         , Ui.primary [ Element.alignRight ]
                             { action = Ui.Msg <| App.NewCapsuleMsg <| NewCapsule.Submit <| NewCapsule.Acquisition
-                            , label = Strings.stepsAcquisitionStartRecording config.clientState.lang
+                            , label = Element.text <| Strings.stepsAcquisitionStartRecording config.clientState.lang
                             }
                         ]
 

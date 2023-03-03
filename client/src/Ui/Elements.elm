@@ -45,23 +45,9 @@ type Action msg
 
 {-| Creates a primary button with a generic element.
 -}
-primaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
-primaryGeneric attr { label, action } =
+primaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+primaryGeneric outerAttr innerAttr fontAttr { label, action } =
     let
-        ( innerAttr, outerAttr, fontAttr ) =
-            Ui.sortAttributes attr
-
-        inner =
-            innerAttr
-                ++ [ Ui.wf
-                   , Ui.hf
-                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
-                   , Transition.properties
-                        [ Transition.backgroundColor 200 []
-                        ]
-                        |> Element.htmlAttribute
-                   ]
-
         outer =
             outerAttr
                 ++ [ Background.color Colors.green2
@@ -69,11 +55,21 @@ primaryGeneric attr { label, action } =
                    , Ui.b 1
                    ]
 
+        inner =
+            innerAttr
+                ++ [ Ui.wf
+                   , Ui.hf
+                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                   , Transition.properties
+                        [ Transition.backgroundColor 200 []
+                        ]
+                        |> Element.htmlAttribute
+                   ]
+
         font =
             fontAttr
                 ++ [ Ui.cx
                    , Ui.cy
-                   , Font.color Colors.white
                    ]
     in
     navigationElement action outer (Element.el inner (Element.el font label))
@@ -81,18 +77,22 @@ primaryGeneric attr { label, action } =
 
 {-| Creates a primary button, with colored background and white text.
 -}
-primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
+primary : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
 primary attr { label, action } =
     let
-        newAttr : List (Element.Attribute msg)
-        newAttr =
-            attr
-                ++ [ Border.rounded 100
-                   , Ui.p 12
-                   , Font.bold
-                   ]
+        outerAttr : List (Element.Attribute msg)
+        outerAttr =
+            Border.rounded 100 :: attr
+
+        innerAttr : List (Element.Attribute msg)
+        innerAttr =
+            [ Border.rounded 100, Ui.p 12 ]
+
+        fontAttr : List (Element.Attribute msg)
+        fontAttr =
+            [ Font.bold, Font.color Colors.white ]
     in
-    primaryGeneric newAttr { label = Element.text label, action = action }
+    primaryGeneric outerAttr innerAttr fontAttr { label = label, action = action }
 
 
 {-| Creates a primary button with an icon.
@@ -100,24 +100,32 @@ primary attr { label, action } =
 primaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
 primaryIcon attr params =
     let
-        newAttr : List (Element.Attribute msg)
-        newAttr =
-            attr
-                ++ [ Element.htmlAttribute (Html.Attributes.title params.tooltip)
-                   , Border.rounded 5
-                   , Ui.p 2
-                   ]
+        outerAttr : List (Element.Attribute msg)
+        outerAttr =
+            Border.rounded 5 :: attr
+
+        innerAttr : List (Element.Attribute msg)
+        innerAttr =
+            [ Border.rounded 5, Ui.p 2 ]
+
+        fontAttr : List (Element.Attribute msg)
+        fontAttr =
+            [ Font.color Colors.white ]
     in
-    primaryGeneric newAttr { label = icon 22 params.icon, action = params.action }
+    primaryGeneric outerAttr innerAttr fontAttr { label = icon 22 params.icon, action = params.action }
 
 
 {-| Creates a secondary button with a generic element.
 -}
-secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
-secondaryGeneric attr { label, action } =
+secondaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+secondaryGeneric outerAttr innerAttr fontAttr { label, action } =
     let
-        ( innerAttr, outerAttr, fontAttr ) =
-            Ui.sortAttributes attr
+        outer =
+            outerAttr
+                ++ [ Background.color Colors.white
+                   , Border.color Colors.greyBorder
+                   , Ui.b 1
+                   ]
 
         inner =
             innerAttr
@@ -130,13 +138,6 @@ secondaryGeneric attr { label, action } =
                         |> Element.htmlAttribute
                    ]
 
-        outer =
-            outerAttr
-                ++ [ Background.color Colors.white
-                   , Border.color Colors.greyBorder
-                   , Ui.b 1
-                   ]
-
         font =
             fontAttr
                 ++ [ Ui.cx
@@ -146,20 +147,24 @@ secondaryGeneric attr { label, action } =
     navigationElement action outer (Element.el inner (Element.el font label))
 
 
-{-| Creates a secondary button, with colored background and white text.
+{-| Creates a primary button, with colored background and white text.
 -}
-secondary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
+secondary : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
 secondary attr { label, action } =
     let
-        newAttr : List (Element.Attribute msg)
-        newAttr =
-            attr
-                ++ [ Border.rounded 100
-                   , Ui.p 12
-                   , Font.bold
-                   ]
+        outerAttr : List (Element.Attribute msg)
+        outerAttr =
+            Border.rounded 100 :: attr
+
+        innerAttr : List (Element.Attribute msg)
+        innerAttr =
+            [ Border.rounded 100, Ui.p 12 ]
+
+        fontAttr : List (Element.Attribute msg)
+        fontAttr =
+            [ Font.bold, Font.color Colors.black ]
     in
-    secondaryGeneric newAttr { label = Element.text label, action = action }
+    secondaryGeneric outerAttr innerAttr fontAttr { label = label, action = action }
 
 
 {-| Creates a secondary button with an icon.
@@ -167,16 +172,19 @@ secondary attr { label, action } =
 secondaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
 secondaryIcon attr params =
     let
-        newAttr : List (Element.Attribute msg)
-        newAttr =
-            attr
-                ++ [ Element.htmlAttribute (Html.Attributes.title params.tooltip)
-                   , Border.rounded 5
-                   , Font.color Colors.green2
-                   , Ui.p 2
-                   ]
+        outerAttr : List (Element.Attribute msg)
+        outerAttr =
+            Border.rounded 5 :: attr
+
+        innerAttr : List (Element.Attribute msg)
+        innerAttr =
+            [ Ui.p 2 ]
+
+        fontAttr : List (Element.Attribute msg)
+        fontAttr =
+            [ Font.color Colors.green2 ]
     in
-    secondaryGeneric newAttr { label = icon 22 params.icon, action = params.action }
+    secondaryGeneric outerAttr innerAttr fontAttr { label = icon 22 params.icon, action = params.action }
 
 
 {-| Creates a link, colored and changing color at hover.

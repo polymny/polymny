@@ -173,18 +173,18 @@ langPicker lang =
         confirmButton =
             Ui.primary [ Ui.ab, Ui.ar ]
                 { action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.ToggleLangPicker
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
 
         langChoice : Lang -> Element App.MaybeMsg
         langChoice l =
             (if lang == l then
-                Ui.primaryGeneric
+                Ui.primary
 
              else
-                Ui.secondaryGeneric
+                Ui.secondary
             )
-                [ Ui.p 12, Ui.r 100, Font.bold ]
+                []
                 { label =
                     Element.row [ Ui.s 5 ]
                         [ Element.text <| Lang.flag l

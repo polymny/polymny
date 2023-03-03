@@ -150,7 +150,7 @@ navbar config page user =
                     , Element.text u.username
                     , Ui.secondary []
                         { action = Ui.Msg App.Logout
-                        , label = Strings.loginLogout lang
+                        , label = Element.text <| Strings.loginLogout lang
                         }
                     ]
 

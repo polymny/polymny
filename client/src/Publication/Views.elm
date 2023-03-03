@@ -79,7 +79,7 @@ view config user model =
         privacyButton =
             Ui.secondary []
                 { action = Ui.Msg <| App.PublicationMsg <| Publication.TogglePrivacyPopup
-                , label = privacyString model.capsule.privacy
+                , label = Element.text <| privacyString model.capsule.privacy
                 }
 
         -- Helper to create privacy buttons
@@ -92,7 +92,7 @@ view config user model =
                 Ui.secondary
             )
                 []
-                { label = privacyString privacy
+                { label = Element.text <| privacyString privacy
                 , action = Ui.Msg <| App.PublicationMsg <| Publication.SetPrivacy privacy
                 }
 
@@ -138,7 +138,7 @@ view config user model =
                         , mkPrivacyExplanation Data.Public
                         ]
                     , Ui.primary [ Ui.ab, Ui.ar ]
-                        { label = Strings.uiConfirm lang
+                        { label = Element.text <| Strings.uiConfirm lang
                         , action = Ui.Msg <| App.PublicationMsg <| Publication.TogglePrivacyPopup
                         }
                     ]
@@ -160,7 +160,7 @@ view config user model =
         -- Publish button
         publishButton =
             Ui.primary []
-                { label = Strings.stepsPublicationPublishVideo lang
+                { label = Element.text <| Strings.stepsPublicationPublishVideo lang
                 , action = Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
                 }
 
