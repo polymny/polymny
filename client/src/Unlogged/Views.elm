@@ -290,7 +290,7 @@ view model =
                     , onChange = Unlogged.SignUpForNewsletterChanged
                     , checked = model.signUpForNewsletter
                     }
-            , mkButton [ Ui.cx, Ui.wf ]
+            , mkButton [ Ui.cx, Ui.wf, Ui.p 12, Ui.r 100, Font.bold ]
                 { action = buttonMsg
                 , label = buttonText
                 }
