@@ -110,6 +110,7 @@ primaryIcon attr params =
     in
     primaryGeneric newAttr { label = icon 22 params.icon, action = params.action }
 
+
 {-| Creates a secondary button with a generic element.
 -}
 secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
@@ -196,21 +197,26 @@ addLinkAttr attr =
 -}
 navigationElement : Action msg -> List (Element.Attribute msg) -> Element msg -> Element msg
 navigationElement action attr label =
+    let
+        newAttr : List (Element.Attribute msg)
+        newAttr =
+            Element.focused [] :: attr
+    in
     case action of
         Route route ->
-            Element.link attr { url = Route.toUrl route, label = label }
+            Element.link newAttr { url = Route.toUrl route, label = label }
 
         NewTab url ->
-            Element.newTabLink attr { url = url, label = label }
+            Element.newTabLink newAttr { url = url, label = label }
 
         Msg msg ->
-            Input.button attr { onPress = Just msg, label = label }
+            Input.button newAttr { onPress = Just msg, label = label }
 
         None ->
             Element.el
                 (Element.htmlAttribute (Html.Attributes.style "cursor" "not-allowed")
                     :: Font.color Colors.greyFontDisabled
-                    :: attr
+                    :: newAttr
                 )
                 label
 

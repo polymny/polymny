@@ -96,7 +96,7 @@ navbar config page user =
                     panelButtonColor : Element.Attr decorative msg
                     panelButtonColor =
                         if showPanel then
-                            Background.color <| Colors.alphaColor 0.3 Colors.black
+                            Background.color <| Colors.alphaColor 0.18 Colors.black
 
                         else
                             Background.color Colors.green2
@@ -114,7 +114,6 @@ navbar config page user =
                     , Element.el
                         [ Ui.hf
                         , Ui.id "task-panel"
-                        , Element.focused []
                         , Element.htmlAttribute <| Html.Attributes.tabindex 0
                         , Element.below <| taskPanel <| Maybe.map .clientState <| config
                         ]
@@ -124,7 +123,6 @@ navbar config page user =
                             , Ui.cy
                             , Ui.r 100
                             , Ui.p 4
-                            , Element.focused []
                             , panelButtonColor
                             , Element.mouseOver panelButtonOver
                             , Transition.properties
@@ -134,7 +132,17 @@ navbar config page user =
                             ]
                             (Ui.icon 25 Icons.event_note)
                         )
-                    , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
+                    , Ui.navigationElement (Ui.Route Route.Settings)
+                        [ Font.color Colors.white
+                        , Ui.r 100
+                        , Ui.p 4
+                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Transition.properties
+                            [ Transition.backgroundColor 200 []
+                            ]
+                            |> Element.htmlAttribute
+                        ]
+                      <|
                         Ui.icon 25 Icons.settings
                     , Element.text u.username
                     , Ui.secondary []
@@ -230,8 +238,7 @@ taskPanel clientState =
                         , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
                         ]
                     , Ui.navigationElement action
-                        [ Element.focused []
-                        , Ui.r 1000
+                        [ Ui.r 100
                         , Ui.p 4
                         , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                         , Transition.properties
