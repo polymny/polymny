@@ -232,7 +232,7 @@ update msg model =
                                 Route.Acquisition m.capsule.id (m.gosId + 1)
 
                             else
-                                Route.Home
+                                Route.Production m.capsule.id 0
                     in
                     ( { model | config = Config.addTask task model.config }
                     , Cmd.batch
