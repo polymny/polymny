@@ -151,7 +151,7 @@ changeEmail config user model m =
             Utils.tern (newEmailValid && canSend)
                 Ui.primaryGeneric
                 Ui.secondaryGeneric
-                [ Ui.wf ]
+                [ Ui.wf, Ui.p 12, Border.rounded 100, Font.bold ]
                 { action = Utils.tern (newEmailValid && canSend) (Ui.Msg <| App.SettingsMsg <| Settings.ChangeEmailConfirm) Ui.None
                 , label = newEmailButtonText
                 }
@@ -312,7 +312,7 @@ changePassword config user model m =
             Utils.tern (canSend && passwordAccepted && newPasswordRepeatAccepted)
                 Ui.primaryGeneric
                 Ui.secondaryGeneric
-                [ Ui.wf ]
+                [ Ui.wf, Ui.p 12, Border.rounded 100, Font.bold ]
                 { action =
                     Utils.tern
                         (canSend && passwordAccepted && newPasswordRepeatAccepted)
@@ -406,7 +406,7 @@ deleteAccount config user model m =
             Utils.tern canSend
                 Ui.primaryGeneric
                 Ui.secondaryGeneric
-                [ Ui.wf ]
+                [ Ui.wf, Ui.p 12, Border.rounded 100, Font.bold, Font.bold ]
                 { action =
                     Utils.tern
                         canSend

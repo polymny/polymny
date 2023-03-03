@@ -122,7 +122,7 @@ navbar config page user =
                             (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
                             [ Font.color Colors.white
                             , Ui.cy
-                            , Ui.r 1000
+                            , Ui.r 100
                             , Ui.p 4
                             , Element.focused []
                             , panelButtonColor

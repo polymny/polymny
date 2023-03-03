@@ -73,6 +73,7 @@ primaryGeneric attr { label, action } =
             fontAttr
                 ++ [ Ui.cx
                    , Ui.cy
+                   , Font.color Colors.white
                    ]
     in
     navigationElement action outer (Element.el inner (Element.el font label))
@@ -89,7 +90,6 @@ primary attr { label, action } =
                 ++ [ Border.rounded 100
                    , Ui.p 12
                    , Font.bold
-                   , Font.color Colors.white
                    ]
     in
     primaryGeneric newAttr { label = Element.text label, action = action }
@@ -105,7 +105,6 @@ primaryIcon attr params =
             attr
                 ++ [ Element.htmlAttribute (Html.Attributes.title params.tooltip)
                    , Border.rounded 5
-                   , Font.color Colors.white
                    , Ui.p 2
                    ]
     in
