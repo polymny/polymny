@@ -133,11 +133,12 @@ function init(node, flags) {
     }
 
     // Helper for our requests.
-    class Request {
+    class PolymnyRequest {
         constructor(method, url, data, onprogress) {
             this.data = data;
-            this.xhr = new XMLDocument();
+            this.xhr = new XMLHttpRequest();
             this.xhr.open(method, url, true);
+            console.log(this.xhr);
 
             if (typeof onprogress === 'function') {
                 this.xhr.upload.onprogress = onprogress;
@@ -148,7 +149,7 @@ function init(node, flags) {
             return new Promise((resolve, reject) => {
                 this.xhr.onload = function () {
                     if (this.status >= 200 && this.status < 300) {
-                        resolve(xhr);
+                        resolve(this);
                     } else {
                         reject({
                             status: this.status,
@@ -162,6 +163,7 @@ function init(node, flags) {
                         statusText: this.statusText
                     });
                 };
+                console.log(this.xhr);
                 this.xhr.send(this.data);
             });
         }
@@ -653,6 +655,8 @@ function init(node, flags) {
         let gos = args[1];
         let record = args[2];
 
+        let request;
+
         if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
 
             if (typeof record.pointer_blob === "string" || record.pointer_blob instanceof String) {
@@ -666,7 +670,7 @@ function init(node, flags) {
                 // User just want to send the pointer blob
                 if (record.pointer_blob !== null) {
                     try {
-                        xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                        request = new PolymnyRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
                             app.ports.taskProgress.send({
                                 "task": {
                                     "type": "UploadRecord",
@@ -678,6 +682,8 @@ function init(node, flags) {
                                 finished: false,
                             });
                         });
+
+                        await request.send();
                         let capsule = JSON.parse(xhr.responseText);
                         // app.ports.capsuleUpdated.send(capsule);
                     } catch (e) {
@@ -699,7 +705,9 @@ function init(node, flags) {
                     "gos": gos,
                     "value": null,
                 };
-                let request = new Request("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+
+                let url = "/api/upload-record/" + capsuleId + "/" + gos;
+                let request = new PolymnyRequest("POST", url, record.webcam_blob, (e) => {
                     app.ports.taskProgress.send({
                         "task": task,
                         "progress": e.loaded / e.total * (record.pointer_blob === null ? 1 : 0.5),
@@ -725,7 +733,9 @@ function init(node, flags) {
                         "gos": gos,
                         "value": null,
                     };
-                    request = new Request("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+
+                    url = "/api/upload-pointer/" + capsuleId + "/" + gos;
+                    request = new PolymnyRequest("POST", url, record.pointer_blob, (e) => {
                         app.ports.taskProgress.send({
                             "task": task,
                             "progress": 0.5 + (e.loaded / e.total) / 2,
@@ -734,17 +744,16 @@ function init(node, flags) {
                         });
                     });
 
-                    requests[url].xhr = request.xhr;
+                    requests[url] = {
+                        "task": task,
+                        "xhr": request.xhr,
+                    };
+
+                    await request.send();
+
+                    delete requests[url].xhr;
+
                 }
-
-                requests[url] = {
-                    "task": task,
-                    "xhr": request.xhr,
-                };
-
-                await request.send();
-
-                delete requests[url].xhr;
 
                 let capsule = JSON.parse(request.xhr.responseText);
                 capsule.structure[gos].events = record.events;
@@ -761,7 +770,7 @@ function init(node, flags) {
                     "aborted": false,
                 });
 
-                await (new Request("POST", "/api/update-capsule/", JSON.stringify(capsule)).send());
+                // await (new Request("POST", "/api/update-capsule/", JSON.stringify(capsule)).send());
 
                 // app.ports.capsuleUpdated.send(capsule);
             } catch (e) {
