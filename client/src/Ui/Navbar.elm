@@ -7,6 +7,7 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 -}
 
 import App.Types as App
+import Browser.Dom as Dom
 import Config exposing (ClientState, ClientTask(..), Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
@@ -15,15 +16,17 @@ import Element exposing (Element, mouseOver)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font exposing (Font)
+import Html
 import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Lang exposing (Lang)
-import Material.Icons as Icons
+import Material.Icons as Icons exposing (transit_enterexit)
 import Material.Icons.Types as Icons
 import Route exposing (Route)
 import Simple.Transition as Transition
 import Strings
+import Task exposing (Task)
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -286,36 +289,89 @@ taskPanel clientState =
 navButtons : Lang -> Capsule -> App.Page -> Element msg
 navButtons lang capsule page =
     let
-        makeButton : Route -> (Lang -> String) -> Element msg
+        buttonWidth : Int
+        buttonWidth =
+            100
+
+        separator : Element msg
+        separator =
+            Element.el [ Ui.w 1, Ui.h 30, Background.color Colors.greyBackground ] Element.none
+
+        makeButton : Route -> String -> Element msg
         makeButton route label =
             let
-                color : List (Element.Attribute msg)
-                color =
-                    if Route.compareTab route (Route.fromPage page) then
-                        [ Background.color Colors.greyBackground ]
-
-                    else
-                        []
-
                 attr : List (Element.Attribute msg)
                 attr =
-                    if Route.compareTab route (Route.fromPage page) then
-                        Ui.rt 10 :: color
-
-                    else
-                        color
+                    [ Ui.hf
+                    , Ui.wf
+                    , Font.bold
+                    , Ui.rt 10
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Transition.properties
+                        [ Transition.backgroundColor 200 []
+                        ]
+                        |> Element.htmlAttribute
+                    ]
             in
-            Element.column [ Ui.hf ]
+            Element.column [ Ui.hf, Ui.w buttonWidth ]
                 [ Element.el [ Ui.h 5, Ui.wf ] Element.none
-                , Ui.navigationElement (Ui.Route route) (Ui.hf :: Ui.p 12 :: Font.bold :: attr) (Element.el [ Element.centerY ] (Element.text (label lang)))
+                , Ui.navigationElement (Ui.Route route) attr <| Element.el [ Ui.wf, Font.center ] (Element.text label)
                 ]
+
+        selectorIndex : Int
+        selectorIndex =
+            case page of
+                App.Preparation _ ->
+                    0
+
+                App.Acquisition _ ->
+                    1
+
+                App.Production _ ->
+                    2
+
+                App.Publication _ ->
+                    3
+
+                App.Options _ ->
+                    4
+
+                _ ->
+                    -1
+
+        selectorMove : Float
+        selectorMove =
+            toFloat (selectorIndex * (buttonWidth + 1) - 1)
+
+        selector : Int -> Element msg
+        selector index =
+            if index == -1 then
+                Element.none
+
+            else
+                Element.column
+                    [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
+                    , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
+                    , Element.moveRight selectorMove
+                    , Ui.w (buttonWidth + 2)
+                    , Element.htmlAttribute <|
+                        Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                    ]
+                    [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+                    , Element.el [ Ui.hf, Ui.wf, Font.bold, Ui.rt 10, Background.color Colors.greyBackground ] Element.none
+                    ]
     in
-    Element.row [ Ui.s 10, Ui.hf ]
-        [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
-        , makeButton (Route.Acquisition capsule.id 0) Strings.stepsAcquisitionRecord
-        , makeButton (Route.Production capsule.id 0) Strings.stepsProductionProduce
-        , makeButton (Route.Publication capsule.id) Strings.stepsPublicationPublish
-        , makeButton (Route.Options capsule.id) Strings.stepsOptionsOptions
+    Element.row [ Ui.hf ]
+        [ selector selectorIndex
+        , makeButton (Route.Preparation capsule.id) (Strings.stepsPreparationPrepare lang)
+        , separator
+        , makeButton (Route.Acquisition capsule.id 0) (Strings.stepsAcquisitionRecord lang)
+        , separator
+        , makeButton (Route.Production capsule.id 0) (Strings.stepsProductionProduce lang)
+        , separator
+        , makeButton (Route.Publication capsule.id) (Strings.stepsPublicationPublish lang)
+        , separator
+        , makeButton (Route.Options capsule.id) (Strings.stepsOptionsOptions lang)
         ]
 
 
