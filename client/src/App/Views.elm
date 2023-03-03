@@ -184,7 +184,7 @@ langPicker lang =
              else
                 Ui.secondaryGeneric
             )
-                []
+                [ Ui.p 12, Ui.r 100, Font.bold ]
                 { label =
                     Element.row [ Ui.s 5 ]
                         [ Element.text <| Lang.flag l
