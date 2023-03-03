@@ -7,18 +7,26 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 -}
 
 import App.Types as App
-import Config exposing (Config)
+import Browser.Dom as Dom
+import Config exposing (ClientState, ClientTask(..), Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User exposing (User)
-import Element exposing (Element)
+import Element exposing (Element, mouseOver)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font
+import Element.Font as Font exposing (Font)
+import Html
+import Html.Attributes
+import Html.Events
+import Json.Decode as Decode
 import Lang exposing (Lang)
-import Material.Icons
+import Material.Icons as Icons exposing (transit_enterexit)
+import Material.Icons.Types as Icons
 import Route exposing (Route)
+import Simple.Transition as Transition
 import Strings
+import Task exposing (Task)
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -83,14 +91,66 @@ navbar config page user =
                 Element.none
         , case user of
             Just u ->
+                let
+                    showPanel : Bool
+                    showPanel =
+                        config |> Maybe.map (\x -> x.clientState.showTaskPanel) |> Maybe.withDefault False
+
+                    panelButtonColor : Element.Attr decorative msg
+                    panelButtonColor =
+                        if showPanel then
+                            Background.color <| Colors.alphaColor 0.18 Colors.black
+
+                        else
+                            Background.color Colors.green2
+
+                    panelButtonOver : List (Element.Attr decorative msg)
+                    panelButtonOver =
+                        if showPanel then
+                            []
+
+                        else
+                            [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                in
                 Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
                     [ tasksElement
-                    , Ui.navigationElement (Ui.Route Route.Settings) [ Font.color Colors.white ] <|
-                        Ui.icon 25 Material.Icons.settings
+                    , Element.el
+                        [ Ui.hf
+                        , Ui.id "task-panel"
+                        , Element.htmlAttribute <| Html.Attributes.tabindex 0
+                        , Element.below <| taskPanel <| Maybe.map .clientState <| config
+                        ]
+                        (Ui.navigationElement
+                            (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
+                            [ Font.color Colors.white
+                            , Ui.cy
+                            , Ui.r 100
+                            , Ui.p 4
+                            , panelButtonColor
+                            , Element.mouseOver panelButtonOver
+                            , Transition.properties
+                                [ Transition.backgroundColor 200 []
+                                ]
+                                |> Element.htmlAttribute
+                            ]
+                            (Ui.icon 25 Icons.event_note)
+                        )
+                    , Ui.navigationElement (Ui.Route Route.Settings)
+                        [ Font.color Colors.white
+                        , Ui.r 100
+                        , Ui.p 4
+                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Transition.properties
+                            [ Transition.backgroundColor 200 []
+                            ]
+                            |> Element.htmlAttribute
+                        ]
+                      <|
+                        Ui.icon 25 Icons.settings
                     , Element.text u.username
                     , Ui.secondary []
                         { action = Ui.Msg App.Logout
-                        , label = Strings.loginLogout lang
+                        , label = Element.text <| Strings.loginLogout lang
                         }
                     ]
 
@@ -99,29 +159,219 @@ navbar config page user =
         ]
 
 
+taskPanel : Maybe ClientState -> Element App.Msg
+taskPanel clientState =
+    let
+        lang : Lang
+        lang =
+            clientState
+                |> Maybe.map .lang
+                |> Maybe.withDefault Lang.default
+
+        showTaskPanel : Bool
+        showTaskPanel =
+            clientState
+                |> Maybe.map .showTaskPanel
+                |> Maybe.withDefault False
+
+        tasks : List Config.TaskStatus
+        tasks =
+            clientState
+                |> Maybe.map .tasks
+                |> Maybe.withDefault []
+
+        head : Element App.Msg
+        head =
+            Element.el [ Font.bold, Ui.cy ] <| Element.text <| Strings.uiTasks lang
+
+        taskInfo : Config.TaskStatus -> Element App.Msg
+        taskInfo taskStatus =
+            let
+                name : String
+                name =
+                    case taskStatus.task of
+                        Config.ClientTask (Config.UploadRecord _ _ _) ->
+                            Strings.tasksUploadRecord lang
+
+                        Config.ClientTask Config.UploadTrack ->
+                            Strings.tasksUploadTrack lang
+
+                        _ ->
+                            Strings.tasksUnknown lang
+
+                progress : Float
+                progress =
+                    taskStatus.progress
+                        |> Maybe.withDefault 0.0
+                        |> (\x -> x * 100.0)
+
+                color : Element.Color
+                color =
+                    if taskStatus.aborted then
+                        Colors.red
+
+                    else if taskStatus.finished then
+                        Colors.green2
+
+                    else
+                        Colors.redLight
+
+                icon : Icons.Icon msg
+                icon =
+                    if taskStatus.finished then
+                        Icons.close
+
+                    else
+                        Icons.cancel
+
+                action : Ui.Action App.Msg
+                action =
+                    if taskStatus.finished then
+                        Ui.Msg <| App.ConfigMsg <| Config.RemoveTask taskStatus.task
+
+                    else
+                        Ui.Msg <| App.ConfigMsg <| Config.AbortTask taskStatus.task
+            in
+            Element.column [ Ui.s 10 ]
+                [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
+                , Element.text name
+                , Element.row [ Ui.s 10 ]
+                    [ Element.row []
+                        [ Element.el [ Ui.w <| round progress, Ui.h 3, Background.color color ] Element.none
+                        , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
+                        ]
+                    , Ui.navigationElement action
+                        [ Ui.r 100
+                        , Ui.p 4
+                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Transition.properties
+                            [ Transition.backgroundColor 200 []
+                            ]
+                            |> Element.htmlAttribute
+                        ]
+                        (Ui.icon 20 icon)
+                    ]
+                ]
+
+        taskView : Element App.Msg
+        taskView =
+            Element.column
+                [ Ui.p 8
+                , Ui.s 10
+                , Ui.b 1
+                , Border.color <| Colors.alphaColor 0.8 Colors.greyFont
+                , Border.shadow
+                    { offset = ( 0.0, 0.0 )
+                    , size = 3.0
+                    , blur = 3.0
+                    , color = Colors.alphaColor 0.1 Colors.black
+                    }
+                , Border.roundEach
+                    { bottomLeft = 5
+                    , bottomRight = 5
+                    , topLeft = 5
+                    , topRight = 5
+                    }
+                , Background.color Colors.white
+                ]
+                (head :: List.map taskInfo tasks)
+    in
+    Element.el [ Ui.pt 5 ] <|
+        if showTaskPanel then
+            taskView
+
+        else
+            Element.none
+
+
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.
 -}
 navButtons : Lang -> Capsule -> App.Page -> Element msg
 navButtons lang capsule page =
     let
-        makeButton : Route -> (Lang -> String) -> Element msg
+        buttonWidth : Int
+        buttonWidth =
+            100
+
+        separator : Element msg
+        separator =
+            Element.el [ Ui.w 1, Ui.h 30, Background.color Colors.greyBackground ] Element.none
+
+        makeButton : Route -> String -> Element msg
         makeButton route label =
             let
+                attr : List (Element.Attribute msg)
                 attr =
-                    if Route.compareTab route (Route.fromPage page) then
-                        [ Background.color Colors.greyBackground ]
-
-                    else
-                        []
+                    [ Ui.hf
+                    , Ui.wf
+                    , Font.bold
+                    , Ui.rt 10
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Transition.properties
+                        [ Transition.backgroundColor 200 []
+                        ]
+                        |> Element.htmlAttribute
+                    ]
             in
-            Ui.navigationElement (Ui.Route route) (Ui.hf :: Ui.p 12 :: Font.bold :: attr) (Element.el [ Element.centerY ] (Element.text (label lang)))
+            Element.column [ Ui.hf, Ui.w buttonWidth ]
+                [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+                , Ui.navigationElement (Ui.Route route) attr <| Element.el [ Ui.wf, Font.center ] (Element.text label)
+                ]
+
+        selectorIndex : Int
+        selectorIndex =
+            case page of
+                App.Preparation _ ->
+                    0
+
+                App.Acquisition _ ->
+                    1
+
+                App.Production _ ->
+                    2
+
+                App.Publication _ ->
+                    3
+
+                App.Options _ ->
+                    4
+
+                _ ->
+                    -1
+
+        selectorMove : Float
+        selectorMove =
+            toFloat (selectorIndex * (buttonWidth + 1) - 1)
+
+        selector : Int -> Element msg
+        selector index =
+            if index == -1 then
+                Element.none
+
+            else
+                Element.column
+                    [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
+                    , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
+                    , Element.moveRight selectorMove
+                    , Ui.w (buttonWidth + 2)
+                    , Element.htmlAttribute <|
+                        Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                    ]
+                    [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+                    , Element.el [ Ui.hf, Ui.wf, Font.bold, Ui.rt 10, Background.color Colors.greyBackground ] Element.none
+                    ]
     in
-    Element.row [ Ui.s 10, Ui.hf ]
-        [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
-        , makeButton (Route.Acquisition capsule.id 0) Strings.stepsAcquisitionRecord
-        , makeButton (Route.Production capsule.id 0) Strings.stepsProductionProduce
-        , makeButton (Route.Publication capsule.id) Strings.stepsPublicationPublish
-        , makeButton (Route.Options capsule.id) Strings.stepsOptionsOptions
+    Element.row [ Ui.hf ]
+        [ selector selectorIndex
+        , makeButton (Route.Preparation capsule.id) (Strings.stepsPreparationPrepare lang)
+        , separator
+        , makeButton (Route.Acquisition capsule.id 0) (Strings.stepsAcquisitionRecord lang)
+        , separator
+        , makeButton (Route.Production capsule.id 0) (Strings.stepsProductionProduce lang)
+        , separator
+        , makeButton (Route.Publication capsule.id) (Strings.stepsPublicationPublish lang)
+        , separator
+        , makeButton (Route.Options capsule.id) (Strings.stepsOptionsOptions lang)
         ]
 
 
@@ -201,7 +451,7 @@ leftColumn lang page capsule selectedGos =
                             Just url ->
                                 Ui.primaryIcon []
                                     { action = Ui.NewTab url
-                                    , icon = Material.Icons.theaters
+                                    , icon = Icons.theaters
                                     , tooltip = ""
                                     }
 
@@ -209,7 +459,7 @@ leftColumn lang page capsule selectedGos =
                                 Element.none
                         , Ui.primaryIcon []
                             { action = Ui.Route (Route.Acquisition capsule.id id)
-                            , icon = Material.Icons.videocam
+                            , icon = Icons.videocam
                             , tooltip = ""
                             }
                         ]

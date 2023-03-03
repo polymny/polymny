@@ -149,8 +149,8 @@ changeEmail config user model m =
         -- Button to request the email address change
         newEmailButton =
             Utils.tern (newEmailValid && canSend)
-                Ui.primaryGeneric
-                Ui.secondaryGeneric
+                Ui.primary
+                Ui.secondary
                 [ Ui.wf ]
                 { action = Utils.tern (newEmailValid && canSend) (Ui.Msg <| App.SettingsMsg <| Settings.ChangeEmailConfirm) Ui.None
                 , label = newEmailButtonText
@@ -310,9 +310,9 @@ changePassword config user model m =
         -- Button to request the password change
         changePasswordButton =
             Utils.tern (canSend && passwordAccepted && newPasswordRepeatAccepted)
-                Ui.primaryGeneric
-                Ui.secondaryGeneric
-                [ Ui.wf ]
+                Ui.primary
+                Ui.secondary
+                [ Ui.wf, Ui.p 12, Border.rounded 100, Font.bold ]
                 { action =
                     Utils.tern
                         (canSend && passwordAccepted && newPasswordRepeatAccepted)
@@ -404,8 +404,8 @@ deleteAccount config user model m =
         -- Button to request the password change
         deleteAccountButton =
             Utils.tern canSend
-                Ui.primaryGeneric
-                Ui.secondaryGeneric
+                Ui.primary
+                Ui.secondary
                 [ Ui.wf ]
                 { action =
                     Utils.tern
@@ -422,8 +422,8 @@ deleteAccount config user model m =
                     Element.column [ Ui.wf, Ui.hf ]
                         [ Ui.paragraph [ Ui.cy ] <| Strings.loginConfirmDeleteAccount lang ++ "."
                         , Element.row [ Ui.s 10, Ui.ab, Ui.ar ]
-                            [ Ui.secondary [] { label = Strings.uiCancel lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountCancel }
-                            , Ui.primary [] { label = Strings.uiConfirm lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirmTwice }
+                            [ Ui.secondary [] { label = Element.text <| Strings.uiCancel lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountCancel }
+                            , Ui.primary [] { label = Element.text <| Strings.uiConfirm lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirmTwice }
                             ]
                         ]
 

@@ -151,11 +151,11 @@ view config user model =
                 , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
                     [ Ui.secondary []
                         { action = mkUiMsg (Acquisition.DeleteRecord Utils.Cancel)
-                        , label = Strings.uiCancel lang
+                        , label = Element.text <| Strings.uiCancel lang
                         }
                     , Ui.primary []
                         { action = mkUiMsg (Acquisition.DeleteRecord Utils.Confirm)
-                        , label = Strings.uiConfirm lang
+                        , label = Element.text <| Strings.uiConfirm lang
                         }
                     ]
                 ]
@@ -229,6 +229,10 @@ view config user model =
                     [ pointerControl model
                     , slideElement
                     ]
+                , Ui.primary [ Ui.ab, Ui.ar ]
+                    { label = Element.text <| Strings.uiConfirm lang
+                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
+                    }
                 ]
 
         -- Settings popup or popup to confirm the deletion of a record
@@ -579,7 +583,7 @@ settingsPopup config model =
             , Element.el [ Ui.wf ] <| devicePlayer config model
             ]
         , Ui.primary [ Ui.ab, Ui.ar ]
-            { label = Strings.uiConfirm lang
+            { label = Element.text <| Strings.uiConfirm lang
             , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
             }
         ]
@@ -619,7 +623,7 @@ videoView lang preferredVideo video =
 
         button =
             mkButton []
-                { label = Maybe.map .label video |> Maybe.withDefault (Strings.deviceDisabled lang)
+                { label = Element.text <| Maybe.withDefault (Strings.deviceDisabled lang) <| Maybe.map .label video
                 , action = action
                 }
     in
@@ -642,7 +646,7 @@ videoResolutionView lang ( preferredVideo, preferredResolution ) resolution =
             Ui.Msg <| App.ConfigMsg <| Config.SetVideo <| Just ( preferredVideo, resolution )
     in
     makeButton []
-        { label = Device.formatResolution resolution
+        { label = Element.text <| Device.formatResolution resolution
         , action = action
         }
 
@@ -671,7 +675,7 @@ audioView preferredAudio audio =
             else
                 Ui.None
     in
-    makeButton [] { label = audio.label, action = action }
+    makeButton [] { label = Element.text <| audio.label, action = action }
 
 
 {-| Displays a nice VuMeter : a gauge that show the volume of the audio input.

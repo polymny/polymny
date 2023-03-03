@@ -121,7 +121,8 @@ uploadTrack { capsule, fileValue, file, toMsg } =
                 |> List.reverse
                 |> String.join "."
     in
-    Api.postJson
+    Api.postWithTrackerJson
+        "sound-track"
         { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule

@@ -1035,3 +1035,19 @@ msgstr "Delete record"
 #. Delete a record.
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Do you really want to delete this record"
+
+#. Tasks.
+msgid "Ui.tasks"
+msgstr "Running tasks"
+
+#. Upload record task.
+msgid "Tasks.uploadRecord"
+msgstr "Upload record"
+
+#. Upload track task.
+msgid "Tasks.uploadTrack"
+msgstr "Upload track"
+
+#. Unknown task.
+msgid "Tasks.unknown"
+msgstr "Unknown task"

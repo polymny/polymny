@@ -90,9 +90,12 @@ function init(node, flags) {
 
     // List of possible resolutions for devices.
     const quickScan = [
-        { "width": 1920, "height": 1080 }, { "width": 1280, "height":  720 }, { "width":  800, "height":  600 },
-        { "width":  640, "height":  480 }, { "width":  640, "height":  360 }, { "width":  320, "height":  240 },
+        { "width": 1920, "height": 1080 }, { "width": 1280, "height": 720 }, { "width": 800, "height": 600 },
+        { "width": 640, "height": 480 }, { "width": 640, "height": 360 }, { "width": 320, "height": 240 },
     ];
+
+    // The list of requests.
+    let requests = {};
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////// CLIENT INITIALIZATION //////////////////////////////////////////////
@@ -124,37 +127,44 @@ function init(node, flags) {
 
     // Make setTimeout with async/await.
     function sleep(duration) {
-        return new Promise(function(resolve, _reject) {
+        return new Promise(function (resolve, _reject) {
             setTimeout(resolve, duration);
         })
     }
 
-    // Make XML HTTP requests with async/await.
-    function makeRequest(method, url, data, onprogress) {
-        return new Promise(function (resolve, reject) {
-            let xhr = new XMLHttpRequest();
-            xhr.open(method, url, true);
-            xhr.onload = function () {
-                if (this.status >= 200 && this.status < 300) {
-                    resolve(xhr);
-                } else {
+    // Helper for our requests.
+    class Request {
+        constructor(method, url, data, onprogress) {
+            this.data = data;
+            this.xhr = new XMLDocument();
+            this.xhr.open(method, url, true);
+
+            if (typeof onprogress === 'function') {
+                this.xhr.upload.onprogress = onprogress;
+            }
+        }
+
+        send() {
+            return new Promise((resolve, reject) => {
+                this.xhr.onload = function () {
+                    if (this.status >= 200 && this.status < 300) {
+                        resolve(xhr);
+                    } else {
+                        reject({
+                            status: this.status,
+                            statusText: this.statusText
+                        });
+                    }
+                };
+                this.xhr.onerror = function () {
                     reject({
                         status: this.status,
-                        statusText: xhr.statusText
+                        statusText: this.statusText
                     });
-                }
-            };
-            xhr.onerror = function () {
-                reject({
-                    status: this.status,
-                    statusText: xhr.statusText
-                });
-            };
-            if (typeof onprogress === 'function') {
-                xhr.upload.onprogress = onprogress;
-            }
-            xhr.send(data);
-        });
+                };
+                this.xhr.send(this.data);
+            });
+        }
     }
 
     // The class that holds all the necessary elements for measuring sound input level.
@@ -250,9 +260,9 @@ function init(node, flags) {
             tmp.getTracks().forEach(track => track.stop());
         }
 
-        let response = {audio: [], video: []};
+        let response = { audio: [], video: [] };
 
-        for(let i = 0; i < devices.length; i ++) {
+        for (let i = 0; i < devices.length; i++) {
             let d = devices[i];
 
             if (d.kind === 'videoinput') {
@@ -615,10 +625,10 @@ function init(node, flags) {
             let data = frame.data;
 
             for (let i = 0; i < length; i += 4) {
-                let channelAvg = (data[i] + data[i+1] + data[i+2]) / 3;
+                let channelAvg = (data[i] + data[i + 1] + data[i + 2]) / 3;
                 let threshold = channelAvg > 50;
                 if (!threshold) {
-                    data[i+3] = 0;
+                    data[i + 3] = 0;
                 }
             }
 
@@ -638,6 +648,7 @@ function init(node, flags) {
 
     // Uploads a record to the server.
     async function uploadRecord(args) {
+        // Get arguments.
         let capsuleId = args[0];
         let gos = args[1];
         let record = args[2];
@@ -663,7 +674,7 @@ function init(node, flags) {
                                     "gos": gos,
                                     "value": null,
                                 },
-                                progress: e.loaded / e.total  * (record.pointer_blob === null ? 1 : 0.5),
+                                progress: e.loaded / e.total * (record.pointer_blob === null ? 1 : 0.5),
                                 finished: false,
                             });
                         });
@@ -682,36 +693,60 @@ function init(node, flags) {
             try {
                 let factor = record.pointer_blob === null ? 1 : 2;
                 console.log("upload new record");
-                let xhr = await makeRequest("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
+                let task = {
+                    "type": "UploadRecord",
+                    "capsuleId": capsuleId,
+                    "gos": gos,
+                    "value": null,
+                };
+                let request = new Request("POST", "/api/upload-record/" + capsuleId + "/" + gos, record.webcam_blob, (e) => {
                     app.ports.taskProgress.send({
-                        "task": {
-                            "type": "UploadRecord",
-                            "capsuleId": capsuleId,
-                            "gos": gos,
-                            "value": null,
-                        },
-                        progress: e.loaded / e.total  * (record.pointer_blob === null ? 1 : 0.5),
-                        finished: false,
+                        "task": task,
+                        "progress": e.loaded / e.total * (record.pointer_blob === null ? 1 : 0.5),
+                        "finished": false,
+                        "aborted": false,
                     });
                 });
 
+                requests[url] = {
+                    "task": task,
+                    "xhr": request.xhr,
+                };
+
+                await request.send();
+
+                delete requests[url];
+
                 if (record.pointer_blob !== null) {
                     console.log("upload pointer");
-                    xhr = await makeRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
+                    let task = {
+                        "type": "UploadRecord",
+                        "capsuleId": capsuleId,
+                        "gos": gos,
+                        "value": null,
+                    };
+                    request = new Request("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
                         app.ports.taskProgress.send({
-                            "task": {
-                                "type": "UploadRecord",
-                                "capsuleId": capsuleId,
-                                "gos": gos,
-                                "value": null,
-                            },
-                            progress: 0.5 + (e.loaded / e.total) / 2,
-                            finished: false,
+                            "task": task,
+                            "progress": 0.5 + (e.loaded / e.total) / 2,
+                            "finished": false,
+                            "aborted": false,
                         });
                     });
+
+                    requests[url].xhr = request.xhr;
                 }
 
-                let capsule = JSON.parse(xhr.responseText);
+                requests[url] = {
+                    "task": task,
+                    "xhr": request.xhr,
+                };
+
+                await request.send();
+
+                delete requests[url].xhr;
+
+                let capsule = JSON.parse(request.xhr.responseText);
                 capsule.structure[gos].events = record.events;
 
                 app.ports.taskProgress.send({
@@ -721,11 +756,12 @@ function init(node, flags) {
                         "gos": gos,
                         "value": capsule.structure[gos].record,
                     },
-                    progress: 1,
-                    finished: true,
+                    "progress": 1,
+                    "finished": true,
+                    "aborted": false,
                 });
 
-                await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+                await (new Request("POST", "/api/update-capsule/", JSON.stringify(capsule)).send());
 
                 // app.ports.capsuleUpdated.send(capsule);
             } catch (e) {
@@ -735,6 +771,56 @@ function init(node, flags) {
 
         }
 
+    }
+
+    //     // Create request elements.
+    //     let task = {
+    //         "type": "UploadRecord",
+    //         "capsuleId": capsuleId,
+    //         "gos": gos,
+    //         "value": record,
+    //     };
+    //     let url = "/api/upload-record/" + capsuleId + "/" + gos;
+    //     requests[url] = {
+    //         "task": task,
+    //         "xhr": null,
+    //     };
+
+    //     // Send request.
+    //     let xhr = await makeRequest("POST", url, record.webcam_blob, (e) => {
+    //         let progress = e.loaded / e.total;
+    //         let finished = e.loaded === e.total;
+
+    //         // Send progress.
+    //         app.ports.taskProgress.send({
+    //             "task": task,
+    //             "progress": progress,
+    //             "finished": finished,
+    //             "aborted": false
+    //         });
+
+    //         // Delete request if finished.
+    //         if (finished) delete requests[url];
+    //     });
+
+    //     // Update capsule.
+    //     let capsule = JSON.parse(xhr.responseText);
+    //     capsule.structure[gos].events = record.events;
+    //     await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
+
+    //     // app.ports.capsuleUpdated.send(capsule);
+    // }
+
+    // Blur event handler.
+    function handleBlur(event, id) {
+        let panel = document.getElementById(id);
+        if (!panel.contains(event.relatedTarget)) {
+            // Blur the panel.
+            app.ports.panelBlur.send(id);
+        } else {
+            // Re-focus the panel.
+            panel.focus();
+        }
     }
 
     // Sets up the canvas for pointer or drawing on the slide during recording.
@@ -751,7 +837,7 @@ function init(node, flags) {
 
         pointerStream = canvas.captureStream(30);
 
-        canvas.addEventListener('pointerdown', function(event) {
+        canvas.addEventListener('pointerdown', function (event) {
             pointer.down = true;
             pointer.position.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
             pointer.position.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
@@ -759,21 +845,21 @@ function init(node, flags) {
             canvas.setPointerCapture(event.pointerId);
         });
 
-        canvas.addEventListener('pointerup', function(event) {
+        canvas.addEventListener('pointerup', function (event) {
             pointer.down = false;
             refresh(canvas, ctx);
             canvas.releasePointerCapture(event.pointerId);
         });
 
-        canvas.addEventListener('pointermove', function(event) {
+        canvas.addEventListener('pointermove', function (event) {
             pointer.position.x = event.offsetX * canvas.width / canvas.parentNode.clientWidth;
             pointer.position.y = event.offsetY * canvas.width / canvas.parentNode.clientWidth;
             refresh(canvas, ctx);
         });
 
         let pointerOptions = {
-            videoBitsPerSecond : 2500000,
-            mimeType : 'video/webm;codecs=vp8'
+            videoBitsPerSecond: 2500000,
+            mimeType: 'video/webm;codecs=vp8'
         };
 
         pointerRecorder = new MediaRecorder(pointerStream, pointerOptions);
@@ -846,18 +932,18 @@ function init(node, flags) {
     }
 
     // Saves the client config into the local storage.
-    makePort("saveStorage", function(clientConfig) {
+    makePort("saveStorage", function (clientConfig) {
         localStorage.setItem('clientConfig', JSON.stringify(clientConfig));
     });
 
     // Open the file select popup.
-    makePort("select", function(args) {
+    makePort("select", function (args) {
         let project = args[0];
         let mimes = args[1];
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = mimes.join(',');
-        input.onchange = function(e) {
+        input.onchange = function (e) {
             app.ports.selected.send([project, e.target.files[0]]);
         };
         input.click();
@@ -877,18 +963,18 @@ function init(node, flags) {
     });
 
     // Open the file select popup.
-    makePort("selectTrack", function(mimes) {
+    makePort("selectTrack", function (mimes) {
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = mimes.join(',');
-        input.onchange = function(e) {
+        input.onchange = function (e) {
             app.ports.selectedTrack.send(e.target.files[0]);
         };
         input.click();
     });
 
     // Play sound track.
-    makePort("playTrackPreview", function(args) {
+    makePort("playTrackPreview", function (args) {
         // Extract args.
         let trackPath = args[0];
         let recordPath = args[1];
@@ -929,7 +1015,7 @@ function init(node, flags) {
     });
 
     // Stop sound track.
-    makePort("stopTrackPreview", function() {
+    makePort("stopTrackPreview", function () {
         soundtrackCheck.audio.pause();
         soundtrackCheck.audio.currentTime = 0;
 
@@ -938,24 +1024,49 @@ function init(node, flags) {
     });
 
     // Volume changed.
-    makePort("volumeChanged", function(volume) {
+    makePort("volumeChanged", function (volume) {
         if (soundtrackCheck.audio !== null) {
             soundtrackCheck.audio.volume = volume;
         }
     });
 
     // Change the mode of the pointer.
-    makePort("setPointerStyle", function(argument) {
+    makePort("setPointerStyle", function (argument) {
         pointer.mode = argument.mode;
         pointer.color = argument.color;
         pointer.size = argument.size;
     });
 
     // Clears the canvas.
-    makePort("clearPointer", function(canvasId) {
+    makePort("clearPointer", function (canvasId) {
         let canvas = document.getElementById(canvasId);
         let ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Handle panel blur.
+    makePort("addBlurHandler", id => {
+        let panel = document.getElementById(id);
+        panel.onblur = event => handleBlur(event, id);
+    });
+
+    // Remove task.
+    makePort("abortTask", url => {
+        if (url in requests) {
+            // Abort request. 
+            requests[url]["xhr"].abort();
+
+            // Send abort message.
+            app.ports.taskProgress.send({
+                "task": requests[url]["task"],
+                "progress": 1,
+                "finished": true,
+                "aborted": true
+            });
+
+            // // Delete request.
+            // delete requests[url];
+        }
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));

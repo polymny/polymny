@@ -6,7 +6,7 @@ port module Config exposing
     , Msg(..)
     , update, subs
     , saveStorage
-    , decodeTaskStatus, taskProgress
+    , ClientTask(..), ServerTask(..), decodeTaskStatus, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -48,12 +48,15 @@ at all times in the client.
 
 -}
 
+import Browser.Dom as Dom
 import Browser.Navigation
 import Data.Types as Data
 import Device
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Lang exposing (Lang)
+import Task
 import Time
 
 
@@ -220,6 +223,7 @@ It is not in the client config since it cannot be persisted, and is recreated wi
   - `lastRequest` is the number of the last request sent. It allows us to ignore responses to old requests.
   - `tasks` is the list of tasks being run by the client;
   - `showLangPicker` is a bool that tells us whether we should show the lang picker or not.
+  - `showNotificationPanel` is a bool that tells us whether we should show the notification panel or not.
 
 -}
 type alias ClientState =
@@ -230,7 +234,17 @@ type alias ClientState =
     , lastRequest : Int
     , tasks : List TaskStatus
     , showLangPicker : Bool
+    , showTaskPanel : Bool
     }
+
+
+{-| The task that are running on the server to keep the user informed.
+
+  - `Production` means that the production is running.
+
+-}
+type ServerTask
+    = Production
 
 
 {-| The tasks that are running in the background while the user is using the app.
@@ -238,8 +252,16 @@ type alias ClientState =
   - `UploadRecord` means that the user is uploading a record on a specific gos of a specific capsule.
 
 -}
-type Task
+type ClientTask
     = UploadRecord String Int Decode.Value
+    | UploadTrack
+
+
+{-| All the task that the user can see
+-}
+type Task
+    = ClientTask ClientTask
+    | ServerTask ServerTask
 
 
 {-| Decodes a task.
@@ -251,10 +273,14 @@ decodeTask =
             (\x ->
                 case x of
                     "UploadRecord" ->
-                        Decode.map3 UploadRecord
-                            (Decode.field "capsuleId" Decode.string)
-                            (Decode.field "gos" Decode.int)
-                            (Decode.field "value" Decode.value)
+                        Decode.map ClientTask <|
+                            Decode.map3 UploadRecord
+                                (Decode.field "capsuleId" Decode.string)
+                                (Decode.field "gos" Decode.int)
+                                (Decode.field "value" Decode.value)
+
+                    "Production" ->
+                        Decode.succeed (ServerTask Production)
 
                     _ ->
                         Decode.fail <| "type " ++ x ++ " not recognized as task type"
@@ -267,6 +293,7 @@ type alias TaskStatus =
     { task : Task
     , progress : Maybe Float
     , finished : Bool
+    , aborted : Bool
     }
 
 
@@ -274,10 +301,11 @@ type alias TaskStatus =
 -}
 decodeTaskStatus : Decoder TaskStatus
 decodeTaskStatus =
-    Decode.map3 TaskStatus
+    Decode.map4 TaskStatus
         (Decode.field "task" decodeTask)
         (Decode.maybe (Decode.field "progress" Decode.float))
         (Decode.field "finished" Decode.bool)
+        (Decode.field "aborted" Decode.bool)
 
 
 {-| Initializes a client state.
@@ -291,6 +319,7 @@ initClientState key lang =
     , lastRequest = 0
     , tasks = []
     , showLangPicker = False
+    , showTaskPanel = False
     }
 
 
@@ -333,8 +362,17 @@ addTask task { serverConfig, clientConfig, clientState } =
 compareTasks : Task -> Task -> Bool
 compareTasks t1 t2 =
     case ( t1, t2 ) of
-        ( UploadRecord c1 g1 _, UploadRecord c2 g2 _ ) ->
+        ( ClientTask (UploadRecord c1 g1 _), ClientTask (UploadRecord c2 g2 _) ) ->
             c1 == c2 && g1 == g2
+
+        ( ClientTask UploadTrack, ClientTask UploadTrack ) ->
+            True
+
+        ( ServerTask Production, ServerTask Production ) ->
+            True
+
+        _ ->
+            False
 
 
 {-| This type contains all the messages that trigger a modification of the config.
@@ -352,6 +390,11 @@ type Msg
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
     | UpdateTaskStatus TaskStatus
     | ToggleLangPicker
+    | ToggleTaskPanel
+    | FocusResult (Result Dom.Error ())
+    | DisableTaskPanel
+    | RemoveTask Task
+    | AbortTask Task
 
 
 {-| This functions updates the config.
@@ -359,10 +402,10 @@ type Msg
 It also sends a command to save the part of the config that requires saving.
 
 -}
-update : Msg -> Config -> ( Config, Cmd msg )
+update : Msg -> Config -> ( Config, Cmd Msg )
 update msg { serverConfig, clientConfig, clientState } =
     let
-        ( newConfig, saveRequired ) =
+        ( newConfig, saveRequired, extraCmd ) =
             case msg of
                 Noop ->
                     ( { serverConfig = serverConfig
@@ -370,6 +413,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , False
+                    , []
                     )
 
                 Time time ->
@@ -378,6 +422,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | time = time }
                       }
                     , False
+                    , []
                     )
 
                 ZoneChanged zone ->
@@ -386,6 +431,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | zone = zone }
                       }
                     , False
+                    , []
                     )
 
                 LangChanged lang ->
@@ -394,6 +440,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | lang = lang }
                       }
                     , True
+                    , []
                     )
 
                 ZoomLevelChanged zoomLevel ->
@@ -402,6 +449,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 PromptSizeChanged promptSize ->
@@ -410,6 +458,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 SortByChanged sortBy ->
@@ -418,6 +467,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 DetectDevicesResponse devices preferredDevice ->
@@ -448,6 +498,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 SetAudio audio ->
@@ -463,6 +514,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 SetVideo video ->
@@ -478,6 +530,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = clientState
                       }
                     , True
+                    , []
                     )
 
                 UpdateTaskStatus task ->
@@ -511,6 +564,7 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | tasks = newTasks }
                       }
                     , False
+                    , []
                     )
 
                 ToggleLangPicker ->
@@ -519,16 +573,134 @@ update msg { serverConfig, clientConfig, clientState } =
                       , clientState = { clientState | showLangPicker = not clientState.showLangPicker }
                       }
                     , False
+                    , []
                     )
 
+                ToggleTaskPanel ->
+                    let
+                        showTaskPanel : Bool
+                        showTaskPanel =
+                            not clientState.showTaskPanel
+
+                        focusCmd : List (Cmd Msg)
+                        focusCmd =
+                            if showTaskPanel then
+                                [ Dom.focus "task-panel" |> Task.attempt FocusResult
+                                , addBlurHandlerPort "task-panel"
+                                ]
+
+                            else
+                                []
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | showTaskPanel = showTaskPanel }
+                      }
+                    , False
+                    , focusCmd
+                    )
+
+                FocusResult result ->
+                    -- case result of
+                    --     Err (Dom.NotFound id) ->
+                    --         -- unable to find dom 'id'
+                    --     Ok () ->
+                    --         -- successfully focus the dom
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = clientState
+                      }
+                    , False
+                    , []
+                    )
+
+                DisableTaskPanel ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | showTaskPanel = False }
+                      }
+                    , False
+                    , []
+                    )
+
+                AbortTask task ->
+                    let
+                        url : String
+                        url =
+                            case task of
+                                ClientTask (UploadRecord capsuleId gosId _) ->
+                                    "/api/upload-record/" ++ capsuleId ++ "/" ++ String.fromInt gosId
+
+                                _ ->
+                                    ""
+
+                        abortCmd : Cmd msg
+                        abortCmd =
+                            case task of
+                                ClientTask (UploadRecord _ _ _) ->
+                                    abortTaskPort url
+
+                                ClientTask UploadTrack ->
+                                    Http.cancel "sound-track"
+
+                                _ ->
+                                    Cmd.none
+
+                        newTaskStatus : TaskStatus
+                        newTaskStatus =
+                            { task = task
+                            , progress = Just 1.0
+                            , finished = True
+                            , aborted = True
+                            }
+
+                        newTasks : List TaskStatus
+                        newTasks =
+                            List.map
+                                (\t ->
+                                    if compareTasks t.task task then
+                                        newTaskStatus
+
+                                    else
+                                        t
+                                )
+                                clientState.tasks
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | tasks = newTasks }
+                      }
+                    , False
+                    , [ abortCmd ]
+                    )
+
+                RemoveTask task ->
+                    let
+                        newTasks : List TaskStatus
+                        newTasks =
+                            List.filter (\t -> not (compareTasks t.task task)) clientState.tasks
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | tasks = newTasks }
+                      }
+                    , False
+                    , []
+                    )
+
+        saveCmd : List (Cmd Msg)
         saveCmd =
             if saveRequired then
-                saveStorage newConfig.clientConfig
+                [ saveStorage newConfig.clientConfig ]
 
             else
-                Cmd.none
+                []
+
+        cmd : Cmd Msg
+        cmd =
+            Cmd.batch <| saveCmd ++ extraCmd
     in
-    ( newConfig, saveCmd )
+    ( newConfig, cmd )
 
 
 {-| The subscriptions for the config.
@@ -555,6 +727,42 @@ subs =
                     _ ->
                         Noop
             )
+        , panelBlur
+            (\x ->
+                case Decode.decodeValue Decode.string x of
+                    Ok "task-panel" ->
+                        DisableTaskPanel
+
+                    _ ->
+                        Noop
+            )
+        , Http.track "sound-track"
+            (\progress ->
+                case progress of
+                    Http.Sending { sent, size } ->
+                        let
+                            progressValue : Float
+                            progressValue =
+                                if size == 0 then
+                                    0
+
+                                else
+                                    toFloat sent / toFloat size
+
+                            finished : Bool
+                            finished =
+                                progressValue == 1
+                        in
+                        UpdateTaskStatus
+                            { task = ClientTask UploadTrack
+                            , finished = finished
+                            , progress = Just progressValue
+                            , aborted = False
+                            }
+
+                    _ ->
+                        Noop
+            )
         ]
 
 
@@ -573,3 +781,18 @@ port saveStoragePort : Encode.Value -> Cmd msg
 {-| Subscription that received progress on tasks.
 -}
 port taskProgress : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Add blur handler to the panel.
+-}
+port addBlurHandlerPort : String -> Cmd msg
+
+
+{-| Blured panel.
+-}
+port panelBlur : (Encode.Value -> msg) -> Sub msg
+
+
+{-| Remove a task.
+-}
+port abortTaskPort : String -> Cmd msg

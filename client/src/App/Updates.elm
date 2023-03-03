@@ -32,6 +32,7 @@ import Settings.Types as Settings
 import Settings.Updates as Settings
 import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
+import Utils
 
 
 {-| Updates the model from a message, and returns the new model as well as the command to send.
@@ -84,7 +85,7 @@ update message model =
                     updateModel (App.ConfigMsg (Config.UpdateTaskStatus t)) inputModel
             in
             case ( t.finished, t.task ) of
-                ( True, Config.UploadRecord id gosId value ) ->
+                ( True, Config.ClientTask (Config.UploadRecord id gosId value) ) ->
                     let
                         record : Maybe Data.Record
                         record =
@@ -128,6 +129,22 @@ update message model =
 
                 _ ->
                     ( App.Logged m, Cmd.map App.LoggedMsg cmd )
+
+        -- If the user cancel the track upload.
+        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask task)), App.Logged { config, page, user } ) ->
+            case page of
+                App.Options m ->
+                    let
+                        ( newConfig, cmdConfig ) =
+                            Config.update (Config.AbortTask task) config
+
+                        ( newModel, cmdOptions ) =
+                            Options.update (Options.DeleteTrack Utils.Confirm Nothing) { config = newConfig, page = page, user = user }
+                    in
+                    ( App.Logged newModel, Cmd.map App.LoggedMsg <| Cmd.batch [ Cmd.map App.ConfigMsg cmdConfig, cmdOptions ] )
+
+                _ ->
+                    ( model, Cmd.none )
 
         ( App.LoggedMsg msg, App.Logged m ) ->
             updateModel msg m |> Tuple.mapBoth App.Logged (Cmd.map App.LoggedMsg)
@@ -190,10 +207,10 @@ updateModel msg model =
                                     ( tmpModel, tmpCmd ) =
                                         updateModel (App.AcquisitionMsg Acquisition.DeviceChanged) { model | config = nextConfig }
                                 in
-                                ( tmpModel, Cmd.batch [ tmpCmd, nextCmd ] )
+                                ( tmpModel, Cmd.batch [ tmpCmd, Cmd.map App.ConfigMsg nextCmd ] )
 
                             else
-                                ( { model | config = nextConfig }, nextCmd )
+                                ( { model | config = nextConfig }, Cmd.map App.ConfigMsg nextCmd )
                     in
                     ( newModel, newCmd )
 

@@ -84,7 +84,7 @@ leftColumn config user =
     let
         uploadSlidesButton =
             Ui.primary [ Ui.wf ]
-                { label = Strings.stepsPreparationSelectPdf config.clientState.lang
+                { label = Element.text <| Strings.stepsPreparationSelectPdf config.clientState.lang
                 , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked Nothing
                 }
     in
@@ -566,11 +566,11 @@ deleteCapsuleConfirmPopup lang capsule =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]
@@ -587,11 +587,11 @@ leaveCapsuleConfirmPopup lang capsule =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.DeleteCapsule Utils.Cancel capsule)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Home.DeleteCapsule Utils.Confirm capsule)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]
@@ -617,11 +617,11 @@ renameCapsulePopup lang capsule =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.RenameCapsule Utils.Cancel capsule)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Home.RenameCapsule Utils.Confirm capsule)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]
@@ -642,11 +642,11 @@ deleteProjectConfirmPopup lang project =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.DeleteProject Utils.Cancel project)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Home.DeleteProject Utils.Confirm project)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]
@@ -676,11 +676,11 @@ renameProjectPopup lang project =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.RenameProject Utils.Cancel project)
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg (Home.RenameProject Utils.Confirm project)
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]

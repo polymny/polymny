@@ -223,13 +223,13 @@ view model =
         ( buttonMsg, mkButton ) =
             case ( model.page, model.newPasswordRequest, canSubmit ) of
                 ( _, _, False ) ->
-                    ( Ui.None, Ui.secondaryGeneric )
+                    ( Ui.None, Ui.secondary )
 
                 ( Unlogged.ForgotPassword, RemoteData.Success _, _ ) ->
-                    ( Ui.None, Ui.secondaryGeneric )
+                    ( Ui.None, Ui.secondary )
 
                 _ ->
-                    ( Ui.Msg Unlogged.ButtonClicked, Ui.primaryGeneric )
+                    ( Ui.Msg Unlogged.ButtonClicked, Ui.primary )
     in
     Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
         [ layout [ Ui.s 10, Ui.cx, Ui.wf ]

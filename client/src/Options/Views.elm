@@ -370,7 +370,7 @@ generalOptions config model =
         soundTrackUpload =
             Ui.secondary
                 []
-                { label = Strings.stepsOptionsUploadTrack lang
+                { label = Element.text <| Strings.stepsOptionsUploadTrack lang
                 , action = Ui.Msg (App.OptionsMsg Options.TrackUploadRequested)
                 }
 
@@ -491,11 +491,11 @@ deleteTrackConfirmPopup lang model s =
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg <| Options.DeleteTrack Utils.Cancel <| Just s
-                , label = Strings.uiCancel lang
+                , label = Element.text <| Strings.uiCancel lang
                 }
             , Ui.primary []
                 { action = mkUiMsg <| Options.DeleteTrack Utils.Confirm <| Just s
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
             ]
         ]

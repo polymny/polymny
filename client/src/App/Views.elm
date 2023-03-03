@@ -22,6 +22,7 @@ import Preparation.Views as Preparation
 import Production.Views as Production
 import Publication.Views as Publication
 import Settings.Views as Settings
+import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -94,8 +95,24 @@ viewContent fullModel =
 
             else
                 popup
+
+        animatedPopup =
+            if realPopup == Element.none then
+                Element.el [ Element.transparent True ] Element.none
+
+            else
+                Element.el
+                    [ Ui.wf
+                    , Ui.hf
+                    , Element.transparent False
+                    , Transition.properties
+                        [ Transition.opacity 200 []
+                        ]
+                        |> Element.htmlAttribute
+                    ]
+                    realPopup
     in
-    Element.column [ Ui.wf, Ui.hf, Element.inFront realPopup ]
+    Element.column [ Ui.wf, Ui.hf, Element.inFront animatedPopup ]
         [ Ui.navbar
             (fullModel |> App.toMaybe |> Maybe.map .config)
             (fullModel |> App.toMaybe |> Maybe.map .page)
@@ -156,16 +173,16 @@ langPicker lang =
         confirmButton =
             Ui.primary [ Ui.ab, Ui.ar ]
                 { action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.ToggleLangPicker
-                , label = Strings.uiConfirm lang
+                , label = Element.text <| Strings.uiConfirm lang
                 }
 
         langChoice : Lang -> Element App.MaybeMsg
         langChoice l =
             (if lang == l then
-                Ui.primaryGeneric
+                Ui.primary
 
              else
-                Ui.secondaryGeneric
+                Ui.secondary
             )
                 []
                 { label =

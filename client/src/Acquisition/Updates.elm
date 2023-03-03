@@ -249,9 +249,10 @@ update msg model =
                 Acquisition.UploadRecord record ->
                     let
                         task =
-                            { task = Config.UploadRecord m.capsule.id m.gosId (Acquisition.encodeRecord record)
+                            { task = Config.ClientTask <| Config.UploadRecord m.capsule.id m.gosId <| Acquisition.encodeRecord record
                             , progress = Just 0.0
                             , finished = False
+                            , aborted = False
                             }
 
                         nextRoute =
@@ -259,7 +260,7 @@ update msg model =
                                 Route.Acquisition m.capsule.id (m.gosId + 1)
 
                             else
-                                Route.Home
+                                Route.Production m.capsule.id 0
                     in
                     ( { model | config = Config.addTask task model.config }
                     , Cmd.batch

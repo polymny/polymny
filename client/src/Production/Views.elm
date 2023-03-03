@@ -122,7 +122,7 @@ leftColumn config model =
         resetButton =
             Ui.secondary
                 []
-                { label = Strings.stepsProductionResetOptions lang
+                { label = Element.text <| Strings.stepsProductionResetOptions lang
                 , action = 
                     case model.gos.webcamSettings of
                         Just _ ->
@@ -407,7 +407,7 @@ rightColumn config model =
         produceButton =
             Ui.primary [ Ui.ar ]
                 { action = Ui.Msg <| App.ProductionMsg <| Production.Produce
-                , label = Strings.stepsProductionProduceVideo lang
+                , label = Element.text <| Strings.stepsProductionProduceVideo lang
                 }
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]

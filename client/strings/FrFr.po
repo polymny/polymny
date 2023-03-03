@@ -1046,3 +1046,19 @@ msgstr "Supprimer l'enregistrement"
 #. Delete a record.
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Voulez vous vraiment supprimer l'enregistrement"
+
+#. Tasks.
+msgid "Ui.tasks"
+msgstr "Tâches en cours"
+
+#. Upload record task.
+msgid "Tasks.uploadRecord"
+msgstr "Téléversement de l'enregistrement"
+
+#. Upload track task.
+msgid "Tasks.uploadTrack"
+msgstr "Téléversement de la musique de fond"
+
+#. Unknown task.
+msgid "Tasks.unknown"
+msgstr "Tâche inconnue"
