@@ -6,7 +6,7 @@ module Ui.Utils exposing
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink, paragraph
-    , id, class
+    , id, class, sortAttributes
     )
 
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
@@ -49,14 +49,16 @@ module Ui.Utils exposing
 
 # HTML utilities
 
-@docs id, class
+@docs id, class, sortAttributes
 
 -}
 
 import Element exposing (Element)
 import Element.Border as Border
+import Element.Font as Font
 import Html.Attributes
 import Material.Icons.Types exposing (Icon)
+import Ui.Colors as Colors
 
 
 {-| An alias for align right.
@@ -355,3 +357,36 @@ id name =
 class : String -> Element.Attribute msg
 class name =
     Element.htmlAttribute (Html.Attributes.class name)
+
+
+{-| Sort attributes to inner, outer and font.
+-}
+sortAttributes : List (Element.Attribute msg) -> ( List (Element.Attribute msg), List (Element.Attribute msg), List (Element.Attribute msg) )
+sortAttributes attributes =
+    let
+        innerAttributes : List (Element.Attribute msg)
+        innerAttributes =
+            [ p 12
+            , p 2
+            , Border.rounded 5
+            , Border.rounded 100
+            ]
+
+        outerAttributes : List (Element.Attribute msg)
+        outerAttributes =
+            [ Border.rounded 5
+            , Border.rounded 100
+            , wf
+            ]
+
+        fontAttributes : List (Element.Attribute msg)
+        fontAttributes =
+            [ Font.color Colors.green2
+            , Font.color Colors.white
+            , Font.bold
+            ]
+    in
+    ( List.filter (\x -> List.member x innerAttributes) attributes
+    , List.filter (\x -> List.member x outerAttributes) attributes
+    , List.filter (\x -> List.member x fontAttributes) attributes
+    )

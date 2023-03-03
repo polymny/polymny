@@ -23,6 +23,7 @@ import Route exposing (Route)
 import Simple.Animation as Animation exposing (Animation)
 import Simple.Animation.Animated as Animated
 import Simple.Animation.Property as P
+import Simple.Transition as Transition
 import Svg exposing (Svg, g, svg)
 import Svg.Attributes exposing (..)
 import Ui.Colors as Colors
@@ -42,98 +43,140 @@ type Action msg
     | None
 
 
-{-| Creates a primary button, with colored background and white text.
--}
-primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
-primary attr { label, action } =
-    primaryGeneric attr { label = Element.text label, action = action }
-
-
 {-| Creates a primary button with a generic element.
 -}
 primaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
 primaryGeneric attr { label, action } =
-    navigationElement action (addPrimaryAttr attr) (Element.el [ Ui.cx, Font.bold ] label)
+    let
+        ( innerAttr, outerAttr, fontAttr ) =
+            Ui.sortAttributes attr
+
+        inner =
+            innerAttr
+                ++ [ Ui.wf
+                   , Ui.hf
+                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                   , Transition.properties
+                        [ Transition.backgroundColor 200 []
+                        ]
+                        |> Element.htmlAttribute
+                   ]
+
+        outer =
+            outerAttr
+                ++ [ Background.color Colors.green2
+                   , Border.color Colors.greyBorder
+                   , Ui.b 1
+                   ]
+
+        font =
+            fontAttr
+                ++ [ Ui.cx
+                   , Ui.cy
+                   ]
+    in
+    navigationElement action outer (Element.el inner (Element.el font label))
 
 
-{-| The attributes of a primary button.
+{-| Creates a primary button, with colored background and white text.
 -}
-addPrimaryAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
-addPrimaryAttr attr =
-    Border.rounded 100
-        :: Background.color Colors.green2
-        :: Font.color Colors.greyBackground
-        :: Ui.p 12
-        :: Border.color Colors.greyBorder
-        :: Ui.b 1
-        :: attr
+primary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
+primary attr { label, action } =
+    let
+        newAttr : List (Element.Attribute msg)
+        newAttr =
+            attr
+                ++ [ Border.rounded 100
+                   , Ui.p 12
+                   , Font.bold
+                   , Font.color Colors.white
+                   ]
+    in
+    primaryGeneric newAttr { label = Element.text label, action = action }
 
 
 {-| Creates a primary button with an icon.
 -}
 primaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
 primaryIcon attr params =
-    navigationElement params.action (Element.htmlAttribute (Html.Attributes.title params.tooltip) :: addPrimaryIconAttr attr) (icon 22 params.icon)
+    let
+        newAttr : List (Element.Attribute msg)
+        newAttr =
+            attr
+                ++ [ Element.htmlAttribute (Html.Attributes.title params.tooltip)
+                   , Border.rounded 5
+                   , Font.color Colors.white
+                   , Ui.p 2
+                   ]
+    in
+    primaryGeneric newAttr { label = icon 22 params.icon, action = params.action }
 
-
-{-| The attributes of a primary button.
+{-| Creates a secondary button with a generic element.
 -}
-addPrimaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
-addPrimaryIconAttr attr =
-    Border.rounded 5
-        :: Ui.p 2
-        :: Border.color Colors.greyBorder
-        :: Ui.b 1
-        :: Background.color Colors.green2
-        :: Font.color Colors.greyBackground
-        :: attr
+secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+secondaryGeneric attr { label, action } =
+    let
+        ( innerAttr, outerAttr, fontAttr ) =
+            Ui.sortAttributes attr
+
+        inner =
+            innerAttr
+                ++ [ Ui.wf
+                   , Ui.hf
+                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                   , Transition.properties
+                        [ Transition.backgroundColor 200 []
+                        ]
+                        |> Element.htmlAttribute
+                   ]
+
+        outer =
+            outerAttr
+                ++ [ Background.color Colors.white
+                   , Border.color Colors.greyBorder
+                   , Ui.b 1
+                   ]
+
+        font =
+            fontAttr
+                ++ [ Ui.cx
+                   , Ui.cy
+                   ]
+    in
+    navigationElement action outer (Element.el inner (Element.el font label))
 
 
 {-| Creates a secondary button, with colored background and white text.
 -}
 secondary : List (Element.Attribute msg) -> { label : String, action : Action msg } -> Element msg
 secondary attr { label, action } =
-    secondaryGeneric attr { label = Element.text label, action = action }
-
-
-{-| Creates a secondary button with a generic element.
--}
-secondaryGeneric : List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
-secondaryGeneric attr { label, action } =
-    --navigationElement action (addSecondaryAttr attr) label
-    navigationElement action (addSecondaryAttr attr) (Element.el [ Ui.cx, Font.bold ] label)
-
-
-{-| The attributes of a secondary button.
--}
-addSecondaryAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
-addSecondaryAttr attr =
-    Border.rounded 100
-        :: Background.color Colors.white
-        :: Border.color Colors.greyBorder
-        :: Ui.b 1
-        :: Ui.p 12
-        :: attr
+    let
+        newAttr : List (Element.Attribute msg)
+        newAttr =
+            attr
+                ++ [ Border.rounded 100
+                   , Ui.p 12
+                   , Font.bold
+                   ]
+    in
+    secondaryGeneric newAttr { label = Element.text label, action = action }
 
 
 {-| Creates a secondary button with an icon.
 -}
 secondaryIcon : List (Element.Attribute msg) -> { icon : Icon msg, tooltip : String, action : Action msg } -> Element msg
 secondaryIcon attr params =
-    navigationElement params.action (Element.htmlAttribute (Html.Attributes.title params.tooltip) :: addSecondaryIconAttr attr) (icon 22 params.icon)
-
-
-{-| The attributes of a secondary button.
--}
-addSecondaryIconAttr : List (Element.Attribute msg) -> List (Element.Attribute msg)
-addSecondaryIconAttr attr =
-    Border.rounded 5
-        :: Ui.b 1
-        :: Border.color Colors.greyBorder
-        :: Font.color Colors.green2
-        :: Ui.p 2
-        :: Font.bold
-        :: attr
+    let
+        newAttr : List (Element.Attribute msg)
+        newAttr =
+            attr
+                ++ [ Element.htmlAttribute (Html.Attributes.title params.tooltip)
+                   , Border.rounded 5
+                   , Font.color Colors.green2
+                   , Ui.p 2
+                   ]
+    in
+    secondaryGeneric newAttr { label = icon 22 params.icon, action = params.action }
 
 
 {-| Creates a link, colored and changing color at hover.
