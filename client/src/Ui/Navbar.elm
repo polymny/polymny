@@ -289,14 +289,26 @@ navButtons lang capsule page =
         makeButton : Route -> (Lang -> String) -> Element msg
         makeButton route label =
             let
-                attr =
+                color : List (Element.Attribute msg)
+                color =
                     if Route.compareTab route (Route.fromPage page) then
                         [ Background.color Colors.greyBackground ]
 
                     else
                         []
+
+                attr : List (Element.Attribute msg)
+                attr =
+                    if Route.compareTab route (Route.fromPage page) then
+                        Ui.rt 10 :: color
+
+                    else
+                        color
             in
-            Ui.navigationElement (Ui.Route route) (Ui.hf :: Ui.p 12 :: Font.bold :: attr) (Element.el [ Element.centerY ] (Element.text (label lang)))
+            Element.column [ Ui.hf ]
+                [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+                , Ui.navigationElement (Ui.Route route) (Ui.hf :: Ui.p 12 :: Font.bold :: attr) (Element.el [ Element.centerY ] (Element.text (label lang)))
+                ]
     in
     Element.row [ Ui.s 10, Ui.hf ]
         [ makeButton (Route.Preparation capsule.id) Strings.stepsPreparationPrepare
