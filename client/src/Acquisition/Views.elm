@@ -251,10 +251,6 @@ view config user model =
                     [ pointerControl model
                     , slideElement
                     ]
-                , Ui.primary [ Ui.ab, Ui.ar ]
-                    { label = Element.text <| Strings.uiConfirm lang
-                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings
-                    }
                 ]
 
         -- Settings popup or popup to confirm the deletion of a record
