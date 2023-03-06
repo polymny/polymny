@@ -749,39 +749,69 @@ vumeter ratio value =
 -}
 pointerControl : Acquisition.Model -> Element App.Msg
 pointerControl model =
-    Element.column [ Ui.cy, Ui.p 5 ]
-        [ Element.column [ Ui.wpx 100, Ui.s 5 ]
-            [ Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
-                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
-                    { label = Ui.icon 40 Material.Icons.gps_fixed
-                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Pointer
-                    }
-                , Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
-                    { label = Ui.icon 40 Material.Icons.brush
-                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Brush
-                    }
+    Element.column [ Ui.cy, Ui.p 5, Ui.s 5 ]
+        [ Element.column [ Ui.s 5 ]
+            [ Element.row [ Ui.s 5 ]
+                [ Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Pointer)
+                    [ Ui.wf
+                    , Ui.cy
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Font.color Colors.green2
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    ]
+                    (Ui.icon 45 Material.Icons.gps_fixed)
+                , Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Brush)
+                    [ Ui.wf
+                    , Ui.cy
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Font.color Colors.green2
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    ]
+                    (Ui.icon 45 Material.Icons.brush)
                 ]
-            , Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
-                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
-                    { label = Ui.icon 40 Material.Icons.format_color_fill
-                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.ClearPointer
-                    }
+            , Element.row [ Ui.s 5 ]
+                [ Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ClearPointer)
+                    [ Ui.wf
+                    , Ui.cy
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Font.color Colors.green2
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    ]
+                    (Ui.icon 45 Material.Icons.recycling)
                 , Element.el [ Ui.wf, Ui.hpx 45 ] Element.none
                 ]
-            , Element.row [ Ui.s 5, Ui.wf, Ui.hf ]
-                [ Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
-                    { label = Ui.icon 40 Material.Icons.remove
-                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size - 5
-                    }
-                , Input.button [ Ui.wf, Ui.cy, Ui.hpx 45, Font.color Colors.green2 ]
-                    { label = Ui.icon 40 Material.Icons.add
-                    , onPress = Just <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size + 5
-                    }
+            , Element.row [ Ui.s 5 ]
+                [ Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size - 5)
+                    [ Ui.wf
+                    , Ui.cy
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Font.color Colors.green2
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    ]
+                    (Ui.icon 45 Material.Icons.remove)
+                , Ui.navigationElement
+                    (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size + 5)
+                    [ Ui.wf
+                    , Ui.cy
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Font.color Colors.green2
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    ]
+                    (Ui.icon 45 Material.Icons.add)
                 ]
             ]
         , palette
-            |> List.map (\( x, y ) -> Element.row [ Ui.s 5, Ui.wf, Ui.hf ] [ colorToButton x, colorToButton y ])
-            |> Element.column [ Ui.wpx 100, Ui.s 5 ]
+            |> List.map (\( x, y ) -> Element.row [ Ui.s 5 ] [ colorToButton x, colorToButton y ])
+            |> Element.column [ Ui.s 5 ]
         ]
 
 
@@ -825,10 +855,10 @@ colorToString color =
 -}
 colorToButton : Element.Color -> Element App.Msg
 colorToButton color =
-    Input.button [ Ui.wf, Ui.hpx 45 ]
-        { label = Element.el [ Ui.wf, Ui.hf, Background.color color ] Element.none
-        , onPress = colorToString color |> Acquisition.SetPointerColor |> mkMsg |> Just
-        }
+    Ui.navigationElement
+        (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
+        []
+        (Element.el [ Ui.wpx 45, Ui.hpx 45, Background.color color, Ui.r 10, Ui.b 4 ] Element.none)
 
 
 {-| Easily creates the Ui.Msg for options msg.
