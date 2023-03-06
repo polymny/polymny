@@ -312,7 +312,7 @@ changePassword config user model m =
             Utils.tern (canSend && passwordAccepted && newPasswordRepeatAccepted)
                 Ui.primary
                 Ui.secondary
-                [ Ui.wf, Ui.p 12, Border.rounded 100, Font.bold ]
+                [ Ui.wf ]
                 { action =
                     Utils.tern
                         (canSend && passwordAccepted && newPasswordRepeatAccepted)
