@@ -58,7 +58,7 @@ function init(node, flags) {
     // The information about the pointer.
     let pointer = {
         mode: "Pointer",
-        color: "rgb(255, 0, 0)",
+        color: "rgb(255,0,0)",
         size: 10,
         position: { x: 0, y: 0 },
         oldPosition: null,

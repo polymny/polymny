@@ -134,7 +134,7 @@ defaultPointerStyle : PointerStyle
 defaultPointerStyle =
     { mode = Pointer
     , size = 10
-    , color = "rgb(255, 0, 0)"
+    , color = "rgb(255,0,0)"
     }
 
 

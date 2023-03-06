@@ -749,6 +749,19 @@ vumeter ratio value =
 -}
 pointerControl : Acquisition.Model -> Element App.Msg
 pointerControl model =
+    let
+        colorToButton : Element.Color -> Element App.Msg
+        colorToButton color =
+            let
+                borderColor : Element.Color
+                borderColor =
+                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 Colors.black
+            in
+            Ui.navigationElement
+                (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
+                []
+                (Element.el [ Ui.wpx 45, Ui.hpx 45, Background.color color, Ui.r 10, Ui.b 4, Border.color borderColor ] Element.none)
+    in
     Element.column [ Ui.cy, Ui.p 5, Ui.s 5 ]
         [ Element.column [ Ui.s 5 ]
             [ Element.row [ Ui.s 5 ]
@@ -849,16 +862,6 @@ colorToString color =
             floor (255 * blue) |> String.fromInt
     in
     "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
-
-
-{-| Convers an element color to an input button.
--}
-colorToButton : Element.Color -> Element App.Msg
-colorToButton color =
-    Ui.navigationElement
-        (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
-        []
-        (Element.el [ Ui.wpx 45, Ui.hpx 45, Background.color color, Ui.r 10, Ui.b 4 ] Element.none)
 
 
 {-| Easily creates the Ui.Msg for options msg.
