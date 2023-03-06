@@ -761,81 +761,129 @@ pointerControl model =
                 (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
                 [ Background.color color
                 , Ui.r 10
+                , Ui.b 4
+                , Border.color borderColor
+                , Border.shadow
+                    { offset = ( 0.0, 0.0 )
+                    , size = 1.0
+                    , blur = 4.0
+                    , color = Colors.alphaColor 0.4 Colors.black
+                    }
                 ]
                 (Element.el
-                    [ Ui.wpx 45
-                    , Ui.hpx 45
-                    , Ui.r 10
-                    , Ui.b 4
-                    , Border.color borderColor
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.2 Colors.white ]
+                    [ Ui.wpx 35
+                    , Ui.hpx 35
+                    , Ui.r 6
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.2 Colors.black ]
                     ]
                     Element.none
                 )
     in
-    Element.column [ Ui.cy, Ui.p 5, Ui.s 5 ]
-        [ Element.column [ Ui.s 5 ]
-            [ Element.row [ Ui.s 5 ]
+    Element.column [ Ui.cy, Ui.p 5, Ui.s 8 ]
+        [ Element.column [ Ui.s 8 ]
+            [ Element.row [ Ui.s 8 ]
                 [ Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Pointer)
-                    [ Ui.wf
-                    , Ui.cy
-                    , Ui.hpx 45
-                    , Ui.r 10
+                    [ Ui.r 10
+                    , Border.color <|
+                        Utils.tern
+                            (model.pointerStyle.mode == Acquisition.Pointer)
+                            Colors.green2
+                            (Colors.alphaColor 0.1 Colors.black)
+                    , Ui.b 4
                     , Font.color Colors.green2
                     , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 1.0
+                        , blur = 4.0
+                        , color = Colors.alphaColor 0.4 Colors.black
+                        }
                     ]
-                    (Ui.icon 45 Material.Icons.gps_fixed)
+                    (Ui.icon 35 Material.Icons.gps_fixed)
                 , Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerMode <| Acquisition.Brush)
-                    [ Ui.wf
-                    , Ui.cy
-                    , Ui.hpx 45
-                    , Ui.r 10
+                    [ Ui.r 10
+                    , Border.color <|
+                        Utils.tern
+                            (model.pointerStyle.mode == Acquisition.Brush)
+                            Colors.green2
+                            (Colors.alphaColor 0.1 Colors.black)
+                    , Ui.b 4
                     , Font.color Colors.green2
                     , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 1.0
+                        , blur = 4.0
+                        , color = Colors.alphaColor 0.4 Colors.black
+                        }
                     ]
-                    (Ui.icon 45 Material.Icons.brush)
+                    (Ui.icon 35 Material.Icons.brush)
                 ]
-            , Element.row [ Ui.s 5 ]
+            , Element.row [ Ui.s 8 ]
                 [ Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ClearPointer)
-                    [ Ui.wf
-                    , Ui.cy
-                    , Ui.hpx 45
-                    , Ui.r 10
+                    [ Ui.r 10
+                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Ui.b 4
                     , Font.color Colors.green2
                     , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 1.0
+                        , blur = 4.0
+                        , color = Colors.alphaColor 0.4 Colors.black
+                        }
                     ]
-                    (Ui.icon 45 Material.Icons.recycling)
-                , Element.el [ Ui.wf, Ui.hpx 45 ] Element.none
+                    (Ui.icon 35 Material.Icons.recycling)
+                , Element.el [ Ui.wpx 45, Ui.hpx 45 ] <|
+                    Element.el
+                        [ Ui.wpx (model.pointerStyle.size * 2)
+                        , Ui.hpx (model.pointerStyle.size * 2)
+                        , Ui.r 100
+                        , Ui.cy
+                        , Ui.cx
+                        , Background.color Colors.green2
+                        ]
+                        Element.none
                 ]
-            , Element.row [ Ui.s 5 ]
+            , Element.row [ Ui.s 8 ]
                 [ Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size - 5)
-                    [ Ui.wf
-                    , Ui.cy
-                    , Ui.hpx 45
-                    , Ui.r 10
+                    [ Ui.r 10
+                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Ui.b 4
                     , Font.color Colors.green2
                     , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 1.0
+                        , blur = 4.0
+                        , color = Colors.alphaColor 0.4 Colors.black
+                        }
                     ]
-                    (Ui.icon 45 Material.Icons.remove)
+                    (Ui.icon 35 Material.Icons.remove)
                 , Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size + 5)
-                    [ Ui.wf
-                    , Ui.cy
-                    , Ui.hpx 45
-                    , Ui.r 10
+                    [ Ui.r 10
+                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Ui.b 4
                     , Font.color Colors.green2
                     , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 1.0
+                        , blur = 4.0
+                        , color = Colors.alphaColor 0.4 Colors.black
+                        }
                     ]
-                    (Ui.icon 45 Material.Icons.add)
+                    (Ui.icon 35 Material.Icons.add)
                 ]
             ]
         , palette
-            |> List.map (\( x, y ) -> Element.row [ Ui.s 5 ] [ colorToButton x, colorToButton y ])
-            |> Element.column [ Ui.s 5 ]
+            |> List.map (\( x, y ) -> Element.row [ Ui.s 8 ] [ colorToButton x, colorToButton y ])
+            |> Element.column [ Ui.s 8 ]
         ]
 
 
