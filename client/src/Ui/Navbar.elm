@@ -203,7 +203,6 @@ taskPanel clientState =
                 progress =
                     taskStatus.progress
                         |> Maybe.withDefault 0.0
-                        |> (\x -> x * 100.0)
 
                 color : Element.Color
                 color =
@@ -237,8 +236,8 @@ taskPanel clientState =
                 , Element.text name
                 , Element.row [ Ui.s 10 ]
                     [ Element.row []
-                        [ Element.el [ Ui.w <| round progress, Ui.h 3, Background.color color ] Element.none
-                        , Element.el [ Ui.w <| 100 - round progress, Ui.h 3, Background.color Colors.greyFont ] Element.none
+                        [ Element.el [ Ui.w <| round <| 300 * progress, Ui.h 3, Background.color color ] Element.none
+                        , Element.el [ Ui.w <| round <| 300 * (1.0 - progress), Ui.h 3, Background.color Colors.greyFont ] Element.none
                         ]
                     , Ui.navigationElement action
                         [ Ui.r 100
@@ -276,12 +275,17 @@ taskPanel clientState =
                 ]
                 (head :: List.map taskInfo tasks)
     in
-    Element.el [ Ui.pt 5 ] <|
-        if showTaskPanel then
-            taskView
-
-        else
-            Element.none
+    Element.el
+        [ Ui.pt 5
+        , Element.alignRight
+        , Element.height <| Element.maximum 300 Element.fill
+        , Element.alpha <| Utils.tern showTaskPanel 1.0 0.0
+        , Transition.properties
+            [ Transition.opacity 200 []
+            ]
+            |> Element.htmlAttribute
+        ]
+        taskView
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.
