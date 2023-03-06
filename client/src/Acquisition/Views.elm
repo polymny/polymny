@@ -122,24 +122,46 @@ view config user model =
                         , tooltip = Strings.stepsAcquisitionStopRecord lang
                         , action = action
                         }
+
+                -- Label of the record
+                label : String
+                label =
+                    if record.old then
+                        Strings.stepsAcquisitionSavedRecord lang
+
+                    else if List.any (\r -> r.old) model.records then
+                        String.fromInt index
+
+                    else
+                        String.fromInt <| index + 1
+
+                -- Delete or validate button
+                delValButton : Element App.Msg
+                delValButton =
+                    Utils.tern
+                        record.old
+                        (Ui.secondaryIcon []
+                            { icon = Material.Icons.delete
+                            , tooltip = Strings.stepsAcquisitionDeleteRecord lang
+                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.DeleteRecord Utils.Request
+                            }
+                        )
+                        (Ui.primaryIcon []
+                            { icon = Material.Icons.done
+                            , tooltip = Strings.stepsAcquisitionValidateRecord lang
+                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.UploadRecord record
+                            }
+                        )
             in
             Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
                 Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
                     Element.row [ Ui.wf, Ui.s 10 ]
-                        [ if record.old then
-                            Element.text <| Strings.stepsAcquisitionSavedRecord lang
-
-                          else
-                            Element.text (String.fromInt (index + 1))
+                        [ Element.text label
                         , Element.column [ Ui.wf ]
                             [ Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record)) ]
                         , playButton
                         , stopButton
-                        , Ui.primaryIcon []
-                            { icon = Material.Icons.done
-                            , tooltip = ""
-                            , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.UploadRecord record
-                            }
+                        , delValButton
                         ]
 
         -- Popup to ask the user to confirm if they want to delete the current record
