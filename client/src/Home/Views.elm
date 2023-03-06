@@ -217,8 +217,7 @@ makeHeader text config key =
                         Ui.icon 24 Icons.arrow_right
 
                 Nothing ->
-                    -- Element.el [ Ui.w 24, Ui.h 24 ] Element.none
-                    Element.none
+                    Element.el [ Ui.h 24 ] Element.none
     in
     Ui.navigationElement action [] <|
         Element.row [ Ui.p 10, Font.bold ]
