@@ -1,7 +1,7 @@
 module App.Types exposing
     ( Model, Page(..), getCapsule, Msg(..), onUrlRequest
     , Error(..), errorToString
-    , MaybeModel(..), MaybeMsg(..), toMaybe
+    , MaybeModel(..), MaybeMsg(..), WebSocketMsg(..), toMaybe
     )
 
 {-| This module contains the model and messages of our application.
@@ -137,11 +137,18 @@ type Msg
     | OptionsMsg Options.Msg
     | SettingsMsg Settings.Msg
     | ConfigMsg Config.Msg
+    | WebSocketMsg WebSocketMsg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url
     | ExternalUrl String
     | Logout
     | LoggedOut
+
+
+{-| This type contains the different types of web socket messages that can be received from server.
+-}
+type WebSocketMsg
+    = CapsuleUpdated Data.Capsule
 
 
 {-| Converts an URL request msg to an App.Msg.
