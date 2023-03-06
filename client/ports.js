@@ -7,6 +7,9 @@ function init(node, flags) {
     // Whether the user has premium account or not.
     let isPremium = flags.user !== null && flags.user.plan !== 'free';
 
+    // The websocket that allows the server to send messages to the client.
+    let socket = null;
+
     // The stream of the device.
     let stream = null;
 
@@ -111,6 +114,30 @@ function init(node, flags) {
         flags.global.clientConfig = JSON.parse(storedClientConfig);
     }
 
+    // Initializing code for websocket
+    function initWebSocket() {
+        socket = new WebSocket(flags.global.serverConfig.socketRoot);
+
+        socket.onopen = function() {
+            socket.send(flags.user.cookie);
+        }
+
+        socket.onclose = function() {
+            // Automatically reconnect
+            setTimeout(initWebSocket, 1000);
+        }
+
+        socket.onmessage = function(event) {
+            console.log(event.data);
+            app.ports.webSocketMsg.send(JSON.parse(event.data));
+        }
+    }
+
+    if (flags.user !== null) {
+        initWebSocket();
+    }
+
+    // Start app
     let app = Elm.Main.init({
         node, flags
     });

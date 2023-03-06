@@ -1,4 +1,4 @@
-module App.Updates exposing (update, updateModel, subs)
+port module App.Updates exposing (update, updateModel, subs)
 
 {-| This module contains the update function of the polymny application.
 
@@ -17,7 +17,7 @@ import Data.Capsule as Data
 import Data.User as Data
 import Device
 import Home.Updates as Home
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import NewCapsule.Updates as NewCapsule
 import Options.Types as Options
 import Options.Updates as Options
@@ -238,6 +238,9 @@ updateModel msg model =
                 App.SettingsMsg sMsg ->
                     Settings.update sMsg model
 
+                App.WebSocketMsg (App.CapsuleUpdated c) ->
+                    ( { model | user = Data.updateUser c model.user }, Cmd.none )
+
                 App.OnUrlChange url ->
                     let
                         ( page, cmd ) =
@@ -275,6 +278,14 @@ subs m =
         App.Logged model ->
             Sub.batch
                 [ Sub.map App.ConfigMsg (Config.subs model.config)
+                , webSocketMsg <|
+                    \x ->
+                        case Decode.decodeValue webSocketMsgDecoder x of
+                            Ok a ->
+                                App.WebSocketMsg <| a
+
+                            _ ->
+                                App.Noop
                 , case model.page of
                     App.Home _ ->
                         Home.subs
@@ -307,3 +318,24 @@ subs m =
 
         _ ->
             Sub.none
+
+
+{-| Function that decodes websocket messages.
+-}
+webSocketMsgDecoder : Decoder App.WebSocketMsg
+webSocketMsgDecoder =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\x ->
+                case x of
+                    "capsule_changed" ->
+                        Decode.map App.CapsuleUpdated Data.decodeCapsule
+
+                    _ ->
+                        Decode.fail <| "Unknown websocket msg type " ++ x
+            )
+
+
+{-| Port to received messages via web sockets.
+-}
+port webSocketMsg : (Decode.Value -> msg) -> Sub msg
