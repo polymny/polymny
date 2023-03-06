@@ -755,12 +755,23 @@ pointerControl model =
             let
                 borderColor : Element.Color
                 borderColor =
-                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 Colors.black
+                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 (Colors.alphaColor 0.3 Colors.black)
             in
             Ui.navigationElement
                 (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
-                []
-                (Element.el [ Ui.wpx 45, Ui.hpx 45, Background.color color, Ui.r 10, Ui.b 4, Border.color borderColor ] Element.none)
+                [ Background.color color
+                , Ui.r 10
+                ]
+                (Element.el
+                    [ Ui.wpx 45
+                    , Ui.hpx 45
+                    , Ui.r 10
+                    , Ui.b 4
+                    , Border.color borderColor
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.2 Colors.white ]
+                    ]
+                    Element.none
+                )
     in
     Element.column [ Ui.cy, Ui.p 5, Ui.s 5 ]
         [ Element.column [ Ui.s 5 ]
