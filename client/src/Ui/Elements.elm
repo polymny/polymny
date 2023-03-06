@@ -45,8 +45,8 @@ type Action msg
 
 {-| Creates a primary button with a generic element.
 -}
-primaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
-primaryGeneric outerAttr innerAttr fontAttr { label, action } =
+primaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+primaryGeneric outerAttr innerAttr { label, action } =
     let
         outer =
             outerAttr
@@ -57,7 +57,8 @@ primaryGeneric outerAttr innerAttr fontAttr { label, action } =
 
         inner =
             innerAttr
-                ++ [ Ui.wf
+                ++ [ Font.center
+                   , Ui.wf
                    , Ui.hf
                    , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                    , Transition.properties
@@ -65,14 +66,8 @@ primaryGeneric outerAttr innerAttr fontAttr { label, action } =
                         ]
                         |> Element.htmlAttribute
                    ]
-
-        font =
-            fontAttr
-                ++ [ Ui.cx
-                   , Ui.cy
-                   ]
     in
-    navigationElement action outer (Element.el inner (Element.el font label))
+    navigationElement action outer (Element.el inner label)
 
 
 {-| Creates a primary button, with colored background and white text.
@@ -86,13 +81,9 @@ primary attr { label, action } =
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
-            [ Border.rounded 100, Ui.p 12 ]
-
-        fontAttr : List (Element.Attribute msg)
-        fontAttr =
-            [ Font.bold, Font.color Colors.white ]
+            [ Border.rounded 100, Ui.p 12, Font.bold, Font.color Colors.white ]
     in
-    primaryGeneric outerAttr innerAttr fontAttr { label = label, action = action }
+    primaryGeneric outerAttr innerAttr { label = label, action = action }
 
 
 {-| Creates a primary button with an icon.
@@ -102,23 +93,19 @@ primaryIcon attr params =
     let
         outerAttr : List (Element.Attribute msg)
         outerAttr =
-            Border.rounded 5 :: attr
+            Border.rounded 5 :: Font.color Colors.white :: Element.htmlAttribute (Html.Attributes.title params.tooltip) :: attr
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
             [ Border.rounded 5, Ui.p 2 ]
-
-        fontAttr : List (Element.Attribute msg)
-        fontAttr =
-            [ Font.color Colors.white ]
     in
-    primaryGeneric outerAttr innerAttr fontAttr { label = icon 22 params.icon, action = params.action }
+    primaryGeneric outerAttr innerAttr { label = icon 22 params.icon, action = params.action }
 
 
 {-| Creates a secondary button with a generic element.
 -}
-secondaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
-secondaryGeneric outerAttr innerAttr fontAttr { label, action } =
+secondaryGeneric : List (Element.Attribute msg) -> List (Element.Attribute msg) -> { label : Element msg, action : Action msg } -> Element msg
+secondaryGeneric outerAttr innerAttr { label, action } =
     let
         outer =
             outerAttr
@@ -129,7 +116,8 @@ secondaryGeneric outerAttr innerAttr fontAttr { label, action } =
 
         inner =
             innerAttr
-                ++ [ Ui.wf
+                ++ [ Font.center
+                   , Ui.wf
                    , Ui.hf
                    , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                    , Transition.properties
@@ -137,14 +125,8 @@ secondaryGeneric outerAttr innerAttr fontAttr { label, action } =
                         ]
                         |> Element.htmlAttribute
                    ]
-
-        font =
-            fontAttr
-                ++ [ Ui.cx
-                   , Ui.cy
-                   ]
     in
-    navigationElement action outer (Element.el inner (Element.el font label))
+    navigationElement action outer (Element.el inner label)
 
 
 {-| Creates a primary button, with colored background and white text.
@@ -158,13 +140,9 @@ secondary attr { label, action } =
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
-            [ Border.rounded 100, Ui.p 12 ]
-
-        fontAttr : List (Element.Attribute msg)
-        fontAttr =
-            [ Font.bold, Font.color Colors.black ]
+            [ Border.rounded 100, Ui.p 12, Font.bold, Font.color Colors.black ]
     in
-    secondaryGeneric outerAttr innerAttr fontAttr { label = label, action = action }
+    secondaryGeneric outerAttr innerAttr { label = label, action = action }
 
 
 {-| Creates a secondary button with an icon.
@@ -174,17 +152,13 @@ secondaryIcon attr params =
     let
         outerAttr : List (Element.Attribute msg)
         outerAttr =
-            Border.rounded 5 :: attr
+            Border.rounded 5 :: Font.color Colors.green2 :: Element.htmlAttribute (Html.Attributes.title params.tooltip) :: attr
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
             [ Ui.p 2 ]
-
-        fontAttr : List (Element.Attribute msg)
-        fontAttr =
-            [ Font.color Colors.green2 ]
     in
-    secondaryGeneric outerAttr innerAttr fontAttr { label = icon 22 params.icon, action = params.action }
+    secondaryGeneric outerAttr innerAttr { label = icon 22 params.icon, action = params.action }
 
 
 {-| Creates a link, colored and changing color at hover.
@@ -222,9 +196,10 @@ navigationElement action attr label =
 
         None ->
             Element.el
-                (Element.htmlAttribute (Html.Attributes.style "cursor" "not-allowed")
-                    :: Font.color Colors.greyFontDisabled
-                    :: newAttr
+                (newAttr
+                    ++ [ Element.htmlAttribute (Html.Attributes.style "cursor" "not-allowed")
+                       , Font.color Colors.greyFontDisabled
+                       ]
                 )
                 label
 

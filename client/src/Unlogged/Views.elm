@@ -52,16 +52,16 @@ view model =
         buttonText =
             case ( model.page, ( ( model.loginRequest, model.newPasswordRequest ), ( model.resetPasswordRequest, model.signUpRequest ) ) ) of
                 ( _, ( ( RemoteData.Loading _, _ ), ( _, _ ) ) ) ->
-                    Ui.spinningSpinner [] 20
+                    Ui.spinningSpinner [ Ui.cx ] 20
 
                 ( _, ( ( _, RemoteData.Loading _ ), ( _, _ ) ) ) ->
-                    Ui.spinningSpinner [] 20
+                    Ui.spinningSpinner [ Ui.cx ] 20
 
                 ( _, ( ( _, _ ), ( RemoteData.Loading _, _ ) ) ) ->
-                    Ui.spinningSpinner [] 20
+                    Ui.spinningSpinner [ Ui.cx ] 20
 
                 ( _, ( ( _, _ ), ( _, RemoteData.Loading _ ) ) ) ->
-                    Ui.spinningSpinner [] 20
+                    Ui.spinningSpinner [ Ui.cx ] 20
 
                 ( Unlogged.Login, ( ( _, _ ), ( _, _ ) ) ) ->
                     Strings.loginLogin lang |> Element.text
