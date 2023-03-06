@@ -5,7 +5,7 @@ function init(node, flags) {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Whether the user has premium account or not.
-    let isPremium = flags.user.plan !== 'free';
+    let isPremium = flags.user !== null && flags.user.plan !== 'free';
 
     // The stream of the device.
     let stream = null;
@@ -1062,7 +1062,7 @@ function init(node, flags) {
     // Remove task.
     makePort("abortTask", url => {
         if (url in requests) {
-            // Abort request. 
+            // Abort request.
             requests[url]["xhr"].abort();
 
             // Send abort message.

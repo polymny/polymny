@@ -131,12 +131,12 @@ update message model =
                     ( App.Logged m, Cmd.map App.LoggedMsg cmd )
 
         -- If the user cancel the track upload.
-        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask task)), App.Logged { config, page, user } ) ->
+        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask (Config.ClientTask (Config.UploadTrack id)))), App.Logged { config, page, user } ) ->
             case page of
-                App.Options m ->
+                App.Options _ ->
                     let
                         ( newConfig, cmdConfig ) =
-                            Config.update (Config.AbortTask task) config
+                            Config.update (Config.AbortTask (Config.ClientTask (Config.UploadTrack id))) config
 
                         ( newModel, cmdOptions ) =
                             Options.update (Options.DeleteTrack Utils.Confirm Nothing) { config = newConfig, page = page, user = user }
@@ -274,7 +274,7 @@ subs m =
     case m of
         App.Logged model ->
             Sub.batch
-                [ Sub.map App.ConfigMsg Config.subs
+                [ Sub.map App.ConfigMsg (Config.subs model.config)
                 , case model.page of
                     App.Home _ ->
                         Home.subs

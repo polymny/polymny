@@ -193,7 +193,7 @@ taskPanel clientState =
                         Config.ClientTask (Config.UploadRecord _ _ _) ->
                             Strings.tasksUploadRecord lang
 
-                        Config.ClientTask Config.UploadTrack ->
+                        Config.ClientTask (Config.UploadTrack _) ->
                             Strings.tasksUploadTrack lang
 
                         _ ->

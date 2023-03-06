@@ -122,7 +122,7 @@ uploadTrack { capsule, fileValue, file, toMsg } =
                 |> String.join "."
     in
     Api.postWithTrackerJson
-        "sound-track"
+        ("sound-track-" ++ capsule.id)
         { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule

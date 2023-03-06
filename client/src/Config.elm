@@ -250,11 +250,12 @@ type ServerTask
 {-| The tasks that are running in the background while the user is using the app.
 
   - `UploadRecord` means that the user is uploading a record on a specific gos of a specific capsule.
+  - `UploadTrack` means that the user is uploading a sound track on a specific capsule.
 
 -}
 type ClientTask
     = UploadRecord String Int Decode.Value
-    | UploadTrack
+    | UploadTrack String
 
 
 {-| All the task that the user can see
@@ -365,8 +366,8 @@ compareTasks t1 t2 =
         ( ClientTask (UploadRecord c1 g1 _), ClientTask (UploadRecord c2 g2 _) ) ->
             c1 == c2 && g1 == g2
 
-        ( ClientTask UploadTrack, ClientTask UploadTrack ) ->
-            True
+        ( ClientTask (UploadTrack x), ClientTask (UploadTrack y) ) ->
+            x == y
 
         ( ServerTask Production, ServerTask Production ) ->
             True
@@ -640,8 +641,8 @@ update msg { serverConfig, clientConfig, clientState } =
                                 ClientTask (UploadRecord _ _ _) ->
                                     abortTaskPort url
 
-                                ClientTask UploadTrack ->
-                                    Http.cancel "sound-track"
+                                ClientTask (UploadTrack id) ->
+                                    Http.cancel ("sound-track-" ++ id)
 
                                 _ ->
                                     Cmd.none
@@ -705,65 +706,79 @@ update msg { serverConfig, clientConfig, clientState } =
 
 {-| The subscriptions for the config.
 -}
-subs : Sub Msg
-subs =
+subs : Config -> Sub Msg
+subs config =
     Sub.batch
-        [ Time.every 500 Time
-        , Device.detectDevicesResponse
-            (\x ->
-                case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
-                    Ok ( devices, preferredDevice ) ->
-                        DetectDevicesResponse devices preferredDevice
+        (Time.every 500 Time
+            :: Device.detectDevicesResponse
+                (\x ->
+                    case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
+                        Ok ( devices, preferredDevice ) ->
+                            DetectDevicesResponse devices preferredDevice
 
-                    _ ->
-                        Noop
-            )
-        , taskProgress
-            (\x ->
-                case Decode.decodeValue decodeTaskStatus x of
-                    Ok task ->
-                        UpdateTaskStatus task
+                        _ ->
+                            Noop
+                )
+            :: taskProgress
+                (\x ->
+                    case Decode.decodeValue decodeTaskStatus x of
+                        Ok task ->
+                            UpdateTaskStatus task
 
-                    _ ->
-                        Noop
-            )
-        , panelBlur
-            (\x ->
-                case Decode.decodeValue Decode.string x of
-                    Ok "task-panel" ->
-                        DisableTaskPanel
+                        _ ->
+                            Noop
+                )
+            :: panelBlur
+                (\x ->
+                    case Decode.decodeValue Decode.string x of
+                        Ok "task-panel" ->
+                            DisableTaskPanel
 
-                    _ ->
-                        Noop
-            )
-        , Http.track "sound-track"
-            (\progress ->
-                case progress of
-                    Http.Sending { sent, size } ->
-                        let
-                            progressValue : Float
-                            progressValue =
-                                if size == 0 then
-                                    0
+                        _ ->
+                            Noop
+                )
+            :: (config.clientState.tasks
+                    |> List.filterMap
+                        (\x ->
+                            case x.task of
+                                ClientTask (UploadTrack id) ->
+                                    Just id
 
-                                else
-                                    toFloat sent / toFloat size
+                                _ ->
+                                    Nothing
+                        )
+                    |> List.map
+                        (\id ->
+                            Http.track ("sound-track-" ++ id)
+                                (\progress ->
+                                    case progress of
+                                        Http.Sending { sent, size } ->
+                                            let
+                                                progressValue : Float
+                                                progressValue =
+                                                    if size == 0 then
+                                                        0
 
-                            finished : Bool
-                            finished =
-                                progressValue == 1
-                        in
-                        UpdateTaskStatus
-                            { task = ClientTask UploadTrack
-                            , finished = finished
-                            , progress = Just progressValue
-                            , aborted = False
-                            }
+                                                    else
+                                                        toFloat sent / toFloat size
 
-                    _ ->
-                        Noop
-            )
-        ]
+                                                finished : Bool
+                                                finished =
+                                                    progressValue == 1
+                                            in
+                                            UpdateTaskStatus
+                                                { task = ClientTask (UploadTrack id)
+                                                , finished = finished
+                                                , progress = Just progressValue
+                                                , aborted = False
+                                                }
+
+                                        _ ->
+                                            Noop
+                                )
+                        )
+               )
+        )
 
 
 {-| Port that sends the client config to javascript for saving in localstorage.
