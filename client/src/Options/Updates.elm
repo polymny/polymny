@@ -80,6 +80,7 @@ update msg model =
                     in
                     if isAudio then
                         let
+                            task : Config.TaskStatus
                             task =
                                 { task = Config.ClientTask <| Config.UploadTrack m.capsule.id
                                 , progress = Just 0.0
@@ -87,16 +88,22 @@ update msg model =
                                 , aborted = False
                                 }
 
+                            newPage : App.Page
                             newPage =
                                 App.Options { m | deleteTrack = Nothing, capsuleUpdate = RemoteData.Loading Nothing }
+
+                            ( newConfig, _ ) =
+                                Config.update (Config.UpdateTaskStatus task) model.config
                         in
-                        ( { model | page = newPage, config = Config.addTask task model.config }
-                        , Api.uploadTrack
-                            { capsule = m.capsule
-                            , fileValue = fileValue
-                            , file = file
-                            , toMsg = \x -> App.OptionsMsg (Options.TrackUpload x)
-                            }
+                        ( { model | page = newPage, config = newConfig }
+                        , Cmd.batch
+                            [ Api.uploadTrack
+                                { capsule = m.capsule
+                                , fileValue = fileValue
+                                , file = file
+                                , toMsg = \x -> App.OptionsMsg (Options.TrackUpload x)
+                                }
+                            ]
                         )
 
                     else

@@ -248,6 +248,7 @@ update msg model =
 
                 Acquisition.UploadRecord record ->
                     let
+                        task : Config.TaskStatus
                         task =
                             { task = Config.ClientTask <| Config.UploadRecord m.capsule.id m.gosId <| Acquisition.encodeRecord record
                             , progress = Just 0.0
@@ -255,14 +256,18 @@ update msg model =
                             , aborted = False
                             }
 
+                        nextRoute : Route.Route
                         nextRoute =
                             if m.gosId + 1 < List.length m.capsule.structure then
                                 Route.Acquisition m.capsule.id (m.gosId + 1)
 
                             else
                                 Route.Production m.capsule.id 0
+
+                        ( newConfig, _ ) =
+                            Config.update (Config.UpdateTaskStatus task) model.config
                     in
-                    ( { model | config = Config.addTask task model.config }
+                    ( { model | config = newConfig }
                     , Cmd.batch
                         [ uploadRecord m.capsule m.gosId record
                         , Route.push model.config.clientState.key nextRoute
@@ -286,8 +291,13 @@ update msg model =
                     ( { model
                         | page =
                             App.Acquisition
-                                { m | deleteRecord = False, savedRecord = Nothing, gos = newGos, capsule = newCapsule
-                                , records = List.filter (\r -> not r.old) m.records }
+                                { m
+                                    | deleteRecord = False
+                                    , savedRecord = Nothing
+                                    , gos = newGos
+                                    , capsule = newCapsule
+                                    , records = List.filter (\r -> not r.old) m.records
+                                }
                         , user = Data.updateUser newCapsule model.user
                       }
                     , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
