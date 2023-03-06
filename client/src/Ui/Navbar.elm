@@ -297,8 +297,8 @@ navButtons lang capsule page =
         separator =
             Element.el [ Ui.w 1, Ui.h 30, Background.color Colors.greyBackground ] Element.none
 
-        makeButton : Route -> String -> Element msg
-        makeButton route label =
+        makeButton : Route -> String -> Bool -> Element msg
+        makeButton route label hoverable =
             let
                 attr : List (Element.Attribute msg)
                 attr =
@@ -306,7 +306,7 @@ navButtons lang capsule page =
                     , Ui.wf
                     , Font.bold
                     , Ui.rt 10
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alphaColor (Utils.tern hoverable 0.1 0.0) Colors.black ]
                     , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -363,15 +363,15 @@ navButtons lang capsule page =
     in
     Element.row [ Ui.hf ]
         [ selector selectorIndex
-        , makeButton (Route.Preparation capsule.id) (Strings.stepsPreparationPrepare lang)
+        , makeButton (Route.Preparation capsule.id) (Strings.stepsPreparationPrepare lang) (selectorIndex /= 0)
         , separator
-        , makeButton (Route.Acquisition capsule.id 0) (Strings.stepsAcquisitionRecord lang)
+        , makeButton (Route.Acquisition capsule.id 0) (Strings.stepsAcquisitionRecord lang) (selectorIndex /= 1)
         , separator
-        , makeButton (Route.Production capsule.id 0) (Strings.stepsProductionProduce lang)
+        , makeButton (Route.Production capsule.id 0) (Strings.stepsProductionProduce lang) (selectorIndex /= 2)
         , separator
-        , makeButton (Route.Publication capsule.id) (Strings.stepsPublicationPublish lang)
+        , makeButton (Route.Publication capsule.id) (Strings.stepsPublicationPublish lang) (selectorIndex /= 3)
         , separator
-        , makeButton (Route.Options capsule.id) (Strings.stepsOptionsOptions lang)
+        , makeButton (Route.Options capsule.id) (Strings.stepsOptionsOptions lang) (selectorIndex /= 4)
         ]
 
 
