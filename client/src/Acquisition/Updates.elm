@@ -286,7 +286,8 @@ update msg model =
                     ( { model
                         | page =
                             App.Acquisition
-                                { m | deleteRecord = False, savedRecord = Nothing, gos = newGos, capsule = newCapsule }
+                                { m | deleteRecord = False, savedRecord = Nothing, gos = newGos, capsule = newCapsule
+                                , records = List.filter (\r -> not r.old) m.records }
                         , user = Data.updateUser newCapsule model.user
                       }
                     , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
