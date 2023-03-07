@@ -182,7 +182,7 @@ taskPanel clientState =
 
         head : Element App.Msg
         head =
-            Element.el [ Font.bold, Ui.cy ] <| Element.text <| Strings.uiTasks lang
+            Element.el [ Font.bold, Ui.cy ] <| Element.text <| Utils.tern (List.length tasks > 0) (Strings.uiTasksRunning lang) (Strings.uiTasksNone lang)
 
         taskInfo : Config.TaskStatus -> Element App.Msg
         taskInfo taskStatus =
@@ -190,8 +190,8 @@ taskPanel clientState =
                 name : String
                 name =
                     case taskStatus.task of
-                        Config.ClientTask (Config.UploadRecord _ _ _) ->
-                            Strings.tasksUploadRecord lang
+                        Config.ClientTask (Config.UploadRecord _ gosId _) ->
+                            Strings.tasksUploadRecord lang ++ " (" ++ String.fromInt (gosId + 1) ++ ")"
 
                         Config.ClientTask (Config.UploadTrack _) ->
                             Strings.tasksUploadTrack lang
