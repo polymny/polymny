@@ -29,6 +29,7 @@ type alias Model =
     , changeSlide : RemoteData.WebData Data.Capsule
     , changeSlideForm : Maybe ChangeSlideForm
     , editPrompt : Maybe Data.Slide
+    , confirmUpdateCapsule : Maybe Capsule
     }
 
 
@@ -62,6 +63,7 @@ init capsule =
     , changeSlide = RemoteData.NotAsked
     , changeSlideForm = Nothing
     , editPrompt = Nothing
+    , confirmUpdateCapsule = Nothing
     }
 
 
@@ -75,6 +77,8 @@ type Msg
     | EditPrompt Data.Slide
     | PromptChanged Utils.Confirmation Data.Slide
     | EscapePressed
+    | ConfirmUpdateCapsule
+    | CancelUpdateCapsule
 
 
 {-| The type that handles all file upload.

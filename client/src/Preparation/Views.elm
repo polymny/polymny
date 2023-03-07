@@ -53,7 +53,7 @@ view config user model =
 
         popup : Element App.Msg
         popup =
-            case ( ( model.deleteSlide, model.changeSlideForm ), ( model.editPrompt, model.capsuleUpdate ) ) of
+            case ( ( model.deleteSlide, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
                 ( ( Just s, _ ), _ ) ->
                     deleteSlideConfirmPopup lang model s
 
@@ -62,6 +62,9 @@ view config user model =
 
                 ( _, ( Just s, _ ) ) ->
                     promptPopup lang model s
+
+                ( _, ( _, Just _ ) ) ->
+                    confirmUpdateCapsulePopup lang
 
                 _ ->
                     Element.none
@@ -287,6 +290,26 @@ promptPopup lang model slide =
             ]
         ]
         |> Ui.popup 5 (Strings.actionsEditPrompt lang)
+
+
+{-| Popup to confirm drag n drop that will destroy records.
+-}
+confirmUpdateCapsulePopup : Lang -> Element App.Msg
+confirmUpdateCapsulePopup lang =
+    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+        [ Ui.paragraph [ Ui.cx, Ui.cy, Font.center ] (Strings.stepsPreparationDndWillBreak lang ++ ".")
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { label = Element.text <| Strings.uiCancel lang
+                , action = mkUiMsg Preparation.CancelUpdateCapsule
+                }
+            , Ui.primary []
+                { label = Element.text <| Strings.uiConfirm lang
+                , action = mkUiMsg Preparation.ConfirmUpdateCapsule
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.uiWarning lang)
 
 
 {-| Popup to select the page number when uploading a slide.

@@ -100,6 +100,19 @@ update msg model =
                     , Cmd.none
                     )
 
+                Preparation.ConfirmUpdateCapsule ->
+                    case m.confirmUpdateCapsule of
+                        Just c ->
+                            ( { model | page = App.Preparation <| Preparation.init c }
+                            , Api.updateCapsule c (\_ -> App.Noop)
+                            )
+
+                        _ ->
+                            ( model, Cmd.none )
+
+                Preparation.CancelUpdateCapsule ->
+                    ( { model | page = App.Preparation <| Preparation.init m.capsule }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -203,7 +216,7 @@ updateDnD msg model config =
                             ( ( False, model.capsule.structure ), slides )
 
                 ( syncCmd, newConfig ) =
-                    if dropped && model.capsule.structure /= newStructure then
+                    if dropped && model.capsule.structure /= newStructure && not broken then
                         ( Api.updateCapsule
                             { capsule | structure = newStructure }
                             (\x -> App.PreparationMsg (Preparation.CapsuleUpdate config.clientState.lastRequest x))
@@ -212,8 +225,18 @@ updateDnD msg model config =
 
                     else
                         ( Cmd.none, config )
+
+                newCapsule =
+                    { capsule | structure = newStructure }
             in
-            ( ( { model | slideModel = slideModel, capsule = { capsule | structure = newStructure }, slides = newSlides }, newConfig )
+            ( ( { model
+                    | slideModel = slideModel
+                    , capsule = Utils.tern broken capsule newCapsule
+                    , confirmUpdateCapsule = Utils.tern broken (Just newCapsule) model.confirmUpdateCapsule
+                    , slides = newSlides
+                }
+              , newConfig
+              )
             , Cmd.batch
                 [ syncCmd
                 , Preparation.slideSystem.commands slideModel
