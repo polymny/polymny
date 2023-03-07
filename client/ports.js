@@ -10,6 +10,9 @@ function init(node, flags) {
     // The websocket that allows the server to send messages to the client.
     let socket = null;
 
+    // If set to true, the browser will display a popup when the user tries to close the window or move somewhere else.
+    let beforeUnloadValue = false;
+
     // The stream of the device.
     let stream = null;
 
@@ -103,6 +106,16 @@ function init(node, flags) {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////// CLIENT INITIALIZATION //////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Set onbeforeunload listener.
+    window.addEventListener('beforeunload', function() {
+        if (beforeUnloadValue) {
+            event.preventDefault();
+            event.returnValue = '';
+        } else {
+            delete event["returnValue"];
+        }
+    });
 
     // Initializing code for elm app.
     let storedClientConfig = localStorage.getItem('clientConfig');
@@ -1103,6 +1116,11 @@ function init(node, flags) {
             // // Delete request.
             // delete requests[url];
         }
+    });
+
+    // Sets the before unload value.
+    makePort("onBeforeUnload", function(arg) {
+        beforeUnloadValue = arg;
     });
 
     makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));

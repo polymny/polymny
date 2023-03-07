@@ -187,6 +187,24 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
+        -- Check if we need to change the before unload value
+        clientTasksRemaining =
+            model.config.clientState.tasks
+                |> List.any Config.isClientTask
+
+        -- Check if some records where not uploaded
+        unuploadedRecords =
+            case model.page of
+                App.Acquisition m ->
+                    m.records |> List.any (\x -> not x.old)
+
+                _ ->
+                    False
+
+        -- The command that updates the before unload value
+        beforeUnloadCmd =
+            onBeforeUnloadPort <| clientTasksRemaining || unuploadedRecords
+
         ( updatedModel, updatedCmd ) =
             case msg of
                 App.Noop ->
@@ -267,7 +285,7 @@ updateModel msg model =
                     , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
                     )
     in
-    ( updatedModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, unbindDevice ] )
+    ( updatedModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, unbindDevice, beforeUnloadCmd ] )
 
 
 {-| Returns the subscriptions of the app.
@@ -339,3 +357,8 @@ webSocketMsgDecoder =
 {-| Port to received messages via web sockets.
 -}
 port webSocketMsg : (Decode.Value -> msg) -> Sub msg
+
+
+{-| Port to set the on before unload value.
+-}
+port onBeforeUnloadPort : Bool -> Cmd msg

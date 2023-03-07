@@ -6,7 +6,7 @@ port module Config exposing
     , Msg(..)
     , update, subs
     , saveStorage
-    , ClientTask(..), ServerTask(..), decodeTaskStatus, taskProgress
+    , ClientTask(..), ServerTask(..), decodeTaskStatus, isClientTask, isServerTask, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -263,6 +263,30 @@ type ClientTask
 type Task
     = ClientTask ClientTask
     | ServerTask ServerTask
+
+
+{-| Returns true if the task is a client task.
+-}
+isClientTask : TaskStatus -> Bool
+isClientTask task =
+    case task.task of
+        ClientTask _ ->
+            True
+
+        _ ->
+            False
+
+
+{-| Returns true if the task is a server task.
+-}
+isServerTask : TaskStatus -> Bool
+isServerTask task =
+    case task.task of
+        ServerTask _ ->
+            True
+
+        _ ->
+            False
 
 
 {-| Decodes a task.
