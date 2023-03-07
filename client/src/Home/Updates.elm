@@ -25,10 +25,9 @@ import Home.Types as Home
 import Json.Decode as Decode
 import Keyboard
 import NewCapsule.Types as NewCapsule
-import RemoteData exposing (RemoteData)
+import RemoteData
 import Strings
 import Utils
-import Data.Capsule exposing (Capsule)
 
 
 {-| The update function of the home view.
@@ -82,7 +81,7 @@ update msg model =
 
                 Home.DeleteCapsule Utils.Request capsule ->
                     ( { model | page = App.Home { m | popupType = Just (Home.DeleteCapsulePopup capsule) } }, Cmd.none )
-            
+
                 Home.DeleteCapsule Utils.Cancel _ ->
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
@@ -317,7 +316,7 @@ update msg model =
                             { config | clientConfig = newClientConfig }
                     in
                     ( { model | config = newConfig }, Cmd.none )
-            
+
                 Home.EscapePressed ->
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
@@ -341,6 +340,7 @@ port selectPort : ( Maybe String, List String ) -> Cmd msg
 -}
 port selected : (( Maybe String, Decode.Value ) -> msg) -> Sub msg
 
+
 {-| Keyboard shortcuts of the home page.
 -}
 shortcuts : Keyboard.RawKey -> App.Msg
@@ -351,6 +351,7 @@ shortcuts msg =
 
         _ ->
             App.Noop
+
 
 {-| Subscriptions of the page.
 -}

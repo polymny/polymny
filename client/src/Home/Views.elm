@@ -15,12 +15,12 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Input exposing (Placeholder)
+import Element.Input
 import Home.Types as Home
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
-import Strings exposing (actionsLeaveCapsule)
+import Strings
 import Time
 import TimeUtils
 import Ui.Colors as Colors
@@ -80,7 +80,7 @@ It contains the button to start a new capsule, but also gives information about 
 
 -}
 leftColumn : Config -> User -> Element App.Msg
-leftColumn config user =
+leftColumn config _ =
     let
         uploadSlidesButton =
             Ui.primary [ Ui.wf ]
@@ -280,7 +280,7 @@ name poc =
 {-| This functions returns the actions that can be done on a capsule.
 -}
 actions : Lang -> Poc -> User -> Element App.Msg
-actions lang poc user =
+actions lang poc _ =
     case poc of
         Project p ->
             let

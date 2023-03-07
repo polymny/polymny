@@ -4,7 +4,6 @@ module Unlogged.Views exposing (..)
 -}
 
 import Element exposing (Element)
-import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input

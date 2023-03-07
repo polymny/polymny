@@ -2,14 +2,15 @@ port module Options.Updates exposing (..)
 
 import Api.Capsule as Api
 import App.Types as App exposing (Page(..))
-import Config exposing (Config)
-import Data.Capsule as Data exposing (Capsule, removeTrack)
+import App.Utils as App
+import Config
+import Data.Capsule as Data
 import Data.User as Data
 import File
 import FileValue
 import Json.Decode as Decode
 import Keyboard
-import Options.Types as Options exposing (init)
+import Options.Types as Options
 import RemoteData
 import Utils
 
@@ -18,56 +19,60 @@ import Utils
 -}
 update : Options.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case model.page of
-        App.Options m ->
+    let
+        ( maybeCapsule, _ ) =
+            App.capsuleAndGos model.user model.page
+    in
+    case ( model.page, maybeCapsule ) of
+        ( App.Options m, Just capsule ) ->
             case msg of
                 Options.ToggleVideo ->
                     let
                         newWebcamSettings =
-                            case m.capsule.defaultWebcamSettings of
+                            case capsule.defaultWebcamSettings of
                                 Data.Disabled ->
                                     Data.defaultWebcamSettings ( 533, 0 )
 
-                                x ->
+                                _ ->
                                     Data.Disabled
                     in
-                    updateModelWebcamSettings newWebcamSettings model m
+                    updateModelWebcamSettings capsule newWebcamSettings model m
 
                 Options.SetOpacity opacity ->
                     let
                         newWebcamSettings =
-                            case m.capsule.defaultWebcamSettings of
+                            case capsule.defaultWebcamSettings of
                                 Data.Pip p ->
                                     Data.Pip { p | opacity = opacity }
 
                                 x ->
                                     x
                     in
-                    updateModelWebcamSettings newWebcamSettings model m
+                    updateModelWebcamSettings capsule newWebcamSettings model m
 
                 Options.SetWidth newWidth ->
                     let
                         newWebcamSettings =
                             case newWidth of
                                 Nothing ->
-                                    Data.setWebcamSettingsSize Nothing m.capsule.defaultWebcamSettings
+                                    Data.setWebcamSettingsSize Nothing capsule.defaultWebcamSettings
 
                                 Just width ->
-                                    Data.setWebcamSettingsSize (Just ( width, 0 )) m.capsule.defaultWebcamSettings
+                                    Data.setWebcamSettingsSize (Just ( width, 0 )) capsule.defaultWebcamSettings
                     in
-                    updateModelWebcamSettings newWebcamSettings model m
+                    updateModelWebcamSettings capsule newWebcamSettings model m
 
                 Options.SetAnchor anchor ->
                     let
                         newWebcamSettings =
-                            case m.capsule.defaultWebcamSettings of
+                            case capsule.defaultWebcamSettings of
                                 Data.Pip p ->
                                     Data.Pip { p | anchor = anchor, position = ( 4, 4 ) }
 
                                 x ->
                                     x
                     in
-                    updateModelWebcamSettings newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
+                    updateModelWebcamSettings capsule newWebcamSettings model { m | webcamPosition = ( 4.0, 4.0 ) }
 
                 Options.TrackUploadRequested ->
                     ( model, selectTrack [ "audio/*" ] )
@@ -82,7 +87,7 @@ update msg model =
                         let
                             task : Config.TaskStatus
                             task =
-                                { task = Config.ClientTask <| Config.UploadTrack m.capsule.id
+                                { task = Config.ClientTask <| Config.UploadTrack capsule.id
                                 , progress = Just 0.0
                                 , finished = False
                                 , aborted = False
@@ -98,7 +103,7 @@ update msg model =
                         ( { model | page = newPage, config = newConfig }
                         , Cmd.batch
                             [ Api.uploadTrack
-                                { capsule = m.capsule
+                                { capsule = capsule
                                 , fileValue = fileValue
                                 , file = file
                                 , toMsg = \x -> App.OptionsMsg (Options.TrackUpload x)
@@ -109,11 +114,11 @@ update msg model =
                     else
                         ( model, Cmd.none )
 
-                Options.TrackUploadResponded response ->
+                Options.TrackUploadResponded _ ->
                     ( model, Cmd.none )
 
                 Options.DeleteTrack Utils.Request track ->
-                    case m.capsule.soundTrack of
+                    case capsule.soundTrack of
                         Just _ ->
                             ( { model | page = App.Options { m | deleteTrack = track } }, Cmd.none )
 
@@ -121,7 +126,7 @@ update msg model =
                             ( model, Cmd.none )
 
                 Options.DeleteTrack Utils.Cancel _ ->
-                    case m.capsule.soundTrack of
+                    case capsule.soundTrack of
                         Just _ ->
                             ( { model | page = App.Options { m | deleteTrack = Nothing } }, Cmd.none )
 
@@ -131,7 +136,7 @@ update msg model =
                 Options.DeleteTrack Utils.Confirm _ ->
                     let
                         newCapsule =
-                            Data.removeTrack m.capsule
+                            Data.removeTrack capsule
 
                         ( sync, newConfig ) =
                             ( Api.updateCapsule newCapsule
@@ -153,7 +158,7 @@ update msg model =
 
                 Options.TrackUpload (RemoteData.Success c) ->
                     ( { model
-                        | page = App.Options { m | capsule = c, capsuleUpdate = RemoteData.Success c }
+                        | page = App.Options { m | capsuleUpdate = RemoteData.Success c }
                         , user = Data.updateUser c model.user
                       }
                     , Cmd.none
@@ -171,38 +176,30 @@ update msg model =
 
                 Options.SetVolume volume ->
                     let
-                        soundTrack =
-                            m.capsule.soundTrack
-
                         newSoundTrack =
-                            case soundTrack of
-                                Just st ->
-                                    Just { st | volume = volume }
-
-                                Nothing ->
-                                    Nothing
+                            capsule.soundTrack |> Maybe.map (\x -> { x | volume = volume })
                     in
-                    updateModelSoundTrack newSoundTrack model m
+                    updateModelSoundTrack capsule newSoundTrack model m
 
                 Options.Play ->
-                    case m.capsule.soundTrack of
+                    case capsule.soundTrack of
                         Just _ ->
                             let
-                                track_path =
-                                    Data.trackPath m.capsule
+                                trackPath =
+                                    Data.trackPath capsule
 
-                                record_path =
-                                    Data.firstRecordPath m.capsule
+                                recordPath =
+                                    Data.firstRecordPath capsule
 
                                 volume =
-                                    case m.capsule.soundTrack of
+                                    case capsule.soundTrack of
                                         Just st ->
                                             st.volume
 
                                         Nothing ->
                                             1.0
                             in
-                            ( { model | page = App.Options { m | playPreview = True } }, playTrackPreviewPort ( track_path, record_path, volume ) )
+                            ( { model | page = App.Options { m | playPreview = True } }, playTrackPreviewPort ( trackPath, recordPath, volume ) )
 
                         Nothing ->
                             ( model, Cmd.none )
@@ -219,38 +216,32 @@ update msg model =
 
 {-| Changes the current webcamsettings in the model.
 -}
-updateModelWebcamSettings : Data.WebcamSettings -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
-updateModelWebcamSettings ws model m =
+updateModelWebcamSettings : Data.Capsule -> Data.WebcamSettings -> App.Model -> Options.Model String -> ( App.Model, Cmd App.Msg )
+updateModelWebcamSettings capsule ws model _ =
     let
-        capsule =
-            m.capsule
-
         newCapsule =
             { capsule | defaultWebcamSettings = ws }
 
         newUser =
             Data.updateUser newCapsule model.user
     in
-    ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
+    ( { model | user = newUser }
     , Api.updateCapsule newCapsule (\_ -> App.Noop)
     )
 
 
 {-| Changes the current sound track.
 -}
-updateModelSoundTrack : Maybe Data.SoundTrack -> App.Model -> Options.Model -> ( App.Model, Cmd App.Msg )
-updateModelSoundTrack soundTrack model m =
+updateModelSoundTrack : Data.Capsule -> Maybe Data.SoundTrack -> App.Model -> Options.Model String -> ( App.Model, Cmd App.Msg )
+updateModelSoundTrack capsule soundTrack model _ =
     let
-        capsule =
-            m.capsule
-
         newCapsule =
             { capsule | soundTrack = soundTrack }
 
         newUser =
             Data.updateUser newCapsule model.user
     in
-    ( { model | user = newUser, page = App.Options { m | capsule = newCapsule } }
+    ( { model | user = newUser }
     , Cmd.batch
         [ Api.updateCapsule newCapsule (\_ -> App.Noop)
         , volumeChangedPort (Maybe.withDefault 1.0 (Maybe.map .volume soundTrack))

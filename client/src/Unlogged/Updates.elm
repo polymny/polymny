@@ -4,7 +4,6 @@ port module Unlogged.Updates exposing (..)
 -}
 
 import Api.User as Api
-import App.Types as App
 import Keyboard
 import RemoteData
 import Unlogged.Types as Unlogged
@@ -86,7 +85,7 @@ update msg model =
         ( Unlogged.SignUpRequestChanged data, _ ) ->
             ( { model | signUpRequest = data }, Cmd.none )
 
-        ( Unlogged.Noop, page ) ->
+        ( Unlogged.Noop, _ ) ->
             ( model, Cmd.none )
 
 
@@ -113,7 +112,7 @@ shortcuts msg =
         "Enter" ->
             Unlogged.ButtonClicked
 
-        key ->
+        _ ->
             Unlogged.Noop
 
 

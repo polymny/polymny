@@ -5,6 +5,7 @@ module Publication.Updates exposing (..)
 
 import Api.Capsule as Api
 import App.Types as App
+import App.Utils as App
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
 import Publication.Types as Publication
@@ -12,12 +13,12 @@ import Publication.Types as Publication
 
 update : Publication.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case model.page of
-        App.Publication m ->
-            let
-                capsule =
-                    m.capsule
-            in
+    let
+        ( maybeCapsule, _ ) =
+            App.capsuleAndGos model.user model.page
+    in
+    case ( model.page, maybeCapsule ) of
+        ( App.Publication m, Just capsule ) ->
             case msg of
                 Publication.TogglePrivacyPopup ->
                     ( { model | page = App.Publication { m | showPrivacyPopup = not m.showPrivacyPopup } }
@@ -31,7 +32,7 @@ update msg model =
                     updateModel { capsule | promptSubtitles = promptSubtitles } model m
 
                 Publication.PublishVideo ->
-                    ( model, Api.publishCapsule m.capsule (\_ -> App.Noop) )
+                    ( model, Api.publishCapsule capsule (\_ -> App.Noop) )
 
         _ ->
             ( model, Cmd.none )
@@ -39,12 +40,12 @@ update msg model =
 
 {-| Changes the current gos in the model.
 -}
-updateModel : Capsule -> App.Model -> Publication.Model -> ( App.Model, Cmd App.Msg )
-updateModel newCapsule model m =
+updateModel : Capsule -> App.Model -> Publication.Model String -> ( App.Model, Cmd App.Msg )
+updateModel newCapsule model _ =
     let
         newUser =
             Data.updateUser newCapsule model.user
     in
-    ( { model | user = newUser, page = App.Publication { m | capsule = newCapsule } }
+    ( { model | user = newUser }
     , Api.updateCapsule newCapsule (\_ -> App.Noop)
     )

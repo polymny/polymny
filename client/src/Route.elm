@@ -117,26 +117,26 @@ fromUrl url =
 fromPage : App.Page -> Route
 fromPage page =
     case page of
-        App.Home m->
+        App.Home _ ->
             Home
 
         App.NewCapsule _ ->
             Home
 
         App.Preparation m ->
-            Preparation m.capsule.id
+            Preparation m.capsule
 
         App.Acquisition m ->
-            Acquisition m.capsule.id m.gosId
+            Acquisition m.capsule m.gos
 
         App.Production m ->
-            Production m.capsule.id m.gosId
+            Production m.capsule m.gos
 
         App.Publication m ->
-            Publication m.capsule.id
+            Publication m.capsule
 
         App.Options m ->
-            Options m.capsule.id
+            Options m.capsule
 
         App.Settings _ ->
             Settings

@@ -252,7 +252,7 @@ Returns Nothing if the capsule doesn't have a track.
 trackPreviewPath : Capsule -> Maybe String
 trackPreviewPath capsule =
     case capsule.soundTrack of
-        Just track ->
+        Just _ ->
             Just <| assetPath capsule "trackPreview.m4a"
 
         _ ->

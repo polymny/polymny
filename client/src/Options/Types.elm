@@ -4,13 +4,35 @@ module Options.Types exposing (..)
 |
 -}
 
-import Data.Capsule as Data exposing (Capsule, SoundTrack)
-import File exposing (File)
-import FileValue exposing (File)
+import Acquisition.Types exposing (Msg(..))
+import Data.Capsule as Data exposing (Capsule)
+import File
+import FileValue
 import RemoteData exposing (WebData)
 import Utils
-import Html exposing (track)
-import Acquisition.Types exposing (Msg(..))
+
+
+{-| The model for the Option module.
+-}
+type alias Model a =
+    { capsule : a
+    , webcamPosition : ( Float, Float )
+    , deleteTrack : Maybe Data.SoundTrack
+    , capsuleUpdate : RemoteData.WebData Capsule
+    , playPreview : Bool
+    }
+
+
+{-| Transforms the capsule id into a real capsule.
+-}
+withCapsule : Capsule -> Model String -> Model Capsule
+withCapsule capsule model =
+    { capsule = capsule
+    , webcamPosition = model.webcamPosition
+    , deleteTrack = model.deleteTrack
+    , capsuleUpdate = model.capsuleUpdate
+    , playPreview = model.playPreview
+    }
 
 
 {-| Message type of the app.
@@ -32,20 +54,9 @@ type Msg
     | EscapePressed
 
 
-{-| The model for the Option module.
--}
-type alias Model =
-    { capsule : Capsule
-    , webcamPosition : ( Float, Float )
-    , deleteTrack : Maybe Data.SoundTrack
-    , capsuleUpdate : RemoteData.WebData Capsule
-    , playPreview : Bool
-    }
-
-
-init : Capsule -> Model
+init : Capsule -> Model String
 init capsule =
-    { capsule = capsule
+    { capsule = capsule.id
     , webcamPosition = ( 0, 0 )
     , deleteTrack = Nothing
     , capsuleUpdate = RemoteData.NotAsked

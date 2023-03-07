@@ -23,6 +23,7 @@ import Options.Types as Options
 import Options.Updates as Options
 import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
+import Production.Types as Production
 import Production.Updates as Production
 import Publication.Types as Publication
 import Publication.Updates as Publication
@@ -115,17 +116,12 @@ update message model =
                                 _ ->
                                     capsule
 
-                        newPage : App.Page
-                        newPage =
-                            Maybe.map (\x -> App.updatePage x m.page) newCapsule
-                                |> Maybe.withDefault m.page
-
                         user : Data.User
                         user =
                             Maybe.map (\x -> Data.updateUser x m.user) newCapsule
                                 |> Maybe.withDefault m.user
                     in
-                    ( App.Logged { m | user = user, page = newPage }, Cmd.map App.LoggedMsg cmd )
+                    ( App.Logged { m | user = user }, Cmd.map App.LoggedMsg cmd )
 
                 _ ->
                     ( App.Logged m, Cmd.map App.LoggedMsg cmd )
@@ -181,7 +177,7 @@ updateModel msg model =
                 ( _, App.Options _ ) ->
                     Cmd.none
 
-                ( App.Options m, _ ) ->
+                ( App.Options _, _ ) ->
                     Options.stopTrackPreviewPort ()
 
                 _ ->
@@ -304,34 +300,41 @@ subs m =
 
                             _ ->
                                 App.Noop
-                , case model.page of
-                    App.Home _ ->
+                , let
+                    ( maybeCapsule, maybeGos ) =
+                        App.capsuleAndGos model.user model.page
+                  in
+                  case ( model.page, maybeCapsule, maybeGos ) of
+                    ( App.Home _, _, _ ) ->
                         Home.subs
 
-                    App.NewCapsule _ ->
+                    ( App.NewCapsule _, _, _ ) ->
                         Sub.none
 
-                    App.Preparation x ->
+                    ( App.Preparation x, _, _ ) ->
                         Preparation.subs x
 
-                    App.Acquisition x ->
+                    ( App.Acquisition x, _, _ ) ->
                         Acquisition.subs x
 
-                    App.Production x ->
-                        Production.subs x
+                    ( App.Production x, Just capsule, Just gos ) ->
+                        Production.subs <| Production.withCapsuleAndGos capsule gos x
 
-                    App.Publication _ ->
+                    ( App.Publication _, _, _ ) ->
                         Sub.none
 
-                    App.Options _ ->
+                    ( App.Options _, _, _ ) ->
                         Options.subs
 
-                    App.Settings _ ->
+                    ( App.Settings _, _, _ ) ->
+                        Sub.none
+
+                    _ ->
                         Sub.none
                 ]
                 |> Sub.map App.LoggedMsg
 
-        App.Unlogged model ->
+        App.Unlogged _ ->
             Unlogged.subs |> Sub.map App.UnloggedMsg
 
         _ ->

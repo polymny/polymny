@@ -12,7 +12,7 @@ module Ui.Elements exposing
 
 -}
 
-import Element exposing (Color, Element)
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -235,6 +235,8 @@ makeIcon attributes nodes size _ =
         ]
 
 
+{-| Shortcut for Animated.ui
+-}
 animatedUi =
     Animated.ui
         { behindContent = Element.behindContent

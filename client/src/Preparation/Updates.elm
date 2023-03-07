@@ -8,9 +8,10 @@ module Preparation.Updates exposing (update, subs)
 
 import Api.Capsule as Api
 import App.Types as App
+import App.Utils as App
 import Config exposing (Config)
 import Data.Capsule as Data
-import Data.User as Data
+import Data.User as Data exposing (User)
 import Dict exposing (Dict)
 import File
 import File.Select as Select
@@ -25,11 +26,15 @@ import Utils
 -}
 update : Preparation.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case model.page of
-        App.Preparation m ->
+    let
+        ( maybeCapsule, _ ) =
+            App.capsuleAndGos model.user model.page
+    in
+    case ( model.page, maybeCapsule ) of
+        ( App.Preparation m, Just capsule ) ->
             case msg of
                 Preparation.DnD sMsg ->
-                    updateDnD sMsg m model.config
+                    updateDnD model.user sMsg m model.config
                         |> Tuple.mapFirst (\( x, y ) -> { model | page = App.Preparation x, config = y })
 
                 Preparation.CapsuleUpdate id data ->
@@ -47,25 +52,25 @@ update msg model =
 
                 Preparation.DeleteSlide Utils.Confirm slide ->
                     let
-                        capsule =
-                            Data.deleteSlide slide m.capsule
+                        newCapsule =
+                            Data.deleteSlide slide capsule
 
                         ( sync, newConfig ) =
-                            ( Api.updateCapsule capsule
+                            ( Api.updateCapsule newCapsule
                                 (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                             , Config.incrementRequest model.config
                             )
                     in
                     ( { model
-                        | user = Data.updateUser capsule model.user
-                        , page = App.Preparation (Preparation.init capsule)
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Preparation (Preparation.init newCapsule)
                         , config = newConfig
                       }
                     , sync
                     )
 
                 Preparation.Extra sMsg ->
-                    updateExtra sMsg m
+                    updateExtra model.user sMsg m
                         |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
 
                 Preparation.EditPrompt slide ->
@@ -80,7 +85,7 @@ update msg model =
                 Preparation.PromptChanged Utils.Confirm slide ->
                     let
                         newCapsule =
-                            Data.updateSlide slide m.capsule
+                            Data.updateSlide slide capsule
 
                         sync =
                             Api.updateCapsule newCapsule
@@ -111,7 +116,7 @@ update msg model =
                             ( model, Cmd.none )
 
                 Preparation.CancelUpdateCapsule ->
-                    ( { model | page = App.Preparation <| Preparation.init m.capsule }, Cmd.none )
+                    ( { model | page = App.Preparation <| Preparation.init capsule }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -119,10 +124,14 @@ update msg model =
 
 {-| The update function that deals with extra resources.
 -}
-updateExtra : Preparation.ExtraMsg -> Preparation.Model -> ( Preparation.Model, Cmd App.Msg )
-updateExtra msg model =
-    case msg of
-        Preparation.Select changeSlide ->
+updateExtra : User -> Preparation.ExtraMsg -> Preparation.Model String -> ( Preparation.Model String, Cmd App.Msg )
+updateExtra user msg model =
+    let
+        maybeCapsule =
+            Data.getCapsuleById model.capsule user
+    in
+    case ( msg, maybeCapsule ) of
+        ( Preparation.Select changeSlide, Just _ ) ->
             let
                 mimes =
                     case changeSlide of
@@ -137,7 +146,7 @@ updateExtra msg model =
             in
             ( model, cmd )
 
-        Preparation.Selected changeSlide file page ->
+        ( Preparation.Selected changeSlide file page, Just capsule ) ->
             case ( File.mime file, page ) of
                 ( "application/pdf", Nothing ) ->
                     ( { model | changeSlideForm = Just { slide = changeSlide, file = file, page = "1" } }, Cmd.none )
@@ -152,43 +161,45 @@ updateExtra msg model =
                     in
                     case changeSlide of
                         Preparation.AddSlide gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide model.capsule gos p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file mkMsg )
 
                         Preparation.AddGos gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos model.capsule gos p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file mkMsg )
 
                         Preparation.ReplaceSlide slide ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide model.capsule slide p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file mkMsg )
 
-        Preparation.PageChanged page ->
+        ( Preparation.PageChanged page, Just _ ) ->
             let
                 changeSlideForm =
                     Maybe.map (\x -> { x | page = page }) model.changeSlideForm
             in
             ( { model | changeSlideForm = changeSlideForm }, Cmd.none )
 
-        Preparation.PageCancel ->
+        ( Preparation.PageCancel, Just _ ) ->
             ( { model | changeSlideForm = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none )
 
-        Preparation.ChangeSlideUpdated d ->
-            case d of
-                RemoteData.Success c ->
-                    ( Preparation.init c, Cmd.none )
+        ( Preparation.ChangeSlideUpdated (RemoteData.Success c), Just _ ) ->
+            ( Preparation.init c, Cmd.none )
 
-                _ ->
-                    ( { model | changeSlide = d }, Cmd.none )
+        ( Preparation.ChangeSlideUpdated d, Just _ ) ->
+            ( { model | changeSlide = d }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 {-| The update function for the DnD part of the page.
 -}
-updateDnD : Preparation.DnDMsg -> Preparation.Model -> Config -> ( ( Preparation.Model, Config ), Cmd App.Msg )
-updateDnD msg model config =
-    case msg of
-        Preparation.SlideMoved sMsg ->
+updateDnD : User -> Preparation.DnDMsg -> Preparation.Model String -> Config -> ( ( Preparation.Model String, Config ), Cmd App.Msg )
+updateDnD user msg model config =
+    let
+        maybeCapsule =
+            Data.getCapsuleById model.capsule user
+    in
+    case ( msg, maybeCapsule ) of
+        ( Preparation.SlideMoved sMsg, Just capsule ) ->
             let
-                capsule =
-                    model.capsule
-
                 pre =
                     Preparation.slideSystem.info model.slideModel
 
@@ -208,15 +219,15 @@ updateDnD msg model config =
                                 extracted =
                                     extractStructure slides
                             in
-                            ( fixStructure model.capsule.structure extracted
+                            ( fixStructure capsule.structure extracted
                             , Preparation.setupSlides { capsule | structure = extracted }
                             )
 
                         _ ->
-                            ( ( False, model.capsule.structure ), slides )
+                            ( ( False, capsule.structure ), slides )
 
                 ( syncCmd, newConfig ) =
-                    if dropped && model.capsule.structure /= newStructure && not broken then
+                    if dropped && capsule.structure /= newStructure && not broken then
                         ( Api.updateCapsule
                             { capsule | structure = newStructure }
                             (\x -> App.PreparationMsg (Preparation.CapsuleUpdate config.clientState.lastRequest x))
@@ -231,7 +242,6 @@ updateDnD msg model config =
             in
             ( ( { model
                     | slideModel = slideModel
-                    , capsule = Utils.tern broken capsule newCapsule
                     , confirmUpdateCapsule = Utils.tern broken (Just newCapsule) model.confirmUpdateCapsule
                     , slides = newSlides
                 }
@@ -244,7 +254,7 @@ updateDnD msg model config =
                 ]
             )
 
-        Preparation.GosMoved sMsg ->
+        _ ->
             ( ( model, config ), Cmd.none )
 
 
@@ -325,7 +335,7 @@ shortcuts msg =
 
 {-| Subscriptions for the prepration view.
 -}
-subs : Preparation.Model -> Sub App.Msg
+subs : Preparation.Model String -> Sub App.Msg
 subs model =
     Sub.batch
         [ Sub.batch

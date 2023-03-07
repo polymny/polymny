@@ -625,7 +625,7 @@ update msg { serverConfig, clientConfig, clientState } =
                     , focusCmd
                     )
 
-                FocusResult result ->
+                FocusResult _ ->
                     -- case result of
                     --     Err (Dom.NotFound id) ->
                     --         -- unable to find dom 'id'

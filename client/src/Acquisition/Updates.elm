@@ -12,6 +12,7 @@ port module Acquisition.Updates exposing
 import Acquisition.Types as Acquisition
 import Api.Capsule as Api
 import App.Types as App
+import App.Utils as App
 import Config
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
@@ -34,11 +35,14 @@ update msg model =
 
         clientState =
             model.config.clientState
+
+        ( maybeCapsule, maybeGos ) =
+            App.capsuleAndGos model.user model.page
     in
-    case model.page of
-        App.Acquisition m ->
+    case ( model.page, maybeCapsule, maybeGos ) of
+        ( App.Acquisition m, Just capsule, Just gos ) ->
             let
-                { pointerStyle, gos } =
+                { pointerStyle } =
                     m
             in
             case msg of
@@ -108,7 +112,7 @@ update msg model =
                     let
                         currentSlide : Maybe Data.Slide
                         currentSlide =
-                            List.head (List.drop m.currentSlide m.gos.slides)
+                            List.head (List.drop m.currentSlide gos.slides)
 
                         newPrompt : Maybe String
                         newPrompt =
@@ -127,17 +131,15 @@ update msg model =
                                 _ ->
                                     Nothing
 
-                        ( newGos, newCapsule ) =
+                        newCapsule =
                             case ( currentSlide, newPrompt ) of
                                 ( Just s, Just p ) ->
-                                    ( Data.updateSlideInGos { s | prompt = p } m.gos
-                                    , Data.updateSlide { s | prompt = p } m.capsule
-                                    )
+                                    Data.updateSlide { s | prompt = p } capsule
 
                                 _ ->
-                                    ( m.gos, m.capsule )
+                                    capsule
                     in
-                    ( { model | page = App.Acquisition { m | gos = newGos, capsule = newCapsule } }
+                    ( { model | page = App.Acquisition m }
                     , Api.updateCapsule newCapsule (\_ -> App.Noop)
                     )
 
@@ -161,11 +163,11 @@ update msg model =
 
                         currentSlide : Maybe Data.Slide
                         currentSlide =
-                            List.head (List.drop m.currentSlide m.gos.slides)
+                            List.head (List.drop m.currentSlide gos.slides)
 
                         nextSlide : Maybe Data.Slide
                         nextSlide =
-                            List.head (List.drop (m.currentSlide + 1) m.gos.slides)
+                            List.head (List.drop (m.currentSlide + 1) gos.slides)
 
                         lineNumber : Int
                         lineNumber =
@@ -250,7 +252,7 @@ update msg model =
                     let
                         task : Config.TaskStatus
                         task =
-                            { task = Config.ClientTask <| Config.UploadRecord m.capsule.id m.gosId <| Acquisition.encodeRecord record
+                            { task = Config.ClientTask <| Config.UploadRecord m.capsule m.gos <| Acquisition.encodeRecord record
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
@@ -258,18 +260,18 @@ update msg model =
 
                         nextRoute : Route.Route
                         nextRoute =
-                            if m.gosId + 1 < List.length m.capsule.structure then
-                                Route.Acquisition m.capsule.id (m.gosId + 1)
+                            if m.gos + 1 < List.length capsule.structure then
+                                Route.Acquisition m.capsule (m.gos + 1)
 
                             else
-                                Route.Production m.capsule.id 0
+                                Route.Production m.capsule 0
 
                         ( newConfig, _ ) =
                             Config.update (Config.UpdateTaskStatus task) model.config
                     in
                     ( { model | config = newConfig }
                     , Cmd.batch
-                        [ uploadRecord m.capsule m.gosId record
+                        [ uploadRecord capsule m.gos record
                         , Route.push model.config.clientState.key nextRoute
                         ]
                     )
@@ -286,7 +288,7 @@ update msg model =
                             { gos | events = [], record = Nothing }
 
                         newCapsule =
-                            Data.updateGos m.gosId newGos m.capsule
+                            Data.updateGos m.gos newGos capsule
                     in
                     ( { model
                         | page =
@@ -294,13 +296,11 @@ update msg model =
                                 { m
                                     | deleteRecord = False
                                     , savedRecord = Nothing
-                                    , gos = newGos
-                                    , capsule = newCapsule
                                     , records = List.filter (\r -> not r.old) m.records
                                 }
                         , user = Data.updateUser newCapsule model.user
                       }
-                    , Api.deleteRecord m.capsule m.gosId (\_ -> App.Noop)
+                    , Api.deleteRecord capsule m.gos (\_ -> App.Noop)
                     )
 
                 Acquisition.EscapePressed ->
@@ -359,8 +359,8 @@ shortcuts msg =
 
 {-| The subscriptions needed for the page to work.
 -}
-subs : Acquisition.Model -> Sub App.Msg
-subs model =
+subs : Acquisition.Model String Int -> Sub App.Msg
+subs _ =
     Sub.batch
         [ detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
         , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)

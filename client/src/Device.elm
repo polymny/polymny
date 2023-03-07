@@ -427,31 +427,29 @@ encodeSettings device =
 updateAvailable : Devices -> Device -> Device
 updateAvailable devices device =
     let
+        updateAudio : Audio -> Audio
+        updateAudio audio =
+            case List.filter (\x -> x.deviceId == audio.deviceId) devices.audio of
+                [] ->
+                    { audio | available = False }
+
+                h :: _ ->
+                    h
+
+        updateVideo : ( Video, Resolution ) -> ( Video, Resolution )
+        updateVideo ( video, resolution ) =
+            case List.filter (\x -> x.deviceId == video.deviceId) devices.video of
+                [] ->
+                    ( { video | available = False }, resolution )
+
+                h :: _ ->
+                    ( { video | available = h.available }, resolution )
+
         a =
-            case device.audio of
-                Just audio ->
-                    case List.filter (\x -> x.deviceId == audio.deviceId) devices.audio of
-                        [] ->
-                            Just { audio | available = False }
-
-                        h :: _ ->
-                            Just h
-
-                Nothing ->
-                    Nothing
+            Maybe.map updateAudio device.audio
 
         v =
-            case device.video of
-                Just ( video, resolution ) ->
-                    case List.filter (\x -> x.deviceId == video.deviceId) devices.video of
-                        [] ->
-                            Just ( { video | available = False }, resolution )
-
-                        h :: _ ->
-                            Just ( { video | available = h.available }, resolution )
-
-                Nothing ->
-                    Nothing
+            Maybe.map updateVideo device.video
     in
     { audio = a, video = v }
 
