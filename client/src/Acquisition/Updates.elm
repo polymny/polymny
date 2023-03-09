@@ -120,6 +120,9 @@ update msg model =
                     else
                         ( { model | page = App.Acquisition { m | currentReplacementPrompt = Just sentence } }, Cmd.none )
 
+                Acquisition.PreviousSentence ->
+                    ( { model | page = App.Acquisition { m | currentSentence = max (m.currentSentence - 1) 0 } }, Cmd.none )
+
                 Acquisition.NextSentence shouldRecord ->
                     let
                         cancelCommand : Cmd msg -> Cmd msg

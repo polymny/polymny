@@ -219,6 +219,7 @@ type Msg
     | ToggleSettings
     | StartRecording
     | StopRecording
+    | PreviousSentence
     | NextSentence Bool
     | RecordArrived Record
     | PlayRecordFinished

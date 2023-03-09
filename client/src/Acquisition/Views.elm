@@ -360,10 +360,10 @@ promptElement _ model =
         -- Display navigation buttons that let the user move around the prompt text even if they're not recording
         navigationButtons =
             Element.row [ Ui.ab, Ui.wf ]
-                [ case ( model.recording, model.currentSentence > 0 ) of
+                [ case ( model.recording, model.currentSentence > 0 && model.recording == Nothing ) of
                     ( Nothing, True ) ->
                         Ui.navigationElement
-                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.PreviousSentence)
                             [ Ui.al ]
                             (Ui.icon 25 Material.Icons.navigate_before)
 
