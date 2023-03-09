@@ -18,6 +18,7 @@ import Data.User as Data
 import Device
 import Home.Updates as Home
 import Json.Decode as Decode exposing (Decoder)
+import NewCapsule.Types as NewCapsule
 import NewCapsule.Updates as NewCapsule
 import Options.Types as Options
 import Options.Updates as Options
@@ -183,6 +184,18 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
+        -- We check if the user exited the new capsule page, in which case we should concidered they canceled
+        ( finalModel, cancelNewCapsCmd ) =
+            case ( model.page, updatedModel.page ) of
+                ( _, App.NewCapsule _ ) ->
+                    ( updatedModel, Cmd.none )
+
+                ( App.NewCapsule m, _ ) ->
+                    NewCapsule.update NewCapsule.Cancel { updatedModel | page = App.NewCapsule m }
+
+                _ ->
+                    ( updatedModel, Cmd.none )
+
         -- Check if we need to change the before unload value
         clientTasksRemaining =
             model.config.clientState.tasks
@@ -281,7 +294,7 @@ updateModel msg model =
                     , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
                     )
     in
-    ( updatedModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, unbindDevice, beforeUnloadCmd ] )
+    ( finalModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, cancelNewCapsCmd, unbindDevice, beforeUnloadCmd ] )
 
 
 {-| Returns the subscriptions of the app.
