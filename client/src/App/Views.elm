@@ -6,20 +6,25 @@ module App.Views exposing (view, viewSuccess, viewError)
 
 -}
 
+import Acquisition.Types as Acquisition
 import Acquisition.Views as Acquisition
 import App.Types as App
+import App.Utils as App
 import Browser
 import Config
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Font as Font
 import Home.Views as Home
-import Html.Attributes
 import Lang exposing (Lang)
 import NewCapsule.Views as NewCapsule
+import Options.Types as Options
 import Options.Views as Options
+import Preparation.Types as Preparation
 import Preparation.Views as Preparation
+import Production.Types as Production
 import Production.Views as Production
+import Publication.Types as Publication
 import Publication.Views as Publication
 import Settings.Views as Settings
 import Simple.Transition as Transition
@@ -127,35 +132,42 @@ viewContent fullModel =
 -}
 viewSuccess : App.Model -> ( Element App.Msg, Element App.Msg )
 viewSuccess model =
-    case model.page of
-        App.Home m ->
+    let
+        ( maybeCapsule, maybeGos ) =
+            App.capsuleAndGos model.user model.page
+    in
+    case ( model.page, maybeCapsule, maybeGos ) of
+        ( App.Home m, _, _ ) ->
             Home.view model.config model.user m
 
-        App.NewCapsule m ->
+        ( App.NewCapsule m, _, _ ) ->
             NewCapsule.view model.config model.user m
 
-        App.Preparation m ->
-            Preparation.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
+        ( App.Preparation m, Just capsule, _ ) ->
+            Preparation.view model.config model.user (Preparation.withCapsule capsule m)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        App.Acquisition m ->
-            Acquisition.view model.config model.user m
-                |> Ui.addLeftAndRightColumn model.config.clientState.lang model.page m.capsule (Just m.gosId)
+        ( App.Acquisition m, Just capsule, Just gos ) ->
+            Acquisition.view model.config model.user (Acquisition.withCapsuleAndGos capsule gos m)
+                |> Ui.addLeftAndRightColumn model.config.clientState.lang model.page capsule (Just m.gos)
 
-        App.Production m ->
-            Production.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule (Just m.gosId)
+        ( App.Production m, Just capsule, Just gos ) ->
+            Production.view model.config model.user (Production.withCapsuleAndGos capsule gos m)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page capsule (Just m.gos)
 
-        App.Publication m ->
-            Publication.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
+        ( App.Publication m, Just capsule, _ ) ->
+            Publication.view model.config model.user (Publication.withCapsule capsule m)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        App.Options m ->
-            Options.view model.config model.user m
-                |> Ui.addLeftColumn model.config.clientState.lang model.page m.capsule Nothing
+        ( App.Options m, Just capsule, _ ) ->
+            Options.view model.config model.user (Options.withCapsule capsule m)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        App.Settings m ->
+        ( App.Settings m, Just _, _ ) ->
             Settings.view model.config model.user m
+
+        _ ->
+            ( Element.none, Element.none )
 
 
 {-| Returns the view if the model is in error.

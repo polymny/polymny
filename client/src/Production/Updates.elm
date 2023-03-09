@@ -5,6 +5,7 @@ port module Production.Updates exposing (..)
 
 import Api.Capsule as Api
 import App.Types as App
+import App.Utils as App
 import Browser.Events
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
@@ -16,84 +17,85 @@ import Production.Types as Production exposing (getWebcamSettings)
 -}
 update : Production.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 update msg model =
-    case model.page of
-        App.Production m ->
+    let
+        ( maybeCapsule, maybeGos ) =
+            App.capsuleAndGos model.user model.page
+    in
+    case ( model.page, maybeCapsule, maybeGos ) of
+        ( App.Production m, Just capsule, Just gos ) ->
             let
-                gos =
-                    m.gos
-
                 recordSize : Maybe ( Int, Int )
                 recordSize =
                     Maybe.andThen .size gos.record
             in
             case msg of
                 Production.ResetOptions ->
-                    updateModel (resetOptions gos) model m
+                    updateModel capsule (resetOptions gos) model m
 
                 Production.ToggleVideo ->
                     let
                         newWebcamSettings =
-                            case ( recordSize, getWebcamSettings gos m ) of
+                            case ( recordSize, getWebcamSettings capsule gos ) of
                                 ( Just size, Data.Disabled ) ->
                                     Data.defaultWebcamSettings (Production.setWidth 533 size)
 
                                 _ ->
                                     Data.Disabled
                     in
-                    updateModel { gos | webcamSettings = Just newWebcamSettings } model m
+                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model m
 
                 Production.SetAnchor anchor ->
                     let
                         newWebcamSettings =
-                            case getWebcamSettings gos m of
+                            case getWebcamSettings capsule gos of
                                 Data.Pip p ->
                                     Data.Pip { p | anchor = anchor, position = ( 4, 4 ) }
 
                                 x ->
                                     x
                     in
-                    updateModel { gos | webcamSettings = Just newWebcamSettings } model { m | webcamPosition = ( 4.0, 4.0 ) }
+                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model { m | webcamPosition = ( 4.0, 4.0 ) }
 
                 Production.SetOpacity opacity ->
                     let
                         newWebcamSettings =
-                            case getWebcamSettings gos m of
+                            case getWebcamSettings capsule gos of
                                 Data.Pip p ->
                                     Data.Pip { p | opacity = opacity }
 
                                 x ->
                                     x
                     in
-                    updateModel { gos | webcamSettings = Just newWebcamSettings } model m
+                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model m
 
                 Production.SetWidth newWidth ->
                     let
                         newWebcamSettings =
                             case ( recordSize, newWidth ) of
                                 ( Just _, Nothing ) ->
-                                    Data.setWebcamSettingsSize Nothing (getWebcamSettings gos m)
+                                    Data.setWebcamSettingsSize Nothing (getWebcamSettings capsule gos)
 
                                 ( Just size, Just width ) ->
                                     Production.setWidth width size
-                                        |> (\x -> Data.setWebcamSettingsSize (Just x) (getWebcamSettings gos m))
+                                        |> (\x -> Data.setWebcamSettingsSize (Just x) (getWebcamSettings capsule gos))
 
                                 _ ->
-                                    getWebcamSettings gos m
+                                    getWebcamSettings capsule gos
                     in
-                    updateModel { gos | webcamSettings = Just newWebcamSettings } model m
+                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model m
 
                 Production.HoldingImageChanged Nothing ->
                     -- User released mouse, update capsule
                     let
                         newWebcamSettings =
-                            case getWebcamSettings gos m of
+                            case getWebcamSettings capsule gos of
                                 Data.Pip p ->
                                     Data.Pip { p | position = Tuple.mapBoth round round m.webcamPosition }
 
                                 x ->
                                     x
                     in
-                    updateModel { gos | webcamSettings = Just newWebcamSettings } model { m | holdingImage = Nothing }
+                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model { m | holdingImage = Nothing }
 
                 Production.HoldingImageChanged (Just ( id, x, y )) ->
                     ( { model | page = App.Production { m | holdingImage = Just ( id, x, y ) } }
@@ -103,7 +105,7 @@ update msg model =
                 Production.ImageMoved x y newPageX newPageY ->
                     let
                         newModel =
-                            case ( getWebcamSettings gos m, m.holdingImage ) of
+                            case ( getWebcamSettings capsule gos, m.holdingImage ) of
                                 ( Data.Pip { anchor }, Just ( id, _, _ ) ) ->
                                     let
                                         motion =
@@ -133,7 +135,7 @@ update msg model =
                     ( { model | page = App.Production newModel }, Cmd.none )
 
                 Production.Produce ->
-                    ( model, Api.produceCapsule m.capsule (\_ -> App.Noop) )
+                    ( model, Api.produceCapsule capsule (\_ -> App.Noop) )
 
         _ ->
             ( model, Cmd.none )
@@ -141,18 +143,16 @@ update msg model =
 
 {-| Changes the current gos in the model.
 -}
-updateModel : Data.Gos -> App.Model -> Production.Model -> ( App.Model, Cmd App.Msg )
-updateModel gos model m =
+updateModel : Data.Capsule -> Data.Gos -> App.Model -> Production.Model String Int -> ( App.Model, Cmd App.Msg )
+updateModel capsule gos model m =
     let
         newCapsule =
-            updateGos m.gosId gos m.capsule
+            updateGos m.gos gos capsule
 
         newUser =
             Data.updateUser newCapsule model.user
     in
-    ( { model | user = newUser, page = App.Production { m | capsule = newCapsule, gos = gos } }
-    , Api.updateCapsule newCapsule (\_ -> App.Noop)
-    )
+    ( { model | user = newUser }, Api.updateCapsule newCapsule (\_ -> App.Noop) )
 
 
 {-| Reset to default options. (Set to Nothing)
@@ -206,7 +206,7 @@ toMsg ( w, h ) event =
     App.ProductionMsg (Production.ImageMoved x y event.newPageX event.newPageY)
 
 
-subs : Production.Model -> Sub App.Msg
+subs : Production.Model Data.Capsule Data.Gos -> Sub App.Msg
 subs model =
     case model.holdingImage of
         Nothing ->
@@ -216,7 +216,7 @@ subs model =
             let
                 imageSize : ( Float, Float )
                 imageSize =
-                    case getWebcamSettings model.gos model of
+                    case getWebcamSettings model.capsule model.gos of
                         Data.Pip { size } ->
                             Tuple.mapBoth toFloat toFloat size
 

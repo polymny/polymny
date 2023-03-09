@@ -7,15 +7,22 @@ import Data.Capsule exposing (Capsule)
 import Data.Types as Data
 
 
-type alias Model =
-    { capsule : Capsule
+type alias Model a =
+    { capsule : a
     , showPrivacyPopup : Bool
     }
 
 
-init : Capsule -> Model
-init capsule =
+withCapsule : Capsule -> Model String -> Model Capsule
+withCapsule capsule model =
     { capsule = capsule
+    , showPrivacyPopup = model.showPrivacyPopup
+    }
+
+
+init : Capsule -> Model String
+init capsule =
+    { capsule = capsule.id
     , showPrivacyPopup = False
     }
 

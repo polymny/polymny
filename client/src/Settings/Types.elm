@@ -4,7 +4,6 @@ module Settings.Types exposing (..)
 -}
 
 import RemoteData exposing (WebData)
-import Unlogged.Types as Unlogged
 
 
 {-| The different tabs on which the settings page can be.

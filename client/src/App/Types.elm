@@ -1,5 +1,5 @@
 module App.Types exposing
-    ( Model, Page(..), getCapsule, Msg(..), onUrlRequest
+    ( Model, Page(..), Msg(..), onUrlRequest
     , Error(..), errorToString
     , MaybeModel(..), MaybeMsg(..), WebSocketMsg(..), toMaybe
     )
@@ -21,7 +21,7 @@ module App.Types exposing
 import Acquisition.Types as Acquisition
 import Browser
 import Config exposing (Config)
-import Data.Capsule as Data exposing (Capsule)
+import Data.Capsule as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
@@ -76,37 +76,12 @@ type alias Model =
 type Page
     = Home Home.Model
     | NewCapsule NewCapsule.Model
-    | Preparation Preparation.Model
-    | Acquisition Acquisition.Model
-    | Production Production.Model
-    | Publication Publication.Model
-    | Options Options.Model
+    | Preparation (Preparation.Model String)
+    | Acquisition (Acquisition.Model String Int)
+    | Production (Production.Model String Int)
+    | Publication (Publication.Model String)
+    | Options (Options.Model String)
     | Settings Settings.Model
-
-
-{-| Tries to get the capsule from a specific page. Returns nothing if the page does not correspond to a specific
-capsule.
--}
-getCapsule : Page -> Maybe Capsule
-getCapsule page =
-    case page of
-        Preparation m ->
-            Just m.capsule
-
-        Acquisition m ->
-            Just m.capsule
-
-        Production m ->
-            Just m.capsule
-
-        Publication m ->
-            Just m.capsule
-
-        Options m ->
-            Just m.capsule
-
-        _ ->
-            Nothing
 
 
 {-| This type represents the errors that can occur when the page starts.

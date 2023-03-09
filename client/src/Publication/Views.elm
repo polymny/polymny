@@ -24,8 +24,8 @@ import Ui.Utils as Ui
 
 {-| View of the publication page.
 -}
-view : Config -> User -> Publication.Model -> ( Element App.Msg, Element App.Msg )
-view config user model =
+view : Config -> User -> Publication.Model Data.Capsule -> ( Element App.Msg, Element App.Msg )
+view config _ model =
     let
         lang =
             config.clientState.lang

@@ -20,13 +20,12 @@ import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
-import Production.Updates exposing (resetOptions)
 
 
 {-| The full view of the page.
 -}
-view : Config -> User -> Production.Model -> ( Element App.Msg, Element App.Msg )
-view config user model =
+view : Config -> User -> Production.Model Data.Capsule Data.Gos -> ( Element App.Msg, Element App.Msg )
+view config _ model =
     ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
         [ leftColumn config model
         , rightColumn config model
@@ -37,7 +36,7 @@ view config user model =
 
 {-| The column with the controls of the production settings.
 -}
-leftColumn : Config -> Production.Model -> Element App.Msg
+leftColumn : Config -> Production.Model Data.Capsule Data.Gos -> Element App.Msg
 leftColumn config model =
     let
         --- HELPERS ---
@@ -54,7 +53,7 @@ leftColumn config model =
         -- Video width if pip
         width : Maybe Int
         width =
-            case getWebcamSettings model.gos model of
+            case getWebcamSettings model.capsule model.gos of
                 Data.Pip { size } ->
                     Just (Tuple.first size)
 
@@ -64,7 +63,7 @@ leftColumn config model =
         -- Video opacity
         opacity : Float
         opacity =
-            case getWebcamSettings model.gos model of
+            case getWebcamSettings model.capsule model.gos of
                 Data.Pip pip ->
                     pip.opacity
 
@@ -82,7 +81,7 @@ leftColumn config model =
         -- Gives the anchor if the webcam settings is Pip
         anchor : Maybe Data.Anchor
         anchor =
-            case getWebcamSettings model.gos model of
+            case getWebcamSettings model.capsule model.gos of
                 Data.Pip p ->
                     Just p.anchor
 
@@ -123,11 +122,11 @@ leftColumn config model =
             Ui.secondary
                 []
                 { label = Element.text <| Strings.stepsProductionResetOptions lang
-                , action = 
+                , action =
                     case model.gos.webcamSettings of
                         Just _ ->
                             Ui.Msg <| App.ProductionMsg Production.ResetOptions
-                        
+
                         Nothing ->
                             Ui.None
                 }
@@ -199,7 +198,7 @@ leftColumn config model =
                     , Input.option (Just 533) <| Element.text <| Strings.stepsProductionCustom lang
                     ]
                 , selected =
-                    case getWebcamSettings model.gos model of
+                    case getWebcamSettings model.capsule model.gos of
                         Data.Pip { size } ->
                             if List.member (Tuple.first size) [ 200, 400, 800 ] then
                                 Just <| Just <| Tuple.first size
@@ -298,7 +297,7 @@ leftColumn config model =
 
 {-| The column with the slide view and the production button.
 -}
-rightColumn : Config -> Production.Model -> Element App.Msg
+rightColumn : Config -> Production.Model Data.Capsule Data.Gos -> Element App.Msg
 rightColumn config model =
     let
         lang =
@@ -306,7 +305,7 @@ rightColumn config model =
 
         -- overlay to show a frame of the record on the slide (if any)
         overlay =
-            case ( getWebcamSettings model.gos model, model.gos.record ) of
+            case ( getWebcamSettings model.capsule model.gos, model.gos.record ) of
                 ( Data.Pip s, Just r ) ->
                     let
                         ( ( marginX, marginY ), ( w, h ) ) =

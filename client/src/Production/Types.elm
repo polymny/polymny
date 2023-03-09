@@ -8,18 +8,28 @@ import Data.Capsule as Data exposing (Capsule)
 
 {-| Model type of the production page.
 -}
-type alias Model =
-    { capsule : Capsule
-    , gosId : Int
-    , gos : Data.Gos
+type alias Model a b =
+    { capsule : a
+    , gos : b
     , webcamPosition : ( Float, Float )
     , holdingImage : Maybe ( Int, Float, Float )
     }
 
 
+{-| Changes the capsule id and the gos id into the real capsule and real gos.
+-}
+withCapsuleAndGos : Capsule -> Data.Gos -> Model String Int -> Model Capsule Data.Gos
+withCapsuleAndGos capsule gos model =
+    { capsule = capsule
+    , gos = gos
+    , webcamPosition = model.webcamPosition
+    , holdingImage = model.holdingImage
+    }
+
+
 {-| Initializes a model from the capsule and gos is.
 -}
-init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
+init : Int -> Capsule -> Maybe ( Model String Int, Cmd Msg )
 init gos capsule =
     case List.drop gos capsule.structure of
         h :: _ ->
@@ -33,9 +43,8 @@ init gos capsule =
                             ( 0.0, 0.0 )
             in
             Just
-                ( { capsule = capsule
-                  , gos = h
-                  , gosId = gos
+                ( { capsule = capsule.id
+                  , gos = gos
                   , webcamPosition = webcamPosition
                   , holdingImage = Nothing
                   }
@@ -82,12 +91,12 @@ miniatureId =
 
 {-| Get webcam settings from the gos and model.
 -}
-getWebcamSettings : Data.Gos -> Model -> Data.WebcamSettings
-getWebcamSettings gos model =
+getWebcamSettings : Data.Capsule -> Data.Gos -> Data.WebcamSettings
+getWebcamSettings capsule gos =
     let
         -- Get record size
         recordSize =
-            case model.gos.record of
+            case gos.record of
                 Just r ->
                     case r.size of
                         Just s ->
@@ -101,7 +110,7 @@ getWebcamSettings gos model =
 
         -- Get default size
         defaultSize =
-            case model.capsule.defaultWebcamSettings of
+            case capsule.defaultWebcamSettings of
                 Data.Pip s ->
                     s.size
 
@@ -136,7 +145,7 @@ getWebcamSettings gos model =
 
                 Nothing ->
                     -- Create webcam settings from default with good size
-                    case model.capsule.defaultWebcamSettings of
+                    case capsule.defaultWebcamSettings of
                         Data.Pip s ->
                             Data.Pip
                                 { anchor = s.anchor
@@ -147,6 +156,6 @@ getWebcamSettings gos model =
                                 }
 
                         _ ->
-                            model.capsule.defaultWebcamSettings
+                            capsule.defaultWebcamSettings
     in
     webcamSettings

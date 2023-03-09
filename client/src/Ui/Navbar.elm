@@ -7,26 +7,22 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 -}
 
 import App.Types as App
-import Browser.Dom as Dom
+import App.Utils as App
 import Config exposing (ClientState, ClientTask(..), Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User exposing (User)
-import Element exposing (Element, mouseOver)
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font exposing (Font)
-import Html
+import Element.Font as Font
 import Html.Attributes
-import Html.Events
-import Json.Decode as Decode
 import Lang exposing (Lang)
-import Material.Icons as Icons exposing (transit_enterexit)
+import Material.Icons as Icons
 import Material.Icons.Types as Icons
 import Route exposing (Route)
 import Simple.Transition as Transition
 import Strings
-import Task exposing (Task)
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -43,7 +39,7 @@ navbar config page user =
             Maybe.map .clientState config |> Maybe.map .lang |> Maybe.withDefault Lang.default
 
         capsule =
-            Maybe.andThen App.getCapsule page
+            Maybe.andThen App.capsuleIdFromPage page
 
         logo =
             case Maybe.map .plan user of
@@ -290,8 +286,8 @@ taskPanel clientState =
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.
 -}
-navButtons : Lang -> Capsule -> App.Page -> Element msg
-navButtons lang capsule page =
+navButtons : Lang -> String -> App.Page -> Element msg
+navButtons lang capsuleId page =
     let
         buttonWidth : Int
         buttonWidth =
@@ -367,15 +363,15 @@ navButtons lang capsule page =
     in
     Element.row [ Ui.hf ]
         [ selector selectorIndex
-        , makeButton (Route.Preparation capsule.id) (Strings.stepsPreparationPrepare lang) (selectorIndex /= 0)
+        , makeButton (Route.Preparation capsuleId) (Strings.stepsPreparationPrepare lang) (selectorIndex /= 0)
         , separator
-        , makeButton (Route.Acquisition capsule.id 0) (Strings.stepsAcquisitionRecord lang) (selectorIndex /= 1)
+        , makeButton (Route.Acquisition capsuleId 0) (Strings.stepsAcquisitionRecord lang) (selectorIndex /= 1)
         , separator
-        , makeButton (Route.Production capsule.id 0) (Strings.stepsProductionProduce lang) (selectorIndex /= 2)
+        , makeButton (Route.Production capsuleId 0) (Strings.stepsProductionProduce lang) (selectorIndex /= 2)
         , separator
-        , makeButton (Route.Publication capsule.id) (Strings.stepsPublicationPublish lang) (selectorIndex /= 3)
+        , makeButton (Route.Publication capsuleId) (Strings.stepsPublicationPublish lang) (selectorIndex /= 3)
         , separator
-        , makeButton (Route.Options capsule.id) (Strings.stepsOptionsOptions lang) (selectorIndex /= 4)
+        , makeButton (Route.Options capsuleId) (Strings.stepsOptionsOptions lang) (selectorIndex /= 4)
         ]
 
 

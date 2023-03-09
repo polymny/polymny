@@ -1,4 +1,7 @@
-module App.Utils exposing (init, pageFromRoute, capsuleFromPage, updatePage)
+module App.Utils exposing
+    ( init, pageFromRoute
+    , capsuleAndGos, capsuleIdFromPage, gosIdFromPage
+    )
 
 {-| This module contains some util functions that should really be in App/Types.elm but that can't be there because elm
 doesn't allow circular module imports...
@@ -15,7 +18,6 @@ import Data.Capsule as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
-import NewCapsule.Types as NewCapsule
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
@@ -81,58 +83,71 @@ init flags url key =
     ( model, cmd )
 
 
-{-| Extracts the capsule from a page.
+{-| Extracts the capsule id the page.
 -}
-capsuleFromPage : App.Page -> Maybe Data.Capsule
-capsuleFromPage page =
+capsuleIdFromPage : App.Page -> Maybe String
+capsuleIdFromPage page =
     case page of
-        App.Preparation { capsule } ->
-            Just capsule
+        App.Preparation m ->
+            Just m.capsule
 
-        App.Acquisition { capsule } ->
-            Just capsule
+        App.Acquisition m ->
+            Just m.capsule
 
-        App.Production { capsule } ->
-            Just capsule
+        App.Production m ->
+            Just m.capsule
 
-        App.Publication { capsule } ->
-            Just capsule
+        App.Publication m ->
+            Just m.capsule
 
-        App.Options { capsule } ->
-            Just capsule
+        App.Options m ->
+            Just m.capsule
 
         _ ->
             Nothing
 
 
-{-| Updates the capsule inside a page.
+{-| Extracts the gos id from the page, if its meaningful.
 -}
-updatePage : Data.Capsule -> App.Page -> App.Page
-updatePage capsule page =
+gosIdFromPage : App.Page -> Maybe Int
+gosIdFromPage page =
     case page of
-        App.Preparation model ->
-            App.Preparation { model | capsule = capsule }
+        App.Acquisition m ->
+            Just m.gos
 
-        App.Acquisition model ->
-            App.Acquisition { model | capsule = capsule }
-
-        App.Production model ->
-            App.Production { model | capsule = capsule }
-
-        App.Publication model ->
-            App.Publication { model | capsule = capsule }
-
-        App.Options model ->
-            App.Options { model | capsule = capsule }
+        App.Production m ->
+            Just m.gos
 
         _ ->
-            page
+            Nothing
+
+
+{-| Extracts the capsule and the gos from a user and a page.
+-}
+capsuleAndGos : Data.User -> App.Page -> ( Maybe Data.Capsule, Maybe Data.Gos )
+capsuleAndGos user page =
+    let
+        maybeCapsule : Maybe Data.Capsule
+        maybeCapsule =
+            capsuleIdFromPage page
+                |> Maybe.andThen (\x -> Data.getCapsuleById x user)
+
+        gosFromCapsule : Data.Capsule -> Maybe Data.Gos
+        gosFromCapsule capsule =
+            gosIdFromPage page
+                |> Maybe.andThen (\x -> List.drop x capsule.structure |> List.head)
+
+        maybeGos : Maybe Data.Gos
+        maybeGos =
+            Maybe.andThen gosFromCapsule maybeCapsule
+    in
+    ( maybeCapsule, maybeGos )
 
 
 {-| Finds a page from the route and the context.
 -}
 pageFromRoute : Config -> User -> Route -> ( App.Page, Cmd App.Msg )
-pageFromRoute config user route =
+pageFromRoute _ user route =
     case route of
         Route.Home ->
             ( App.Home Home.init, Cmd.none )

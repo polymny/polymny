@@ -1,4 +1,7 @@
-module Preparation.Types exposing (Model, ChangeSlideForm, ChangeSlide(..), Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), ExtraMsg(..), DnDMsg(..), enumerate)
+module Preparation.Types exposing
+    ( Model, ChangeSlideForm, ChangeSlide(..), Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), ExtraMsg(..), DnDMsg(..), enumerate
+    , withCapsule
+    )
 
 {-| This module contains the type for the preparation page, where user can manage a capsule.
 
@@ -19,8 +22,8 @@ import Utils
 
 {-| The type for the model of the preparation page.
 -}
-type alias Model =
-    { capsule : Capsule
+type alias Model a =
+    { capsule : a
     , slides : List Slide
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
@@ -30,6 +33,23 @@ type alias Model =
     , changeSlideForm : Maybe ChangeSlideForm
     , editPrompt : Maybe Data.Slide
     , confirmUpdateCapsule : Maybe Capsule
+    }
+
+
+{-| Transforms the capsule id into a real capsule.
+-}
+withCapsule : Capsule -> Model String -> Model Capsule
+withCapsule capsule model =
+    { capsule = capsule
+    , slides = model.slides
+    , slideModel = model.slideModel
+    , gosModel = model.gosModel
+    , capsuleUpdate = model.capsuleUpdate
+    , deleteSlide = model.deleteSlide
+    , changeSlide = model.changeSlide
+    , changeSlideForm = model.changeSlideForm
+    , editPrompt = model.editPrompt
+    , confirmUpdateCapsule = model.confirmUpdateCapsule
     }
 
 
@@ -52,9 +72,9 @@ type ChangeSlide
 
 {-| A helper function to initialiaze a model.
 -}
-init : Capsule -> Model
+init : Capsule -> Model String
 init capsule =
-    { capsule = capsule
+    { capsule = capsule.id
     , slides = setupSlides capsule
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model

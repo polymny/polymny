@@ -14,7 +14,7 @@ import Data.User as Data
 import Home.Types as Home
 import NewCapsule.Types as NewCapsule
 import RemoteData
-import Route exposing (Route)
+import Route
 
 
 {-| The update function of the new capsule page.

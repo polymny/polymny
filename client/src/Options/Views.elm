@@ -6,13 +6,10 @@ import Data.Capsule as Data
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Html exposing (audio)
 import Html.Attributes
 import Lang exposing (Lang)
-import List exposing (map)
 import Material.Icons
 import Options.Types as Options
 import RemoteData
@@ -23,8 +20,8 @@ import Ui.Utils as Ui
 import Utils
 
 
-view : Config -> User -> Options.Model -> ( Element App.Msg, Element App.Msg )
-view config user model =
+view : Config -> User -> Options.Model Data.Capsule -> ( Element App.Msg, Element App.Msg )
+view config _ model =
     let
         -- Helper to get client lang
         lang =
@@ -65,7 +62,7 @@ view config user model =
     )
 
 
-defaultProd : Config -> Options.Model -> Element App.Msg
+defaultProd : Config -> Options.Model Data.Capsule -> Element App.Msg
 defaultProd config model =
     let
         --- HELPERS ---
@@ -290,7 +287,7 @@ defaultProd config model =
         ]
 
 
-generalOptions : Config -> Options.Model -> Element App.Msg
+generalOptions : Config -> Options.Model Data.Capsule -> Element App.Msg
 generalOptions config model =
     let
         lang =
@@ -317,19 +314,19 @@ generalOptions config model =
                 []
 
         -- Gives disable attributes and remove msg if element is disabled
-        disableIf :
-            Bool
-            -> (List (Element.Attribute App.Msg) -> { a | onChange : b -> App.Msg } -> Element App.Msg)
-            -> List (Element.Attribute App.Msg)
-            -> { a | onChange : b -> App.Msg }
-            -> Element App.Msg
-        disableIf disabled constructor attributes parameters =
-            if disabled then
-                constructor (disableAttr ++ attributes) { parameters | onChange = \_ -> App.Noop }
-
-            else
-                constructor attributes parameters
-
+        --disableIf :
+        --    Bool
+        --    -> (List (Element.Attribute App.Msg) -> { a | onChange : b -> App.Msg } -> Element App.Msg)
+        --    -> List (Element.Attribute App.Msg)
+        --    -> { a | onChange : b -> App.Msg }
+        --    -> Element App.Msg
+        --disableIf disabled constructor attributes parameters =
+        --    if disabled then
+        --        constructor (disableAttr ++ attributes) { parameters | onChange = \_ -> App.Noop }
+        --    else
+        --        constructor attributes parameters
+        --
+        --
         -- Track volume
         volume : Float
         volume =
@@ -483,8 +480,8 @@ generalOptions config model =
 
 {-| Popup to confirm the track deletion.
 -}
-deleteTrackConfirmPopup : Lang -> Options.Model -> Data.SoundTrack -> Element App.Msg
-deleteTrackConfirmPopup lang model s =
+deleteTrackConfirmPopup : Lang -> Options.Model Data.Capsule -> Data.SoundTrack -> Element App.Msg
+deleteTrackConfirmPopup lang _ s =
     Element.column [ Ui.wf, Ui.hf ]
         [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Lang.question Strings.actionsConfirmDeleteTrack lang) ]

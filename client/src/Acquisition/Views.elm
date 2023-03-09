@@ -40,8 +40,8 @@ We need to send the right column outside the content so that the parent caller c
 as the left column.
 
 -}
-view : Config -> User -> Acquisition.Model -> ( Element App.Msg, Element App.Msg, Element App.Msg )
-view config user model =
+view : Config -> User -> Acquisition.Model Data.Capsule Data.Gos -> ( Element App.Msg, Element App.Msg, Element App.Msg )
+view config _ model =
     let
         -- Shortcut for lang
         lang =
@@ -269,8 +269,8 @@ view config user model =
 
 {-| Shows the element that contains the prompt text.
 -}
-promptElement : Config -> Acquisition.Model -> Element App.Msg
-promptElement config model =
+promptElement : Config -> Acquisition.Model Data.Capsule Data.Gos -> Element App.Msg
+promptElement _ model =
     let
         -- The current slide (Nothing should be unreachable)
         currentSlide : Maybe Data.Slide
@@ -288,10 +288,11 @@ promptElement config model =
             List.head (List.drop n (String.split "\n" x.prompt))
 
         -- The sentence that is just before the current sentence
-        previousSentence : Maybe String
-        previousSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence - 1)) currentSlide)
-
+        -- previousSentence : Maybe String
+        -- previousSentence =
+        --     Maybe.withDefault Nothing (Maybe.map (getLine (model.currentSentence - 1)) currentSlide)
+        --
+        --
         -- The current sentence
         currentSentence : Maybe String
         currentSentence =
@@ -320,14 +321,14 @@ promptElement config model =
                     x
 
         -- A small icon that indicates to the speaker that the next sentence belongs to the next slide
-        nextSlideIcon =
-            if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
-                Ui.icon 40 Material.Icons.arrow_circle_right
-                    |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
-
-            else
-                Element.none
-
+        -- nextSlideIcon =
+        --     if nextSentenceCurrentSlide == Nothing && nextSentence /= Nothing then
+        --         Ui.icon 40 Material.Icons.arrow_circle_right
+        --             |> Element.el [ Element.paddingEach { right = 10, left = 0, top = 0, bottom = 0 } ]
+        --     else
+        --         Element.none
+        --
+        --
         -- Display navigation buttons that let the user move around the prompt text even if they're not recording
         navigationButtons =
             Element.row [ Ui.ab, Ui.wf ]
@@ -458,7 +459,7 @@ deviceInfo config =
 
 {-| Creates a HTML video element on which the device feedback will be displayed.
 -}
-devicePlayer : Config -> Acquisition.Model -> Element App.Msg
+devicePlayer : Config -> Acquisition.Model Data.Capsule Data.Gos -> Element App.Msg
 devicePlayer config model =
     let
         -- Shortcut for lang
@@ -531,7 +532,7 @@ devicePlayer config model =
 
 {-| Creates the settings popup, with all the information about the different devices.
 -}
-settingsPopup : Config -> Acquisition.Model -> Element App.Msg
+settingsPopup : Config -> Acquisition.Model Data.Capsule Data.Gos -> Element App.Msg
 settingsPopup config model =
     let
         -- Shortcut for lang
@@ -651,7 +652,7 @@ videoView lang preferredVideo video =
 {-| Displays a button to select a specific video resolution.
 -}
 videoResolutionView : Lang -> ( Device.Video, Device.Resolution ) -> Device.Resolution -> Element App.Msg
-videoResolutionView lang ( preferredVideo, preferredResolution ) resolution =
+videoResolutionView _ ( preferredVideo, preferredResolution ) resolution =
     let
         makeButton =
             if preferredResolution == resolution then
@@ -743,7 +744,7 @@ vumeter ratio value =
 
 {-| Element to control the style of the pointer.
 -}
-pointerControl : Acquisition.Model -> Element App.Msg
+pointerControl : Acquisition.Model Data.Capsule Data.Gos -> Element App.Msg
 pointerControl model =
     let
         colorToButton : Element.Color -> Element App.Msg

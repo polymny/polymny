@@ -57,7 +57,6 @@ import Element exposing (Element)
 import Element.Border as Border
 import Element.Font as Font
 import Html.Attributes
-import Material.Icons.Types exposing (Icon)
 import Ui.Colors as Colors
 
 

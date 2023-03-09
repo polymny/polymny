@@ -15,7 +15,6 @@ import Element.Border as Border
 import Element.Input as Input
 import NewCapsule.Types as NewCapsule
 import RemoteData
-import Route exposing (Route)
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -26,7 +25,7 @@ import Utils
 {-| The view function for the new capsule page.
 -}
 view : Config -> User -> NewCapsule.Model -> ( Element App.Msg, Element App.Msg )
-view config user model =
+view config _ model =
     let
         projectInput =
             Input.text []

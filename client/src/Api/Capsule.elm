@@ -112,15 +112,15 @@ uploadTrack :
     { capsule : Data.Capsule, fileValue : FileValue.File, file : File.File, toMsg : WebData Data.Capsule -> msg }
     -> Cmd msg
 uploadTrack { capsule, fileValue, file, toMsg } =
-    let
-        name =
-            fileValue.name
-                |> String.split "."
-                |> List.reverse
-                |> List.drop 1
-                |> List.reverse
-                |> String.join "."
-    in
+    -- let
+    --     name =
+    --         fileValue.name
+    --             |> String.split "."
+    --             |> List.reverse
+    --             |> List.drop 1
+    --             |> List.reverse
+    --             |> String.join "."
+    -- in
     Api.postWithTrackerJson
         ("sound-track-" ++ capsule.id)
         { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name

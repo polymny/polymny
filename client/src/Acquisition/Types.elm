@@ -1,6 +1,6 @@
 port module Acquisition.Types exposing
     ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
-    , clearPointer, setPointerStyle
+    , clearPointer, setPointerStyle, withCapsuleAndGos
     )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
@@ -27,10 +27,9 @@ type State
 
 {-| The type for the model of the acquisition page.
 -}
-type alias Model =
-    { capsule : Capsule
-    , gos : Data.Gos
-    , gosId : Int
+type alias Model a b =
+    { capsule : a
+    , gos : b
     , state : State
     , deviceLevel : Maybe Float
     , showSettings : Bool
@@ -42,6 +41,26 @@ type alias Model =
     , savedRecord : Maybe Data.Record
     , deleteRecord : Bool
     , pointerStyle : PointerStyle
+    }
+
+
+{-| Changes the capsule id and the gos id into the real capsule and real gos.
+-}
+withCapsuleAndGos : Capsule -> Data.Gos -> Model String Int -> Model Capsule Data.Gos
+withCapsuleAndGos capsule gos model =
+    { capsule = capsule
+    , gos = gos
+    , state = model.state
+    , deviceLevel = model.deviceLevel
+    , showSettings = model.showSettings
+    , recording = model.recording
+    , currentSlide = model.currentSlide
+    , currentSentence = model.currentSentence
+    , records = model.records
+    , recordPlaying = model.recordPlaying
+    , savedRecord = model.savedRecord
+    , deleteRecord = model.deleteRecord
+    , pointerStyle = model.pointerStyle
     }
 
 
@@ -143,14 +162,13 @@ defaultPointerStyle =
 It returns Nothing if the grain is not in the capsule.
 
 -}
-init : Int -> Capsule -> Maybe ( Model, Cmd Msg )
+init : Int -> Capsule -> Maybe ( Model String Int, Cmd Msg )
 init gos capsule =
     case List.drop gos capsule.structure of
         h :: _ ->
             Just <|
-                ( { capsule = capsule
-                  , gos = h
-                  , gosId = gos
+                ( { capsule = capsule.id
+                  , gos = gos
                   , state = DetectingDevices
                   , deviceLevel = Nothing
                   , showSettings = False

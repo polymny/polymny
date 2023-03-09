@@ -8,9 +8,8 @@ module Preparation.Views exposing (view)
 
 import App.Types as App
 import Config exposing (Config)
-import Data.Capsule as Data
+import Data.Capsule as Data exposing (Capsule)
 import Data.User exposing (User)
-import DnDList
 import DnDList.Groups
 import Element exposing (Element)
 import Element.Background as Background
@@ -33,7 +32,7 @@ import Utils
 
 {-| The view function for the preparation page.
 -}
-view : Config -> User -> Preparation.Model -> ( Element App.Msg, Element App.Msg )
+view : Config -> User -> Preparation.Model Capsule -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
         lang =
@@ -45,12 +44,13 @@ view config user model =
                 |> Maybe.map (\x -> slideView config user model True x (Just x))
                 |> Maybe.withDefault Element.none
 
-        makeBorder : Element.Color -> Element App.Msg -> Element App.Msg
-        makeBorder c elt =
-            elt
-                |> Element.el [ Ui.p 10, Background.color c, Ui.r 10 ]
-                |> Element.el [ Ui.ab, Ui.ar, Ui.p 10 ]
-
+        --makeBorder : Element.Color -> Element App.Msg -> Element App.Msg
+        --makeBorder c elt =
+        --    elt
+        --        |> Element.el [ Ui.p 10, Background.color c, Ui.r 10 ]
+        --        |> Element.el [ Ui.ab, Ui.ar, Ui.p 10 ]
+        --
+        --
         popup : Element App.Msg
         popup =
             case ( ( model.deleteSlide, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
@@ -87,7 +87,7 @@ view config user model =
 
 {-| Displays a grain.
 -}
-gosView : Config -> User -> Preparation.Model -> ( Preparation.Slide, List Preparation.Slide ) -> Element App.Msg
+gosView : Config -> User -> Preparation.Model Capsule -> ( Preparation.Slide, List Preparation.Slide ) -> Element App.Msg
 gosView config user model ( head, gos ) =
     let
         isDragging =
@@ -154,8 +154,8 @@ gosView config user model ( head, gos ) =
 
 {-| Displays a slide.
 -}
-slideView : Config -> User -> Preparation.Model -> Bool -> Preparation.Slide -> Maybe Preparation.Slide -> Element App.Msg
-slideView config user model ghost default s =
+slideView : Config -> User -> Preparation.Model Capsule -> Bool -> Preparation.Slide -> Maybe Preparation.Slide -> Element App.Msg
+slideView config _ model ghost default s =
     let
         lang =
             config.clientState.lang
@@ -239,8 +239,8 @@ slideView config user model ghost default s =
 
 {-| Popup to confirm the slide deletion.
 -}
-deleteSlideConfirmPopup : Lang -> Preparation.Model -> Data.Slide -> Element App.Msg
-deleteSlideConfirmPopup lang model s =
+deleteSlideConfirmPopup : Lang -> Preparation.Model Capsule -> Data.Slide -> Element App.Msg
+deleteSlideConfirmPopup lang _ s =
     Element.column [ Ui.wf, Ui.hf ]
         [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Lang.question Strings.actionsConfirmDeleteSlide lang) ]
@@ -260,7 +260,7 @@ deleteSlideConfirmPopup lang model s =
 
 {-| Popup to input prompt texts.
 -}
-promptPopup : Lang -> Preparation.Model -> Data.Slide -> Element App.Msg
+promptPopup : Lang -> Preparation.Model Capsule -> Data.Slide -> Element App.Msg
 promptPopup lang model slide =
     Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
         [ Element.column [ Ui.wf, Ui.cy ]
@@ -314,7 +314,7 @@ confirmUpdateCapsulePopup lang =
 
 {-| Popup to select the page number when uploading a slide.
 -}
-selectPageNumberPopup : Lang -> Preparation.Model -> Preparation.ChangeSlideForm -> Element App.Msg
+selectPageNumberPopup : Lang -> Preparation.Model Capsule -> Preparation.ChangeSlideForm -> Element App.Msg
 selectPageNumberPopup lang model f =
     let
         page =
@@ -502,13 +502,6 @@ mkExtra msg =
 mkUiMsg : Preparation.Msg -> Ui.Action App.Msg
 mkUiMsg msg =
     mkMsg msg |> Ui.Msg
-
-
-{-| Easily creates the Ui.Msg for dnd msg.
--}
-mkUiDnD : Preparation.DnDMsg -> Ui.Action App.Msg
-mkUiDnD msg =
-    mkDnD msg |> Ui.Msg
 
 
 {-| Easily creates the Ui.Msg for extra msg.

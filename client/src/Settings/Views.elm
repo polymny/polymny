@@ -53,14 +53,14 @@ view config user model =
 {-| The info view, that displays global information on the user.
 -}
 info : Config -> User -> ( Element App.Msg, Element App.Msg )
-info confg user =
+info _ _ =
     ( Element.none, Element.none )
 
 
 {-| The view that lets users change their email..
 -}
 changeEmail : Config -> User -> Settings.Model -> Settings.ChangeEmailModel -> ( Element App.Msg, Element App.Msg )
-changeEmail config user model m =
+changeEmail config user _ m =
     let
         -- Shortcut for lang
         lang =
@@ -175,7 +175,7 @@ changeEmail config user model m =
 {-| View that lets the user change their password.
 -}
 changePassword : Config -> User -> Settings.Model -> Settings.ChangePasswordModel -> ( Element App.Msg, Element App.Msg )
-changePassword config user model m =
+changePassword config _ _ m =
     let
         lang =
             config.clientState.lang
@@ -344,7 +344,7 @@ changePassword config user model m =
 {-| View that lets the user delete their account.
 -}
 deleteAccount : Config -> User -> Settings.Model -> Settings.DeleteAccountModel -> ( Element App.Msg, Element App.Msg )
-deleteAccount config user model m =
+deleteAccount config _ _ m =
     let
         lang =
             config.clientState.lang
@@ -444,7 +444,7 @@ deleteAccount config user model m =
 {-| Column to navigate in tabs.
 -}
 tabs : Config -> User -> Settings.Model -> Element App.Msg
-tabs config user model =
+tabs config _ _ =
     let
         lang =
             config.clientState.lang
