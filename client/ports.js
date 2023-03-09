@@ -979,10 +979,15 @@ function init(node, flags) {
         let input = document.createElement('input');
         input.type = 'file';
         input.accept = mimes.join(',');
+        input.style.display = 'none';
         input.onchange = function (e) {
             app.ports.selected.send([project, e.target.files[0]]);
         };
         input.click();
+        document.body.appendChild(input);
+        setTimeout(function () {
+            document.body.removeChild(input);
+        }, 1000);
     });
 
     // Sets the pointer capture to follow an element the right way.
