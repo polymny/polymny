@@ -159,8 +159,8 @@ update message model =
 updateModel : App.Msg -> App.Model -> ( App.Model, Cmd App.Msg )
 updateModel msg model =
     let
-        -- We check if the user exited the acqusition page, in that case, we unbind the device to turn off the webcam
-        -- light.
+        -- We check if the user exited the acqusition page, in that case,
+        -- we unbind the device to turn off the webcam light.
         unbindDevice =
             case ( model.page, updatedModel.page ) of
                 ( _, App.Acquisition _ ) ->
@@ -172,7 +172,8 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
-        -- We check if the user exited the options page, in which case we should stop the playing of the soundtrack.
+        -- We check if the user exited the options page, in which case we should
+        -- stop the playing of the soundtrack.
         stopSoundtrackCmd =
             case ( model.page, updatedModel.page ) of
                 ( _, App.Options _ ) ->
@@ -184,14 +185,28 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
-        -- We check if the user exited the new capsule page, in which case we should concidered they canceled
+        -- We check if the user exited the new capsule page,
+        -- in which case we should concidered they canceled.
         ( finalModel, cancelNewCapsCmd ) =
-            case ( model.page, updatedModel.page ) of
-                ( _, App.NewCapsule _ ) ->
+            case ( model.page, updatedModel.page, App.capsuleAndGos updatedModel.user updatedModel.page ) of
+                ( _, App.NewCapsule _, _ ) ->
                     ( updatedModel, Cmd.none )
 
-                ( App.NewCapsule m, _ ) ->
-                    NewCapsule.update NewCapsule.Cancel { updatedModel | page = App.NewCapsule m }
+                ( App.NewCapsule m, _, ( c2, _ ) ) ->
+                    case m.slideUpload of
+                        RemoteData.Success ( c, _ ) ->
+                            if Just c.id /= Maybe.map .id c2 then
+                                ( { updatedModel
+                                    | user = Data.deleteCapsule c updatedModel.user
+                                  }
+                                , Api.deleteCapsule c (\_ -> App.Noop)
+                                )
+
+                            else
+                                ( updatedModel, Cmd.none )
+
+                        _ ->
+                            ( updatedModel, Cmd.none )
 
                 _ ->
                     ( updatedModel, Cmd.none )
