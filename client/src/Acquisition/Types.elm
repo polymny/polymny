@@ -13,6 +13,7 @@ import Data.Capsule as Data exposing (Capsule)
 import Device
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Route exposing (Route)
 import Time
 import Utils
 
@@ -41,6 +42,7 @@ type alias Model a b =
     , savedRecord : Maybe Data.Record
     , deleteRecord : Bool
     , pointerStyle : PointerStyle
+    , warnLeaving : Maybe Route
     }
 
 
@@ -61,6 +63,7 @@ withCapsuleAndGos capsule gos model =
     , savedRecord = model.savedRecord
     , deleteRecord = model.deleteRecord
     , pointerStyle = model.pointerStyle
+    , warnLeaving = model.warnLeaving
     }
 
 
@@ -191,6 +194,7 @@ init gos capsule =
                   , savedRecord = h.record
                   , deleteRecord = False
                   , pointerStyle = defaultPointerStyle
+                  , warnLeaving = Nothing
                   }
                 , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
@@ -223,6 +227,7 @@ type Msg
     | SetPointerColor String
     | SetPointerSize Int
     | ClearPointer
+    | Leave Utils.Confirmation
 
 
 {-| Alias for the setup canvas port.

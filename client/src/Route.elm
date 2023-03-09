@@ -1,12 +1,11 @@
-module Route exposing (Route(..), toUrl, compareTab, fromUrl, fromPage, push)
+module Route exposing (Route(..), toUrl, compareTab, fromUrl, push)
 
 {-| This module contains the type definition of the routes of the app, and the utility functions to manipulate routes.
 
-@docs Route, toUrl, compareTab, fromUrl, fromPage, push
+@docs Route, toUrl, compareTab, fromUrl, push
 
 -}
 
-import App.Types as App
 import Browser.Navigation
 import Url
 
@@ -110,36 +109,6 @@ fromUrl url =
 
         _ ->
             NotFound
-
-
-{-| Extracts the route corresponding to a specific page.
--}
-fromPage : App.Page -> Route
-fromPage page =
-    case page of
-        App.Home _ ->
-            Home
-
-        App.NewCapsule _ ->
-            Home
-
-        App.Preparation m ->
-            Preparation m.capsule
-
-        App.Acquisition m ->
-            Acquisition m.capsule m.gos
-
-        App.Production m ->
-            Production m.capsule m.gos
-
-        App.Publication m ->
-            Publication m.capsule
-
-        App.Options m ->
-            Options m.capsule
-
-        App.Settings _ ->
-            Settings
 
 
 {-| Checks if the tab of the routes are the same.

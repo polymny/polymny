@@ -183,6 +183,25 @@ view config _ model =
                 ]
                 |> Ui.popup 1 (Strings.actionsDeleteRecord lang)
 
+        -- Popup to warn the user that they're leaving and that they might lose their record
+        warnLeavingPopup : Element App.Msg
+        warnLeavingPopup =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                    [ Element.text (Lang.question Strings.stepsAcquisitionNonValidatedRecordsWillBeLost lang) ]
+                , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                    [ Ui.secondary []
+                        { action = mkUiMsg (Acquisition.Leave Utils.Cancel)
+                        , label = Element.text <| Strings.uiCancel lang
+                        }
+                    , Ui.primary []
+                        { action = mkUiMsg (Acquisition.Leave Utils.Confirm)
+                        , label = Element.text <| Strings.uiConfirm lang
+                        }
+                    ]
+                ]
+                |> Ui.popup 1 (Strings.uiWarning lang)
+
         -- Column that contains the device feedback element, the info, and the list of records
         rightColumn : Element App.Msg
         rightColumn =
@@ -260,6 +279,9 @@ view config _ model =
 
             else if model.deleteRecord then
                 deleteRecordPopup
+
+            else if model.warnLeaving /= Nothing then
+                warnLeavingPopup
 
             else
                 Element.none

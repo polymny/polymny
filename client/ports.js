@@ -254,6 +254,11 @@ function init(node, flags) {
             return;
         }
 
+        if (recording) {
+            console.log("Stopping recording");
+            stopRecording();
+        }
+
         console.log("Unbinding device");
         stream.getTracks().forEach(track => track.stop());
         stream = null;

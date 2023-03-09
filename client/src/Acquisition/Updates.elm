@@ -13,6 +13,7 @@ import Acquisition.Types as Acquisition
 import Api.Capsule as Api
 import App.Types as App
 import App.Utils as App
+import Browser.Navigation as Nav
 import Config
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
@@ -337,6 +338,19 @@ update msg model =
 
                 Acquisition.ClearPointer ->
                     ( model, Acquisition.clearPointer )
+
+                Acquisition.Leave Utils.Cancel ->
+                    ( { model | page = App.Acquisition { m | warnLeaving = Nothing } }
+                    , Maybe.map (\x -> Nav.back x 1) model.config.clientState.key |> Maybe.withDefault Cmd.none
+                    )
+
+                Acquisition.Leave Utils.Confirm ->
+                    ( model
+                    , m.warnLeaving |> Maybe.map (Route.push model.config.clientState.key) |> Maybe.withDefault Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
