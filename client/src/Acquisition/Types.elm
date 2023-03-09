@@ -1,6 +1,6 @@
 port module Acquisition.Types exposing
     ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
-    , clearPointer, setPointerStyle, withCapsuleAndGos
+    , clearPointer, promptFirstSentenceId, setPointerStyle, withCapsuleAndGos
     )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
@@ -37,6 +37,7 @@ type alias Model a b =
     , recording : Maybe Time.Posix
     , currentSlide : Int
     , currentSentence : Int
+    , currentReplacementPrompt : Maybe String
     , records : List Record
     , recordPlaying : Maybe Record
     , savedRecord : Maybe Data.Record
@@ -58,6 +59,7 @@ withCapsuleAndGos capsule gos model =
     , recording = model.recording
     , currentSlide = model.currentSlide
     , currentSentence = model.currentSentence
+    , currentReplacementPrompt = model.currentReplacementPrompt
     , records = model.records
     , recordPlaying = model.recordPlaying
     , savedRecord = model.savedRecord
@@ -178,6 +180,7 @@ init gos capsule =
                   , recording = Nothing
                   , currentSlide = 0
                   , currentSentence = 0
+                  , currentReplacementPrompt = Nothing
                   , records =
                         case Data.recordPath capsule h of
                             Just recordPath ->
@@ -207,6 +210,8 @@ init gos capsule =
 -}
 type Msg
     = DeviceChanged
+    | StartEditingPrompt
+    | StopEditingPrompt
     | CurrentSentenceChanged String
     | DetectDevicesFinished
     | DeviceBound
@@ -247,6 +252,13 @@ port setupCanvasPort : String -> Cmd msg
 pointerCanvasId : String
 pointerCanvasId =
     "pointer-canvas"
+
+
+{-| Id of the first line of the prompt.
+-}
+promptFirstSentenceId : String
+promptFirstSentenceId =
+    "prompt-first-sentence"
 
 
 {-| Helper to change the pointer style.

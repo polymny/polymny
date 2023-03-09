@@ -19,6 +19,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes
+import Html.Events
 import Lang exposing (Lang)
 import Material.Icons
 import Strings
@@ -318,7 +319,12 @@ promptElement _ model =
         -- The current sentence
         currentSentence : Maybe String
         currentSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
+            case model.currentReplacementPrompt of
+                Just s ->
+                    Just s
+
+                _ ->
+                    Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
 
         -- The next sentence of the current slide if any
         nextSentenceCurrentSlide : Maybe String
@@ -385,8 +391,11 @@ promptElement _ model =
                 (Input.multiline
                     [ Background.color Colors.black
                     , Ui.b 0
+                    , Ui.id Acquisition.promptFirstSentenceId
                     , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
                     , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
+                    , Element.htmlAttribute <| Html.Events.onFocus <| App.AcquisitionMsg <| Acquisition.StartEditingPrompt
+                    , Element.htmlAttribute <| Html.Events.onBlur <| App.AcquisitionMsg <| Acquisition.StopEditingPrompt
                     ]
                     { label = Input.labelHidden ""
                     , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)
