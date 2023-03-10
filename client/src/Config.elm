@@ -256,6 +256,9 @@ type ServerTask
 type ClientTask
     = UploadRecord String Int Decode.Value
     | UploadTrack String
+    | AddSlide String
+    | AddGos String
+    | ReplaceSlide String
 
 
 {-| All the task that the user can see
@@ -391,6 +394,15 @@ compareTasks t1 t2 =
             c1 == c2 && g1 == g2
 
         ( ClientTask (UploadTrack x), ClientTask (UploadTrack y) ) ->
+            x == y
+
+        ( ClientTask (AddGos x), ClientTask (AddGos y) ) ->
+            x == y
+
+        ( ClientTask (AddSlide x), ClientTask (AddSlide y) ) ->
+            x == y
+
+        ( ClientTask (ReplaceSlide x), ClientTask (ReplaceSlide y) ) ->
             x == y
 
         ( ServerTask Production, ServerTask Production ) ->
@@ -650,11 +662,23 @@ update msg { serverConfig, clientConfig, clientState } =
 
                 AbortTask task ->
                     let
-                        url : String
-                        url =
+                        tracker : String
+                        tracker =
                             case task of
                                 ClientTask (UploadRecord capsuleId gosId _) ->
-                                    "/api/upload-record/" ++ capsuleId ++ "/" ++ String.fromInt gosId
+                                    "upload-record-" ++ capsuleId ++ "-" ++ String.fromInt gosId
+
+                                ClientTask (UploadTrack id) ->
+                                    "sound-track-" ++ id
+
+                                ClientTask (AddSlide capsuleId) ->
+                                    "add-slide-" ++ capsuleId
+
+                                ClientTask (AddGos capsuleId) ->
+                                    "add-gos-" ++ capsuleId
+
+                                ClientTask (ReplaceSlide capsuleId) ->
+                                    "replace-slide-" ++ capsuleId
 
                                 _ ->
                                     ""
@@ -663,10 +687,19 @@ update msg { serverConfig, clientConfig, clientState } =
                         abortCmd =
                             case task of
                                 ClientTask (UploadRecord _ _ _) ->
-                                    abortTaskPort url
+                                    abortTaskPort tracker
 
-                                ClientTask (UploadTrack id) ->
-                                    Http.cancel ("sound-track-" ++ id)
+                                ClientTask (UploadTrack _) ->
+                                    Http.cancel tracker
+
+                                ClientTask (AddSlide _) ->
+                                    Http.cancel tracker
+
+                                ClientTask (AddGos _) ->
+                                    Http.cancel tracker
+
+                                ClientTask (ReplaceSlide _) ->
+                                    Http.cancel tracker
 
                                 _ ->
                                     Cmd.none
@@ -792,6 +825,129 @@ subs config =
                                             in
                                             UpdateTaskStatus
                                                 { task = ClientTask (UploadTrack id)
+                                                , finished = finished
+                                                , progress = Just progressValue
+                                                , aborted = False
+                                                }
+
+                                        _ ->
+                                            Noop
+                                )
+                        )
+               )
+            ++ (config.clientState.tasks
+                    |> List.filterMap
+                        (\x ->
+                            case x.task of
+                                ClientTask (AddSlide id) ->
+                                    Just id
+
+                                _ ->
+                                    Nothing
+                        )
+                    |> List.map
+                        (\id ->
+                            Http.track ("add-slide-" ++ id)
+                                (\progress ->
+                                    case progress of
+                                        Http.Sending { sent, size } ->
+                                            let
+                                                progressValue : Float
+                                                progressValue =
+                                                    if size == 0 then
+                                                        0
+
+                                                    else
+                                                        toFloat sent / toFloat size
+
+                                                finished : Bool
+                                                finished =
+                                                    progressValue == 1
+                                            in
+                                            UpdateTaskStatus
+                                                { task = ClientTask (AddSlide id)
+                                                , finished = finished
+                                                , progress = Just progressValue
+                                                , aborted = False
+                                                }
+
+                                        _ ->
+                                            Noop
+                                )
+                        )
+               )
+            ++ (config.clientState.tasks
+                    |> List.filterMap
+                        (\x ->
+                            case x.task of
+                                ClientTask (AddGos id) ->
+                                    Just id
+
+                                _ ->
+                                    Nothing
+                        )
+                    |> List.map
+                        (\id ->
+                            Http.track ("add-gos-" ++ id)
+                                (\progress ->
+                                    case progress of
+                                        Http.Sending { sent, size } ->
+                                            let
+                                                progressValue : Float
+                                                progressValue =
+                                                    if size == 0 then
+                                                        0
+
+                                                    else
+                                                        toFloat sent / toFloat size
+
+                                                finished : Bool
+                                                finished =
+                                                    progressValue == 1
+                                            in
+                                            UpdateTaskStatus
+                                                { task = ClientTask (AddGos id)
+                                                , finished = finished
+                                                , progress = Just progressValue
+                                                , aborted = False
+                                                }
+
+                                        _ ->
+                                            Noop
+                                )
+                        )
+               )
+            ++ (config.clientState.tasks
+                    |> List.filterMap
+                        (\x ->
+                            case x.task of
+                                ClientTask (ReplaceSlide id) ->
+                                    Just id
+
+                                _ ->
+                                    Nothing
+                        )
+                    |> List.map
+                        (\id ->
+                            Http.track ("replace-slide-" ++ id)
+                                (\progress ->
+                                    case progress of
+                                        Http.Sending { sent, size } ->
+                                            let
+                                                progressValue : Float
+                                                progressValue =
+                                                    if size == 0 then
+                                                        0
+
+                                                    else
+                                                        toFloat sent / toFloat size
+
+                                                finished : Bool
+                                                finished =
+                                                    progressValue == 1
+                                            in
+                                            UpdateTaskStatus
+                                                { task = ClientTask (ReplaceSlide id)
                                                 , finished = finished
                                                 , progress = Just progressValue
                                                 , aborted = False

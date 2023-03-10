@@ -191,6 +191,15 @@ taskPanel clientState =
 
                         Config.ClientTask (Config.UploadTrack _) ->
                             Strings.tasksUploadTrack lang
+                        
+                        Config.ClientTask (Config.AddGos _) ->
+                            Strings.tasksUploadExtra lang
+                        
+                        Config.ClientTask (Config.AddSlide _) ->
+                            Strings.tasksUploadExtra lang
+                        
+                        Config.ClientTask (Config.ReplaceSlide _) ->
+                            Strings.tasksUploadExtra lang
 
                         _ ->
                             Strings.tasksUnknown lang

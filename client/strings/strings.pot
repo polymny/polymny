@@ -1016,6 +1016,10 @@ msgstr ""
 msgid "Tasks.uploadTrack"
 msgstr ""
 
+#. Upload extra task.
+msgid "Tasks.uploadExtra"
+msgstr ""
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr ""

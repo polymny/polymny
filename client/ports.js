@@ -747,6 +747,7 @@ function init(node, flags) {
                 };
 
                 let url = "/api/upload-record/" + capsuleId + "/" + gos;
+                let tracker = "upload-record-" + capsuleId + "-" + gos;
                 let request = new PolymnyRequest("POST", url, record.webcam_blob, (e) => {
                     app.ports.taskProgress.send({
                         "task": task,
@@ -756,14 +757,14 @@ function init(node, flags) {
                     });
                 });
 
-                requests[url] = {
+                requests[tracker] = {
                     "task": task,
                     "xhr": request.xhr,
                 };
 
                 await request.send();
 
-                delete requests[url];
+                delete requests[tracker];
 
                 if (record.pointer_blob !== null) {
                     console.log("upload pointer");
@@ -775,6 +776,7 @@ function init(node, flags) {
                     };
 
                     url = "/api/upload-pointer/" + capsuleId + "/" + gos;
+                    tracker = "upload-pointer-" + capsuleId + "-" + gos;
                     request = new PolymnyRequest("POST", url, record.pointer_blob, (e) => {
                         app.ports.taskProgress.send({
                             "task": task,
@@ -784,14 +786,14 @@ function init(node, flags) {
                         });
                     });
 
-                    requests[url] = {
+                    requests[tracker] = {
                         "task": task,
                         "xhr": request.xhr,
                     };
 
                     await request.send();
 
-                    delete requests[url].xhr;
+                    delete requests[tracker];
 
                 }
 
@@ -1100,14 +1102,14 @@ function init(node, flags) {
     });
 
     // Remove task.
-    makePort("abortTask", url => {
-        if (url in requests) {
+    makePort("abortTask", tracker => {
+        if (tracker in requests) {
             // Abort request.
-            requests[url]["xhr"].abort();
+            requests[tracker]["xhr"].abort();
 
             // Send abort message.
             app.ports.taskProgress.send({
-                "task": requests[url]["task"],
+                "task": requests[tracker]["task"],
                 "progress": 1,
                 "finished": true,
                 "aborted": true
