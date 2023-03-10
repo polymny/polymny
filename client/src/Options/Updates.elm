@@ -87,7 +87,7 @@ update msg model =
                         let
                             task : Config.TaskStatus
                             task =
-                                { task = Config.ClientTask <| Config.UploadTrack capsule.id
+                                { task = Config.UploadTrack model.config.clientState.taskId capsule.id
                                 , progress = Just 0.0
                                 , finished = False
                                 , aborted = False
@@ -100,13 +100,14 @@ update msg model =
                             ( newConfig, _ ) =
                                 Config.update (Config.UpdateTaskStatus task) model.config
                         in
-                        ( { model | page = newPage, config = newConfig }
+                        ( { model | page = newPage, config = Config.incrementTaskId newConfig }
                         , Cmd.batch
                             [ Api.uploadTrack
                                 { capsule = capsule
                                 , fileValue = fileValue
                                 , file = file
                                 , toMsg = \x -> App.OptionsMsg (Options.TrackUpload x)
+                                , taskId = model.config.clientState.taskId
                                 }
                             ]
                         )

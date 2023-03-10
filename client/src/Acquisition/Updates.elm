@@ -235,7 +235,7 @@ update msg model =
                     let
                         task : Config.TaskStatus
                         task =
-                            { task = Config.ClientTask <| Config.UploadRecord m.capsule m.gos <| Acquisition.encodeRecord record
+                            { task = Config.UploadRecord model.config.clientState.taskId m.capsule m.gos <| Acquisition.encodeRecord record
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
@@ -252,9 +252,9 @@ update msg model =
                         ( newConfig, _ ) =
                             Config.update (Config.UpdateTaskStatus task) model.config
                     in
-                    ( { model | config = newConfig }
+                    ( { model | config = Config.incrementTaskId newConfig }
                     , Cmd.batch
-                        [ uploadRecord capsule m.gos record
+                        [ uploadRecord capsule m.gos record model.config.clientState.taskId
                         , Route.push model.config.clientState.key nextRoute
                         ]
                     )
@@ -534,11 +534,11 @@ port playRecordFinished : (() -> msg) -> Sub msg
 
 {-| Uploadds a record to the server.
 -}
-uploadRecord : Capsule -> Int -> Acquisition.Record -> Cmd msg
-uploadRecord capsule gos record =
-    uploadRecordPort ( capsule.id, gos, Acquisition.encodeRecord record )
+uploadRecord : Capsule -> Int -> Acquisition.Record -> Config.TaskId -> Cmd msg
+uploadRecord capsule gos record taskId =
+    uploadRecordPort ( ( capsule.id, gos ), ( Acquisition.encodeRecord record, taskId ) )
 
 
 {-| Port to upload a record.
 -}
-port uploadRecordPort : ( String, Int, Encode.Value ) -> Cmd msg
+port uploadRecordPort : ( ( String, Int ), ( Encode.Value, Config.TaskId ) ) -> Cmd msg

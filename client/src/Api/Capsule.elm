@@ -12,6 +12,7 @@ import File exposing (File)
 import FileValue
 import Http
 import RemoteData exposing (WebData)
+import Config
 
 
 {-| Uploads a slideshow to the server, creating a new capsule.
@@ -50,9 +51,9 @@ updateCapsule capsule toMsg =
 
 {-| Adds a slide to a gos.
 -}
-addSlide : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
-addSlide capsule gos page file toMsg =
-    Api.postWithTrackerJson ("add-slide-" ++ capsule.id)
+addSlide : Data.Capsule -> Int -> Int -> File -> Config.TaskId -> (WebData Data.Capsule -> msg) -> Cmd msg
+addSlide capsule gos page file taskId toMsg =
+    Api.postWithTrackerJson ("task-track-" ++ String.fromInt taskId)
         { url = "/api/add-slide/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
@@ -62,9 +63,9 @@ addSlide capsule gos page file toMsg =
 
 {-| Adds a gos to a structure.
 -}
-addGos : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
-addGos capsule gos page file toMsg =
-    Api.postWithTrackerJson ("add-gos-" ++ capsule.id)
+addGos : Data.Capsule -> Int -> Int -> File -> Config.TaskId -> (WebData Data.Capsule -> msg) -> Cmd msg
+addGos capsule gos page file taskId toMsg =
+    Api.postWithTrackerJson ("task-track-" ++ String.fromInt taskId)
         { url = "/api/add-gos/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
@@ -74,9 +75,9 @@ addGos capsule gos page file toMsg =
 
 {-| Replaces a slide.
 -}
-replaceSlide : Data.Capsule -> Data.Slide -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
-replaceSlide capsule slide page file toMsg =
-    Api.postWithTrackerJson ("replace-slide-" ++ capsule.id)
+replaceSlide : Data.Capsule -> Data.Slide -> Int -> File -> Config.TaskId -> (WebData Data.Capsule -> msg) -> Cmd msg
+replaceSlide capsule slide page file taskId toMsg =
+    Api.postWithTrackerJson ("task-track-" ++ String.fromInt taskId)
         { url = "/api/replace-slide/" ++ capsule.id ++ "/" ++ slide.uuid ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
@@ -109,20 +110,16 @@ publishCapsule capsule toMsg =
 {-| Uploads a sound track to the server.
 -}
 uploadTrack :
-    { capsule : Data.Capsule, fileValue : FileValue.File, file : File.File, toMsg : WebData Data.Capsule -> msg }
+    { capsule : Data.Capsule
+    , fileValue : FileValue.File
+    , file : File.File
+    , toMsg : WebData Data.Capsule -> msg
+    , taskId : Config.TaskId
+    }
     -> Cmd msg
-uploadTrack { capsule, fileValue, file, toMsg } =
-    -- let
-    --     name =
-    --         fileValue.name
-    --             |> String.split "."
-    --             |> List.reverse
-    --             |> List.drop 1
-    --             |> List.reverse
-    --             |> String.join "."
-    -- in
+uploadTrack { capsule, fileValue, file, toMsg, taskId } =
     Api.postWithTrackerJson
-        ("sound-track-" ++ capsule.id)
+        ("task-track-" ++ String.fromInt taskId)
         { url = "/api/sound-track/" ++ capsule.id ++ "/" ++ fileValue.name
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule

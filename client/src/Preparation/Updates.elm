@@ -165,18 +165,15 @@ updateExtra user msg model config =
                         task : Config.TaskStatus
                         task =
                             { task =
-                                Config.ClientTask <|
-                                    (case changeSlide of
-                                        Preparation.AddSlide _ ->
-                                            Config.AddSlide
+                                case changeSlide of
+                                    Preparation.AddSlide _ ->
+                                        Config.AddSlide config.clientState.taskId capsule.id
 
-                                        Preparation.AddGos _ ->
-                                            Config.AddGos
+                                    Preparation.AddGos _ ->
+                                        Config.AddGos config.clientState.taskId capsule.id
 
-                                        Preparation.ReplaceSlide _ ->
-                                            Config.ReplaceSlide
-                                    )
-                                        capsule.id
+                                    Preparation.ReplaceSlide _ ->
+                                        Config.ReplaceSlide config.clientState.taskId capsule.id
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
@@ -187,13 +184,13 @@ updateExtra user msg model config =
                     in
                     case changeSlide of
                         Preparation.AddSlide gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file mkMsg, newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
 
                         Preparation.AddGos gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file mkMsg, newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
 
                         Preparation.ReplaceSlide slide ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file mkMsg, newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
 
         ( Preparation.PageChanged page, Just _ ) ->
             let

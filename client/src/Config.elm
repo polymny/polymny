@@ -1,12 +1,12 @@
 port module Config exposing
-    ( Config, incrementRequest, addTask
+    ( Config, incrementRequest, addTask, incrementTaskId
     , ServerConfig, decodeServerConfig
     , ClientConfig, defaultClientConfig, encodeClientConfig, decodeClientConfig
     , ClientState, initClientState, Task(..), TaskStatus
     , Msg(..)
     , update, subs
     , saveStorage
-    , ClientTask(..), ServerTask(..), decodeTaskStatus, isClientTask, isServerTask, taskProgress
+    , TaskId, decodeTaskStatus, isClientTask, isServerTask, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -14,7 +14,7 @@ port module Config exposing
 It defines the [`Config`](#Config) type which contain a lot of information that can be useful and that will be available
 at all times in the client.
 
-@docs Config, incrementRequest, addTask
+@docs Config, incrementRequest, addTask, incrementTaskId
 
 
 # Server configuration
@@ -235,37 +235,25 @@ type alias ClientState =
     , tasks : List TaskStatus
     , showLangPicker : Bool
     , showTaskPanel : Bool
+    , taskId : TaskId
     }
 
 
-{-| The task that are running on the server to keep the user informed.
-
-  - `Production` means that the production is running.
-
+{-| Task id
 -}
-type ServerTask
-    = Production
+type alias TaskId =
+    Int
 
 
-{-| The tasks that are running in the background while the user is using the app.
-
-  - `UploadRecord` means that the user is uploading a record on a specific gos of a specific capsule.
-  - `UploadTrack` means that the user is uploading a sound track on a specific capsule.
-
--}
-type ClientTask
-    = UploadRecord String Int Decode.Value
-    | UploadTrack String
-    | AddSlide String
-    | AddGos String
-    | ReplaceSlide String
-
-
-{-| All the task that the user can see
+{-| All the task that the user can see.
 -}
 type Task
-    = ClientTask ClientTask
-    | ServerTask ServerTask
+    = UploadRecord TaskId String Int Decode.Value
+    | UploadTrack TaskId String
+    | AddSlide TaskId String
+    | AddGos TaskId String
+    | ReplaceSlide TaskId String
+    | Production TaskId
 
 
 {-| Returns true if the task is a client task.
@@ -273,7 +261,19 @@ type Task
 isClientTask : TaskStatus -> Bool
 isClientTask task =
     case task.task of
-        ClientTask _ ->
+        UploadRecord _ _ _ _ ->
+            True
+
+        UploadTrack _ _ ->
+            True
+
+        AddSlide _ _ ->
+            True
+
+        AddGos _ _ ->
+            True
+
+        ReplaceSlide _ _ ->
             True
 
         _ ->
@@ -284,12 +284,14 @@ isClientTask task =
 -}
 isServerTask : TaskStatus -> Bool
 isServerTask task =
-    case task.task of
-        ServerTask _ ->
-            True
+    not (isClientTask task)
 
-        _ ->
-            False
+
+{-| Decodes a task id.
+-}
+decodeTaskId : Decoder TaskId
+decodeTaskId =
+    Decode.int
 
 
 {-| Decodes a task.
@@ -301,14 +303,35 @@ decodeTask =
             (\x ->
                 case x of
                     "UploadRecord" ->
-                        Decode.map ClientTask <|
-                            Decode.map3 UploadRecord
-                                (Decode.field "capsuleId" Decode.string)
-                                (Decode.field "gos" Decode.int)
-                                (Decode.field "value" Decode.value)
+                        Decode.map4 UploadRecord
+                            (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
+                            (Decode.field "gos" Decode.int)
+                            (Decode.field "value" Decode.value)
+
+                    "UploadTrack" ->
+                        Decode.map2 UploadTrack
+                            (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
+
+                    "AddSlide" ->
+                        Decode.map2 AddSlide
+                            (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
+
+                    "AddGos" ->
+                        Decode.map2 AddGos
+                            (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
+
+                    "ReplaceSlide" ->
+                        Decode.map2 ReplaceSlide
+                            (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
 
                     "Production" ->
-                        Decode.succeed (ServerTask Production)
+                        Decode.map Production
+                            (Decode.field "taskId" decodeTaskId)
 
                     _ ->
                         Decode.fail <| "type " ++ x ++ " not recognized as task type"
@@ -348,6 +371,7 @@ initClientState key lang =
     , tasks = []
     , showLangPicker = False
     , showTaskPanel = False
+    , taskId = 0
     }
 
 
@@ -390,23 +414,23 @@ addTask task { serverConfig, clientConfig, clientState } =
 compareTasks : Task -> Task -> Bool
 compareTasks t1 t2 =
     case ( t1, t2 ) of
-        ( ClientTask (UploadRecord c1 g1 _), ClientTask (UploadRecord c2 g2 _) ) ->
-            c1 == c2 && g1 == g2
+        ( UploadRecord id1 _ _ _, UploadRecord id2 _ _ _ ) ->
+            id1 == id2
 
-        ( ClientTask (UploadTrack x), ClientTask (UploadTrack y) ) ->
-            x == y
+        ( UploadTrack id1 _, UploadTrack id2 _ ) ->
+            id1 == id2
 
-        ( ClientTask (AddGos x), ClientTask (AddGos y) ) ->
-            x == y
+        ( AddSlide id1 _, AddSlide id2 _ ) ->
+            id1 == id2
 
-        ( ClientTask (AddSlide x), ClientTask (AddSlide y) ) ->
-            x == y
+        ( AddGos id1 _, AddGos id2 _ ) ->
+            id1 == id2
 
-        ( ClientTask (ReplaceSlide x), ClientTask (ReplaceSlide y) ) ->
-            x == y
+        ( ReplaceSlide id1 _, ReplaceSlide id2 _ ) ->
+            id1 == id2
 
-        ( ServerTask Production, ServerTask Production ) ->
-            True
+        ( Production id1, Production id2 ) ->
+            id1 == id2
 
         _ ->
             False
@@ -665,20 +689,20 @@ update msg { serverConfig, clientConfig, clientState } =
                         tracker : String
                         tracker =
                             case task of
-                                ClientTask (UploadRecord capsuleId gosId _) ->
-                                    "upload-record-" ++ capsuleId ++ "-" ++ String.fromInt gosId
+                                UploadRecord taskId _ _ _ ->
+                                    "task-track-" ++ String.fromInt taskId
 
-                                ClientTask (UploadTrack id) ->
-                                    "sound-track-" ++ id
+                                UploadTrack taskId _ ->
+                                    "task-track-" ++ String.fromInt taskId
 
-                                ClientTask (AddSlide capsuleId) ->
-                                    "add-slide-" ++ capsuleId
+                                AddSlide taskId _ ->
+                                    "task-track-" ++ String.fromInt taskId
 
-                                ClientTask (AddGos capsuleId) ->
-                                    "add-gos-" ++ capsuleId
+                                AddGos taskId _ ->
+                                    "task-track-" ++ String.fromInt taskId
 
-                                ClientTask (ReplaceSlide capsuleId) ->
-                                    "replace-slide-" ++ capsuleId
+                                ReplaceSlide taskId _ ->
+                                    "task-track-" ++ String.fromInt taskId
 
                                 _ ->
                                     ""
@@ -686,19 +710,19 @@ update msg { serverConfig, clientConfig, clientState } =
                         abortCmd : Cmd msg
                         abortCmd =
                             case task of
-                                ClientTask (UploadRecord _ _ _) ->
+                                UploadRecord _ _ _ _ ->
                                     abortTaskPort tracker
 
-                                ClientTask (UploadTrack _) ->
+                                UploadTrack _ _ ->
                                     Http.cancel tracker
 
-                                ClientTask (AddSlide _) ->
+                                AddSlide _ _ ->
                                     Http.cancel tracker
 
-                                ClientTask (AddGos _) ->
+                                AddGos _ _ ->
                                     Http.cancel tracker
 
-                                ClientTask (ReplaceSlide _) ->
+                                ReplaceSlide _ _ ->
                                     Http.cancel tracker
 
                                 _ ->
@@ -798,15 +822,27 @@ subs config =
                     |> List.filterMap
                         (\x ->
                             case x.task of
-                                ClientTask (UploadTrack id) ->
-                                    Just id
+                                UploadRecord taskId _ _ _ ->
+                                    Just ( taskId, x.task )
+
+                                UploadTrack taskId _ ->
+                                    Just ( taskId, x.task )
+
+                                AddSlide taskId _ ->
+                                    Just ( taskId, x.task )
+
+                                AddGos taskId _ ->
+                                    Just ( taskId, x.task )
+
+                                ReplaceSlide taskId _ ->
+                                    Just ( taskId, x.task )
 
                                 _ ->
                                     Nothing
                         )
                     |> List.map
-                        (\id ->
-                            Http.track ("sound-track-" ++ id)
+                        (\( taskId, task ) ->
+                            Http.track ("task-track-" ++ String.fromInt taskId)
                                 (\progress ->
                                     case progress of
                                         Http.Sending { sent, size } ->
@@ -824,130 +860,7 @@ subs config =
                                                     progressValue == 1
                                             in
                                             UpdateTaskStatus
-                                                { task = ClientTask (UploadTrack id)
-                                                , finished = finished
-                                                , progress = Just progressValue
-                                                , aborted = False
-                                                }
-
-                                        _ ->
-                                            Noop
-                                )
-                        )
-               )
-            ++ (config.clientState.tasks
-                    |> List.filterMap
-                        (\x ->
-                            case x.task of
-                                ClientTask (AddSlide id) ->
-                                    Just id
-
-                                _ ->
-                                    Nothing
-                        )
-                    |> List.map
-                        (\id ->
-                            Http.track ("add-slide-" ++ id)
-                                (\progress ->
-                                    case progress of
-                                        Http.Sending { sent, size } ->
-                                            let
-                                                progressValue : Float
-                                                progressValue =
-                                                    if size == 0 then
-                                                        0
-
-                                                    else
-                                                        toFloat sent / toFloat size
-
-                                                finished : Bool
-                                                finished =
-                                                    progressValue == 1
-                                            in
-                                            UpdateTaskStatus
-                                                { task = ClientTask (AddSlide id)
-                                                , finished = finished
-                                                , progress = Just progressValue
-                                                , aborted = False
-                                                }
-
-                                        _ ->
-                                            Noop
-                                )
-                        )
-               )
-            ++ (config.clientState.tasks
-                    |> List.filterMap
-                        (\x ->
-                            case x.task of
-                                ClientTask (AddGos id) ->
-                                    Just id
-
-                                _ ->
-                                    Nothing
-                        )
-                    |> List.map
-                        (\id ->
-                            Http.track ("add-gos-" ++ id)
-                                (\progress ->
-                                    case progress of
-                                        Http.Sending { sent, size } ->
-                                            let
-                                                progressValue : Float
-                                                progressValue =
-                                                    if size == 0 then
-                                                        0
-
-                                                    else
-                                                        toFloat sent / toFloat size
-
-                                                finished : Bool
-                                                finished =
-                                                    progressValue == 1
-                                            in
-                                            UpdateTaskStatus
-                                                { task = ClientTask (AddGos id)
-                                                , finished = finished
-                                                , progress = Just progressValue
-                                                , aborted = False
-                                                }
-
-                                        _ ->
-                                            Noop
-                                )
-                        )
-               )
-            ++ (config.clientState.tasks
-                    |> List.filterMap
-                        (\x ->
-                            case x.task of
-                                ClientTask (ReplaceSlide id) ->
-                                    Just id
-
-                                _ ->
-                                    Nothing
-                        )
-                    |> List.map
-                        (\id ->
-                            Http.track ("replace-slide-" ++ id)
-                                (\progress ->
-                                    case progress of
-                                        Http.Sending { sent, size } ->
-                                            let
-                                                progressValue : Float
-                                                progressValue =
-                                                    if size == 0 then
-                                                        0
-
-                                                    else
-                                                        toFloat sent / toFloat size
-
-                                                finished : Bool
-                                                finished =
-                                                    progressValue == 1
-                                            in
-                                            UpdateTaskStatus
-                                                { task = ClientTask (ReplaceSlide id)
+                                                { task = task
                                                 , finished = finished
                                                 , progress = Just progressValue
                                                 , aborted = False
@@ -959,6 +872,23 @@ subs config =
                         )
                )
         )
+
+
+{-| Increment task id.
+-}
+incrementTaskId : Config -> Config
+incrementTaskId config =
+    let
+        clientState : ClientState
+        clientState =
+            config.clientState
+    in
+    { config
+        | clientState =
+            { clientState
+                | taskId = config.clientState.taskId + 1
+            }
+    }
 
 
 {-| Port that sends the client config to javascript for saving in localstorage.
