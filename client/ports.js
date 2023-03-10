@@ -974,18 +974,28 @@ function init(node, flags) {
     }
 
     // Exports a capsule into a zip file.
-    async function exportCapsule(capsule, dry = false) {
+    async function exportCapsule(args, dry = false) {
+        let capsule = args[0];
+        let taskId = args[1];
 
         function logProgress(value) {
             if (!dry) {
-                // TODO : send progress through a port to elm
-                console.log(value);
+                app.ports.taskProgress.send({
+                    "task": {
+                        "taskId": taskId,
+                        "type": "ExportCapsule",
+                        "capsuleId": capsule.id,
+                    },
+                    "progress": value,
+                    "finished": false,
+                    "aborted": false,
+                });
             }
         }
 
         let zip = new JSZip();
 
-        let totalTasks = dry ? null : await exportCapsule(capsule, true);
+        let totalTasks = dry ? null : await exportCapsule(args, true);
         let taskCounter = 0;
 
         for (let gosIndex = 0; gosIndex < capsule.structure.length; gosIndex++) {
@@ -1057,6 +1067,17 @@ function init(node, flags) {
                 logProgress(metadata.percent / 200 + 0.5);
             }
         );
+
+        app.ports.taskProgress.send({
+            "task": {
+                "taskId": taskId,
+                "type": "ExportCapsule",
+                "capsuleId": capsule.id,
+            },
+            "progress": 1,
+            "finished": true,
+            "aborted": false,
+        });
 
         saveAs(content, capsule.id + ".zip");
     }
@@ -1235,5 +1256,5 @@ function init(node, flags) {
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
     makePort("setupCanvas", setupCanvas);
-    makePort("exportCapsule", capsule => exportCapsule(capsule));
+    makePort("exportCapsule", args => exportCapsule(args));
 }

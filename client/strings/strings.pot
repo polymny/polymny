@@ -1020,6 +1020,10 @@ msgstr ""
 msgid "Tasks.uploadExtra"
 msgstr ""
 
+#. Capsule export task.
+msgid "Tasks.exportCapsule"
+msgstr ""
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr ""

@@ -1067,6 +1067,10 @@ msgstr "Téléversement de la musique de fond"
 msgid "Tasks.uploadExtra"
 msgstr "Téléversement de resources externes"
 
+#. Capsule export task.
+msgid "Tasks.exportCapsule"
+msgstr "Export capsule"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Tâche inconnue"

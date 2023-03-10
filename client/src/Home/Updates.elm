@@ -17,6 +17,7 @@ port module Home.Updates exposing
 import Api.Capsule as Api
 import Api.User as Api
 import App.Types as App
+import Config
 import Data.Capsule as Data
 import Data.Types as Data
 import Data.User as Data
@@ -322,8 +323,19 @@ update msg model =
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
                 Home.ExportCapsule capsule ->
-                    -- TODO add client task
-                    ( model, exportCapsule capsule )
+                    let
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.ExportCapsule model.config.clientState.taskId capsule.id
+                            , progress = Just 0.0
+                            , finished = False
+                            , aborted = False
+                            }
+
+                        ( newConfig, _ ) =
+                            Config.update (Config.UpdateTaskStatus task) model.config
+                    in
+                    ( { model | config = Config.incrementTaskId newConfig }, exportCapsule capsule model.config.clientState.taskId )
 
         _ ->
             ( model, Cmd.none )
@@ -358,14 +370,14 @@ shortcuts msg =
             App.Noop
 
 
-exportCapsule : Data.Capsule -> Cmd msg
-exportCapsule capsule =
-    exportCapsulePort (Data.encodeCapsuleAll capsule)
+exportCapsule : Data.Capsule -> Config.TaskId -> Cmd msg
+exportCapsule capsule taskId =
+    exportCapsulePort ( Data.encodeCapsuleAll capsule, taskId )
 
 
 {-| Port to export a capsule.
 -}
-port exportCapsulePort : Decode.Value -> Cmd msg
+port exportCapsulePort : ( Decode.Value, Config.TaskId ) -> Cmd msg
 
 
 {-| Subscriptions of the page.

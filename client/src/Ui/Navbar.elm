@@ -200,6 +200,9 @@ taskPanel clientState =
 
                         Config.ReplaceSlide _ _ ->
                             Strings.tasksUploadExtra lang
+                        
+                        Config.ExportCapsule _ _ ->
+                            Strings.tasksExportCapsule lang
 
                         _ ->
                             Strings.tasksUnknown lang
