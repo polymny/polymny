@@ -23,6 +23,8 @@ import Material.Icons.Types as Icons
 import Route exposing (Route)
 import Simple.Transition as Transition
 import Strings
+import Svg
+import Svg.Attributes
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -52,7 +54,7 @@ navbar config page user =
                 _ ->
                     Ui.logo
 
-        taskProgress : Maybe Int
+        taskProgress : Maybe Float
         taskProgress =
             config
                 |> Maybe.map .clientState
@@ -60,21 +62,6 @@ navbar config page user =
                 |> Maybe.andThen Utils.headAndTail
                 |> Maybe.map (\( h, t ) -> List.filterMap .progress (h :: t))
                 |> Maybe.map (\x -> List.sum x / toFloat (List.length x))
-                |> Maybe.map (\x -> round (x * 100))
-
-        tasksElement =
-            case taskProgress of
-                Just p ->
-                    let
-                        background =
-                            Background.gradient { angle = 0, steps = List.repeat p Colors.white ++ List.repeat (100 - p) Colors.green2 }
-                    in
-                    Element.el [ Ui.wpx 50, Ui.hpx 50, Ui.b 1, Ui.r 100, background ] <|
-                        Element.el [ Ui.cx, Ui.cy ] <|
-                            Element.text (String.fromInt p ++ "%")
-
-                Nothing ->
-                    Element.none
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
@@ -98,7 +85,7 @@ navbar config page user =
                             Background.color <| Colors.alphaColor 0.18 Colors.black
 
                         else
-                            Background.color Colors.green2
+                            Background.color <| Colors.alphaColor 0.0 Colors.black
 
                     panelButtonOver : List (Element.Attr decorative msg)
                     panelButtonOver =
@@ -115,12 +102,12 @@ navbar config page user =
                     , Ui.hf
                     , Ui.pr 5
                     ]
-                    [ tasksElement
-                    , Element.el
+                    [ Element.el
                         [ Ui.hf
                         , Ui.id "task-panel"
                         , Element.htmlAttribute <| Html.Attributes.tabindex 0
                         , Element.below <| taskPanel <| Maybe.map .clientState <| config
+                        , Element.behindContent <| taskGlobalProgress <| Maybe.withDefault 0.0 taskProgress
                         ]
                         (Ui.navigationElement
                             (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
@@ -159,6 +146,43 @@ navbar config page user =
             _ ->
                 Element.none
         ]
+
+
+taskGlobalProgress : Float -> Element App.Msg
+taskGlobalProgress value =
+    let
+        r : Float
+        r =
+            19
+
+        circumference : Float
+        circumference =
+            2 * pi * r
+    in
+    Element.el [ Ui.cx, Ui.cy ] <|
+        Element.html <|
+            Svg.svg
+                [ Svg.Attributes.width "56"
+                , Svg.Attributes.height "56"
+                ]
+                [ Svg.circle
+                    [ Svg.Attributes.cx "28"
+                    , Svg.Attributes.cy "28"
+                    , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
+                    , Html.Attributes.style "transform" "rotate(90deg)"
+                    , Html.Attributes.style "transform-origin" "50% 50%"
+                    , Svg.Attributes.r (String.fromFloat r)
+                    , Svg.Attributes.stroke "white"
+                    , Svg.Attributes.strokeWidth "4"
+                    , Svg.Attributes.fill "transparent"
+                    , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
+                    , (1.0 - value)
+                        * circumference
+                        |> String.fromFloat
+                        |> Svg.Attributes.strokeDashoffset
+                    ]
+                    []
+                ]
 
 
 taskPanel : Maybe ClientState -> Element App.Msg
