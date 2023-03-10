@@ -299,6 +299,22 @@ updateModel msg model =
                 App.WebSocketMsg (App.CapsuleUpdated c) ->
                     ( { model | user = Data.updateUser c model.user }, Cmd.none )
 
+                App.WebSocketMsg (App.ProductionProgress id progress finished) ->
+                    -- let
+                    --     status =
+                    --         { task = Config.ServerTask <| Config.Production id
+                    --         , progress = Just progress
+                    --         , finished = finished
+                    --         , aborted = False
+                    --         }
+                    --     newConfig =
+                    --         Tuple.first <| Config.update (Config.UpdateTaskStatus status) model.config
+                    -- in
+                    ( model, Cmd.none )
+
+                App.WebSocketMsg (App.ExtraRecordProgress id progress finished) ->
+                    ( model, Cmd.none )
+
                 App.OnUrlChange url ->
                     let
                         route =
@@ -428,6 +444,24 @@ webSocketMsgDecoder =
                 case x of
                     "capsule_changed" ->
                         Decode.map App.CapsuleUpdated Data.decodeCapsule
+
+                    "capsule_production_progress" ->
+                        Decode.map2 (\y z -> App.ProductionProgress y z False)
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "msg" Decode.float)
+
+                    "capsule_production_finished" ->
+                        Decode.map (\p -> App.ProductionProgress p 1.0 True)
+                            (Decode.field "id" Decode.string)
+
+                    "video_upload_progress" ->
+                        Decode.map2 (\y z -> App.ExtraRecordProgress y z False)
+                            (Decode.field "id" Decode.string)
+                            (Decode.field "msg" Decode.float)
+
+                    "video_upload_finished" ->
+                        Decode.map (\p -> App.ExtraRecordProgress p 1.0 True)
+                            (Decode.field "id" Decode.string)
 
                     _ ->
                         Decode.fail <| "Unknown websocket msg type " ++ x

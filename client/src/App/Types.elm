@@ -121,9 +121,15 @@ type Msg
 
 
 {-| This type contains the different types of web socket messages that can be received from server.
+
+For progresses messages, the String indicates the id of the capsule, the float is the progress (between 0 and 1), and
+the bool indicates whether the task is finished.
+
 -}
 type WebSocketMsg
     = CapsuleUpdated Data.Capsule
+    | ProductionProgress String Float Bool
+    | ExtraRecordProgress String Float Bool
 
 
 {-| Converts an URL request msg to an App.Msg.
