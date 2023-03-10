@@ -8,7 +8,7 @@ module Ui.Navbar exposing (navbar, bottombar, leftColumn, addLeftColumn, addLeft
 
 import App.Types as App
 import App.Utils as App
-import Config exposing (ClientState, ClientTask(..), Config)
+import Config exposing (ClientState, Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User exposing (User)
@@ -186,19 +186,19 @@ taskPanel clientState =
                 name : String
                 name =
                     case taskStatus.task of
-                        Config.ClientTask (Config.UploadRecord _ gosId _) ->
+                        Config.UploadRecord _ _ gosId _ ->
                             Strings.tasksUploadRecord lang ++ " (" ++ String.fromInt (gosId + 1) ++ ")"
 
-                        Config.ClientTask (Config.UploadTrack _) ->
+                        Config.UploadTrack _ _ ->
                             Strings.tasksUploadTrack lang
-                        
-                        Config.ClientTask (Config.AddGos _) ->
+
+                        Config.AddGos _ _ ->
                             Strings.tasksUploadExtra lang
-                        
-                        Config.ClientTask (Config.AddSlide _) ->
+
+                        Config.AddSlide _ _ ->
                             Strings.tasksUploadExtra lang
-                        
-                        Config.ClientTask (Config.ReplaceSlide _) ->
+
+                        Config.ReplaceSlide _ _ ->
                             Strings.tasksUploadExtra lang
 
                         _ ->

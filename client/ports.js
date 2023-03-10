@@ -108,7 +108,7 @@ function init(node, flags) {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Set onbeforeunload listener.
-    window.addEventListener('beforeunload', function() {
+    window.addEventListener('beforeunload', function () {
         if (beforeUnloadValue) {
             event.preventDefault();
             event.returnValue = '';
@@ -131,16 +131,16 @@ function init(node, flags) {
     function initWebSocket() {
         socket = new WebSocket(flags.global.serverConfig.socketRoot);
 
-        socket.onopen = function() {
+        socket.onopen = function () {
             socket.send(flags.user.cookie);
         }
 
-        socket.onclose = function() {
+        socket.onclose = function () {
             // Automatically reconnect
             setTimeout(initWebSocket, 1000);
         }
 
-        socket.onmessage = function(event) {
+        socket.onmessage = function (event) {
             console.log(event.data);
             app.ports.webSocketMsg.send(JSON.parse(event.data));
         }
@@ -696,9 +696,10 @@ function init(node, flags) {
     // Uploads a record to the server.
     async function uploadRecord(args) {
         // Get arguments.
-        let capsuleId = args[0];
-        let gos = args[1];
-        let record = args[2];
+        let capsuleId = args[0][0];
+        let gos = args[0][1];
+        let record = args[1][0];
+        let taskId = args[1][1];
 
         let request;
 
@@ -718,6 +719,7 @@ function init(node, flags) {
                         request = new PolymnyRequest("POST", "/api/upload-pointer/" + capsuleId + "/" + gos, record.pointer_blob, (e) => {
                             app.ports.taskProgress.send({
                                 "task": {
+                                    "taskId": taskId,
                                     "type": "UploadRecord",
                                     "capsuleId": capsuleId,
                                     "gos": gos,
@@ -745,6 +747,7 @@ function init(node, flags) {
                 let factor = record.pointer_blob === null ? 1 : 2;
                 console.log("upload new record");
                 let task = {
+                    "taskId": taskId,
                     "type": "UploadRecord",
                     "capsuleId": capsuleId,
                     "gos": gos,
@@ -752,7 +755,7 @@ function init(node, flags) {
                 };
 
                 let url = "/api/upload-record/" + capsuleId + "/" + gos;
-                let tracker = "upload-record-" + capsuleId + "-" + gos;
+                let tracker = "task-track-" + taskId;
                 let request = new PolymnyRequest("POST", url, record.webcam_blob, (e) => {
                     app.ports.taskProgress.send({
                         "task": task,
@@ -774,6 +777,7 @@ function init(node, flags) {
                 if (record.pointer_blob !== null) {
                     console.log("upload pointer");
                     let task = {
+                        "taskId": taskId,
                         "type": "UploadRecord",
                         "capsuleId": capsuleId,
                         "gos": gos,
@@ -781,7 +785,7 @@ function init(node, flags) {
                     };
 
                     url = "/api/upload-pointer/" + capsuleId + "/" + gos;
-                    tracker = "upload-pointer-" + capsuleId + "-" + gos;
+                    tracker = "task-track-" + taskId;
                     request = new PolymnyRequest("POST", url, record.pointer_blob, (e) => {
                         app.ports.taskProgress.send({
                             "task": task,
@@ -807,6 +811,7 @@ function init(node, flags) {
 
                 app.ports.taskProgress.send({
                     "task": {
+                        "taskId": taskId,
                         "type": "UploadRecord",
                         "capsuleId": capsuleId,
                         "gos": gos,
@@ -1196,6 +1201,8 @@ function init(node, flags) {
 
     // Remove task.
     makePort("abortTask", tracker => {
+        console.log("Aborting task " + tracker);
+        console.log(requests);
         if (tracker in requests) {
             // Abort request.
             requests[tracker]["xhr"].abort();
@@ -1214,7 +1221,7 @@ function init(node, flags) {
     });
 
     // Sets the before unload value.
-    makePort("onBeforeUnload", function(arg) {
+    makePort("onBeforeUnload", function (arg) {
         beforeUnloadValue = arg;
     });
 

@@ -87,7 +87,7 @@ update message model =
                     updateModel (App.ConfigMsg (Config.UpdateTaskStatus t)) inputModel
             in
             case ( t.finished, t.task ) of
-                ( True, Config.ClientTask (Config.UploadRecord id gosId value) ) ->
+                ( True, Config.UploadRecord taskId capsuleId gosId value) ->
                     let
                         record : Maybe Data.Record
                         record =
@@ -100,7 +100,7 @@ update message model =
 
                         capsule : Maybe Data.Capsule
                         capsule =
-                            Data.getCapsuleById id m.user
+                            Data.getCapsuleById capsuleId m.user
 
                         gos : Maybe Data.Gos
                         gos =
@@ -128,12 +128,12 @@ update message model =
                     ( App.Logged m, Cmd.map App.LoggedMsg cmd )
 
         -- If the user cancel the track upload.
-        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask (Config.ClientTask (Config.UploadTrack id)))), App.Logged { config, page, user } ) ->
+        ( App.LoggedMsg (App.ConfigMsg (Config.AbortTask (Config.UploadTrack id capsuleId))), App.Logged { config, page, user } ) ->
             case page of
                 App.Options _ ->
                     let
                         ( newConfig, cmdConfig ) =
-                            Config.update (Config.AbortTask (Config.ClientTask (Config.UploadTrack id))) config
+                            Config.update (Config.AbortTask (Config.UploadTrack id capsuleId)) config
 
                         ( newModel, cmdOptions ) =
                             Options.update (Options.DeleteTrack Utils.Confirm Nothing) { config = newConfig, page = page, user = user }
