@@ -52,7 +52,7 @@ updateCapsule capsule toMsg =
 -}
 addSlide : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
 addSlide capsule gos page file toMsg =
-    Api.postWithTrackerJson "toto"
+    Api.postWithTrackerJson ("add-slide-" ++ capsule.id)
         { url = "/api/add-slide/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
@@ -64,7 +64,7 @@ addSlide capsule gos page file toMsg =
 -}
 addGos : Data.Capsule -> Int -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
 addGos capsule gos page file toMsg =
-    Api.postWithTrackerJson "toto"
+    Api.postWithTrackerJson ("add-gos-" ++ capsule.id)
         { url = "/api/add-gos/" ++ capsule.id ++ "/" ++ String.fromInt gos ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule
@@ -76,7 +76,7 @@ addGos capsule gos page file toMsg =
 -}
 replaceSlide : Data.Capsule -> Data.Slide -> Int -> File -> (WebData Data.Capsule -> msg) -> Cmd msg
 replaceSlide capsule slide page file toMsg =
-    Api.postWithTrackerJson "toto"
+    Api.postWithTrackerJson ("replace-slide-" ++ capsule.id)
         { url = "/api/replace-slide/" ++ capsule.id ++ "/" ++ slide.uuid ++ "/" ++ String.fromInt (page - 1)
         , body = Http.fileBody file
         , decoder = Data.decodeCapsule

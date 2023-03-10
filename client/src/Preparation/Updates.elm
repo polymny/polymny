@@ -70,8 +70,11 @@ update msg model =
                     )
 
                 Preparation.Extra sMsg ->
-                    updateExtra model.user sMsg m
-                        |> Tuple.mapFirst (\x -> { model | page = App.Preparation x })
+                    let
+                        ( newM, cmd, newConfig ) =
+                            updateExtra model.user sMsg m model.config
+                    in
+                    ( { model | page = App.Preparation newM, config = newConfig }, cmd )
 
                 Preparation.EditPrompt slide ->
                     ( { model | page = App.Preparation { m | editPrompt = Just slide } }, Cmd.none )
@@ -124,8 +127,8 @@ update msg model =
 
 {-| The update function that deals with extra resources.
 -}
-updateExtra : User -> Preparation.ExtraMsg -> Preparation.Model String -> ( Preparation.Model String, Cmd App.Msg )
-updateExtra user msg model =
+updateExtra : User -> Preparation.ExtraMsg -> Preparation.Model String -> Config.Config -> ( Preparation.Model String, Cmd App.Msg, Config.Config )
+updateExtra user msg model config =
     let
         maybeCapsule =
             Data.getCapsuleById model.capsule user
@@ -144,12 +147,12 @@ updateExtra user msg model =
                 cmd =
                     Select.file mimes (\x -> App.PreparationMsg (Preparation.Extra (Preparation.Selected changeSlide x Nothing)))
             in
-            ( model, cmd )
+            ( model, cmd, config )
 
         ( Preparation.Selected changeSlide file page, Just capsule ) ->
             case ( File.mime file, page ) of
                 ( "application/pdf", Nothing ) ->
-                    ( { model | changeSlideForm = Just { slide = changeSlide, file = file, page = "1" } }, Cmd.none )
+                    ( { model | changeSlideForm = Just { slide = changeSlide, file = file, page = "1" } }, Cmd.none, config )
 
                 _ ->
                     let
@@ -158,35 +161,58 @@ updateExtra user msg model =
 
                         mkMsg x =
                             App.PreparationMsg <| Preparation.Extra <| Preparation.ChangeSlideUpdated x
+
+                        task : Config.TaskStatus
+                        task =
+                            { task =
+                                Config.ClientTask <|
+                                    (case changeSlide of
+                                        Preparation.AddSlide _ ->
+                                            Config.AddSlide
+
+                                        Preparation.AddGos _ ->
+                                            Config.AddGos
+
+                                        Preparation.ReplaceSlide _ ->
+                                            Config.ReplaceSlide
+                                    )
+                                        capsule.id
+                            , progress = Just 0.0
+                            , finished = False
+                            , aborted = False
+                            }
+
+                        ( newConfig, _ ) =
+                            Config.update (Config.UpdateTaskStatus task) config
                     in
                     case changeSlide of
                         Preparation.AddSlide gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file mkMsg, newConfig )
 
                         Preparation.AddGos gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file mkMsg, newConfig )
 
                         Preparation.ReplaceSlide slide ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file mkMsg )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file mkMsg, newConfig )
 
         ( Preparation.PageChanged page, Just _ ) ->
             let
                 changeSlideForm =
                     Maybe.map (\x -> { x | page = page }) model.changeSlideForm
             in
-            ( { model | changeSlideForm = changeSlideForm }, Cmd.none )
+            ( { model | changeSlideForm = changeSlideForm }, Cmd.none, config )
 
         ( Preparation.PageCancel, Just _ ) ->
-            ( { model | changeSlideForm = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none )
+            ( { model | changeSlideForm = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none, config )
 
         ( Preparation.ChangeSlideUpdated (RemoteData.Success c), Just _ ) ->
-            ( Preparation.init c, Cmd.none )
+            ( Preparation.init c, Cmd.none, config )
 
         ( Preparation.ChangeSlideUpdated d, Just _ ) ->
-            ( { model | changeSlide = d }, Cmd.none )
+            ( { model | changeSlide = d }, Cmd.none, config )
 
         _ ->
-            ( model, Cmd.none )
+            ( model, Cmd.none, config )
 
 
 {-| The update function for the DnD part of the page.

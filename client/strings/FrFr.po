@@ -1063,6 +1063,10 @@ msgstr "Téléversement de l'enregistrement"
 msgid "Tasks.uploadTrack"
 msgstr "Téléversement de la musique de fond"
 
+#. Upload extra task.
+msgid "Tasks.uploadExtra"
+msgstr "Téléversement de resources externes"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Tâche inconnue"
