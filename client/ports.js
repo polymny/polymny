@@ -178,11 +178,14 @@ function init(node, flags) {
             this.data = data;
             this.xhr = new XMLHttpRequest();
             this.xhr.open(method, url, true);
-            console.log(this.xhr);
 
             if (typeof onprogress === 'function') {
                 this.xhr.upload.onprogress = onprogress;
             }
+        }
+
+        abort() {
+            this.xhr.abort();
         }
 
         send() {
@@ -203,7 +206,6 @@ function init(node, flags) {
                         statusText: this.statusText
                     });
                 };
-                console.log(this.xhr);
                 this.xhr.send(this.data);
             });
         }
@@ -767,7 +769,7 @@ function init(node, flags) {
 
                 requests[tracker] = {
                     "task": task,
-                    "xhr": request.xhr,
+                    "request": request,
                 };
 
                 await request.send();
@@ -797,7 +799,7 @@ function init(node, flags) {
 
                     requests[tracker] = {
                         "task": task,
-                        "xhr": request.xhr,
+                        "request": request,
                     };
 
                     await request.send();
@@ -833,44 +835,6 @@ function init(node, flags) {
         }
 
     }
-
-    //     // Create request elements.
-    //     let task = {
-    //         "type": "UploadRecord",
-    //         "capsuleId": capsuleId,
-    //         "gos": gos,
-    //         "value": record,
-    //     };
-    //     let url = "/api/upload-record/" + capsuleId + "/" + gos;
-    //     requests[url] = {
-    //         "task": task,
-    //         "xhr": null,
-    //     };
-
-    //     // Send request.
-    //     let xhr = await makeRequest("POST", url, record.webcam_blob, (e) => {
-    //         let progress = e.loaded / e.total;
-    //         let finished = e.loaded === e.total;
-
-    //         // Send progress.
-    //         app.ports.taskProgress.send({
-    //             "task": task,
-    //             "progress": progress,
-    //             "finished": finished,
-    //             "aborted": false
-    //         });
-
-    //         // Delete request if finished.
-    //         if (finished) delete requests[url];
-    //     });
-
-    //     // Update capsule.
-    //     let capsule = JSON.parse(xhr.responseText);
-    //     capsule.structure[gos].events = record.events;
-    //     await makeRequest("POST", "/api/update-capsule/", JSON.stringify(capsule));
-
-    //     // app.ports.capsuleUpdated.send(capsule);
-    // }
 
     // Blur event handler.
     function handleBlur(event, id) {
@@ -1123,7 +1087,7 @@ function init(node, flags) {
                 "type": "ExportCapsule",
                 "capsuleId": exportCapsule.capsule.id,
             },
-            "xhr": exportCapsule,
+            "request": exportCapsule,
         };
 
         await exportCapsule.start();
@@ -1272,21 +1236,18 @@ function init(node, flags) {
     // Remove task.
     makePort("abortTask", tracker => {
         console.log("Aborting task " + tracker);
-        console.log(requests);
+
         if (tracker in requests) {
             // Abort request.
-            requests[tracker]["xhr"].abort();
+            requests[tracker].request.abort();
 
             // Send abort message.
             app.ports.taskProgress.send({
-                "task": requests[tracker]["task"],
+                "task": requests[tracker].task,
                 "progress": 1,
                 "finished": true,
                 "aborted": true
             });
-
-            // // Delete request.
-            // delete requests[url];
         }
     });
 

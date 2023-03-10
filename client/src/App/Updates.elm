@@ -230,7 +230,7 @@ updateModel msg model =
         -- Check if we need to change the before unload value
         clientTasksRemaining =
             model.config.clientState.tasks
-                |> List.any Config.isClientTask
+                |> List.any (\x -> Config.isClientTask x && not x.finished)
 
         -- Check if some records where not uploaded
         unuploadedRecords =
