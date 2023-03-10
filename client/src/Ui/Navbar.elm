@@ -108,7 +108,13 @@ navbar config page user =
                         else
                             [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                 in
-                Element.row [ Font.size 20, Ui.ar, Ui.s 10, Ui.pr 5 ]
+                Element.row
+                    [ Font.size 20
+                    , Ui.ar
+                    , Ui.s 10
+                    , Ui.hf
+                    , Ui.pr 5
+                    ]
                     [ tasksElement
                     , Element.el
                         [ Ui.hf
@@ -178,7 +184,12 @@ taskPanel clientState =
 
         head : Element App.Msg
         head =
-            Element.el [ Font.bold, Ui.cy ] <| Element.text <| Utils.tern (List.length tasks > 0) (Strings.uiTasksRunning lang) (Strings.uiTasksNone lang)
+            Element.el [ Font.bold, Ui.cy ] <|
+                Element.text <|
+                    Utils.tern
+                        (List.length tasks > 0)
+                        (Strings.uiTasksRunning lang)
+                        (Strings.uiTasksNone lang)
 
         taskInfo : Config.TaskStatus -> Element App.Msg
         taskInfo taskStatus =
@@ -187,7 +198,10 @@ taskPanel clientState =
                 name =
                     case taskStatus.task of
                         Config.UploadRecord _ _ gosId _ ->
-                            Strings.tasksUploadRecord lang ++ " (" ++ String.fromInt (gosId + 1) ++ ")"
+                            Strings.tasksUploadRecord lang
+                                ++ " ("
+                                ++ String.fromInt (gosId + 1)
+                                ++ ")"
 
                         Config.UploadTrack _ _ ->
                             Strings.tasksUploadTrack lang
@@ -200,7 +214,7 @@ taskPanel clientState =
 
                         Config.ReplaceSlide _ _ ->
                             Strings.tasksUploadExtra lang
-                        
+
                         Config.ExportCapsule _ _ ->
                             Strings.tasksExportCapsule lang
 
@@ -284,8 +298,7 @@ taskPanel clientState =
                 (head :: List.map taskInfo tasks)
     in
     Element.el
-        [ Ui.pt 5
-        , Element.alignRight
+        [ Element.alignRight
         , Element.height <| Element.maximum 300 Element.fill
         , Element.alpha <| Utils.tern showTaskPanel 1.0 0.0
         , Transition.properties
