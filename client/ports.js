@@ -986,11 +986,13 @@ function init(node, flags) {
             let zip = new JSZip();
             let taskCounter = 0;
 
+            // Export each gos.
             for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
 
                 let gos = this.capsule.structure[gosIndex];
                 let gosDir = zip.folder(gosIndex + 1);
 
+                // Export slides.
                 for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
 
                     let slide = gos.slides[slideIndex];
@@ -1014,6 +1016,7 @@ function init(node, flags) {
 
                 }
 
+                // Export record.
                 if (gos.record != undefined) {
 
                     let resp = await fetch("/data/" + this.capsule.id + "/assets/" + gos.record.uuid + ".webm");
@@ -1027,6 +1030,7 @@ function init(node, flags) {
 
             }
 
+            // Export output.
             if (this.capsule.produced) {
 
                 let resp = await fetch("/data/" + this.capsule.id + "/output.mp4");
@@ -1037,14 +1041,17 @@ function init(node, flags) {
 
             }
 
+            // Export structure.
             zip.file("structure.json", JSON.stringify(this.capsule, null, 4));
 
+            // Generate zip.
             let content = await zip.generateAsync({ type: "blob" },
                 (metadata) => this.logProgress(metadata.percent / 200 + 0.5)
             );
 
             if (this.aborted) return;
 
+            // Send finished to Elm.
             app.ports.taskProgress.send({
                 "task": {
                     "taskId": this.taskId,
@@ -1060,12 +1067,15 @@ function init(node, flags) {
         }
 
         abort() {
+            // Set aborted to true. :)
             this.aborted = true;
         }
 
         logProgress(value) {
+            // If aborted, indicate that you should early return.
             if (this.aborted) return true;
 
+            // Send progress to Elm.
             app.ports.taskProgress.send({
                 "task": {
                     "taskId": this.taskId,
@@ -1081,6 +1091,7 @@ function init(node, flags) {
         }
 
         countSubtasks() {
+            // Count the number of subtasks.
             let totalSubasks = 0;
 
             for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
