@@ -739,6 +739,9 @@ update msg { serverConfig, clientConfig, clientState } =
 
                                 ReplaceSlide _ _ ->
                                     Http.cancel tracker
+                                
+                                ExportCapsule _ _ ->
+                                    abortTaskPort tracker
 
                                 _ ->
                                     Cmd.none

@@ -973,113 +973,151 @@ function init(node, flags) {
         }
     }
 
-    // Exports a capsule into a zip file.
-    async function exportCapsule(args, dry = false) {
-        let capsule = args[0];
-        let taskId = args[1];
-
-        function logProgress(value) {
-            if (!dry) {
-                app.ports.taskProgress.send({
-                    "task": {
-                        "taskId": taskId,
-                        "type": "ExportCapsule",
-                        "capsuleId": capsule.id,
-                    },
-                    "progress": value,
-                    "finished": false,
-                    "aborted": false,
-                });
-            }
+    class ExportCapsule {
+        constructor(args) {
+            this.capsule = args[0];
+            this.taskId = args[1];
+            this.aborted = false;
+            this.totalSubasks = this.countSubtasks();
         }
 
-        let zip = new JSZip();
+        async start() {
 
-        let totalTasks = dry ? null : await exportCapsule(args, true);
-        let taskCounter = 0;
+            let zip = new JSZip();
+            let taskCounter = 0;
 
-        for (let gosIndex = 0; gosIndex < capsule.structure.length; gosIndex++) {
+            for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
 
-            let gos = capsule.structure[gosIndex];
-            let gosDir = zip.folder(gosIndex + 1);
+                let gos = this.capsule.structure[gosIndex];
+                let gosDir = zip.folder(gosIndex + 1);
 
-            for (let slideIndex  = 0; slideIndex < gos.slides.length; slideIndex++) {
+                for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
 
-                let slide = gos.slides[slideIndex];
-
-                taskCounter++;
-                if (!dry) {
-                    let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.uuid + ".png");
+                    let slide = gos.slides[slideIndex];
+                    let resp = await fetch("/data/" + this.capsule.id + "/assets/" + slide.uuid + ".png");
                     let blob = await resp.blob();
+
                     gosDir.file((slideIndex + 1) + ".png", blob);
                     slide.uuid = (gosIndex + 1) + "/" + (slideIndex + 1) + ".png";
-                    logProgress(taskCounter / (2 * totalTasks));
-                }
+                    if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
 
-                if (slide.extra != undefined) {
+                    if (slide.extra != undefined) {
 
-                    taskCounter++;
-                    if (!dry) {
-                        let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.extra + ".mp4");
+                        let resp = await fetch("/data/" + this.capsule.id + "/assets/" + slide.extra + ".mp4");
                         let blob = await resp.blob();
+
                         gosDir.file((slideIndex + 1) + ".mp4", blob);
                         slide.extra = (gosIndex + 1) + "/" + (slideIndex + 1) + ".mp4";
-                        logProgress(taskCounter / (2 * totalTasks));
+                        if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+
                     }
 
                 }
 
-            }
+                if (gos.record != undefined) {
 
-            if (gos.record != undefined) {
-
-                taskCounter++;
-                if (!dry) {
-                    let resp = await fetch("/data/" + capsule.id + "/assets/" + gos.record.uuid + ".webm");
+                    let resp = await fetch("/data/" + this.capsule.id + "/assets/" + gos.record.uuid + ".webm");
                     let blob = await resp.blob();
+
                     gosDir.file("record.webm", blob);
                     gos.record = (gosIndex + 1) + "/record.webm";
-                    logProgress(taskCounter / (2 * totalTasks));
+                    if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+
                 }
 
             }
 
-        }
+            if (this.capsule.produced) {
 
-        if (capsule.produced) {
-            taskCounter++;
-            if (!dry) {
-                let resp = await fetch("/data/" + capsule.id + "/output.mp4");
+                let resp = await fetch("/data/" + this.capsule.id + "/output.mp4");
                 let blob = await resp.blob();
+
                 zip.file("output.mp4", blob);
-                logProgress(taskCounter / (2 * totalTasks));
+                if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+
             }
+
+            zip.file("structure.json", JSON.stringify(this.capsule, null, 4));
+
+            let content = await zip.generateAsync({ type: "blob" },
+                (metadata) => this.logProgress(metadata.percent / 200 + 0.5)
+            );
+
+            if (this.aborted) return;
+
+            app.ports.taskProgress.send({
+                "task": {
+                    "taskId": this.taskId,
+                    "type": "ExportCapsule",
+                    "capsuleId": this.capsule.id,
+                },
+                "progress": 1,
+                "finished": true,
+                "aborted": false,
+            });
+
+            saveAs(content, this.capsule.id + ".zip");
         }
 
-        if (dry) {
-            return taskCounter;
+        abort() {
+            this.aborted = true;
         }
 
-        zip.file("structure.json", JSON.stringify(capsule, null, 4));
+        logProgress(value) {
+            if (this.aborted) return true;
 
-        let content = await zip.generateAsync({type: "blob"},
-            function updateCallback(metadata) {
-                logProgress(metadata.percent / 200 + 0.5);
+            app.ports.taskProgress.send({
+                "task": {
+                    "taskId": this.taskId,
+                    "type": "ExportCapsule",
+                    "capsuleId": this.capsule.id,
+                },
+                "progress": value,
+                "finished": false,
+                "aborted": false,
+            });
+
+            return false;
+        }
+
+        countSubtasks() {
+            let totalSubasks = 0;
+
+            for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
+                let gos = this.capsule.structure[gosIndex];
+                if (gos.record) totalSubasks++;
+
+                for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                    totalSubasks++;
+
+                    let slide = gos.slides[slideIndex];
+                    if (slide.extra) totalSubasks++;
+                }
+
             }
-        );
 
-        app.ports.taskProgress.send({
+            return totalSubasks;
+        }
+
+    }
+
+    // Exports a capsule into a zip file.
+    async function exportCapsule(args) {
+        let exportCapsule = new ExportCapsule(args);
+
+        let tracker = "task-track-" + exportCapsule.taskId;
+        requests[tracker] = {
             "task": {
-                "taskId": taskId,
+                "taskId": exportCapsule.taskId,
                 "type": "ExportCapsule",
-                "capsuleId": capsule.id,
+                "capsuleId": exportCapsule.capsule.id,
             },
-            "progress": 1,
-            "finished": true,
-            "aborted": false,
-        });
+            "xhr": exportCapsule,
+        };
 
-        saveAs(content, capsule.id + ".zip");
+        await exportCapsule.start();
+
+        delete requests[tracker];
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1256,5 +1294,5 @@ function init(node, flags) {
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
     makePort("setupCanvas", setupCanvas);
-    makePort("exportCapsule", args => exportCapsule(args));
+    makePort("exportCapsule", exportCapsule);
 }
