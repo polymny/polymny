@@ -19,6 +19,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes
+import Html.Events
 import Lang exposing (Lang)
 import Material.Icons
 import Strings
@@ -183,6 +184,25 @@ view config _ model =
                 ]
                 |> Ui.popup 1 (Strings.actionsDeleteRecord lang)
 
+        -- Popup to warn the user that they're leaving and that they might lose their record
+        warnLeavingPopup : Element App.Msg
+        warnLeavingPopup =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                    [ Element.text (Lang.question Strings.stepsAcquisitionNonValidatedRecordsWillBeLost lang) ]
+                , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+                    [ Ui.secondary []
+                        { action = mkUiMsg (Acquisition.Leave Utils.Cancel)
+                        , label = Element.text <| Strings.uiCancel lang
+                        }
+                    , Ui.primary []
+                        { action = mkUiMsg (Acquisition.Leave Utils.Confirm)
+                        , label = Element.text <| Strings.uiConfirm lang
+                        }
+                    ]
+                ]
+                |> Ui.popup 1 (Strings.uiWarning lang)
+
         -- Column that contains the device feedback element, the info, and the list of records
         rightColumn : Element App.Msg
         rightColumn =
@@ -261,6 +281,9 @@ view config _ model =
             else if model.deleteRecord then
                 deleteRecordPopup
 
+            else if model.warnLeaving /= Nothing then
+                warnLeavingPopup
+
             else
                 Element.none
     in
@@ -296,7 +319,12 @@ promptElement _ model =
         -- The current sentence
         currentSentence : Maybe String
         currentSentence =
-            Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
+            case model.currentReplacementPrompt of
+                Just s ->
+                    Just s
+
+                _ ->
+                    Maybe.withDefault Nothing (Maybe.map (getLine model.currentSentence) currentSlide)
 
         -- The next sentence of the current slide if any
         nextSentenceCurrentSlide : Maybe String
@@ -332,10 +360,10 @@ promptElement _ model =
         -- Display navigation buttons that let the user move around the prompt text even if they're not recording
         navigationButtons =
             Element.row [ Ui.ab, Ui.wf ]
-                [ case ( model.recording, model.currentSentence > 0 ) of
+                [ case ( model.recording, model.currentSentence > 0 && model.recording == Nothing ) of
                     ( Nothing, True ) ->
                         Ui.navigationElement
-                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.NextSentence False)
+                            (Ui.Msg <| App.AcquisitionMsg <| Acquisition.PreviousSentence)
                             [ Ui.al ]
                             (Ui.icon 25 Material.Icons.navigate_before)
 
@@ -363,8 +391,11 @@ promptElement _ model =
                 (Input.multiline
                     [ Background.color Colors.black
                     , Ui.b 0
+                    , Ui.id Acquisition.promptFirstSentenceId
                     , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
                     , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
+                    , Element.htmlAttribute <| Html.Events.onFocus <| App.AcquisitionMsg <| Acquisition.StartEditingPrompt
+                    , Element.htmlAttribute <| Html.Events.onBlur <| App.AcquisitionMsg <| Acquisition.StopEditingPrompt
                     ]
                     { label = Input.labelHidden ""
                     , onChange = \x -> App.AcquisitionMsg (Acquisition.CurrentSentenceChanged x)

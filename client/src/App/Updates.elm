@@ -162,11 +162,11 @@ updateModel msg model =
         -- We check if the user exited the acqusition page, in that case,
         -- we unbind the device to turn off the webcam light.
         unbindDevice =
-            case ( model.page, updatedModel.page ) of
-                ( _, App.Acquisition _ ) ->
+            case ( model.page, updatedModel.page, leavingAcquisitionWithRecord ) of
+                ( _, App.Acquisition _, _ ) ->
                     Cmd.none
 
-                ( App.Acquisition _, _ ) ->
+                ( App.Acquisition _, _, False ) ->
                     Device.unbindDevice
 
                 _ ->
@@ -184,6 +184,22 @@ updateModel msg model =
 
                 _ ->
                     Cmd.none
+
+        -- We check if the user is leaving the acquisition page, and if they have an unvalidated record.
+        ( leavingAcquisitionWithRecord, leavingModel ) =
+            case ( model.page, updatedModel.page ) of
+                ( _, App.Acquisition _ ) ->
+                    ( False, finalModel )
+
+                ( App.Acquisition m, newPage ) ->
+                    if List.any (\x -> not x.old) m.records && m.warnLeaving == Nothing then
+                        ( True, { model | page = App.Acquisition { m | warnLeaving = Just <| App.routeFromPage newPage } } )
+
+                    else
+                        ( False, finalModel )
+
+                _ ->
+                    ( False, finalModel )
 
         -- We check if the user exited the new capsule page,
         -- in which case we should concidered they canceled.
@@ -285,10 +301,31 @@ updateModel msg model =
 
                 App.OnUrlChange url ->
                     let
+                        route =
+                            Route.fromUrl url
+
                         ( page, cmd ) =
-                            App.pageFromRoute model.config model.user (Route.fromUrl url)
+                            App.pageFromRoute model.config model.user route
                     in
-                    ( { model | page = page }, cmd )
+                    if route == App.routeFromPage model.page then
+                        case model.page of
+                            App.Acquisition m ->
+                                -- This is ugly but I don't know how to do it otherwise.
+                                -- When the user has non validated records, but try to leave the acquisition page, a
+                                -- popup appears warning them. This is done when the route changes, so if they cancel,
+                                -- we restore the previous route by using Nav.back. The page hasn't changed, so the page
+                                -- is acquisition, and the model is acquisition. We can't just use the page from
+                                -- App.pageFromRoute beacuse we would lose their records, but we still need to remove
+                                -- the warning popup which is what we do here;
+                                -- For a reason I don't understand, Nav.back prevents us from removing the popup from
+                                -- within the Acquisition.Updates module...
+                                ( { model | page = App.Acquisition { m | warnLeaving = Nothing } }, Cmd.none )
+
+                            _ ->
+                                ( model, Cmd.none )
+
+                    else
+                        ( { model | page = page }, cmd )
 
                 App.InternalUrl url ->
                     case model.config.clientState.key of
@@ -309,7 +346,19 @@ updateModel msg model =
                     , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
                     )
     in
-    ( finalModel, Cmd.batch [ updatedCmd, stopSoundtrackCmd, cancelNewCapsCmd, unbindDevice, beforeUnloadCmd ] )
+    ( if leavingAcquisitionWithRecord then
+        leavingModel
+
+      else
+        finalModel
+    , Cmd.batch
+        [ updatedCmd
+        , stopSoundtrackCmd
+        , cancelNewCapsCmd
+        , unbindDevice
+        , beforeUnloadCmd
+        ]
+    )
 
 
 {-| Returns the subscriptions of the app.

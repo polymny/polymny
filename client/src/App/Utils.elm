@@ -1,6 +1,6 @@
 module App.Utils exposing
     ( init, pageFromRoute
-    , capsuleAndGos, capsuleIdFromPage, gosIdFromPage
+    , capsuleAndGos, capsuleIdFromPage, gosIdFromPage, routeFromPage
     )
 
 {-| This module contains some util functions that should really be in App/Types.elm but that can't be there because elm
@@ -193,3 +193,33 @@ pageFromRoute _ user route =
 
         _ ->
             ( App.Home Home.init, Cmd.none )
+
+
+{-| Converts the page to a route.
+-}
+routeFromPage : App.Page -> Route
+routeFromPage page =
+    case page of
+        App.Home _ ->
+            Route.Home
+
+        App.NewCapsule _ ->
+            Route.Home
+
+        App.Preparation m ->
+            Route.Preparation m.capsule
+
+        App.Acquisition m ->
+            Route.Acquisition m.capsule m.gos
+
+        App.Production m ->
+            Route.Production m.capsule m.gos
+
+        App.Publication m ->
+            Route.Publication m.capsule
+
+        App.Options m ->
+            Route.Options m.capsule
+
+        App.Settings _ ->
+            Route.Settings
