@@ -7,7 +7,7 @@ module Data.Capsule exposing
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
     , decodeEventType, decodeAnchor, decodeSlide, decodePair
-    , SoundTrack, firstRecordPath, removeTrack, trackPath, trackPreviewPath
+    , SoundTrack, encodeCapsuleAll, firstRecordPath, removeTrack, trackPath, trackPreviewPath
     )
 
 {-| This module contains all the data related to capsules.
@@ -90,6 +90,23 @@ encodeCapsule capsule =
         , ( "webcam_settings", encodeWebcamSettings capsule.defaultWebcamSettings )
         , ( "structure", Encode.list encodeGos capsule.structure )
         , ( "sound_track", Maybe.map encodeSoundTrack capsule.soundTrack |> Maybe.withDefault Encode.null )
+        ]
+
+
+{-| JSON encoder for capsule with the produced info.
+-}
+encodeCapsuleAll : Capsule -> Encode.Value
+encodeCapsuleAll capsule =
+    Encode.object
+        [ ( "id", Encode.string capsule.id )
+        , ( "project", Encode.string capsule.project )
+        , ( "name", Encode.string capsule.name )
+        , ( "privacy", Data.encodePrivacy capsule.privacy )
+        , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
+        , ( "webcam_settings", encodeWebcamSettings capsule.defaultWebcamSettings )
+        , ( "structure", Encode.list encodeGos capsule.structure )
+        , ( "sound_track", Maybe.map encodeSoundTrack capsule.soundTrack |> Maybe.withDefault Encode.null )
+        , ( "produced", Encode.bool (capsule.produced /= Data.Idle) )
         ]
 
 

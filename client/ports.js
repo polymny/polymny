@@ -968,6 +968,94 @@ function init(node, flags) {
         }
     }
 
+    // Exports a capsule into a zip file.
+    async function exportCapsule(capsule, dry = false) {
+
+        function logProgress(value) {
+            if (!dry) {
+                // TODO : send progress through a port to elm
+                console.log(value);
+            }
+        }
+
+        let zip = new JSZip();
+
+        let totalTasks = dry ? null : await exportCapsule(capsule, true);
+        let taskCounter = 0;
+
+        for (let gosIndex = 0; gosIndex < capsule.structure.length; gosIndex++) {
+
+            let gos = capsule.structure[gosIndex];
+            let gosDir = zip.folder(gosIndex + 1);
+
+            for (let slideIndex  = 0; slideIndex < gos.slides.length; slideIndex++) {
+
+                let slide = gos.slides[slideIndex];
+
+                taskCounter++;
+                if (!dry) {
+                    let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.uuid + ".png");
+                    let blob = await resp.blob();
+                    gosDir.file((slideIndex + 1) + ".png", blob);
+                    slide.uuid = (gosIndex + 1) + "/" + (slideIndex + 1) + ".png";
+                    logProgress(taskCounter / (2 * totalTasks));
+                }
+
+                if (slide.extra != undefined) {
+
+                    taskCounter++;
+                    if (!dry) {
+                        let resp = await fetch("/data/" + capsule.id + "/assets/" + slide.extra + ".mp4");
+                        let blob = await resp.blob();
+                        gosDir.file((slideIndex + 1) + ".mp4", blob);
+                        slide.extra = (gosIndex + 1) + "/" + (slideIndex + 1) + ".mp4";
+                        logProgress(taskCounter / (2 * totalTasks));
+                    }
+
+                }
+
+            }
+
+            if (gos.record != undefined) {
+
+                taskCounter++;
+                if (!dry) {
+                    let resp = await fetch("/data/" + capsule.id + "/assets/" + gos.record.uuid + ".webm");
+                    let blob = await resp.blob();
+                    gosDir.file("record.webm", blob);
+                    gos.record = (gosIndex + 1) + "/record.webm";
+                    logProgress(taskCounter / (2 * totalTasks));
+                }
+
+            }
+
+        }
+
+        if (capsule.produced) {
+            taskCounter++;
+            if (!dry) {
+                let resp = await fetch("/data/" + capsule.id + "/output.mp4");
+                let blob = await resp.blob();
+                zip.file("output.mp4", blob);
+                logProgress(taskCounter / (2 * totalTasks));
+            }
+        }
+
+        if (dry) {
+            return taskCounter;
+        }
+
+        zip.file("structure.json", JSON.stringify(capsule, null, 4));
+
+        let content = await zip.generateAsync({type: "blob"},
+            function updateCallback(metadata) {
+                logProgress(metadata.percent / 200 + 0.5);
+            }
+        );
+
+        saveAs(content, capsule.id + ".zip");
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1140,4 +1228,5 @@ function init(node, flags) {
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
     makePort("setupCanvas", setupCanvas);
+    makePort("exportCapsule", capsule => exportCapsule(capsule));
 }

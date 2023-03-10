@@ -17,6 +17,7 @@ port module Home.Updates exposing
 import Api.Capsule as Api
 import Api.User as Api
 import App.Types as App
+import Data.Capsule as Data
 import Data.Types as Data
 import Data.User as Data
 import File
@@ -320,6 +321,10 @@ update msg model =
                 Home.EscapePressed ->
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
+                Home.ExportCapsule capsule ->
+                    -- TODO add client task
+                    ( model, exportCapsule capsule )
+
         _ ->
             ( model, Cmd.none )
 
@@ -351,6 +356,16 @@ shortcuts msg =
 
         _ ->
             App.Noop
+
+
+exportCapsule : Data.Capsule -> Cmd msg
+exportCapsule capsule =
+    exportCapsulePort (Data.encodeCapsuleAll capsule)
+
+
+{-| Port to export a capsule.
+-}
+port exportCapsulePort : Decode.Value -> Cmd msg
 
 
 {-| Subscriptions of the page.

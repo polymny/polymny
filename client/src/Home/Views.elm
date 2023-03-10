@@ -326,7 +326,7 @@ actions lang poc _ =
                 [ Ui.secondaryIcon []
                     { icon = Icons.ios_share
                     , tooltip = Strings.actionsExportCapsule lang
-                    , action = Ui.None
+                    , action = Ui.Msg <| App.HomeMsg <| Home.ExportCapsule c
                     }
                 , if isWriter then
                     Ui.secondaryIcon []

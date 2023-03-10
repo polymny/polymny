@@ -31,6 +31,7 @@ type Msg
     | ProjectNameChanged Data.Project String
     | SortBy Data.SortKey
     | EscapePressed
+    | ExportCapsule Data.Capsule
 
 
 type PopupType
