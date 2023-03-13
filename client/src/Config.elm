@@ -255,6 +255,7 @@ type Task
     | ReplaceSlide TaskId String
     | Production TaskId
     | ExportCapsule TaskId String
+    | ImportCapsule TaskId
 
 
 {-| Returns true if the task is a client task.
@@ -278,6 +279,9 @@ isClientTask task =
             True
 
         ExportCapsule _ _ ->
+            True
+        
+        ImportCapsule _ ->
             True
 
         _ ->
@@ -341,6 +345,10 @@ decodeTask =
                         Decode.map2 ExportCapsule
                             (Decode.field "taskId" decodeTaskId)
                             (Decode.field "capsuleId" Decode.string)
+                        
+                    "ImportCapsule" ->
+                        Decode.map ImportCapsule
+                            (Decode.field "taskId" decodeTaskId)
 
                     _ ->
                         Decode.fail <| "type " ++ x ++ " not recognized as task type"
@@ -442,6 +450,9 @@ compareTasks t1 t2 =
             id1 == id2
 
         ( ExportCapsule id1 _, ExportCapsule id2 _ ) ->
+            id1 == id2
+        
+        ( ImportCapsule id1, ImportCapsule id2 ) ->
             id1 == id2
 
         _ ->

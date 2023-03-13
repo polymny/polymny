@@ -1060,6 +1060,10 @@ msgstr "Upload extra"
 msgid "Tasks.exportCapsule"
 msgstr "Capsule export"
 
+#. Capsule import task.
+msgid "Tasks.importCapsule"
+msgstr "Capsule import"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Unknown task"

@@ -79,17 +79,31 @@ update msg model =
                             )
 
                         "application/zip" ->
-                            ( model
-                            , if Data.isPremium model.user then
+                            if Data.isPremium model.user then
                                 let
+                                    projectName : String
                                     projectName =
-                                        Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
-                                in
-                                importCapsule ( projectName, fileValue.value )
+                                        Maybe.withDefault
+                                            (Strings.stepsPreparationNewProject model.config.clientState.lang)
+                                            project
 
-                              else
-                                Cmd.none
-                            )
+                                    task : Config.TaskStatus
+                                    task =
+                                        { task = Config.ImportCapsule model.config.clientState.taskId
+                                        , progress = Just 0.0
+                                        , finished = False
+                                        , aborted = False
+                                        }
+
+                                    ( newConfig, _ ) =
+                                        Config.update (Config.UpdateTaskStatus task) model.config
+                                in
+                                ( { model | config = Config.incrementTaskId newConfig }
+                                , importCapsule projectName fileValue.value model.config.clientState.taskId
+                                )
+
+                            else
+                                ( model, Cmd.none )
 
                         _ ->
                             ( model, Cmd.none )
@@ -411,14 +425,14 @@ port exportCapsulePort : ( Decode.Value, Config.TaskId ) -> Cmd msg
 
 {-| Port to import a capsule.
 -}
-importCapsule : ( String, Decode.Value ) -> Cmd msg
-importCapsule ( project, file ) =
-    importCapsulePort ( project, file )
+importCapsule : String -> Decode.Value -> Config.TaskId -> Cmd msg
+importCapsule project file taskId =
+    importCapsulePort ( project, file, taskId )
 
 
 {-| Port to import a capsule.
 -}
-port importCapsulePort : ( String, Decode.Value ) -> Cmd msg
+port importCapsulePort : ( String, Decode.Value, Config.TaskId ) -> Cmd msg
 
 
 {-| Subscription to capsule update.

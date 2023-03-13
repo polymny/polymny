@@ -242,6 +242,9 @@ taskPanel clientState =
                         Config.ExportCapsule _ _ ->
                             Strings.tasksExportCapsule lang
 
+                        Config.ImportCapsule _ ->
+                            Strings.tasksImportCapsule lang
+
                         _ ->
                             Strings.tasksUnknown lang
 

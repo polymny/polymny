@@ -1071,6 +1071,10 @@ msgstr "Téléversement de resources externes"
 msgid "Tasks.exportCapsule"
 msgstr "Export capsule"
 
+#. Capsule import task.
+msgid "Tasks.importCapsule"
+msgstr "Import capsule"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Tâche inconnue"

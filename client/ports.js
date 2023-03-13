@@ -1140,6 +1140,7 @@ function init(node, flags) {
     async function importCapsule(args) {
         let project = args[0];
         let capsule = args[1];
+        let taskId = args[2];
 
         let zip = new JSZip();
         let content = await zip.loadAsync(capsule);
@@ -1227,6 +1228,18 @@ function init(node, flags) {
 
         let lastStructure = resp !== undefined ? await resp.json() : structureClone;
         app.ports.capsuleUpdated.send(lastStructure);
+
+        // Update the task.
+        let task = {
+            "taskId": taskId,
+            "type": "ImportCapsule",
+        };
+        app.ports.taskProgress.send({
+            "task": task,
+            "progress": 1,
+            "finished": true,
+            "aborted": false,
+        });
 
     }
 
