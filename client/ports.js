@@ -1030,6 +1030,17 @@ function init(node, flags) {
 
             }
 
+            // Export osundtrack.
+            if (this.capsule.sound_track != undefined) {
+
+                let resp = await fetch("/data/" + this.capsule.id + "/assets/" + this.capsule.sound_track.uuid + ".m4a");
+                let blob = await resp.blob();
+
+                zip.file("soundtrack.m4a", blob);
+                if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+
+            }
+
             // Export structure.
             zip.file("structure.json", JSON.stringify(this.capsule, null, 4));
 
@@ -1095,6 +1106,10 @@ function init(node, flags) {
                 }
 
             }
+
+            if (this.capsule.produced) totalSubasks++;
+
+            if (this.capsule.sound_track) totalSubasks++;
 
             return totalSubasks;
         }
@@ -1201,6 +1216,13 @@ function init(node, flags) {
 
                 }
             }
+        }
+
+        // Import sound track.
+        if (structure.sound_track !== null) {
+            let track = await content.file("soundtrack.m4a").async("blob");
+            track = track.slice(0, track.size, "audio/m4a");
+            resp = await fetch("/api/sound-track/" + json.id + "/" + structure.sound_track.name, { method: "POST", body: track });
         }
 
         let lastStructure = resp !== undefined ? await resp.json() : structureClone;
