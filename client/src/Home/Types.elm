@@ -32,6 +32,7 @@ type Msg
     | SortBy Data.SortKey
     | EscapePressed
     | ExportCapsule Data.Capsule
+    | CapsuleUpdated Data.Capsule
 
 
 type PopupType

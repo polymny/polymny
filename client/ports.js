@@ -150,7 +150,7 @@ function init(node, flags) {
     }
 
     // These two listeners add or remove titles (tooltips) depending on whether the element overflows or not.
-    document.addEventListener('mouseover', function(event) {
+    document.addEventListener('mouseover', function (event) {
         var target = event.target;
 
         if (!target.classList.contains("might-overflow")) {
@@ -163,7 +163,7 @@ function init(node, flags) {
         target.title = overflowed ? title : '';
     });
 
-    document.addEventListener('mouseout', function(event) {
+    document.addEventListener('mouseout', function (event) {
         var target = event.target;
 
         if (!target.classList.contains("might-overflow")) {
@@ -1120,6 +1120,94 @@ function init(node, flags) {
         delete requests[tracker];
     }
 
+
+    // Import a capsule from a zip file.
+    async function importCapsule(args) {
+        let project = args[0];
+        let capsule = args[1];
+
+        let zip = new JSZip();
+        let content = await zip.loadAsync(capsule);
+
+        // Get the structure.
+        let structure = JSON.parse(await content.file("structure.json").async("string"));
+
+        // Creates the empty capsule.
+        let resp = await fetch("/api/empty-capsule/" + project + "/" + structure.name, { method: "POST" });
+        let json = await resp.json();
+
+        structure.id = json.id;
+
+        // Upload the slides.
+        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
+            let gos = structure.structure[gosIndex];
+
+            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                let slide = gos.slides[slideIndex];
+                let image = await content.file(slide.uuid).async("blob");
+                image = image.slice(0, image.size, "image/png")
+
+                // Upload the slide.
+                let resp = await fetch("/api/add-slide/" + json.id + "/-1/-1", { method: "POST", body: image });
+                resp = await resp.json();
+
+                // Find uuid of the slide we added.
+                let newGos = resp.structure[resp.structure.length - 1];
+                let newSlide = newGos.slides[newGos.slides.length - 1];
+
+                slide.uuid = newSlide.uuid;
+            }
+
+        }
+
+        // Set the correct structure.
+        // Remove records because they are currently null.
+        let structureClone = JSON.parse(JSON.stringify(structure));
+        for (let gos of structureClone.structure) {
+            gos.record = null;
+            for (let slide of gos.slides) {
+                slide.extra = null;
+            }
+        }
+
+        // Remove from json attributes that the server doesn't want.
+        delete structureClone.produced;
+
+        await fetch("/api/update-capsule/", {
+            method: "POST",
+            body: JSON.stringify(structureClone),
+            headers: { "Content-Type": "application/json" },
+        });
+
+        resp = undefined;
+
+        // Upload the records and extra
+        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
+            let gos = structure.structure[gosIndex];
+
+            // Upload the gos record if any.
+            if (gos.record !== null) {
+                let blob = await content.file(gos.record).async("blob");
+                blob = blob.slice(0, blob.size, "video/webm");
+                resp = await fetch("/api/upload-record/" + json.id + "/" + gosIndex, { method: "POST", body: blob });
+            }
+
+            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                let slide = gos.slides[slideIndex];
+                if (slide.extra !== null) {
+                    let blob = await content.file(slide.extra).async("blob");
+                    blob = blob.slice(0, blob.size, "video/mp4");
+                    resp = await fetch("/api/replace-slide/" + json.id + "/" + slide.uuid + "/-1", { method: "POST", body: blob });
+
+                }
+            }
+        }
+
+        let lastStructure = resp !== undefined ? await resp.json() : structureClone;
+        app.ports.capsuleUpdated.send(lastStructure);
+
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1292,4 +1380,5 @@ function init(node, flags) {
     makePort("uploadRecord", uploadRecord);
     makePort("setupCanvas", setupCanvas);
     makePort("exportCapsule", exportCapsule);
+    makePort("importCapsule", importCapsule);
 }

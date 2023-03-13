@@ -25,6 +25,7 @@ import File
 import FileValue
 import Home.Types as Home
 import Json.Decode as Decode
+import Json.Encode as Encode
 import Keyboard
 import NewCapsule.Types as NewCapsule
 import RemoteData
@@ -77,7 +78,19 @@ update msg model =
                                 }
                             )
 
-                        -- TODO : manage "application/zip"
+                        "application/zip" ->
+                            ( model
+                            , if Data.isPremium model.user then
+                                let
+                                    projectName =
+                                        Maybe.withDefault (Strings.stepsPreparationNewProject model.config.clientState.lang) project
+                                in
+                                importCapsule ( projectName, fileValue.value )
+
+                              else
+                                Cmd.none
+                            )
+
                         _ ->
                             ( model, Cmd.none )
 
@@ -337,6 +350,22 @@ update msg model =
                     in
                     ( { model | config = Config.incrementTaskId newConfig }, exportCapsule capsule model.config.clientState.taskId )
 
+                Home.CapsuleUpdated capsule ->
+                    let
+                        user =
+                            model.user
+
+                        newUser =
+                            let
+                                projects =
+                                    user.projects
+                                        |> List.map (\p -> { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules })
+                                        |> List.map (\p -> { p | capsules = p.capsules |> List.append [ capsule ] })
+                            in
+                            { user | projects = projects }
+                    in
+                    ( { model | user = newUser }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -380,6 +409,23 @@ exportCapsule capsule taskId =
 port exportCapsulePort : ( Decode.Value, Config.TaskId ) -> Cmd msg
 
 
+{-| Port to import a capsule.
+-}
+importCapsule : ( String, Decode.Value ) -> Cmd msg
+importCapsule ( project, file ) =
+    importCapsulePort ( project, file )
+
+
+{-| Port to import a capsule.
+-}
+port importCapsulePort : ( String, Decode.Value ) -> Cmd msg
+
+
+{-| Subscription to capsule update.
+-}
+port capsuleUpdated : (Encode.Value -> msg) -> Sub msg
+
+
 {-| Subscriptions of the page.
 -}
 subs : Sub App.Msg
@@ -395,4 +441,13 @@ subs =
                         App.Noop
             )
         , Keyboard.ups shortcuts
+        , capsuleUpdated
+            (\x ->
+                case Decode.decodeValue Data.decodeCapsule x of
+                    Ok y ->
+                        App.HomeMsg (Home.CapsuleUpdated y)
+
+                    _ ->
+                        App.Noop
+            )
         ]
