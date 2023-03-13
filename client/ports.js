@@ -1169,6 +1169,7 @@ function init(node, flags) {
             // Creates the empty capsule.
             let resp = await fetch("/api/empty-capsule/" + this.project + "/" + this.structure.name, { method: "POST" });
             this.json = await resp.json();
+            this.structure.id = this.json.id;
         }
 
         // Starts the import.
@@ -1176,8 +1177,6 @@ function init(node, flags) {
 
             // Initialize the importer.
             await this.init();
-
-            this.structure.id = this.json.id;
 
             let taskCounter = 0;
 
@@ -1224,7 +1223,7 @@ function init(node, flags) {
                 headers: { "Content-Type": "application/json" },
             });
 
-            resp = undefined;
+            let resp = undefined;
 
             // Upload the records and extra
             for (let gosIndex = 0; gosIndex < this.structure.structure.length; gosIndex++) {
