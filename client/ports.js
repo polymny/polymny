@@ -962,7 +962,8 @@ function init(node, flags) {
         }
     }
 
-    class ExportCapsule {
+    // A class that export a capsule as a zip file.
+    class CapsuleExporter {
         constructor(args) {
             this.capsule = args[0];
             this.taskId = args[1];
@@ -970,6 +971,7 @@ function init(node, flags) {
             this.totalSubasks = this.countSubtasks();
         }
 
+        // Starts the export.
         async start() {
 
             let zip = new JSZip();
@@ -990,7 +992,7 @@ function init(node, flags) {
 
                     gosDir.file((slideIndex + 1) + ".png", blob);
                     slide.uuid = (gosIndex + 1) + "/" + (slideIndex + 1) + ".png";
-                    if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+                    if (this.updateProgress(++taskCounter / this.totalSubasks / 2)) return;
 
                     if (slide.extra != undefined) {
 
@@ -999,7 +1001,7 @@ function init(node, flags) {
 
                         gosDir.file((slideIndex + 1) + ".mp4", blob);
                         slide.extra = (gosIndex + 1) + "/" + (slideIndex + 1) + ".mp4";
-                        if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+                        if (this.updateProgress(++taskCounter / this.totalSubasks / 2)) return;
 
                     }
 
@@ -1013,7 +1015,7 @@ function init(node, flags) {
 
                     gosDir.file("record.webm", blob);
                     gos.record = (gosIndex + 1) + "/record.webm";
-                    if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+                    if (this.updateProgress(++taskCounter / this.totalSubasks / 2)) return;
 
                 }
 
@@ -1026,7 +1028,7 @@ function init(node, flags) {
                 let blob = await resp.blob();
 
                 zip.file("output.mp4", blob);
-                if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+                if (this.updateProgress(++taskCounter / this.totalSubasks / 2)) return;
 
             }
 
@@ -1037,7 +1039,7 @@ function init(node, flags) {
                 let blob = await resp.blob();
 
                 zip.file("soundtrack.m4a", blob);
-                if (this.logProgress(++taskCounter / this.totalSubasks / 2)) return;
+                if (this.updateProgress(++taskCounter / this.totalSubasks / 2)) return;
 
             }
 
@@ -1046,7 +1048,7 @@ function init(node, flags) {
 
             // Generate zip.
             let content = await zip.generateAsync({ type: "blob" },
-                (metadata) => this.logProgress(metadata.percent / 200 + 0.5)
+                (metadata) => this.updateProgress(metadata.percent / 200 + 0.5)
             );
 
             if (this.aborted) return;
@@ -1066,12 +1068,9 @@ function init(node, flags) {
             saveAs(content, this.capsule.id + ".zip");
         }
 
-        abort() {
-            // Set aborted to true. :)
-            this.aborted = true;
-        }
+        // Updates the progress of the task.
+        updateProgress(value) {
 
-        logProgress(value) {
             // If aborted, indicate that you should early return.
             if (this.aborted) return true;
 
@@ -1090,10 +1089,11 @@ function init(node, flags) {
             return false;
         }
 
+        // Count the number of subtasks.
         countSubtasks() {
-            // Count the number of subtasks.
             let totalSubasks = 0;
 
+            // Count the number of slides and records.
             for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
                 let gos = this.capsule.structure[gosIndex];
                 if (gos.record) totalSubasks++;
@@ -1107,18 +1107,26 @@ function init(node, flags) {
 
             }
 
+            // Count the output.
             if (this.capsule.produced) totalSubasks++;
-
+            
+            // Count the soundtrack.
             if (this.capsule.sound_track) totalSubasks++;
 
             return totalSubasks;
+        }
+
+        // Abort the task.
+        abort() {
+            // Set aborted to true. :)
+            this.aborted = true;
         }
 
     }
 
     // Exports a capsule into a zip file.
     async function exportCapsule(args) {
-        let exportCapsule = new ExportCapsule(args);
+        let exportCapsule = new CapsuleExporter(args);
 
         let tracker = "task-track-" + exportCapsule.taskId;
         requests[tracker] = {
@@ -1136,112 +1144,212 @@ function init(node, flags) {
     }
 
 
-    // Import a capsule from a zip file.
-    async function importCapsule(args) {
-        let project = args[0];
-        let capsule = args[1];
-        let taskId = args[2];
-
-        let zip = new JSZip();
-        let content = await zip.loadAsync(capsule);
-
-        // Get the structure.
-        let structure = JSON.parse(await content.file("structure.json").async("string"));
-
-        // Creates the empty capsule.
-        let resp = await fetch("/api/empty-capsule/" + project + "/" + structure.name, { method: "POST" });
-        let json = await resp.json();
-
-        structure.id = json.id;
-
-        // Upload the slides.
-        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
-            let gos = structure.structure[gosIndex];
-
-            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
-                let slide = gos.slides[slideIndex];
-                let image = await content.file(slide.uuid).async("blob");
-                image = image.slice(0, image.size, "image/png")
-
-                // Upload the slide.
-                let resp = await fetch("/api/add-slide/" + json.id + "/-1/-1", { method: "POST", body: image });
-                resp = await resp.json();
-
-                // Find uuid of the slide we added.
-                let newGos = resp.structure[resp.structure.length - 1];
-                let newSlide = newGos.slides[newGos.slides.length - 1];
-
-                slide.uuid = newSlide.uuid;
-            }
-
+    // A class to import a capsule from a zip file.
+    class CapsuleImporter {
+        constructor(args) {
+            this.project = args[0];
+            this.capsule = args[1];
+            this.taskId = args[2];
+            this.content = null;
+            this.structure = null;
+            this.aborted = false;
+            this.json = null;
+            this.totalSubasks = 0;
         }
 
-        // Set the correct structure.
-        // Remove records because they are currently null.
-        let structureClone = JSON.parse(JSON.stringify(structure));
-        for (let gos of structureClone.structure) {
-            gos.record = null;
-            for (let slide of gos.slides) {
-                slide.extra = null;
-            }
+        // Initializes the importer.
+        async init() {
+
+            // Get the zip file.
+            let zip = new JSZip();
+            this.content = await zip.loadAsync(this.capsule);
+            this.structure = await JSON.parse(await this.content.file("structure.json").async("string"));
+            this.totalSubasks = this.countSubtasks();
+
+            // Creates the empty capsule.
+            let resp = await fetch("/api/empty-capsule/" + this.project + "/" + this.structure.name, { method: "POST" });
+            this.json = await resp.json();
         }
 
-        // Remove from json attributes that the server doesn't want.
-        delete structureClone.produced;
+        // Starts the import.
+        async start() {
 
-        await fetch("/api/update-capsule/", {
-            method: "POST",
-            body: JSON.stringify(structureClone),
-            headers: { "Content-Type": "application/json" },
-        });
+            // Initialize the importer.
+            await this.init();
 
-        resp = undefined;
+            this.structure.id = this.json.id;
 
-        // Upload the records and extra
-        for (let gosIndex = 0; gosIndex < structure.structure.length; gosIndex++) {
-            let gos = structure.structure[gosIndex];
+            let taskCounter = 0;
 
-            // Upload the gos record if any.
-            if (gos.record !== null) {
-                let blob = await content.file(gos.record).async("blob");
-                blob = blob.slice(0, blob.size, "video/webm");
-                resp = await fetch("/api/upload-record/" + json.id + "/" + gosIndex, { method: "POST", body: blob });
+            // Upload the slides.
+            for (let gosIndex = 0; gosIndex < this.structure.structure.length; gosIndex++) {
+                let gos = this.structure.structure[gosIndex];
+
+                for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                    let slide = gos.slides[slideIndex];
+                    let image = await this.content.file(slide.uuid).async("blob");
+                    image = image.slice(0, image.size, "image/png")
+
+                    // Upload the slide.
+                    let resp = await fetch("/api/add-slide/" + this.json.id + "/-1/-1", { method: "POST", body: image });
+                    resp = await resp.json();
+
+                    // Find uuid of the slide we added.
+                    let newGos = resp.structure[resp.structure.length - 1];
+                    let newSlide = newGos.slides[newGos.slides.length - 1];
+
+                    slide.uuid = newSlide.uuid;
+
+                    if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
+                }
+
             }
 
-            for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
-                let slide = gos.slides[slideIndex];
-                if (slide.extra !== null) {
-                    let blob = await content.file(slide.extra).async("blob");
-                    blob = blob.slice(0, blob.size, "video/mp4");
-                    resp = await fetch("/api/replace-slide/" + json.id + "/" + slide.uuid + "/-1", { method: "POST", body: blob });
-
+            // Set the correct structure.
+            // Remove records because they are currently null.
+            let structureClone = JSON.parse(JSON.stringify(this.structure));
+            for (let gos of structureClone.structure) {
+                gos.record = null;
+                for (let slide of gos.slides) {
+                    slide.extra = null;
                 }
             }
+
+            // Remove from json attributes that the server doesn't want.
+            delete structureClone.produced;
+
+            await fetch("/api/update-capsule/", {
+                method: "POST",
+                body: JSON.stringify(structureClone),
+                headers: { "Content-Type": "application/json" },
+            });
+
+            resp = undefined;
+
+            // Upload the records and extra
+            for (let gosIndex = 0; gosIndex < this.structure.structure.length; gosIndex++) {
+                let gos = this.structure.structure[gosIndex];
+
+                // Upload the gos record if any.
+                if (gos.record !== null) {
+                    let blob = await this.content.file(gos.record).async("blob");
+                    blob = blob.slice(0, blob.size, "video/webm");
+                    resp = await fetch("/api/upload-record/" + this.json.id + "/" + gosIndex, { method: "POST", body: blob });
+
+                    if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
+                }
+
+                // Upload the extra if any.
+                for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
+                    let slide = gos.slides[slideIndex];
+                    if (slide.extra !== null) {
+                        let blob = await this.content.file(slide.extra).async("blob");
+                        blob = blob.slice(0, blob.size, "video/mp4");
+                        resp = await fetch("/api/replace-slide/" + this.json.id + "/" + slide.uuid + "/-1", { method: "POST", body: blob });
+
+                        if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
+                    }
+                }
+            }
+
+            // Import sound track.
+            if (this.structure.sound_track !== null) {
+                let track = await this.content.file("soundtrack.m4a").async("blob");
+                track = track.slice(0, track.size, "audio/m4a");
+                resp = await fetch("/api/sound-track/" + this.json.id + "/" + this.structure.sound_track.name, { method: "POST", body: track });
+
+                if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
+            }
+
+            let lastStructure = resp !== undefined ? await resp.json() : structureClone;
+            app.ports.capsuleUpdated.send(lastStructure);
+
+            // Update the task.
+            let task = {
+                "taskId": this.taskId,
+                "type": "ImportCapsule",
+            };
+            app.ports.taskProgress.send({
+                "task": task,
+                "progress": 1,
+                "finished": true,
+                "aborted": false,
+            });
         }
 
-        // Import sound track.
-        if (structure.sound_track !== null) {
-            let track = await content.file("soundtrack.m4a").async("blob");
-            track = track.slice(0, track.size, "audio/m4a");
-            resp = await fetch("/api/sound-track/" + json.id + "/" + structure.sound_track.name, { method: "POST", body: track });
+        // Counts the number of subtasks.
+        countSubtasks() {
+
+            let totalSubasks = 0;
+
+            for (let gos of this.structure.structure) {
+                // Count the slides.
+                totalSubasks += gos.slides.length;
+
+                // Count the records.
+                if (gos.record !== null) totalSubasks++;
+
+                // Count the extras.
+                for (let slide of gos.slides) {
+                    if (slide.extra !== null) totalSubasks++;
+                }
+            }
+
+            // Count the sound track.
+            if (this.capsule.sound_track) totalSubasks++;
+
+            return totalSubasks;
         }
 
-        let lastStructure = resp !== undefined ? await resp.json() : structureClone;
-        app.ports.capsuleUpdated.send(lastStructure);
+        // Updates the progress of the task.
+        updateProgress(value) {
 
-        // Update the task.
-        let task = {
-            "taskId": taskId,
-            "type": "ImportCapsule",
-        };
-        app.ports.taskProgress.send({
-            "task": task,
-            "progress": 1,
-            "finished": true,
-            "aborted": false,
-        });
+            // If aborted, indicate that you should early return.
+            if (this.aborted) {
+                fetch("/api/capsule/" + this.json.id, { method: "DELETE" })
+                return true;
+            }
+
+            let task = {
+                "taskId": this.taskId,
+                "type": "ImportCapsule",
+            };
+            app.ports.taskProgress.send({
+                "task": task,
+                "progress": value,
+                "finished": false,
+                "aborted": false,
+            });
+
+            return false;
+        }
+
+        // Aborts the task.
+        abort() {
+            this.aborted = true;
+        }
 
     }
+
+    // Import a capsule.
+    async function importCapsule(args) {
+        let importCapsule = new CapsuleImporter(args);
+
+        let tracker = "task-track-" + importCapsule.taskId;
+        requests[tracker] = {
+            "task": {
+                "taskId": importCapsule.taskId,
+                "type": "ImportCapsule",
+                "capsuleId": importCapsule.capsule.id,
+            },
+            "request": importCapsule,
+        };
+
+        await importCapsule.start();
+
+        delete requests[tracker];
+    }
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////// PORTS DEFINITION /////////////////////////////////////////////////

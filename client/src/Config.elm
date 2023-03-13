@@ -280,7 +280,7 @@ isClientTask task =
 
         ExportCapsule _ _ ->
             True
-        
+
         ImportCapsule _ ->
             True
 
@@ -345,7 +345,7 @@ decodeTask =
                         Decode.map2 ExportCapsule
                             (Decode.field "taskId" decodeTaskId)
                             (Decode.field "capsuleId" Decode.string)
-                        
+
                     "ImportCapsule" ->
                         Decode.map ImportCapsule
                             (Decode.field "taskId" decodeTaskId)
@@ -451,7 +451,7 @@ compareTasks t1 t2 =
 
         ( ExportCapsule id1 _, ExportCapsule id2 _ ) ->
             id1 == id2
-        
+
         ( ImportCapsule id1, ImportCapsule id2 ) ->
             id1 == id2
 
@@ -730,6 +730,9 @@ update msg { serverConfig, clientConfig, clientState } =
                                 ExportCapsule taskId _ ->
                                     "task-track-" ++ String.fromInt taskId
 
+                                ImportCapsule taskId ->
+                                    "task-track-" ++ String.fromInt taskId
+
                                 _ ->
                                     ""
 
@@ -750,8 +753,11 @@ update msg { serverConfig, clientConfig, clientState } =
 
                                 ReplaceSlide _ _ ->
                                     Http.cancel tracker
-                                
+
                                 ExportCapsule _ _ ->
+                                    abortTaskPort tracker
+                                
+                                ImportCapsule _ ->
                                     abortTaskPort tracker
 
                                 _ ->
