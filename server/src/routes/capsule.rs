@@ -1,8 +1,8 @@
 //! This module contains the routes to manage the capsules.
 
+use std::path::Path;
 use std::process::Stdio;
 use std::sync::Arc;
-use std::path::Path;
 
 use uuid::Uuid;
 
@@ -22,9 +22,11 @@ use rocket::{Data, State as S};
 
 use crate::command::{export_slides, run_command};
 use crate::config::Config;
-use crate::db::capsule::{Capsule, Fade, Gos, Privacy, Record, Role, Slide, WebcamSettings, SoundTrack};
+use crate::db::capsule::{
+    Capsule, Fade, Gos, Privacy, Record, Role, Slide, SoundTrack, WebcamSettings,
+};
 use crate::db::task_status::TaskStatus;
-use crate::db::user::{User, Plan};
+use crate::db::user::{Plan, User};
 use crate::websockets::WebSockets;
 use crate::{Db, Error, HashId, Result};
 
@@ -272,12 +274,7 @@ pub async fn upload_record(
 
 /// The route that deletes a record from a capsule for a specific gos.
 #[delete("/delete-record/<id>/<gos>")]
-pub async fn delete_record(
-    user: User,
-    db: Db,
-    id: HashId,
-    gos: i32,
-) -> Result<Value> {
+pub async fn delete_record(user: User, db: Db, id: HashId, gos: i32) -> Result<Value> {
     // Check that the user has write access to the capsule.
     let (mut capsule, role) = user
         .get_capsule_with_permission(*id, Role::Write, &db)
@@ -393,9 +390,7 @@ pub async fn replace_slide(
         .ok_or(Error(Status::InternalServerError))?
         .to_string();
 
-    if content_type.media_type().top() == "image" || content_type.media_type().top() == "video" {
-        slide_found.extra = Some(output_uuid);
-    } else {
+    if content_type.media_type().top() != "video" {
         slide_found.uuid = output_uuid;
     }
 
@@ -487,6 +482,14 @@ pub async fn replace_slide(
                 false
             };
 
+            let mut capsule = match user
+                .get_capsule_with_permission(*id, Role::Write, &db)
+                .await
+            {
+                Ok((capsule, _)) => capsule,
+                _ => return (),
+            };
+
             capsule.video_uploaded = if succeed {
                 TaskStatus::Done
             } else {
@@ -508,7 +511,11 @@ pub async fn replace_slide(
 
             if !succeed {
                 slide_found.extra = None;
+            } else {
+                slide_found.extra = Some(output_uuid);
             }
+
+            capsule.set_changed();
             capsule.save(&db).await.ok();
             capsule.notify_change(&db, &socks).await.ok();
 
@@ -1335,19 +1342,15 @@ pub async fn sound_track(
 
     // Get base path.
     let uuid = Uuid::new_v4();
-    let path = config.data_path
-        .join(format!("{}", *id))
-        .join("assets");
-        
+    let path = config.data_path.join(format!("{}", *id)).join("assets");
+
     // Delete old track if any.
-    let mut volume = 0.8; 
+    let mut volume = 0.8;
     let old_track = capsule.sound_track;
     if let Some(old_track) = old_track.0 {
         let old_uuid = old_track.uuid;
         volume = old_track.volume;
-        let old_path = path
-            .join(format!("{}", old_uuid))
-            .with_extension("m4a");
+        let old_path = path.join(format!("{}", old_uuid)).with_extension("m4a");
         remove_file(&old_path).await.ok();
     }
 
@@ -1357,7 +1360,9 @@ pub async fn sound_track(
     let m4a_path = path.with_extension("m4a");
 
     // Save the file.
-    data.open(1_i32.gibibytes()).into_file(Path::new(&tmp_path)).await?;
+    data.open(1_i32.gibibytes())
+        .into_file(Path::new(&tmp_path))
+        .await?;
 
     // Convert file to expected format.
     let _res = run_command(&vec![

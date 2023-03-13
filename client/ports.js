@@ -141,7 +141,9 @@ function init(node, flags) {
         }
 
         socket.onmessage = function (event) {
-            app.ports.webSocketMsg.send(JSON.parse(event.data));
+            let parsed = JSON.parse(event.data);
+            console.log(parsed);
+            app.ports.webSocketMsg.send(parsed);
         }
     }
 
