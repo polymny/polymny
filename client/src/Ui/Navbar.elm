@@ -284,9 +284,25 @@ taskPanel clientState =
                 [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
                 , Element.text name
                 , Element.row [ Ui.s 10 ]
-                    [ Element.row []
-                        [ Element.el [ Ui.w <| round <| 300 * progress, Ui.h 3, Background.color color ] Element.none
-                        , Element.el [ Ui.w <| round <| 300 * (1.0 - progress), Ui.h 3, Background.color Colors.greyFont ] Element.none
+                    [ Element.row [ Ui.wpx 300, Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden" ]
+                        [ Element.el
+                            [ Ui.wpx 300
+                            , Ui.h 3
+                            , Element.moveLeft (300.0 * (1.0 - progress))
+                            , Background.color color
+                            , Element.htmlAttribute <|
+                                Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                            ]
+                            Element.none
+                        , Element.el
+                            [ Ui.wpx 300
+                            , Ui.h 3
+                            , Element.moveLeft (300.0 * (1.0 - progress))
+                            , Background.color Colors.greyFont
+                            , Element.htmlAttribute <|
+                                Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                            ]
+                            Element.none
                         ]
                     , Ui.navigationElement action
                         [ Ui.r 100
