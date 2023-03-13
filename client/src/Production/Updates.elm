@@ -152,7 +152,7 @@ updateModel capsule gos model m =
         newUser =
             Data.updateUser newCapsule model.user
     in
-    ( { model | user = newUser }, Api.updateCapsule newCapsule (\_ -> App.Noop) )
+    ( { model | user = newUser, page = App.Production m }, Api.updateCapsule newCapsule (\_ -> App.Noop) )
 
 
 {-| Reset to default options. (Set to Nothing)
