@@ -1,7 +1,7 @@
 module Ui.Elements exposing
     ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
     , spinner, spinningSpinner, popup
-    , addLinkAttr, errorModal, successModal
+    , addLinkAttr, errorModal, longText, successModal
     )
 
 {-| This module contains helpers to easily make buttons.
@@ -17,6 +17,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Html
 import Html.Attributes
 import Material.Icons.Types exposing (Coloring(..), Icon)
 import Route exposing (Route)
@@ -341,3 +342,18 @@ successModal attr input =
             :: attr
         )
         input
+
+
+{-| Displays a long text that can have ellipsis if too long, in which case the full text will be visible from its title
+(tooltip).
+-}
+longText : List (Element.Attribute msg) -> String -> Element msg
+longText attr text =
+    Html.div
+        [ Html.Attributes.style "overflow" "hidden"
+        , Html.Attributes.style "text-overflow" "ellipsis"
+        , Html.Attributes.class "might-overflow"
+        ]
+        [ Html.text text ]
+        |> Element.html
+        |> Element.el (Element.htmlAttribute (Html.Attributes.style "overflow" "hidden") :: attr)

@@ -149,6 +149,32 @@ function init(node, flags) {
         initWebSocket();
     }
 
+    // These two listeners add or remove titles (tooltips) depending on whether the element overflows or not.
+    document.addEventListener('mouseover', function(event) {
+        var target = event.target;
+
+        if (!target.classList.contains("might-overflow")) {
+            return;
+        }
+
+        var title = target.title || target.getAttribute('data-title') || target.textContent;
+        var overflowed = target.scrollWidth > target.clientWidth;
+
+        target.title = overflowed ? title : '';
+    });
+
+    document.addEventListener('mouseout', function(event) {
+        var target = event.target;
+
+        if (!target.classList.contains("might-overflow")) {
+            return;
+        }
+
+        if (event.relatedTarget.parentNode === target) return;
+
+        target.title = '';
+    });
+
     // Start app
     let app = Elm.Main.init({
         node, flags
