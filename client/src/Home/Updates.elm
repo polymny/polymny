@@ -366,19 +366,44 @@ update msg model =
 
                 Home.CapsuleUpdated capsule ->
                     let
+                        user : Data.User
                         user =
                             model.user
 
-                        newUser =
-                            let
-                                projects =
-                                    user.projects
-                                        |> List.map (\p -> { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules })
-                                        |> List.map (\p -> { p | capsules = p.capsules |> List.append [ capsule ] })
-                            in
-                            { user | projects = projects }
+                        projectNames : List String
+                        projectNames =
+                            user.projects
+                                |> List.map (\p -> p.name)
+
+                        newProjects : List Data.Project
+                        newProjects =
+                            if List.member capsule.project projectNames then
+                                user.projects
+                                    |> List.map (\p -> { p | capsules = List.filter (\c -> c.id /= capsule.id) p.capsules })
+                                    |> List.map
+                                        (\p ->
+                                            { p
+                                                | capsules =
+                                                    if p.name == capsule.project then
+                                                        capsule :: p.capsules
+
+                                                    else
+                                                        p.capsules
+                                            }
+                                        )
+
+                            else
+                                let
+                                    newProject : Data.Project
+                                    newProject =
+                                        { name = capsule.project
+                                        , capsules = [ capsule ]
+                                        , folded = False
+                                        }
+                                in
+                                newProject :: user.projects
                     in
-                    ( { model | user = newUser }, Cmd.none )
+                    ( { model | user = { user | projects = newProjects } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

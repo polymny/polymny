@@ -1148,12 +1148,12 @@ function init(node, flags) {
     class CapsuleImporter {
         constructor(args) {
             this.project = args[0];
-            this.capsule = args[1];
+            this.capsuleZip = args[1];
             this.taskId = args[2];
-            this.content = null;
-            this.structure = null;
+            this.capsuleContent = null;
+            this.capsule = null;
+            this.newCapsule = null;
             this.aborted = false;
-            this.json = null;
             this.totalSubasks = 0;
         }
 
@@ -1162,14 +1162,13 @@ function init(node, flags) {
 
             // Get the zip file.
             let zip = new JSZip();
-            this.content = await zip.loadAsync(this.capsule);
-            this.structure = await JSON.parse(await this.content.file("structure.json").async("string"));
+            this.capsuleContent = await zip.loadAsync(this.capsuleZip);
+            this.capsule = await JSON.parse(await this.capsuleContent.file("structure.json").async("string"));
             this.totalSubasks = this.countSubtasks();
 
             // Creates the empty capsule.
-            let resp = await fetch("/api/empty-capsule/" + this.project + "/" + this.structure.name, { method: "POST" });
-            this.json = await resp.json();
-            this.structure.id = this.json.id;
+            let resp = await fetch("/api/empty-capsule/" + this.project + "/" + this.capsule.name, { method: "POST" });
+            this.newCapsule = await resp.json();
         }
 
         // Starts the import.
@@ -1179,22 +1178,23 @@ function init(node, flags) {
             await this.init();
 
             let taskCounter = 0;
+            let resp;
 
             // Upload the slides.
-            for (let gosIndex = 0; gosIndex < this.structure.structure.length; gosIndex++) {
-                let gos = this.structure.structure[gosIndex];
+            for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
+                let gos = this.capsule.structure[gosIndex];
 
                 for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
                     let slide = gos.slides[slideIndex];
-                    let image = await this.content.file(slide.uuid).async("blob");
+                    let image = await this.capsuleContent.file(slide.uuid).async("blob");
                     image = image.slice(0, image.size, "image/png")
 
                     // Upload the slide.
-                    let resp = await fetch("/api/add-slide/" + this.json.id + "/-1/-1", { method: "POST", body: image });
-                    resp = await resp.json();
+                    resp = await fetch("/api/add-slide/" + this.newCapsule.id + "/-1/-1", { method: "POST", body: image });
+                    this.newCapsule = await resp.json();
 
                     // Find uuid of the slide we added.
-                    let newGos = resp.structure[resp.structure.length - 1];
+                    let newGos = this.newCapsule.structure[this.newCapsule.structure.length - 1];
                     let newSlide = newGos.slides[newGos.slides.length - 1];
 
                     slide.uuid = newSlide.uuid;
@@ -1206,8 +1206,8 @@ function init(node, flags) {
 
             // Set the correct structure.
             // Remove records because they are currently null.
-            let structureClone = JSON.parse(JSON.stringify(this.structure));
-            for (let gos of structureClone.structure) {
+            let capsuleClone = JSON.parse(JSON.stringify(this.newCapsule));
+            for (let gos of capsuleClone.structure) {
                 gos.record = null;
                 for (let slide of gos.slides) {
                     slide.extra = null;
@@ -1215,25 +1215,24 @@ function init(node, flags) {
             }
 
             // Remove from json attributes that the server doesn't want.
-            delete structureClone.produced;
+            delete capsuleClone.produced;
 
             await fetch("/api/update-capsule/", {
                 method: "POST",
-                body: JSON.stringify(structureClone),
+                body: JSON.stringify(capsuleClone),
                 headers: { "Content-Type": "application/json" },
             });
 
-            let resp = undefined;
-
             // Upload the records and extra
-            for (let gosIndex = 0; gosIndex < this.structure.structure.length; gosIndex++) {
-                let gos = this.structure.structure[gosIndex];
+            for (let gosIndex = 0; gosIndex < this.capsule.structure.length; gosIndex++) {
+                let gos = this.capsule.structure[gosIndex];
 
                 // Upload the gos record if any.
                 if (gos.record !== null) {
-                    let blob = await this.content.file(gos.record).async("blob");
+                    let blob = await this.capsuleContent.file(gos.record).async("blob");
                     blob = blob.slice(0, blob.size, "video/webm");
-                    resp = await fetch("/api/upload-record/" + this.json.id + "/" + gosIndex, { method: "POST", body: blob });
+                    resp = await fetch("/api/upload-record/" + this.newCapsule.id + "/" + gosIndex, { method: "POST", body: blob });
+                    this.newCapsule = await resp.json();
 
                     if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
                 }
@@ -1242,9 +1241,10 @@ function init(node, flags) {
                 for (let slideIndex = 0; slideIndex < gos.slides.length; slideIndex++) {
                     let slide = gos.slides[slideIndex];
                     if (slide.extra !== null) {
-                        let blob = await this.content.file(slide.extra).async("blob");
+                        let blob = await this.capsuleContent.file(slide.extra).async("blob");
                         blob = blob.slice(0, blob.size, "video/mp4");
-                        resp = await fetch("/api/replace-slide/" + this.json.id + "/" + slide.uuid + "/-1", { method: "POST", body: blob });
+                        resp = await fetch("/api/replace-slide/" + this.newCapsule.id + "/" + slide.uuid + "/-1", { method: "POST", body: blob });
+                        this.newCapsule = await resp.json();
 
                         if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
                     }
@@ -1252,16 +1252,16 @@ function init(node, flags) {
             }
 
             // Import sound track.
-            if (this.structure.sound_track !== null) {
-                let track = await this.content.file("soundtrack.m4a").async("blob");
+            if (this.capsule.sound_track !== null) {
+                let track = await this.capsuleContent.file("soundtrack.m4a").async("blob");
                 track = track.slice(0, track.size, "audio/m4a");
-                resp = await fetch("/api/sound-track/" + this.json.id + "/" + this.structure.sound_track.name, { method: "POST", body: track });
+                resp = await fetch("/api/sound-track/" + this.newCapsule.id + "/" + this.capsule.sound_track.name, { method: "POST", body: track });
+                this.newCapsule = await resp.json();
 
                 if (this.updateProgress(++taskCounter / this.totalSubasks)) return;
             }
 
-            let lastStructure = resp !== undefined ? await resp.json() : structureClone;
-            app.ports.capsuleUpdated.send(lastStructure);
+            app.ports.capsuleUpdated.send(this.newCapsule);
 
             // Update the task.
             let task = {
@@ -1281,7 +1281,7 @@ function init(node, flags) {
 
             let totalSubasks = 0;
 
-            for (let gos of this.structure.structure) {
+            for (let gos of this.capsule.structure) {
                 // Count the slides.
                 totalSubasks += gos.slides.length;
 
@@ -1295,7 +1295,7 @@ function init(node, flags) {
             }
 
             // Count the sound track.
-            if (this.capsule.sound_track) totalSubasks++;
+            if (this.capsuleZip.sound_track) totalSubasks++;
 
             return totalSubasks;
         }
@@ -1339,7 +1339,7 @@ function init(node, flags) {
             "task": {
                 "taskId": importCapsule.taskId,
                 "type": "ImportCapsule",
-                "capsuleId": importCapsule.capsule.id,
+                "capsuleId": importCapsule.capsuleZip.id,
             },
             "request": importCapsule,
         };
