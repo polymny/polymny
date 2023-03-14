@@ -87,7 +87,7 @@ update message model =
                     updateModel (App.ConfigMsg (Config.UpdateTaskStatus t)) inputModel
             in
             case ( t.finished, t.task ) of
-                ( True, Config.UploadRecord taskId capsuleId gosId value) ->
+                ( True, Config.UploadRecord taskId capsuleId gosId value ) ->
                     let
                         record : Maybe Data.Record
                         record =
@@ -297,7 +297,16 @@ updateModel msg model =
                     Settings.update sMsg model
 
                 App.WebSocketMsg (App.CapsuleUpdated c) ->
-                    ( { model | user = Data.updateUser c model.user }, Cmd.none )
+                    let
+                        newPage =
+                            case model.page of
+                                App.Preparation _ ->
+                                    App.Preparation (Preparation.init c)
+
+                                _ ->
+                                    model.page
+                    in
+                    ( { model | user = Data.updateUser c model.user, page = newPage }, Cmd.none )
 
                 App.WebSocketMsg (App.ProductionProgress id progress finished) ->
                     -- let
