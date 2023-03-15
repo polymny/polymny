@@ -499,6 +499,10 @@ msgstr "Produce grain"
 msgid "Steps.Production.useVideo"
 msgstr "Use video"
 
+#. Capsule production task.
+msgid "Tasks.productionCapsule"
+msgstr "Production"
+
 #. Can't use video because there is no record.
 msgid "Steps.Production.cantUseVideoBecauseNoRecord"
 msgstr "You cannot use the video because there is no record for this grain"

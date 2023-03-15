@@ -244,9 +244,12 @@ taskPanel clientState =
 
                         Config.ImportCapsule _ ->
                             Strings.tasksImportCapsule lang
+                        
+                        Config.Production _ _ ->
+                            Strings.tasksProductionCapsule lang
 
-                        _ ->
-                            Strings.tasksUnknown lang
+                        -- _ ->
+                        --     Strings.tasksUnknown lang
 
                 progress : Float
                 progress =

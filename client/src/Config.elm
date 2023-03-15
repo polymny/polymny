@@ -253,7 +253,7 @@ type Task
     | AddSlide TaskId String
     | AddGos TaskId String
     | ReplaceSlide TaskId String
-    | Production TaskId
+    | Production TaskId String
     | ExportCapsule TaskId String
     | ImportCapsule TaskId
 
@@ -338,8 +338,9 @@ decodeTask =
                             (Decode.field "capsuleId" Decode.string)
 
                     "Production" ->
-                        Decode.map Production
+                        Decode.map2 Production
                             (Decode.field "taskId" decodeTaskId)
+                            (Decode.field "capsuleId" Decode.string)
 
                     "ExportCapsule" ->
                         Decode.map2 ExportCapsule
@@ -446,8 +447,12 @@ compareTasks t1 t2 =
         ( ReplaceSlide id1 _, ReplaceSlide id2 _ ) ->
             id1 == id2
 
-        ( Production id1, Production id2 ) ->
-            id1 == id2
+        ( Production id1 capsuleId1, Production id2 capsuleId2 ) ->
+            if id1 < 0 || id2 < 0 then
+                capsuleId1 == capsuleId2
+
+            else
+                id1 == id2
 
         ( ExportCapsule id1 _, ExportCapsule id2 _ ) ->
             id1 == id2

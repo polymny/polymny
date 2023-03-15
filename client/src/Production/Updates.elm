@@ -7,7 +7,9 @@ import Api.Capsule as Api
 import App.Types as App
 import App.Utils as App
 import Browser.Events
+import Config
 import Data.Capsule as Data exposing (Capsule)
+import Data.Types as Data
 import Data.User as Data
 import Json.Decode as Decode
 import Production.Types as Production exposing (getWebcamSettings)
@@ -135,7 +137,35 @@ update msg model =
                     ( { model | page = App.Production newModel }, Cmd.none )
 
                 Production.Produce ->
-                    ( model, Api.produceCapsule capsule (\_ -> App.Noop) )
+                    let
+                        newCapsule : Capsule
+                        newCapsule =
+                            { capsule | produced = Data.Running Nothing }
+
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.Production model.config.clientState.taskId capsule.id
+                            , progress = Just 0.0
+                            , finished = False
+                            , aborted = False
+                            }
+
+                        ( newConfig, _ ) =
+                            Config.update (Config.UpdateTaskStatus task) model.config
+
+                        newModel : App.Model
+                        newModel =
+                            { model
+                                | user =
+                                    Data.updateUser
+                                        { capsule
+                                            | produced = Data.Running (Just 0.0)
+                                        }
+                                        model.user
+                                , config = Config.incrementTaskId newConfig
+                            }
+                    in
+                    ( newModel, Api.produceCapsule capsule (\_ -> App.Noop) )
 
         _ ->
             ( model, Cmd.none )

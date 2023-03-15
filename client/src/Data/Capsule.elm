@@ -1,5 +1,5 @@
 module Data.Capsule exposing
-    ( Capsule, assetPath, iframeHtml
+    ( Capsule, emptyCapsule, assetPath, iframeHtml
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString, updateGos
     , Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
     , Record
@@ -15,7 +15,7 @@ module Data.Capsule exposing
 
 # The capsule type
 
-@docs Capsule, assetPath, iframeHtml
+@docs Capsule, emptyCapsule, assetPath, iframeHtml
 
 
 # The GoS (Group of Slides) type
@@ -74,6 +74,28 @@ type alias Capsule =
     , diskUsage : Int
     , duration : Int
     , soundTrack : Maybe SoundTrack
+    }
+
+
+{-| Create an empty capsule.
+-}
+emptyCapsule : Capsule
+emptyCapsule =
+    { id = ""
+    , name = ""
+    , project = ""
+    , role = Data.Owner
+    , videoUploaded = Data.Idle
+    , produced = Data.Idle
+    , published = Data.Idle
+    , privacy = Data.Private
+    , structure = []
+    , defaultWebcamSettings = defaultWebcamSettings ( 0, 0 )
+    , lastModified = 0
+    , promptSubtitles = False
+    , diskUsage = 0
+    , duration = 0
+    , soundTrack = Nothing
     }
 
 

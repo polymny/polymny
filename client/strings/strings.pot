@@ -1028,6 +1028,10 @@ msgstr ""
 msgid "Tasks.importCapsule"
 msgstr ""
 
+#. Capsule production task.
+msgid "Tasks.productionCapsule"
+msgstr ""
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr ""

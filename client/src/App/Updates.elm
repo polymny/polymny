@@ -14,6 +14,7 @@ import App.Utils as App
 import Browser.Navigation
 import Config
 import Data.Capsule as Data
+import Data.Types as Data
 import Data.User as Data
 import Device
 import Home.Updates as Home
@@ -309,17 +310,44 @@ updateModel msg model =
                     ( { model | user = Data.updateUser c model.user, page = newPage }, Cmd.none )
 
                 App.WebSocketMsg (App.ProductionProgress id progress finished) ->
-                    -- let
-                    --     status =
-                    --         { task = Config.ServerTask <| Config.Production id
-                    --         , progress = Just progress
-                    --         , finished = finished
-                    --         , aborted = False
-                    --         }
-                    --     newConfig =
-                    --         Tuple.first <| Config.update (Config.UpdateTaskStatus status) model.config
-                    -- in
-                    ( model, Cmd.none )
+                    let
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.Production -1 id
+                            , progress = Just progress
+                            , finished = finished
+                            , aborted = False
+                            }
+
+                        newConfig : Config.Config
+                        newConfig =
+                            Tuple.first <| Config.update (Config.UpdateTaskStatus task) model.config
+
+                        capsule : Data.Capsule
+                        capsule =
+                            model.user.projects
+                                |> List.concatMap .capsules
+                                |> List.filter (\x -> x.id == id)
+                                |> List.head
+                                |> Maybe.withDefault Data.emptyCapsule
+
+                        newModel : App.Model
+                        newModel =
+                            { model
+                                | config = newConfig
+                                , user =
+                                    Data.updateUser
+                                        { capsule
+                                            | produced =
+                                                Utils.tern
+                                                    finished
+                                                    Data.Done
+                                                    (Data.Running (Just progress))
+                                        }
+                                        model.user
+                            }
+                    in
+                    ( newModel, Cmd.none )
 
                 App.WebSocketMsg (App.ExtraRecordProgress id progress finished) ->
                     ( model, Cmd.none )

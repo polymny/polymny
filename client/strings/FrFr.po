@@ -1075,6 +1075,10 @@ msgstr "Export capsule"
 msgid "Tasks.importCapsule"
 msgstr "Import capsule"
 
+#. Capsule production task.
+msgid "Tasks.productionCapsule"
+msgstr "Production"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Tâche inconnue"

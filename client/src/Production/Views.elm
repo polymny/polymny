@@ -4,8 +4,10 @@ module Production.Views exposing (..)
 -}
 
 import App.Types as App
-import Config exposing (Config)
+import App.Utils as App
+import Config exposing (Config, TaskStatus)
 import Data.Capsule as Data
+import Data.Types as Data
 import Data.User exposing (User)
 import Element exposing (Element)
 import Element.Background as Background
@@ -20,15 +22,16 @@ import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
+import Utils
 
 
 {-| The full view of the page.
 -}
 view : Config -> User -> Production.Model Data.Capsule Data.Gos -> ( Element App.Msg, Element App.Msg )
-view config _ model =
+view config user model =
     ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
         [ leftColumn config model
-        , rightColumn config model
+        , rightColumn config user model
         ]
     , Element.none
     )
@@ -297,8 +300,8 @@ leftColumn config model =
 
 {-| The column with the slide view and the production button.
 -}
-rightColumn : Config -> Production.Model Data.Capsule Data.Gos -> Element App.Msg
-rightColumn config model =
+rightColumn : Config -> User -> Production.Model Data.Capsule Data.Gos -> Element App.Msg
+rightColumn config user model =
     let
         lang =
             config.clientState.lang
@@ -404,9 +407,33 @@ rightColumn config model =
 
         -- The button to produce the video
         produceButton =
+            let
+                ready2Product : Bool
+                ready2Product =
+                    case model.capsule.produced of
+                        Data.Running _ ->
+                            False
+
+                        _ ->
+                            True
+
+                action : App.Msg
+                action =
+                    Utils.tern
+                        ready2Product
+                        (App.ProductionMsg Production.Produce)
+                        App.Noop
+
+                label : Element.Element App.Msg
+                label =
+                    Utils.tern
+                        ready2Product
+                        (Element.text <| Strings.stepsProductionProduceVideo lang)
+                        (Ui.spinningSpinner [] 24)
+            in
             Ui.primary [ Ui.ar ]
-                { action = Ui.Msg <| App.ProductionMsg <| Production.Produce
-                , label = Element.text <| Strings.stepsProductionProduceVideo lang
+                { action = Ui.Msg <| action
+                , label = label
                 }
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]
