@@ -206,15 +206,6 @@ taskPanel clientState =
                 |> Maybe.map .tasks
                 |> Maybe.withDefault []
 
-        head : Element App.Msg
-        head =
-            Element.el [ Font.bold, Ui.cy ] <|
-                Element.text <|
-                    Utils.tern
-                        (List.length tasks > 0)
-                        (Strings.uiTasksRunning lang)
-                        (Strings.uiTasksNone lang)
-
         taskInfo : Config.TaskStatus -> Element App.Msg
         taskInfo taskStatus =
             let
@@ -287,7 +278,7 @@ taskPanel clientState =
             in
             Element.column [ Ui.s 10 ]
                 [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
-                , Element.text name
+                , Element.el [ Font.size 18 ] <| Element.text name
                 , Element.row [ Ui.s 10 ]
                     [ Element.el
                         [ Ui.p 3
@@ -333,6 +324,44 @@ taskPanel clientState =
                     ]
                 ]
 
+        clientTasks : List Config.TaskStatus
+        clientTasks =
+            tasks
+                |> List.filter (\t -> Config.isClientTask t)
+
+        serverTasks : List Config.TaskStatus
+        serverTasks =
+            tasks
+                |> List.filter (\t -> Config.isServerTask t)
+
+        noTasksElement : Element App.Msg
+        noTasksElement =
+            if List.length tasks == 0 then
+                Element.text <| Strings.uiTasksNone lang
+
+            else
+                Element.none
+
+        clientTasksElement : Element App.Msg
+        clientTasksElement =
+            if List.length clientTasks > 0 then
+                Element.column
+                    [ Ui.s 10, Ui.pt 10 ]
+                    ((Element.text <| Strings.uiTasksClient lang) :: List.map taskInfo clientTasks)
+
+            else
+                Element.none
+
+        serverTasksElement : Element App.Msg
+        serverTasksElement =
+            if List.length serverTasks > 0 then
+                Element.column
+                    [ Ui.s 10, Ui.pt 10 ]
+                    ((Element.text <| Strings.uiTasksServer lang) :: List.map taskInfo serverTasks)
+
+            else
+                Element.none
+
         taskView : Element App.Msg
         taskView =
             Element.column
@@ -354,7 +383,7 @@ taskPanel clientState =
                     }
                 , Background.color Colors.white
                 ]
-                (head :: List.map taskInfo tasks)
+                [ noTasksElement, clientTasksElement, serverTasksElement ]
     in
     Element.el
         [ Element.alignRight

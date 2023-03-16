@@ -1047,9 +1047,13 @@ msgstr "Supprimer l'enregistrement"
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Voulez vous vraiment supprimer l'enregistrement"
 
-#. Running tasks.
-msgid "Ui.tasksRunning"
-msgstr "Tâches en cours"
+#. Client tasks.
+msgid "Ui.tasksClient"
+msgstr "Tâches client"
+
+#. Server tasks.
+msgid "Ui.tasksServer"
+msgstr "Tâches serveur"
 
 #. No tasks.
 msgid "Ui.tasksNone"

@@ -433,11 +433,7 @@ rightColumn config user model =
                         , Font.color <| Utils.tern ready2Product Colors.transparent Colors.white
                         ]
                     <|
-                        Ui.spinningSpinner
-                            [ Ui.cx
-                            , Ui.cy
-                            ]
-                            18
+                        Ui.spinningSpinner [ Ui.cx, Ui.cy ] 18
 
                 label : Element.Element App.Msg
                 label =

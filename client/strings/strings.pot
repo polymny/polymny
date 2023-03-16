@@ -1000,8 +1000,12 @@ msgstr ""
 msgid "Actions.Confirm.deleteRecord"
 msgstr ""
 
-#. Running tasks.
-msgid "Ui.tasksRunning"
+#. Client tasks.
+msgid "Ui.tasksClient"
+msgstr ""
+
+#. Server tasks.
+msgid "Ui.tasksServer"
 msgstr ""
 
 #. No tasks.

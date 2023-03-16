@@ -1040,9 +1040,13 @@ msgstr "Delete record"
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Do you really want to delete this record"
 
-#. Running tasks.
-msgid "Ui.tasksRunning"
-msgstr "Running tasks"
+#. Client tasks.
+msgid "Ui.tasksClient"
+msgstr "Client tasks"
+
+#. Server tasks.
+msgid "Ui.tasksServer"
+msgstr "Server tasks"
 
 #. No tasks.
 msgid "Ui.tasksNone"
