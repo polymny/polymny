@@ -61,7 +61,7 @@ primaryGeneric outerAttr innerAttr { label, action } =
                 ++ [ Font.center
                    , Ui.wf
                    , Ui.hf
-                   , Element.mouseOver <| [ Background.color <| Colors.alpha 0.1 ]
+                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                    , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -120,7 +120,7 @@ secondaryGeneric outerAttr innerAttr { label, action } =
                 ++ [ Font.center
                    , Ui.wf
                    , Ui.hf
-                   , Element.mouseOver <| [ Background.color <| Colors.alpha 0.1 ]
+                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
                    , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -300,7 +300,7 @@ popup size titleText content =
                     { offset = ( 0.0, 0.0 )
                     , size = 3.0
                     , blur = 3.0
-                    , color = Colors.alpha 0.1
+                    , color = Colors.alphaColor 0.1 Colors.black
                     }
                 ]
                 [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)

@@ -18,6 +18,7 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Production.Types as Production exposing (getWebcamSettings)
+import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -424,19 +425,80 @@ rightColumn config user model =
                         (App.ProductionMsg Production.Produce)
                         App.Noop
 
-                label : Element.Element App.Msg
-                label =
-                    Utils.tern
-                        ready2Product
-                        (Element.text <| Strings.stepsProductionProduceVideo lang)
-                        (Ui.spinningSpinner [] 24)
+                textElement : Element.Element App.Msg
+                textElement =
+                    Element.el
+                        [ Utils.tern
+                            ready2Product
+                            (Element.htmlAttribute <| Html.Attributes.style "z-index" "0")
+                            (Element.htmlAttribute <| Html.Attributes.style "z-index" "-1")
+                        ]
+                    <|
+                        Element.text <|
+                            Strings.stepsProductionProduceVideo lang
+
+                spinnerElement : Element.Element App.Msg
+                spinnerElement =
+                    Element.el [ Ui.wf, Ui.hf ] <|
+                        Ui.spinningSpinner
+                            [ Font.color Colors.white
+                            , Ui.cx
+                            , Ui.cy
+                            , Utils.tern
+                                ready2Product
+                                (Element.htmlAttribute <| Html.Attributes.style "z-index" "-1")
+                                (Element.htmlAttribute <| Html.Attributes.style "z-index" "0")
+                            ]
+                            18
             in
-            Ui.primary [ Ui.ar ]
+            Ui.primary [ Ui.ar, Element.inFront spinnerElement ]
                 { action = Ui.Msg <| action
-                , label = label
+                , label = textElement
                 }
+
+        -- The production progress bar
+        progressBar : Element App.Msg
+        progressBar =
+            case model.capsule.produced of
+                Data.Running (Just progress) ->
+                    Element.el
+                        [ Ui.p 5
+                        , Ui.wpx 300
+                        , Ui.hpx 30
+                        , Ui.r 20
+                        , Ui.ar
+                        , Background.color <| Colors.alpha 0.1
+                        , Border.shadow
+                            { size = 1
+                            , blur = 8
+                            , color = Colors.alpha 0.1
+                            , offset = ( 0, 0 )
+                            }
+                        ]
+                    <|
+                        Element.row
+                            [ Ui.wf
+                            , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                            , Ui.r 100
+                            , Ui.hf
+                            ]
+                            [ Element.el
+                                [ Ui.wf
+                                , Ui.hf
+                                , Ui.r 5
+                                , Element.moveLeft (300.0 * (1.0 - progress))
+                                , Background.color Colors.green2
+                                , Element.htmlAttribute <|
+                                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                                ]
+                                Element.none
+                            ]
+
+                _ ->
+                    Element.none
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]
         [ Element.el [ Ui.wf, Ui.cy, Element.inFront overlay, Element.clip ] slide
         , produceButton
+        , progressBar
         ]

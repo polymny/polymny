@@ -291,18 +291,26 @@ taskPanel clientState =
                 , Element.row [ Ui.s 10 ]
                     [ Element.el
                         [ Ui.p 3
+                        , Ui.wpx 300
+                        , Ui.hpx 12
                         , Ui.r 20
                         , Background.color <| Colors.alpha 0.1
+                        , Border.shadow
+                            { size = 1
+                            , blur = 8
+                            , color = Colors.alpha 0.1
+                            , offset = ( 0, 0 )
+                            }
                         ]
                       <|
                         Element.row
-                            [ Ui.wpx 300
+                            [ Ui.wf
                             , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
                             , Ui.r 100
-                            , Ui.h 7
+                            , Ui.hf
                             ]
                             [ Element.el
-                                [ Ui.wpx 300
+                                [ Ui.wf
                                 , Ui.hf
                                 , Ui.r 2
                                 , Element.moveLeft (300.0 * (1.0 - progress))
