@@ -364,6 +364,7 @@ type alias TaskStatus =
     , progress : Maybe Float
     , finished : Bool
     , aborted : Bool
+    , global : Bool
     }
 
 
@@ -371,11 +372,12 @@ type alias TaskStatus =
 -}
 decodeTaskStatus : Decoder TaskStatus
 decodeTaskStatus =
-    Decode.map4 TaskStatus
+    Decode.map5 TaskStatus
         (Decode.field "task" decodeTask)
         (Decode.maybe (Decode.field "progress" Decode.float))
         (Decode.field "finished" Decode.bool)
         (Decode.field "aborted" Decode.bool)
+        (Decode.field "global" Decode.bool)
 
 
 {-| Initializes a client state.
@@ -454,7 +456,7 @@ compareTasks t1 t2 =
 
             else
                 id1 == id2
-        
+
         ( TranscodeExtra id1 slideId1 capsuleId1, TranscodeExtra id2 slideId2 capsuleId2 ) ->
             if id1 < 0 || id2 < 0 then
                 slideId1 == slideId2 && capsuleId1 == capsuleId2
@@ -654,7 +656,7 @@ update msg { serverConfig, clientConfig, clientState } =
                                 List.map Tuple.first updatedTasks
 
                             else
-                                task :: clientState.tasks
+                                { task | global = not task.finished } :: List.map (\t -> { t | global = not t.finished }) clientState.tasks
                     in
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
@@ -769,7 +771,7 @@ update msg { serverConfig, clientConfig, clientState } =
 
                                 ExportCapsule _ _ ->
                                     abortTaskPort tracker
-                                
+
                                 ImportCapsule _ ->
                                     abortTaskPort tracker
 
@@ -782,6 +784,7 @@ update msg { serverConfig, clientConfig, clientState } =
                             , progress = Just 1.0
                             , finished = True
                             , aborted = True
+                            , global = True
                             }
 
                         newTasks : List TaskStatus
@@ -912,6 +915,7 @@ subs config =
                                                 , finished = finished
                                                 , progress = Just progressValue
                                                 , aborted = False
+                                                , global = True
                                                 }
 
                                         _ ->

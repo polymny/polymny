@@ -93,6 +93,7 @@ update msg model =
                                         , progress = Just 0.0
                                         , finished = False
                                         , aborted = False
+                                        , global = True
                                         }
 
                                     ( newConfig, _ ) =
@@ -357,6 +358,7 @@ update msg model =
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
+                            , global = True
                             }
 
                         ( newConfig, _ ) =

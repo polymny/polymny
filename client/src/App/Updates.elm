@@ -317,6 +317,7 @@ updateModel msg model =
                             , progress = Just progress
                             , finished = finished
                             , aborted = False
+                            , global = True
                             }
 
                         newConfig : Config.Config
@@ -357,6 +358,7 @@ updateModel msg model =
                             , progress = Just progress
                             , finished = finished
                             , aborted = False
+                            , global = True
                             }
 
                         newConfig : Config.Config

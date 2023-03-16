@@ -59,9 +59,9 @@ navbar config page user =
             config
                 |> Maybe.map .clientState
                 |> Maybe.map .tasks
-                |> Maybe.andThen Utils.headAndTail
-                |> Maybe.map (\( h, t ) -> List.filterMap .progress (h :: t))
-                |> Maybe.map (\x -> List.sum x / toFloat (List.length x))
+                |> Maybe.map (List.filter .global)
+                |> Maybe.map (List.filterMap .progress)
+                |> Maybe.map (\p -> List.sum p / toFloat (List.length p))
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
@@ -390,11 +390,11 @@ taskPanel clientState =
         , Element.height <| Element.maximum 300 Element.fill
         , Element.alpha <| Utils.tern showTaskPanel 1.0 0.0
         , Transition.properties
-            [ Transition.opacity 200 []
-            ]
+            [ Transition.opacity 200 [] ]
             |> Element.htmlAttribute
         ]
-        taskView
+    <|
+        Utils.tern showTaskPanel taskView Element.none
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.

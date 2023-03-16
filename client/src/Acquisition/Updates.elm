@@ -227,7 +227,7 @@ update msg model =
 
                             else
                                 -- No record changed, which means we received a new record, add it to the list
-                                Debug.log "new" record :: m.records
+                                record :: m.records
                     in
                     ( { model | page = App.Acquisition { m | records = newRecords } }, Cmd.none )
 
@@ -239,6 +239,7 @@ update msg model =
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
+                            , global = True
                             }
 
                         nextRoute : Route.Route

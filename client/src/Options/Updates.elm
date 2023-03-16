@@ -91,6 +91,7 @@ update msg model =
                                 , progress = Just 0.0
                                 , finished = False
                                 , aborted = False
+                                , global = True
                                 }
 
                             newPage : App.Page

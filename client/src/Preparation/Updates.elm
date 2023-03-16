@@ -177,6 +177,7 @@ updateExtra user msg model config =
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
+                            , global = True
                             }
 
                         ( newConfig, _ ) =
