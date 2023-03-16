@@ -782,7 +782,7 @@ pointerControl model =
             let
                 borderColor : Element.Color
                 borderColor =
-                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 (Colors.alphaColor 0.3 Colors.black)
+                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 (Colors.alpha 0.3)
             in
             Ui.navigationElement
                 (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
@@ -794,14 +794,14 @@ pointerControl model =
                     { offset = ( 0.0, 0.0 )
                     , size = 1.0
                     , blur = 4.0
-                    , color = Colors.alphaColor 0.4 Colors.black
+                    , color = Colors.alpha 0.4
                     }
                 ]
                 (Element.el
                     [ Ui.wpx 35
                     , Ui.hpx 35
                     , Ui.r 6
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.2 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.2 ]
                     ]
                     Element.none
                 )
@@ -816,15 +816,15 @@ pointerControl model =
                         Utils.tern
                             (model.pointerStyle.mode == Acquisition.Pointer)
                             Colors.green2
-                            (Colors.alphaColor 0.1 Colors.black)
+                            (Colors.alpha 0.1)
                     , Ui.b 4
                     , Font.color Colors.green2
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                     , Border.shadow
                         { offset = ( 0.0, 0.0 )
                         , size = 1.0
                         , blur = 4.0
-                        , color = Colors.alphaColor 0.4 Colors.black
+                        , color = Colors.alpha 0.4
                         }
                     ]
                     (Ui.icon 35 Material.Icons.gps_fixed)
@@ -835,15 +835,15 @@ pointerControl model =
                         Utils.tern
                             (model.pointerStyle.mode == Acquisition.Brush)
                             Colors.green2
-                            (Colors.alphaColor 0.1 Colors.black)
+                            (Colors.alpha 0.1)
                     , Ui.b 4
                     , Font.color Colors.green2
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                     , Border.shadow
                         { offset = ( 0.0, 0.0 )
                         , size = 1.0
                         , blur = 4.0
-                        , color = Colors.alphaColor 0.4 Colors.black
+                        , color = Colors.alpha 0.4
                         }
                     ]
                     (Ui.icon 35 Material.Icons.brush)
@@ -852,15 +852,15 @@ pointerControl model =
                 [ Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ClearPointer)
                     [ Ui.r 10
-                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Border.color <| Colors.alpha 0.1
                     , Ui.b 4
                     , Font.color Colors.green2
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                     , Border.shadow
                         { offset = ( 0.0, 0.0 )
                         , size = 1.0
                         , blur = 4.0
-                        , color = Colors.alphaColor 0.4 Colors.black
+                        , color = Colors.alpha 0.4
                         }
                     ]
                     (Ui.icon 35 Material.Icons.recycling)
@@ -879,30 +879,30 @@ pointerControl model =
                 [ Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size - 5)
                     [ Ui.r 10
-                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Border.color <| Colors.alpha 0.1
                     , Ui.b 4
                     , Font.color Colors.green2
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                     , Border.shadow
                         { offset = ( 0.0, 0.0 )
                         , size = 1.0
                         , blur = 4.0
-                        , color = Colors.alphaColor 0.4 Colors.black
+                        , color = Colors.alpha 0.4
                         }
                     ]
                     (Ui.icon 35 Material.Icons.remove)
                 , Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerSize <| model.pointerStyle.size + 5)
                     [ Ui.r 10
-                    , Border.color <| Colors.alphaColor 0.1 Colors.black
+                    , Border.color <| Colors.alpha 0.1
                     , Ui.b 4
                     , Font.color Colors.green2
-                    , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                    , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                     , Border.shadow
                         { offset = ( 0.0, 0.0 )
                         , size = 1.0
                         , blur = 4.0
-                        , color = Colors.alphaColor 0.4 Colors.black
+                        , color = Colors.alpha 0.4
                         }
                     ]
                     (Ui.icon 35 Material.Icons.add)

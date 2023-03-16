@@ -85,7 +85,7 @@ navbar config page user =
                             Background.color <| Colors.alphaColor 0.18 Colors.black
 
                         else
-                            Background.color <| Colors.alphaColor 0.0 Colors.black
+                            Background.color <| Colors.alpha 0.0
 
                     panelButtonOver : List (Element.Attr decorative msg)
                     panelButtonOver =
@@ -93,7 +93,7 @@ navbar config page user =
                             []
 
                         else
-                            [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                            [ Background.color <| Colors.alpha 0.1 ]
                 in
                 Element.row
                     [ Font.size 20
@@ -128,7 +128,7 @@ navbar config page user =
                         [ Font.color Colors.white
                         , Ui.r 100
                         , Ui.p 4
-                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                         , Transition.properties
                             [ Transition.backgroundColor 200 []
                             ]
@@ -244,16 +244,15 @@ taskPanel clientState =
 
                         Config.ImportCapsule _ ->
                             Strings.tasksImportCapsule lang
-                        
+
                         Config.Production _ _ ->
                             Strings.tasksProductionCapsule lang
-                        
+
                         Config.TranscodeExtra _ _ _ ->
                             Strings.tasksTranscodeExtra lang
 
-                        -- _ ->
-                        --     Strings.tasksUnknown lang
-
+                -- _ ->
+                --     Strings.tasksUnknown lang
                 progress : Float
                 progress =
                     taskStatus.progress
@@ -268,7 +267,7 @@ taskPanel clientState =
                         Colors.green2
 
                     else
-                        Colors.redLight
+                        Colors.orange
 
                 icon : Icons.Icon msg
                 icon =
@@ -290,30 +289,33 @@ taskPanel clientState =
                 [ Element.el [ Ui.wf, Ui.bt 1, Border.color <| Colors.alphaColor 0.1 Colors.greyFont ] Element.none
                 , Element.text name
                 , Element.row [ Ui.s 10 ]
-                    [ Element.row [ Ui.wpx 300, Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden" ]
-                        [ Element.el
-                            [ Ui.wpx 300
-                            , Ui.h 3
-                            , Element.moveLeft (300.0 * (1.0 - progress))
-                            , Background.color color
-                            , Element.htmlAttribute <|
-                                Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
-                            ]
-                            Element.none
-                        , Element.el
-                            [ Ui.wpx 300
-                            , Ui.h 3
-                            , Element.moveLeft (300.0 * (1.0 - progress))
-                            , Background.color Colors.greyFont
-                            , Element.htmlAttribute <|
-                                Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
-                            ]
-                            Element.none
+                    [ Element.el
+                        [ Ui.p 3
+                        , Ui.r 20
+                        , Background.color <| Colors.alpha 0.1
                         ]
+                      <|
+                        Element.row
+                            [ Ui.wpx 300
+                            , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                            , Ui.r 100
+                            , Ui.h 7
+                            ]
+                            [ Element.el
+                                [ Ui.wpx 300
+                                , Ui.hf
+                                , Ui.r 2
+                                , Element.moveLeft (300.0 * (1.0 - progress))
+                                , Background.color color
+                                , Element.htmlAttribute <|
+                                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                                ]
+                                Element.none
+                            ]
                     , Ui.navigationElement action
                         [ Ui.r 100
                         , Ui.p 4
-                        , Element.mouseOver [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                        , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                         , Transition.properties
                             [ Transition.backgroundColor 200 []
                             ]
@@ -334,7 +336,7 @@ taskPanel clientState =
                     { offset = ( 0.0, 0.0 )
                     , size = 3.0
                     , blur = 3.0
-                    , color = Colors.alphaColor 0.1 Colors.black
+                    , color = Colors.alpha 0.1
                     }
                 , Border.roundEach
                     { bottomLeft = 5
