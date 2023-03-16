@@ -425,35 +425,33 @@ rightColumn config user model =
                         (App.ProductionMsg Production.Produce)
                         App.Noop
 
-                textElement : Element.Element App.Msg
-                textElement =
+                spinnerElement : Element.Element App.Msg
+                spinnerElement =
                     Element.el
-                        [ Utils.tern
-                            ready2Product
-                            (Element.htmlAttribute <| Html.Attributes.style "z-index" "0")
-                            (Element.htmlAttribute <| Html.Attributes.style "z-index" "-1")
+                        [ Ui.wf
+                        , Ui.hf
+                        , Font.color <| Utils.tern ready2Product Colors.transparent Colors.white
+                        ]
+                    <|
+                        Ui.spinningSpinner
+                            [ Ui.cx
+                            , Ui.cy
+                            ]
+                            18
+
+                label : Element.Element App.Msg
+                label =
+                    Element.el
+                        [ Font.color <| Utils.tern ready2Product Colors.white Colors.transparent
+                        , Element.inFront spinnerElement
                         ]
                     <|
                         Element.text <|
                             Strings.stepsProductionProduceVideo lang
-
-                spinnerElement : Element.Element App.Msg
-                spinnerElement =
-                    Element.el [ Ui.wf, Ui.hf ] <|
-                        Ui.spinningSpinner
-                            [ Font.color Colors.white
-                            , Ui.cx
-                            , Ui.cy
-                            , Utils.tern
-                                ready2Product
-                                (Element.htmlAttribute <| Html.Attributes.style "z-index" "-1")
-                                (Element.htmlAttribute <| Html.Attributes.style "z-index" "0")
-                            ]
-                            18
             in
-            Ui.primary [ Ui.ar, Element.inFront spinnerElement ]
+            Ui.primary [ Ui.ar ]
                 { action = Ui.Msg <| action
-                , label = textElement
+                , label = label
                 }
 
         -- The production progress bar
