@@ -1032,6 +1032,10 @@ msgstr ""
 msgid "Tasks.productionCapsule"
 msgstr ""
 
+#. Extra transcoding task.
+msgid "Tasks.transcodeExtra"
+msgstr ""
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr ""

@@ -447,10 +447,11 @@ impl Capsule {
     }
 
     /// Notify the users that a capsule has been publicated.
-    pub async fn notify_video_upload(&self, id: &str, db: &Db, sock: &WebSockets) -> Result<()> {
+    pub async fn notify_video_upload(&self, slide_id: &str, capsule_id: &str, db: &Db, sock: &WebSockets) -> Result<()> {
         let text = json!({
             "type": "video_upload_finished",
-            "id": id,
+            "capsule_id": capsule_id,
+            "slide_id": slide_id,
         });
 
         for (user, _) in self.users(&db).await? {
@@ -486,7 +487,8 @@ impl Capsule {
     /// Notify the users that a capsule in under production.
     pub async fn notify_video_upload_progress(
         &self,
-        id: &str,
+        slide_id: &str,
+        capsule_id: &str,
         msg: &str,
         db: &Db,
         sock: &WebSockets,
@@ -494,7 +496,8 @@ impl Capsule {
         let text = json!({
             "type": "video_upload_progress",
             "msg": msg.parse::<f32>().map_err(|_|Error(Status::InternalServerError))?,
-            "id": id,
+            "capsule_id": capsule_id,
+            "slide_id": slide_id,
         });
 
         for (user, _) in self.users(&db).await? {

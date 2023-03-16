@@ -256,6 +256,7 @@ type Task
     | Production TaskId String
     | ExportCapsule TaskId String
     | ImportCapsule TaskId
+    | TranscodeExtra TaskId String String
 
 
 {-| Returns true if the task is a client task.
@@ -450,6 +451,13 @@ compareTasks t1 t2 =
         ( Production id1 capsuleId1, Production id2 capsuleId2 ) ->
             if id1 < 0 || id2 < 0 then
                 capsuleId1 == capsuleId2
+
+            else
+                id1 == id2
+        
+        ( TranscodeExtra id1 slideId1 capsuleId1, TranscodeExtra id2 slideId2 capsuleId2 ) ->
+            if id1 < 0 || id2 < 0 then
+                slideId1 == slideId2 && capsuleId1 == capsuleId2
 
             else
                 id1 == id2

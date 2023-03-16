@@ -1068,6 +1068,10 @@ msgstr "Capsule export"
 msgid "Tasks.importCapsule"
 msgstr "Capsule import"
 
+#. Extra transcoding task.
+msgid "Tasks.transcodeExtra"
+msgstr "Transcode extra"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Unknown task"

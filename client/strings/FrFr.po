@@ -1079,6 +1079,10 @@ msgstr "Import capsule"
 msgid "Tasks.productionCapsule"
 msgstr "Production"
 
+#. Extra transcoding task.
+msgid "Tasks.transcodeExtra"
+msgstr "Transcodage de resources externes"
+
 #. Unknown task.
 msgid "Tasks.unknown"
 msgstr "Tâche inconnue"

@@ -247,6 +247,9 @@ taskPanel clientState =
                         
                         Config.Production _ _ ->
                             Strings.tasksProductionCapsule lang
+                        
+                        Config.TranscodeExtra _ _ _ ->
+                            Strings.tasksTranscodeExtra lang
 
                         -- _ ->
                         --     Strings.tasksUnknown lang

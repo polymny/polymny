@@ -349,8 +349,25 @@ updateModel msg model =
                     in
                     ( newModel, Cmd.none )
 
-                App.WebSocketMsg (App.ExtraRecordProgress id progress finished) ->
-                    ( model, Cmd.none )
+                App.WebSocketMsg (App.ExtraRecordProgress slideId capsuleId progress finished) ->
+                    let
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.TranscodeExtra -1 slideId capsuleId
+                            , progress = Just progress
+                            , finished = finished
+                            , aborted = False
+                            }
+
+                        newConfig : Config.Config
+                        newConfig =
+                            Tuple.first <| Config.update (Config.UpdateTaskStatus task) model.config
+
+                        newModel : App.Model
+                        newModel =
+                            { model | config = newConfig }
+                    in
+                    ( newModel, Cmd.none )
 
                 App.OnUrlChange url ->
                     let
@@ -492,13 +509,15 @@ webSocketMsgDecoder =
                             (Decode.field "id" Decode.string)
 
                     "video_upload_progress" ->
-                        Decode.map2 (\y z -> App.ExtraRecordProgress y z False)
-                            (Decode.field "id" Decode.string)
+                        Decode.map3 (\y z t -> App.ExtraRecordProgress y z t False)
+                            (Decode.field "slide_id" Decode.string)
+                            (Decode.field "capsule_id" Decode.string)
                             (Decode.field "msg" Decode.float)
 
                     "video_upload_finished" ->
-                        Decode.map (\p -> App.ExtraRecordProgress p 1.0 True)
-                            (Decode.field "id" Decode.string)
+                        Decode.map2 (\p q -> App.ExtraRecordProgress p q 1.0 True)
+                            (Decode.field "slide_id" Decode.string)
+                            (Decode.field "capsule_id" Decode.string)
 
                     _ ->
                         Decode.fail <| "Unknown websocket msg type " ++ x

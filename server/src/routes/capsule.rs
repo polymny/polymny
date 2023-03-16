@@ -458,6 +458,7 @@ pub async fn replace_slide(
                         while let Some(line) = lines.next_line().await.unwrap() {
                             capsule
                                 .notify_video_upload_progress(
+                                    &old_uuid,
                                     &id.hash(),
                                     &format!("{}", line),
                                     &db,
@@ -520,7 +521,7 @@ pub async fn replace_slide(
             capsule.notify_change(&db, &socks).await.ok();
 
             capsule
-                .notify_video_upload(&id.hash(), &db, &socks)
+                .notify_video_upload(&old_uuid, &id.hash(), &db, &socks)
                 .await
                 .ok();
 
