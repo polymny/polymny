@@ -10,9 +10,11 @@ import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
 import Lang exposing (Lang)
-import Material.Icons
+import Material.Icons as Icons
+import Material.Icons.Types exposing (Icon)
 import Options.Types as Options
 import RemoteData
+import Route exposing (Route(..))
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -338,8 +340,19 @@ generalOptions config model =
                     0.0
 
         -- Whether the user can control the volume
+        noTrack : Bool
         noTrack =
             model.capsule.soundTrack == Nothing
+
+        -- Whether the user is uploading a track
+        uploading : Bool
+        uploading =
+            case model.capsuleUpdate of
+                RemoteData.Loading _ ->
+                    True
+
+                _ ->
+                    False
 
         --- UI ELEMENTS ---
         -- Sound track title
@@ -365,29 +378,80 @@ generalOptions config model =
 
         -- Sound track upload button
         soundTrackUpload =
+            let
+                action : App.Msg
+                action =
+                    if uploading then
+                        App.Noop
+
+                    else
+                        App.OptionsMsg Options.TrackUploadRequested
+
+                spinnerElement : Element App.Msg
+                spinnerElement =
+                    Element.el
+                        [ Ui.wf
+                        , Ui.hf
+                        , Font.color <| Utils.tern uploading Colors.black Colors.transparent
+                        ]
+                    <|
+                        Ui.spinningSpinner [ Ui.cx, Ui.cy ] 20
+
+                label : Element App.Msg
+                label =
+                    Element.el
+                        [ Font.color <| Utils.tern uploading Colors.transparent Colors.black
+                        , Element.inFront spinnerElement
+                        ]
+                    <|
+                        Element.text <|
+                            Utils.tern
+                                noTrack
+                                (Strings.stepsOptionsUploadTrack lang)
+                                (Strings.stepsOptionsReplaceTrack lang)
+            in
             Ui.secondary
                 []
-                { label = Element.text <| Strings.stepsOptionsUploadTrack lang
-                , action = Ui.Msg (App.OptionsMsg Options.TrackUploadRequested)
+                { label = label
+                , action = Ui.Msg action
                 }
 
         -- Sound track remove button
+        soundTrackRemove : Element App.Msg
         soundTrackRemove =
             let
+                action : Ui.Action App.Msg
                 action =
-                    if noTrack then
+                    if uploading then
+                        Config.UploadTrack -1 model.capsule.id
+                            |> Config.AbortTask
+                            |> App.ConfigMsg
+                            |> Ui.Msg
+
+                    else if noTrack then
                         Ui.None
 
                     else
-                        Ui.Msg <| App.OptionsMsg <| Options.DeleteTrack Utils.Request model.capsule.soundTrack
+                        Options.DeleteTrack Utils.Request model.capsule.soundTrack
+                            |> App.OptionsMsg
+                            |> Ui.Msg
+                
+                icon : Material.Icons.Types.Icon msg
+                icon =
+                    if uploading then
+                        Icons.close
+
+                    else
+                        Icons.delete
             in
             Ui.secondaryIcon (disableAttrIf noTrack)
-                { icon = Material.Icons.delete
+                { icon = icon
                 , tooltip = Strings.actionsDeleteTrack lang
                 , action = action
                 }
 
         -- Slider to control volume
+        volumeSlider : Element App.Msg
         volumeSlider =
             Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
                 [ -- Slider for the control
@@ -428,7 +492,7 @@ generalOptions config model =
             in
             Ui.secondaryIcon
                 attr
-                { icon = Material.Icons.play_arrow
+                { icon = Icons.play_arrow
                 , tooltip = Strings.stepsOptionsPlayPreview lang
                 , action = action
                 }
@@ -449,7 +513,7 @@ generalOptions config model =
             in
             Ui.secondaryIcon
                 attr
-                { icon = Material.Icons.stop
+                { icon = Icons.stop
                 , tooltip = Strings.stepsOptionsStopPreview lang
                 , action = action
                 }

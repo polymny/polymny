@@ -952,6 +952,10 @@ msgstr "Sound track"
 msgid "Steps.Options.uploadTrack"
 msgstr "Add a sound track"
 
+#. Upload sound track.
+msgid "Steps.Options.replaceTrack"
+msgstr "Replace sound track"
+
 #. No sound track.
 msgid "Steps.Options.noTrack"
 msgstr "No track"

@@ -425,7 +425,7 @@ rightColumn config user model =
                         (App.ProductionMsg Production.Produce)
                         App.Noop
 
-                spinnerElement : Element.Element App.Msg
+                spinnerElement : Element App.Msg
                 spinnerElement =
                     Element.el
                         [ Ui.wf
@@ -435,7 +435,7 @@ rightColumn config user model =
                     <|
                         Ui.spinningSpinner [ Ui.cx, Ui.cy ] 18
 
-                label : Element.Element App.Msg
+                label : Element App.Msg
                 label =
                     Element.el
                         [ Font.color <| Utils.tern ready2Product Colors.white Colors.transparent

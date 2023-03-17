@@ -438,8 +438,12 @@ compareTasks t1 t2 =
         ( UploadRecord id1 _ _ _, UploadRecord id2 _ _ _ ) ->
             id1 == id2
 
-        ( UploadTrack id1 _, UploadTrack id2 _ ) ->
-            id1 == id2
+        ( UploadTrack id1 capsuleId1, UploadTrack id2 capsuleId2 ) ->
+            if id1 < 0 || id2 < 0 then
+                capsuleId1 == capsuleId2
+
+            else
+                id1 == id2
 
         ( AddSlide id1 _, AddSlide id2 _ ) ->
             id1 == id2
@@ -730,8 +734,28 @@ update msg { serverConfig, clientConfig, clientState } =
                                 UploadRecord taskId _ _ _ ->
                                     "task-track-" ++ String.fromInt taskId
 
-                                UploadTrack taskId _ ->
-                                    "task-track-" ++ String.fromInt taskId
+                                UploadTrack taskId capsuleId ->
+                                    let
+                                        realTaskId : TaskId
+                                        realTaskId =
+                                            List.filterMap
+                                                (\t ->
+                                                    if compareTasks t.task task then
+                                                        case t.task of
+                                                            UploadTrack id _ ->
+                                                                Just id
+
+                                                            _ ->
+                                                                Nothing
+
+                                                    else
+                                                        Nothing
+                                                )
+                                                clientState.tasks
+                                                |> List.head
+                                                |> Maybe.withDefault 0
+                                    in
+                                    "task-track-" ++ String.fromInt realTaskId
 
                                 AddSlide taskId _ ->
                                     "task-track-" ++ String.fromInt taskId
