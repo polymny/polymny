@@ -256,7 +256,6 @@ update msg model =
                             , global = True
                             }
 
-                        nextRoute : Route.Route
                         nextRoute =
                             if m.gos + 1 < List.length capsule.structure then
                                 Route.Acquisition m.capsule (m.gos + 1)
@@ -267,7 +266,16 @@ update msg model =
                         ( newConfig, _ ) =
                             Config.update (Config.UpdateTaskStatus task) model.config
                     in
-                    ( { model | config = Config.incrementTaskId newConfig }
+                    ( { model
+                        | config = Config.incrementTaskId newConfig
+
+                        -- Whoever is reading this code, I'm sorry
+                        -- When we validate the last record of a capsule, we want to move to the production
+                        -- page, but the App/Updates.elm will detect that we're trying to change page while we
+                        -- still have non validated records, which would trigger the warn leaving popup.
+                        -- We hard remove the records here to prevent that.
+                        , page = App.Acquisition { m | records = [] }
+                      }
                     , Cmd.batch
                         [ uploadRecord capsule m.gos record model.config.clientState.taskId
                         , Route.push model.config.clientState.key nextRoute
