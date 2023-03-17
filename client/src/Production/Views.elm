@@ -18,6 +18,9 @@ import Html.Attributes
 import Html.Events
 import Json.Decode as Decode
 import Production.Types as Production exposing (getWebcamSettings)
+import Simple.Animation as Animation exposing (Animation)
+import Simple.Animation.Animated as Animated
+import Simple.Animation.Property as P
 import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
@@ -454,7 +457,46 @@ rightColumn config user model =
         progressBar : Element App.Msg
         progressBar =
             case model.capsule.produced of
-                Data.Running (Just progress) ->
+                Data.Running a ->
+                    let
+                        loadingAnimation : Animation
+                        loadingAnimation =
+                            Animation.steps
+                                { startAt = [ P.x -300 ]
+                                , options = [ Animation.loop ]
+                                }
+                                [ Animation.step 1000 [ P.x 300 ]
+                                , Animation.wait 100
+                                , Animation.step 1000 [ P.x -300 ]
+                                , Animation.wait 100
+                                ]
+
+                        bar : Element App.Msg
+                        bar =
+                            case a of
+                                Just progress ->
+                                    Element.el
+                                        [ Ui.wf
+                                        , Ui.hf
+                                        , Ui.r 5
+                                        , Element.moveLeft (300.0 * (1.0 - progress))
+                                        , Background.color Colors.green2
+                                        , Element.htmlAttribute <|
+                                            Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                                        ]
+                                        Element.none
+
+                                Nothing ->
+                                    Animated.ui
+                                        { behindContent = Element.behindContent
+                                        , htmlAttribute = Element.htmlAttribute
+                                        , html = Element.html
+                                        }
+                                        (\attr el -> Element.el attr el)
+                                        loadingAnimation
+                                        [ Ui.wf, Ui.hf, Ui.r 5, Background.color Colors.green2 ]
+                                        Element.none
+                    in
                     Element.el
                         [ Ui.p 5
                         , Ui.wpx 300
@@ -470,23 +512,13 @@ rightColumn config user model =
                             }
                         ]
                     <|
-                        Element.row
+                        Element.el
                             [ Ui.wf
                             , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
                             , Ui.r 100
                             , Ui.hf
                             ]
-                            [ Element.el
-                                [ Ui.wf
-                                , Ui.hf
-                                , Ui.r 5
-                                , Element.moveLeft (300.0 * (1.0 - progress))
-                                , Background.color Colors.green2
-                                , Element.htmlAttribute <|
-                                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
-                                ]
-                                Element.none
-                            ]
+                            bar
 
                 _ ->
                     Element.none

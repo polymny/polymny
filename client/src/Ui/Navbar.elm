@@ -21,6 +21,9 @@ import Lang exposing (Lang)
 import Material.Icons as Icons
 import Material.Icons.Types as Icons
 import Route exposing (Route)
+import Simple.Animation as Animation exposing (Animation)
+import Simple.Animation.Animated as Animated
+import Simple.Animation.Property as P
 import Simple.Transition as Transition
 import Strings
 import Svg
@@ -244,11 +247,6 @@ taskPanel clientState =
 
                 -- _ ->
                 --     Strings.tasksUnknown lang
-                progress : Float
-                progress =
-                    taskStatus.progress
-                        |> Maybe.withDefault 0.0
-
                 color : Element.Color
                 color =
                     if taskStatus.aborted then
@@ -259,6 +257,44 @@ taskPanel clientState =
 
                     else
                         Colors.orange
+                
+                loadingAnimation : Animation
+                loadingAnimation =
+                    Animation.steps
+                        { startAt = [ P.x -300 ]
+                        , options = [ Animation.loop ]
+                        }
+                        [ Animation.step 1000 [ P.x 300 ]
+                        , Animation.wait 100
+                        , Animation.step 1000 [ P.x -300 ]
+                        , Animation.wait 100
+                        ]
+
+                bar : Element App.Msg
+                bar =
+                    case taskStatus.progress of
+                        Just progress ->
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hf
+                                , Ui.r 5
+                                , Element.moveLeft (300.0 * (1.0 - progress))
+                                , Background.color color
+                                , Element.htmlAttribute <|
+                                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                                ]
+                                Element.none
+
+                        Nothing ->
+                            Animated.ui
+                                { behindContent = Element.behindContent
+                                , htmlAttribute = Element.htmlAttribute
+                                , html = Element.html
+                                }
+                                (\attr el -> Element.el attr el)
+                                loadingAnimation
+                                [ Ui.wf, Ui.hf, Ui.r 5, Background.color Colors.blue ]
+                                Element.none
 
                 icon : Icons.Icon msg
                 icon =
@@ -294,23 +330,13 @@ taskPanel clientState =
                             }
                         ]
                       <|
-                        Element.row
+                        Element.el
                             [ Ui.wf
                             , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
                             , Ui.r 100
                             , Ui.hf
                             ]
-                            [ Element.el
-                                [ Ui.wf
-                                , Ui.hf
-                                , Ui.r 2
-                                , Element.moveLeft (300.0 * (1.0 - progress))
-                                , Background.color color
-                                , Element.htmlAttribute <|
-                                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
-                                ]
-                                Element.none
-                            ]
+                            bar
                     , Ui.navigationElement action
                         [ Ui.r 100
                         , Ui.p 4

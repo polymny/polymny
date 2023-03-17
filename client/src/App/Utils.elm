@@ -15,9 +15,11 @@ import App.Types as App
 import Browser.Navigation
 import Config exposing (Config)
 import Data.Capsule as Data
+import Data.Types as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
+import List exposing (product)
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
@@ -57,9 +59,41 @@ init flags url key =
                     let
                         ( page, cm ) =
                             pageFromRoute { serverConfig = s, clientConfig = c, clientState = clientState } u route
+
+                        tasks : List Config.TaskStatus
+                        tasks =
+                            u.projects
+                                |> List.map .capsules
+                                |> List.concat
+                                |> List.filter
+                                    (\x ->
+                                        case x.produced of
+                                            Data.Running p ->
+                                                True
+
+                                            _ ->
+                                                False
+                                    )
+                                |> List.indexedMap
+                                    (\i x ->
+                                        { task = Config.Production i x.id
+                                        , progress = Nothing
+                                        , finished = False
+                                        , aborted = False
+                                        , global = True
+                                        }
+                                    )
                     in
                     ( App.Logged
-                        { config = { serverConfig = s, clientConfig = c, clientState = clientState }
+                        { config =
+                            { serverConfig = s
+                            , clientConfig = c
+                            , clientState =
+                                { clientState
+                                    | taskId = tasks |> List.length
+                                    , tasks = tasks
+                                }
+                            }
                         , user = u
                         , page = page
                         }

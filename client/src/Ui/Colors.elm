@@ -1,11 +1,11 @@
 module Ui.Colors exposing
-    ( green1, green2, green3, yellow, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
+    ( green1, green2, green3, yellow, blue, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
     , redLight
     )
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
+@docs green1, green2, green3, yellow, blue, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
 
 -}
 
@@ -38,6 +38,13 @@ green3 =
 yellow : Element.Color
 yellow =
     Element.rgb255 253 210 40
+
+
+{-| Pure blue.
+-}
+blue : Element.Color
+blue =
+    Element.rgb255 0 0 255
 
 
 {-| Pure red.
