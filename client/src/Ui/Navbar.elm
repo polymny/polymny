@@ -61,7 +61,7 @@ navbar config page user =
                 |> Maybe.map .tasks
                 |> Maybe.map (List.filter .global)
                 |> Maybe.map (List.filterMap .progress)
-                |> Maybe.map (\p -> List.sum p / toFloat (List.length p))
+                |> Maybe.andThen (\p -> if List.isEmpty p then Nothing else Just <|List.sum p / toFloat (List.length p))
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
