@@ -377,7 +377,7 @@ decodeTaskStatus =
         (Decode.maybe (Decode.field "progress" Decode.float))
         (Decode.field "finished" Decode.bool)
         (Decode.field "aborted" Decode.bool)
-        (Decode.field "global" Decode.bool)
+        (Decode.map (Maybe.withDefault True) <| Decode.maybe <| Decode.field "global" Decode.bool)
 
 
 {-| Initializes a client state.
