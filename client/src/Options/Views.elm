@@ -443,10 +443,18 @@ generalOptions config model =
 
                     else
                         Icons.delete
+                
+                tooltip : String
+                tooltip =
+                    if uploading then
+                        Strings.actionsAbortTrack lang
+
+                    else
+                        Strings.actionsDeleteTrack lang
             in
             Ui.secondaryIcon (disableAttrIf noTrack)
                 { icon = icon
-                , tooltip = Strings.actionsDeleteTrack lang
+                , tooltip = tooltip
                 , action = action
                 }
 

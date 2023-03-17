@@ -968,6 +968,10 @@ msgstr "Do you really want to delete this track"
 msgid "Actions.deleteTrack"
 msgstr "Delete track"
 
+#. Abort track upload hint.
+msgid "Actions.abortTrack"
+msgstr "Abort track upload"
+
 #. Volume of the sound track.
 msgid "Steps.Options.volume"
 msgstr "Sound track volume"
