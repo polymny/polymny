@@ -337,7 +337,7 @@ taskPanel clientState =
         noTasksElement : Element App.Msg
         noTasksElement =
             if List.length tasks == 0 then
-                Element.text <| Strings.uiTasksNone lang
+                Element.el [ Font.bold ] <| Element.text <| Strings.uiTasksNone lang
 
             else
                 Element.none
@@ -346,7 +346,7 @@ taskPanel clientState =
         clientTasksElement =
             if List.length clientTasks > 0 then
                 Element.column
-                    [ Ui.s 10, Ui.pt 10 ]
+                    [ Ui.s 10, Ui.pt 10, Font.bold ]
                     ((Element.text <| Strings.uiTasksClient lang) :: List.map taskInfo clientTasks)
 
             else
@@ -356,7 +356,7 @@ taskPanel clientState =
         serverTasksElement =
             if List.length serverTasks > 0 then
                 Element.column
-                    [ Ui.s 10, Ui.pt 10 ]
+                    [ Ui.s 10, Ui.pt 10, Font.bold ]
                     ((Element.text <| Strings.uiTasksServer lang) :: List.map taskInfo serverTasks)
 
             else
