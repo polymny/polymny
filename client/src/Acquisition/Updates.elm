@@ -19,7 +19,7 @@ import Config
 import Data.Capsule as Data exposing (Capsule)
 import Data.User as Data
 import Device
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Keyboard
 import Route
@@ -82,13 +82,27 @@ update msg model =
                     else
                         ( model, Cmd.none )
 
+                Acquisition.StartPointerRecording index record ->
+                    if m.state == Acquisition.Ready then
+                        ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
+                        , startPointerRecording index record
+                        )
+
+                    else
+                        ( model, Cmd.none )
+
                 Acquisition.StopRecording ->
                     ( { model | page = App.Acquisition { m | recording = Nothing, currentSlide = 0, currentSentence = 0 } }
                     , stopRecording
                     )
 
-                Acquisition.PlayRecord record ->
-                    ( { model | page = App.Acquisition { m | recordPlaying = Just record, currentSlide = 0, currentSentence = 0 } }
+                Acquisition.PointerRecordFinished ->
+                    ( { model | page = App.Acquisition { m | recording = Nothing, currentSlide = 0, currentSentence = 0 } }
+                    , Cmd.none
+                    )
+
+                Acquisition.PlayRecord ( index, record ) ->
+                    ( { model | page = App.Acquisition { m | recordPlaying = Just ( index, record ), currentSlide = 0, currentSentence = 0 } }
                     , playRecord record
                     )
 
@@ -205,20 +219,20 @@ update msg model =
                         ( Just _, _, _ ) ->
                             ( model, Cmd.none )
 
-                Acquisition.RecordArrived record ->
+                Acquisition.RecordArrived ( index, record ) ->
                     let
                         -- Updates a record if they share the same deviceBlob (pointerBlob has changed).
                         -- The bool indicates whether it changed or not
-                        updater : Acquisition.Record -> ( Acquisition.Record, Bool )
-                        updater old =
-                            if old.deviceBlob == record.deviceBlob then
-                                ( Debug.log "changed" record, True )
+                        updater : ( Int, Acquisition.Record ) -> ( Acquisition.Record, Bool )
+                        updater ( oldIndex, oldRecord ) =
+                            if Just oldIndex == index then
+                                ( record, True )
 
                             else
-                                ( old, False )
+                                ( oldRecord, False )
 
                         updatedRecords =
-                            List.map updater m.records
+                            List.map updater <| List.reverse <| List.indexedMap Tuple.pair <| List.reverse m.records
 
                         newRecords =
                             if List.any Tuple.second updatedRecords then
@@ -242,7 +256,6 @@ update msg model =
                             , global = True
                             }
 
-                        nextRoute : Route.Route
                         nextRoute =
                             if m.gos + 1 < List.length capsule.structure then
                                 Route.Acquisition m.capsule (m.gos + 1)
@@ -253,7 +266,16 @@ update msg model =
                         ( newConfig, _ ) =
                             Config.update (Config.UpdateTaskStatus task) model.config
                     in
-                    ( { model | config = Config.incrementTaskId newConfig }
+                    ( { model
+                        | config = Config.incrementTaskId newConfig
+
+                        -- Whoever is reading this code, I'm sorry
+                        -- When we validate the last record of a capsule, we want to move to the production
+                        -- page, but the App/Updates.elm will detect that we're trying to change page while we
+                        -- still have non validated records, which would trigger the warn leaving popup.
+                        -- We hard remove the records here to prevent that.
+                        , page = App.Acquisition { m | records = [] }
+                      }
                     , Cmd.batch
                         [ uploadRecord capsule m.gos record model.config.clientState.taskId
                         , Route.push model.config.clientState.key nextRoute
@@ -411,6 +433,15 @@ shortcuts msg =
             App.Noop
 
 
+{-| Helper to decode [Int, Record].
+-}
+decodeRecordWithIndex : Decoder ( Maybe Int, Acquisition.Record )
+decodeRecordWithIndex =
+    Decode.map2 Tuple.pair
+        (Decode.index 0 <| Decode.nullable Decode.int)
+        (Decode.index 1 <| Acquisition.decodeRecord)
+
+
 {-| The subscriptions needed for the page to work.
 -}
 subs : Acquisition.Model String Int -> Sub App.Msg
@@ -420,19 +451,13 @@ subs _ =
         , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)
         , deviceLevel (\x -> App.AcquisitionMsg (Acquisition.DeviceLevel x))
         , playRecordFinished (\_ -> App.AcquisitionMsg Acquisition.PlayRecordFinished)
+        , recordPointerFinished (\_ -> App.AcquisitionMsg Acquisition.PointerRecordFinished)
+        , nextSentenceReceived (\_ -> App.AcquisitionMsg <| Acquisition.NextSentence False)
         , recordArrived <|
             \x ->
-                case Decode.decodeValue Acquisition.decodeRecord x of
-                    Ok record ->
-                        App.AcquisitionMsg <| Acquisition.RecordArrived record
-
-                    _ ->
-                        App.Noop
-        , pointerRecordArrived <|
-            \x ->
-                case Decode.decodeValue Acquisition.decodeRecord x of
-                    Ok record ->
-                        App.AcquisitionMsg <| Acquisition.RecordArrived record
+                case Decode.decodeValue decodeRecordWithIndex x of
+                    Ok ( index, record ) ->
+                        App.AcquisitionMsg <| Acquisition.RecordArrived ( index, record )
 
                     _ ->
                         App.Noop
@@ -482,6 +507,18 @@ startRecording =
 port startRecordingPort : () -> Cmd msg
 
 
+{-| Starts the recording of the pointer.
+-}
+startPointerRecording : Int -> Acquisition.Record -> Cmd msg
+startPointerRecording index record =
+    startPointerRecordingPort ( index, Acquisition.encodeRecord record )
+
+
+{-| Port that starts the recording of the pointer.
+-}
+port startPointerRecordingPort : ( Int, Encode.Value ) -> Cmd msg
+
+
 {-| Stops the recording.
 -}
 stopRecording : Cmd msg
@@ -497,11 +534,6 @@ port stopRecordingPort : () -> Cmd msg
 {-| Receives the record when they're finished.
 -}
 port recordArrived : (Decode.Value -> msg) -> Sub msg
-
-
-{-| Received a record as well as a pointer video.
--}
-port pointerRecordArrived : (Decode.Value -> msg) -> Sub msg
 
 
 {-| Asks to play a specific record.
@@ -533,6 +565,11 @@ port stopRecordPort : () -> Cmd msg
 port playRecordFinished : (() -> msg) -> Sub msg
 
 
+{-| Sub to know when the recording of a pointer is finished.
+-}
+port recordPointerFinished : (() -> msg) -> Sub msg
+
+
 {-| Uploadds a record to the server.
 -}
 uploadRecord : Capsule -> Int -> Acquisition.Record -> Config.TaskId -> Cmd msg
@@ -543,3 +580,8 @@ uploadRecord capsule gos record taskId =
 {-| Port to upload a record.
 -}
 port uploadRecordPort : ( ( String, Int ), ( Encode.Value, Config.TaskId ) ) -> Cmd msg
+
+
+{-| Sub for when the js asks to go to the next sentence.
+-}
+port nextSentenceReceived : (() -> msg) -> Sub msg

@@ -189,10 +189,22 @@ updateModel msg model =
         -- We check if the user is leaving the acquisition page, and if they have an unvalidated record.
         ( leavingAcquisitionWithRecord, leavingModel ) =
             case ( model.page, updatedModel.page ) of
+                -- If we're staying on acqusition page
+                ( App.Acquisition m1, App.Acquisition m2 ) ->
+                    -- We should warn if we're changing gos or capsule and have new records
+                    if (m1.gos /= m2.gos || m1.capsule /= m2.capsule) && List.any (\x -> not x.old) m1.records && m1.warnLeaving == Nothing then
+                        ( True, { model | page = App.Acquisition { m1 | warnLeaving = Just <| Route.Acquisition m2.capsule m2.gos } } )
+
+                    else
+                        ( False, finalModel )
+
+                -- We should not warn if you're ending in acqusition page otherwise
                 ( _, App.Acquisition _ ) ->
                     ( False, finalModel )
 
+                -- However, we should warn if you're leaving the acquisition page
                 ( App.Acquisition m, newPage ) ->
+                    -- Only if you have new records though
                     if List.any (\x -> not x.old) m.records && m.warnLeaving == Nothing then
                         ( True, { model | page = App.Acquisition { m | warnLeaving = Just <| App.routeFromPage newPage } } )
 
