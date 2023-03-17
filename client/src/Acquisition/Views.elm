@@ -72,8 +72,8 @@ view config _ model =
                     let
                         isPlaying =
                             case model.recordPlaying of
-                                Just rec ->
-                                    rec == record
+                                Just ( recordIndex, _ ) ->
+                                    index == recordIndex
 
                                 Nothing ->
                                     False
@@ -86,7 +86,7 @@ view config _ model =
                                 Ui.None
 
                             else
-                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord record
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord ( index, record )
                     in
                     Ui.secondaryIcon
                         attr
@@ -101,8 +101,8 @@ view config _ model =
                     let
                         isPlaying =
                             case model.recordPlaying of
-                                Just rec ->
-                                    rec == record
+                                Just ( recordIndex, _ ) ->
+                                    index == recordIndex
 
                                 Nothing ->
                                     False
@@ -136,6 +136,15 @@ view config _ model =
                     else
                         String.fromInt <| index + 1
 
+                -- Button to add pointer to a specific record
+                pointerButton : Element App.Msg
+                pointerButton =
+                    Ui.secondaryIcon []
+                        { icon = Material.Icons.gps_fixed
+                        , tooltip = ""
+                        , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.StartPointerRecording index record
+                        }
+
                 -- Delete or validate button
                 delValButton : Element App.Msg
                 delValButton =
@@ -161,6 +170,7 @@ view config _ model =
                         , Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record))
                         , playButton
                         , stopButton
+                        , pointerButton
                         , delValButton
                         ]
 

@@ -39,7 +39,7 @@ type alias Model a b =
     , currentSentence : Int
     , currentReplacementPrompt : Maybe String
     , records : List Record
-    , recordPlaying : Maybe Record
+    , recordPlaying : Maybe ( Int, Record )
     , savedRecord : Maybe Data.Record
     , deleteRecord : Bool
     , pointerStyle : PointerStyle
@@ -218,12 +218,14 @@ type Msg
     | DeviceLevel Float
     | ToggleSettings
     | StartRecording
+    | StartPointerRecording Int Record
     | StopRecording
+    | PointerRecordFinished
     | PreviousSentence
     | NextSentence Bool
-    | RecordArrived Record
+    | RecordArrived ( Maybe Int, Record )
     | PlayRecordFinished
-    | PlayRecord Record
+    | PlayRecord ( Int, Record )
     | StopRecord
     | RequestCameraPermission String
     | UploadRecord Record

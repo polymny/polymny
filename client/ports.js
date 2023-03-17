@@ -46,6 +46,9 @@ function init(node, flags) {
     // The video that was recorded by the user's camera / microphone is available.
     let recordArrived = null;
 
+    // The callbacks that trigger a change of slide or sentences during the replay of a record.
+    let nextSlideCallbacks = [];
+
     // The audio context helps us show how much sound the microphone is capturing.
     let audioContext = null;
 
@@ -77,7 +80,8 @@ function init(node, flags) {
     // The video that was recording on the canvas in which the user may have or may have not drawn.
     let pointerArrived = null;
 
-    // Which record are we recording the pointer to, null if its a new record.
+    // Which record are we recording the pointer to, null if its a new record, array containing the index of the record
+    // and the record itself otherwise.
     let recordingPointerForRecord = null;
 
     // Whether the pointer has been touched at some point and we need to take pointer blob into consideraton.
@@ -553,6 +557,88 @@ function init(node, flags) {
         }
     }
 
+    // Starts the recording but only for the pointer.
+    function startPointerRecording(args) {
+        if (recorder !== undefined && !recording) {
+            let index = args[0];
+            let record = args[1];
+
+            // Sets the recording state
+            recording = true;
+            recordingPointerForRecord = [index, record];
+            pointerExists = false;
+
+            // Read the previous webcam record while the user is recording the pointer
+            let video = document.getElementById(videoId);
+            video.srcObject = null;
+
+            video.muted = false;
+
+            if (typeof record.webcam_blob === "string" || record.webcam_blob instanceof String) {
+                video.src = record.webcam_blob;
+            } else {
+                video.src = URL.createObjectURL(record.webcam_blob);
+            }
+
+            video.onended = () => {
+                // let extra = document.getElementById('extra');
+                // if (extra instanceof HTMLVideoElement) {
+                //     extra.pause();
+                //     extra.currentTime = 0;
+                // }
+
+                pointerRecorder.stop();
+                recording = false;
+                app.ports.recordPointerFinished.send(null);
+                bindDevice(currentSettings);
+            };
+
+            // Skip last transition which is the end of the video.
+            for (let i = 0; i < record.events.length - 1; i++) {
+                let event = record.events[i];
+                let callback;
+                switch (event.ty) {
+                    case "next_slide":
+                    case "next_sentence":
+                        callback = () => app.ports.nextSentenceReceived.send(null);
+                        break;
+
+                    // case "play":
+                    //     callback = () => {
+                    //         let extra = document.getElementById('extra');
+                    //         extra.muted = true;
+                    //         extra.currentTime = 0;
+                    //         extra.play();
+                    //     };
+                    //     break;
+
+                    // case "stop":
+                    //     callback = () => {
+                    //         let extra = document.getElementById('extra');
+                    //         extra.currentTime = 0;
+                    //         extra.stop();
+                    //     };
+                    //     break;
+                }
+
+                if (callback !== undefined) {
+                    nextSlideCallbacks.push(setTimeout(callback, event.time));
+                }
+
+            }
+
+            video.play();
+            pointerRecorder.start();
+
+            // let extra = document.getElementById('extra');
+            // if (extra instanceof HTMLVideoElement) {
+            //     extra.muted = true;
+            //     extra.currentTime = 0;
+            //     extra.play();
+            // }
+        }
+    }
+
     // Stops the recording.
     function stopRecording() {
         if (recording) {
@@ -591,12 +677,20 @@ function init(node, flags) {
             return;
         }
 
-        app.ports.recordArrived.send({
-            webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord.webcam_blob,
-            pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
-            events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord.events,
-            matted: 'idle',
-        });
+        // On this port, we need to send two values
+        app.ports.recordArrived.send([
+
+            // The index of the record to which we want to add the pointer (if any)
+            recordingPointerForRecord === null ? null : recordingPointerForRecord[0],
+
+            // The record itself
+            {
+                webcam_blob: recordingPointerForRecord === null ? recordArrived : recordingPointerForRecord[1].webcam_blob,
+                pointer_blob: (isPremium && pointerExists) ? pointerArrived : null,
+                events: recordingPointerForRecord === null ? currentEvents : recordingPointerForRecord[1].events,
+                matted: 'idle',
+            }
+        ]);
 
         recordArrived = null;
         pointerArrived = null;
@@ -647,37 +741,38 @@ function init(node, flags) {
         }
 
         // Manage slides
-        // // Skip last transition which is the end of the video.
-        // for (let i = 0; i < record.events.length - 1; i++) {
-        //     let event = record.events[i];
-        //     let callback;
-        //     switch (event.ty) {
-        //         case "next_slide":
-        //             callback = () => app.ports.nextSlideReceived.send(null);
-        //             break;
+        // Skip last transition which is the end of the video.
+        for (let i = 0; i < record.events.length - 1; i++) {
+            let event = record.events[i];
+            let callback;
+            switch (event.ty) {
+                case "next_sentence":
+                case "next_slide":
+                    callback = () => app.ports.nextSentenceReceived.send(null);
+                    break;
 
-        //         case "play":
-        //             callback = () => {
-        //                 let extra = document.getElementById('extra');
-        //                 extra.muted = true;
-        //                 extra.currentTime = 0;
-        //                 extra.play();
-        //             };
-        //             break;
+                // case "play":
+                //     callback = () => {
+                //         let extra = document.getElementById('extra');
+                //         extra.muted = true;
+                //         extra.currentTime = 0;
+                //         extra.play();
+                //     };
+                //     break;
 
-        //         case "stop":
-        //             callback = () => {
-        //                 let extra = document.getElementById('extra');
-        //                 extra.currentTime = 0;
-        //                 extra.stop();
-        //             };
-        //             break;
-        //     }
+                // case "stop":
+                //     callback = () => {
+                //         let extra = document.getElementById('extra');
+                //         extra.currentTime = 0;
+                //         extra.stop();
+                //     };
+                //     break;
+            }
 
-        //     if (callback !== undefined) {
-        //         nextSlideCallbacks.push(setTimeout(callback, event.time));
-        //     }
-        // }
+            if (callback !== undefined) {
+                nextSlideCallbacks.push(setTimeout(callback, event.time));
+            }
+        }
 
         video.play();
 
@@ -773,8 +868,8 @@ function init(node, flags) {
         } else {
 
             try {
-                let factor = record.pointer_blob === null ? 1 : 2;
-                console.log("upload new record");
+
+                console.log("upload new record", record);
                 let task = {
                     "taskId": taskId,
                     "type": "UploadRecord",
@@ -837,6 +932,7 @@ function init(node, flags) {
 
                 let capsule = JSON.parse(request.xhr.responseText);
                 capsule.structure[gos].events = record.events;
+                await (new PolymnyRequest("POST", "/api/update-capsule/", JSON.stringify(capsule)).send());
 
                 app.ports.taskProgress.send({
                     "task": {
@@ -850,8 +946,6 @@ function init(node, flags) {
                     "finished": true,
                     "aborted": false,
                 });
-
-                // await (new Request("POST", "/api/update-capsule/", JSON.stringify(capsule)).send());
 
                 // app.ports.capsuleUpdated.send(capsule);
             } catch (e) {
@@ -1111,7 +1205,7 @@ function init(node, flags) {
 
             // Count the output.
             if (this.capsule.produced) totalSubasks++;
-            
+
             // Count the soundtrack.
             if (this.capsule.sound_track) totalSubasks++;
 
@@ -1519,6 +1613,7 @@ function init(node, flags) {
     makePort("registerEvent", registerEvent);
     makePort("startRecording", startRecording);
     makePort("stopRecording", stopRecording);
+    makePort("startPointerRecording", startPointerRecording);
     makePort("playRecord", playRecord);
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
