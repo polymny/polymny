@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
 
-use tokio::fs::{create_dir_all, remove_dir_all, remove_file};
+use tokio::fs::{copy, create_dir_all, read_dir, remove_dir_all, remove_file};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::Semaphore;
@@ -1215,6 +1215,74 @@ pub async fn cancel_video_upload(user: User, id: HashId, db: Db) -> Result<()> {
         .map_err(|_| Error(Status::InternalServerError))?;
 
     Ok(())
+}
+
+/// Duplicates a capsule.
+#[post("/duplicate/<id>")]
+pub async fn duplicate(user: User, id: HashId, config: &S<Config>, db: Db) -> Result<Value> {
+    let (capsule, _) = user
+        .get_capsule_with_permission(*id, Role::Read, &db)
+        .await?;
+
+    let mut new = Capsule::new(
+        capsule.project,
+        format!("{} (copie)", capsule.name),
+        &user,
+        &db,
+    )
+    .await?;
+    new.privacy = capsule.privacy;
+    new.produced = capsule.produced;
+    new.structure = capsule.structure;
+    new.webcam_settings = capsule.webcam_settings;
+    new.sound_track = capsule.sound_track;
+    new.duration_ms = capsule.duration_ms;
+
+    for dir in ["assets", "tmp", "output"] {
+        let orig = config.data_path.join(&format!("{}/{}", capsule.id, dir));
+        let dest = config.data_path.join(&format!("{}/{}", new.id, dir));
+
+        if orig.is_dir() {
+            create_dir_all(&dest).await?;
+
+            let mut iter = read_dir(&orig)
+                .await
+                .map_err(|_| Error(Status::InternalServerError))?;
+
+            loop {
+                let next = iter
+                    .next_entry()
+                    .await
+                    .map_err(|_| Error(Status::InternalServerError))?;
+
+                let next = match next {
+                    Some(x) => x,
+                    None => break,
+                };
+
+                let path = next.path();
+                let file_name = path.file_name().ok_or(Error(Status::InternalServerError))?;
+
+                copy(orig.join(&file_name), dest.join(&file_name))
+                    .await
+                    .map_err(|_| Error(Status::InternalServerError))?;
+            }
+        }
+    }
+
+    let orig = config.data_path.join(&format!("{}/output.mp4", capsule.id));
+    let dest = config.data_path.join(&format!("{}/output.mp4", new.id));
+
+    if orig.is_file() {
+        copy(orig, dest)
+            .await
+            .map_err(|_| Error(Status::InternalServerError))?;
+    }
+
+    new.set_changed();
+    new.save(&db).await?;
+
+    Ok(new.to_json(Role::Owner, &db).await?)
 }
 
 /// The invitation data.

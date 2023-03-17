@@ -496,6 +496,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
                 routes::capsule::cancel_publication,
                 routes::capsule::unpublish,
                 routes::capsule::cancel_video_upload,
+                routes::capsule::duplicate,
                 routes::capsule::invite,
                 routes::capsule::deinvite,
                 routes::capsule::change_role,
