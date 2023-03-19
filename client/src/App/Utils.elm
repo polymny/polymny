@@ -65,18 +65,28 @@ init flags url key =
                             u.projects
                                 |> List.map .capsules
                                 |> List.concat
-                                |> List.filter
+                                |> List.filterMap
                                     (\x ->
-                                        case x.produced of
-                                            Data.Running p ->
-                                                True
+                                        let
+                                            -- Returns Nothing if there is no task running on the capsule, or a function
+                                            -- that creates the task from its id.
+                                            returnValue : Maybe (Config.TaskId -> Config.Task)
+                                            returnValue =
+                                                case ( x.produced, x.published ) of
+                                                    ( Data.Running _, _ ) ->
+                                                        Just (\a -> Config.Production a x.id)
 
-                                            _ ->
-                                                False
+                                                    ( _, Data.Running _ ) ->
+                                                        Just (\a -> Config.Publication a x.id)
+
+                                                    _ ->
+                                                        Nothing
+                                        in
+                                        returnValue
                                     )
                                 |> List.indexedMap
-                                    (\i x ->
-                                        { task = Config.Production i x.id
+                                    (\i makeTaskFromId ->
+                                        { task = makeTaskFromId i
                                         , progress = Nothing
                                         , finished = False
                                         , aborted = False

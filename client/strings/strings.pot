@@ -1044,6 +1044,10 @@ msgstr ""
 msgid "Tasks.productionCapsule"
 msgstr ""
 
+#. Capsule publication task.
+msgid "Tasks.publicationCapsule"
+msgstr ""
+
 #. Extra transcoding task.
 msgid "Tasks.transcodeExtra"
 msgstr ""

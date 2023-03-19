@@ -362,6 +362,47 @@ updateModel msg model =
                     in
                     ( newModel, Cmd.none )
 
+                App.WebSocketMsg (App.PublicationProgress id progress finished) ->
+                    let
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.Publication -1 id
+                            , progress = Just progress
+                            , finished = finished
+                            , aborted = False
+                            , global = True
+                            }
+
+                        newConfig : Config.Config
+                        newConfig =
+                            Tuple.first <| Config.update (Config.UpdateTaskStatus task) model.config
+
+                        capsule : Data.Capsule
+                        capsule =
+                            model.user.projects
+                                |> List.concatMap .capsules
+                                |> List.filter (\x -> x.id == id)
+                                |> List.head
+                                |> Maybe.withDefault Data.emptyCapsule
+
+                        newModel : App.Model
+                        newModel =
+                            { model
+                                | config = newConfig
+                                , user =
+                                    Data.updateUser
+                                        { capsule
+                                            | produced =
+                                                Utils.tern
+                                                    finished
+                                                    Data.Done
+                                                    (Data.Running (Just progress))
+                                        }
+                                        model.user
+                            }
+                    in
+                    ( newModel, Cmd.none )
+
                 App.WebSocketMsg (App.ExtraRecordProgress slideId capsuleId progress finished) ->
                     let
                         task : Config.TaskStatus
@@ -520,6 +561,10 @@ webSocketMsgDecoder =
 
                     "capsule_production_finished" ->
                         Decode.map (\p -> App.ProductionProgress p 1.0 True)
+                            (Decode.field "id" Decode.string)
+
+                    "capsule_publication_finished" ->
+                        Decode.map (\p -> App.PublicationProgress p 1.0 True)
                             (Decode.field "id" Decode.string)
 
                     "video_upload_progress" ->

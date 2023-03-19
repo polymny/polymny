@@ -64,7 +64,14 @@ navbar config page user =
                 |> Maybe.map .tasks
                 |> Maybe.map (List.filter .global)
                 |> Maybe.map (List.filterMap .progress)
-                |> Maybe.andThen (\p -> if List.isEmpty p then Nothing else Just <|List.sum p / toFloat (List.length p))
+                |> Maybe.andThen
+                    (\p ->
+                        if List.isEmpty p then
+                            Nothing
+
+                        else
+                            Just <| List.sum p / toFloat (List.length p)
+                    )
     in
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
@@ -242,6 +249,9 @@ taskPanel clientState =
                         Config.Production _ _ ->
                             Strings.tasksProductionCapsule lang
 
+                        Config.Publication _ _ ->
+                            Strings.tasksPublicationCapsule lang
+
                         Config.TranscodeExtra _ _ _ ->
                             Strings.tasksTranscodeExtra lang
 
@@ -257,7 +267,7 @@ taskPanel clientState =
 
                     else
                         Colors.orange
-                
+
                 loadingAnimation : Animation
                 loadingAnimation =
                     Animation.steps

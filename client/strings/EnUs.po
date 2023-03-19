@@ -1080,6 +1080,10 @@ msgstr "Capsule export"
 msgid "Tasks.importCapsule"
 msgstr "Capsule import"
 
+#. Capsule publication task.
+msgid "Tasks.publicationCapsule"
+msgstr "Publication"
+
 #. Extra transcoding task.
 msgid "Tasks.transcodeExtra"
 msgstr "Transcode extra"

@@ -6,7 +6,9 @@ module Publication.Updates exposing (..)
 import Api.Capsule as Api
 import App.Types as App
 import App.Utils as App
+import Config
 import Data.Capsule as Data exposing (Capsule)
+import Data.Types as Data
 import Data.User as Data
 import Publication.Types as Publication
 
@@ -32,7 +34,30 @@ update msg model =
                     updateModel { capsule | promptSubtitles = promptSubtitles } model m
 
                 Publication.PublishVideo ->
-                    ( model, Api.publishCapsule capsule (\_ -> App.Noop) )
+                    let
+                        taskId : Config.TaskId
+                        taskId =
+                            model.config.clientState.taskId
+
+                        task : Config.TaskStatus
+                        task =
+                            { task = Config.Publication taskId m.capsule
+                            , progress = Nothing
+                            , finished = False
+                            , aborted = False
+                            , global = True
+                            }
+
+                        newConfig : Config.Config
+                        newConfig =
+                            Tuple.first <| Config.update (Config.UpdateTaskStatus task) model.config
+                    in
+                    ( { model
+                        | user = Data.updateUser { capsule | published = Data.Running Nothing } model.user
+                        , config = Config.incrementTaskId newConfig
+                      }
+                    , Api.publishCapsule capsule (\_ -> App.Noop)
+                    )
 
         _ ->
             ( model, Cmd.none )

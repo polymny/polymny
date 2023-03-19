@@ -129,6 +129,7 @@ the bool indicates whether the task is finished.
 type WebSocketMsg
     = CapsuleUpdated Data.Capsule
     | ProductionProgress String Float Bool
+    | PublicationProgress String Float Bool
     | ExtraRecordProgress String String Float Bool
 
 

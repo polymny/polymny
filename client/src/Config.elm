@@ -254,6 +254,7 @@ type Task
     | AddGos TaskId String
     | ReplaceSlide TaskId String
     | Production TaskId String
+    | Publication TaskId String
     | ExportCapsule TaskId String
     | ImportCapsule TaskId
     | TranscodeExtra TaskId String String
@@ -455,6 +456,13 @@ compareTasks t1 t2 =
             id1 == id2
 
         ( Production id1 capsuleId1, Production id2 capsuleId2 ) ->
+            if id1 < 0 || id2 < 0 then
+                capsuleId1 == capsuleId2
+
+            else
+                id1 == id2
+
+        ( Publication id1 capsuleId1, Publication id2 capsuleId2 ) ->
             if id1 < 0 || id2 < 0 then
                 capsuleId1 == capsuleId2
 
