@@ -224,7 +224,7 @@ makeHeader text config key =
                         Ui.icon 24 Icons.arrow_right
 
                 Nothing ->
-                    Element.el [ Ui.h 24 ] Element.none
+                    Element.el [ Ui.hpx 24 ] Element.none
     in
     Ui.navigationElement action [] <|
         Element.row [ Ui.p 10, Font.bold ]
@@ -602,7 +602,7 @@ capsuleProgress lang capsule =
             Element.el
                 [ Ui.wpx size
                 , Ui.hpx size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsAcquisitionAcquisition lang
+                , Ui.tooltip <| Strings.stepsAcquisitionAcquisition lang
                 , Ui.r size
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (size / 2 + 3 * totalLength / 4)
@@ -658,7 +658,7 @@ capsuleProgress lang capsule =
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsProductionProduction lang
+                , Ui.tooltip <| Strings.stepsProductionProduction lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (3 * size / 2 + totalLength / 2)
                 , Border.shadow
@@ -710,7 +710,7 @@ capsuleProgress lang capsule =
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsPublicationPublication lang
+                , Ui.tooltip <| Strings.stepsPublicationPublication lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (5 * size / 2 + 1 * totalLength / 4)
                 , Border.shadow
@@ -789,7 +789,24 @@ circleProgress width height radius strokeWidth value =
         circumference =
             2 * pi * radius
     in
-    Element.el [ Ui.cx, Ui.cy ] <|
+    Element.el
+        [ Ui.cx
+        , Ui.cy
+        , Element.inFront <|
+            Element.el
+                [ Ui.wf
+                , Ui.hf
+                , Background.color <| Colors.alpha 0.0
+                , Ui.r <| round width
+                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                , Transition.properties
+                    [ Transition.backgroundColor 200 []
+                    ]
+                    |> Element.htmlAttribute
+                ]
+                Element.none
+        ]
+    <|
         Element.html <|
             Svg.svg
                 [ Svg.Attributes.width <| String.fromFloat width

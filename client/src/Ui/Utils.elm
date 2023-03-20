@@ -1,12 +1,12 @@
 module Ui.Utils exposing
     ( ar, al, at, ab
-    , w, wf, wfp, wpx, h, hf, hfp, hpx
+    , wf, wfp, wpx, hf, hfp, hpx
     , s, pl, pr, pt, pb, py, px, p
     , bl, br, bt, bb, by, bx, b
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink, paragraph
-    , id, class, sortAttributes
+    , id, class, sortAttributes, tooltip
     )
 
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
@@ -19,7 +19,7 @@ module Ui.Utils exposing
 
 # Width and height aliases
 
-@docs w, wf, wfp, wpx, h, hf, hfp, hpx
+@docs wf, wfp, wpx, hf, hfp, hpx
 
 
 # Spacing and padding aliases
@@ -49,7 +49,7 @@ module Ui.Utils exposing
 
 # HTML utilities
 
-@docs id, class, sortAttributes
+@docs id, class, sortAttributes, tooltip
 
 -}
 
@@ -88,13 +88,6 @@ ab =
     Element.alignBottom
 
 
-{-| An alias for `Element.width (Element.px x)`.
--}
-w : Int -> Element.Attribute msg
-w x =
-    Element.width (Element.px x)
-
-
 {-| An alias for `Element.width Element.fill`.
 -}
 wf : Element.Attribute msg
@@ -114,13 +107,6 @@ wfp x =
 wpx : Int -> Element.Attribute msg
 wpx x =
     Element.width (Element.px x)
-
-
-{-| An alias for `Element.height (Element.px x)`.
--}
-h : Int -> Element.Attribute msg
-h x =
-    Element.height (Element.px x)
 
 
 {-| An alias for `Element.height Element.fill`.
@@ -389,3 +375,10 @@ sortAttributes attributes =
     , List.filter (\x -> List.member x outerAttributes) attributes
     , List.filter (\x -> List.member x fontAttributes) attributes
     )
+
+
+{-| A helper to create a tooltip.
+-}
+tooltip : String -> Element.Attribute msg
+tooltip text =
+    Element.htmlAttribute (Html.Attributes.title text)

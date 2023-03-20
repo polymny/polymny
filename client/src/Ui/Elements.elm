@@ -94,7 +94,7 @@ primaryIcon attr params =
     let
         outerAttr : List (Element.Attribute msg)
         outerAttr =
-            Border.rounded 5 :: Font.color Colors.white :: Element.htmlAttribute (Html.Attributes.title params.tooltip) :: attr
+            Border.rounded 5 :: Font.color Colors.white :: Ui.tooltip params.tooltip :: attr
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
@@ -153,7 +153,7 @@ secondaryIcon attr params =
     let
         outerAttr : List (Element.Attribute msg)
         outerAttr =
-            Border.rounded 5 :: Font.color Colors.green2 :: Element.htmlAttribute (Html.Attributes.title params.tooltip) :: attr
+            Border.rounded 5 :: Font.color Colors.green2 :: Ui.tooltip params.tooltip :: attr
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
