@@ -551,6 +551,9 @@ capsuleProgress lang capsule =
                             ( Data.Done, Data.Done ) ->
                                 0
 
+                            ( Data.Done, Data.Running _ ) ->
+                                0
+
                             _ ->
                                 -length
                     ]
@@ -587,11 +590,20 @@ capsuleProgress lang capsule =
 
         acquisitionDot : Element App.Msg
         acquisitionDot =
+            let
+                p : Float
+                p =
+                    if acquired then
+                        1.0
+
+                    else
+                        0.0
+            in
             Element.el
                 [ Ui.wpx size
                 , Ui.hpx size
+                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsAcquisitionAcquisition lang
                 , Ui.r size
-                , Ui.p (pad - 2)
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (size / 2 + 3 * totalLength / 4)
                 , Border.shadow
@@ -602,35 +614,16 @@ capsuleProgress lang capsule =
                     }
                 ]
             <|
-                if acquired then
-                    Animated.ui
-                        { behindContent = Element.behindContent
-                        , htmlAttribute = Element.htmlAttribute
-                        , html = Element.html
-                        }
-                        (\attr el -> Element.el attr el)
-                        animationAcquisitionDot
-                        [ Ui.wf
-                        , Ui.hf
-                        , Ui.r size
-                        , Ui.p pad
-                        , Ui.cx
-                        , Ui.cy
-                        , Background.color Colors.green2
-                        ]
-                    <|
-                        Element.el
-                            [ Ui.wf
-                            , Ui.hf
-                            , Ui.r size
-                            , Ui.cx
-                            , Ui.cy
-                            , Background.color <| Colors.grey 6
-                            ]
-                            Element.none
-
-                else
-                    Element.none
+                Animated.ui
+                    { behindContent = Element.behindContent
+                    , htmlAttribute = Element.htmlAttribute
+                    , html = Element.html
+                    }
+                    (\attr el -> Element.el attr el)
+                    animationAcquisitionDot
+                    []
+                <|
+                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationProductionDot : Animation
         animationProductionDot =
@@ -665,7 +658,7 @@ capsuleProgress lang capsule =
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Ui.p (pad - 2)
+                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsProductionProduction lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (3 * size / 2 + totalLength / 2)
                 , Border.shadow
@@ -685,7 +678,7 @@ capsuleProgress lang capsule =
                     animationProductionDot
                     []
                 <|
-                    circleProgress (size / 2 - (pad - 2) - pad / 2) pad p
+                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationPublicationDot : Animation
         animationPublicationDot =
@@ -700,11 +693,24 @@ capsuleProgress lang capsule =
 
         publicationDot : Element App.Msg
         publicationDot =
+            let
+                p : Float
+                p =
+                    case capsule.published of
+                        Data.Idle ->
+                            0
+
+                        Data.Running _ ->
+                            0.5
+
+                        Data.Done ->
+                            1
+            in
             Element.el
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Ui.p (pad - 2)
+                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsPublicationPublication lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (5 * size / 2 + 1 * totalLength / 4)
                 , Border.shadow
@@ -715,35 +721,16 @@ capsuleProgress lang capsule =
                     }
                 ]
             <|
-                if capsule.published == Data.Done then
-                    Animated.ui
-                        { behindContent = Element.behindContent
-                        , htmlAttribute = Element.htmlAttribute
-                        , html = Element.html
-                        }
-                        (\attr el -> Element.el attr el)
-                        animationPublicationDot
-                        [ Ui.wf
-                        , Ui.hf
-                        , Ui.r size
-                        , Ui.p pad
-                        , Ui.cx
-                        , Ui.cy
-                        , Background.color Colors.green2
-                        ]
-                    <|
-                        Element.el
-                            [ Ui.wf
-                            , Ui.hf
-                            , Ui.r size
-                            , Ui.cx
-                            , Ui.cy
-                            , Background.color <| Colors.grey 6
-                            ]
-                            Element.none
-
-                else
-                    Element.none
+                Animated.ui
+                    { behindContent = Element.behindContent
+                    , htmlAttribute = Element.htmlAttribute
+                    , html = Element.html
+                    }
+                    (\attr el -> Element.el attr el)
+                    animationPublicationDot
+                    []
+                <|
+                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
     in
     Element.row []
         [ Element.row []
@@ -795,8 +782,8 @@ progressBar attributes animation =
                 Element.none
 
 
-circleProgress : Float -> Float -> Float -> Element App.Msg
-circleProgress radius width value =
+circleProgress : Float -> Float -> Float -> Float -> Float -> Element App.Msg
+circleProgress width height radius strokeWidth value =
     let
         circumference : Float
         circumference =
@@ -805,18 +792,18 @@ circleProgress radius width value =
     Element.el [ Ui.cx, Ui.cy ] <|
         Element.html <|
             Svg.svg
-                [ Svg.Attributes.width <| String.fromFloat (2 * radius + width)
-                , Svg.Attributes.height <| String.fromFloat (2 * radius + width)
+                [ Svg.Attributes.width <| String.fromFloat width
+                , Svg.Attributes.height <| String.fromFloat height
                 ]
                 [ Svg.circle
-                    [ Svg.Attributes.cx <| String.fromFloat ((2 * radius + width) / 2)
-                    , Svg.Attributes.cy <| String.fromFloat ((2 * radius + width) / 2)
+                    [ Svg.Attributes.cx <| String.fromFloat (width / 2)
+                    , Svg.Attributes.cy <| String.fromFloat (height / 2)
                     , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
                     , Html.Attributes.style "transform" "rotate(90deg)"
                     , Html.Attributes.style "transform-origin" "50% 50%"
                     , Svg.Attributes.r (String.fromFloat radius)
                     , Svg.Attributes.stroke <| Colors.colorToString Colors.green2
-                    , Svg.Attributes.strokeWidth (String.fromFloat width)
+                    , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
                     , Svg.Attributes.fill "transparent"
                     , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
                     , (1.0 - value)
