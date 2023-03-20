@@ -17,10 +17,17 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input
 import Home.Types as Home
+import Html.Attributes exposing (style)
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
+import Simple.Animation as Animation exposing (Animation)
+import Simple.Animation.Animated as Animated
+import Simple.Animation.Property as P
+import Simple.Transition as Transition
 import Strings
+import Svg
+import Svg.Attributes
 import Time
 import TimeUtils
 import Ui.Colors as Colors
@@ -475,9 +482,328 @@ capsuleProgress lang capsule =
                 |> Maybe.map Element.text
                 |> Maybe.map (Element.el [ Ui.p 10 ])
                 |> Maybe.withDefault Element.none
+
+        pad =
+            5
+
+        len =
+            300
+
+        size =
+            26
+
+        startAnimation : Animation
+        startAnimation =
+            Animation.steps
+                { startAt = [ P.x -len ]
+                , options = []
+                }
+                [ Animation.step 200 [ P.x (len / 8 - len) ]
+                ]
+
+        acquisitionAnimation : Animation
+        acquisitionAnimation =
+            Animation.steps
+                { startAt = [ P.x -len ]
+                , options = []
+                }
+                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (3 * len / 8 - len) ]
+                ]
+
+        productionAnimation : Animation
+        productionAnimation =
+            Animation.steps
+                { startAt = [ P.x -len ]
+                , options = []
+                }
+                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
+                ]
+
+        productedAnimation : Animation
+        productedAnimation =
+            Animation.steps
+                { startAt = [ P.x -len ]
+                , options = []
+                }
+                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (5 * len / 8 - len) ]
+                ]
+
+        publicationAnimation : Animation
+        publicationAnimation =
+            Animation.steps
+                { startAt = [ P.x -len ]
+                , options = []
+                }
+                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (6 * len / 8 - len) ]
+                , Animation.wait 200
+                , Animation.step 200 [ P.x (8 * len / 8 - len) ]
+                ]
+
+        animationBar : Animation
+        animationBar =
+            case ( acquired, capsule.produced, capsule.published ) of
+                ( False, _, _ ) ->
+                    startAnimation
+
+                ( True, Data.Idle, _ ) ->
+                    acquisitionAnimation
+
+                ( True, Data.Running _, Data.Idle ) ->
+                    productionAnimation
+
+                ( True, Data.Done, Data.Idle ) ->
+                    productedAnimation
+
+                ( True, Data.Done, Data.Done ) ->
+                    publicationAnimation
+
+                _ ->
+                    startAnimation
+
+        animationAcquisitionDot : Animation
+        animationAcquisitionDot =
+            Animation.steps
+                { startAt = [ P.scale 0.0 ]
+                , options = []
+                }
+                [ Animation.wait 200
+                , Animation.step 150 [ P.scale 1.5 ]
+                , Animation.step 50 [ P.scale 1.0 ]
+                ]
+
+        acquisitionDot : Element App.Msg
+        acquisitionDot =
+            Element.el
+                [ Ui.wpx size
+                , Ui.hpx size
+                , Ui.r size
+                , Ui.p (pad - 2)
+                , Background.color <| Colors.grey 6
+                , Element.moveLeft (size / 2 + pad + len - len / 4)
+                , Border.shadow
+                    { size = 1
+                    , blur = 8
+                    , color = Colors.alpha 0.1
+                    , offset = ( 0, 0 )
+                    }
+                ]
+            <|
+                if acquired then
+                    Animated.ui
+                        { behindContent = Element.behindContent
+                        , htmlAttribute = Element.htmlAttribute
+                        , html = Element.html
+                        }
+                        (\attr el -> Element.el attr el)
+                        animationAcquisitionDot
+                        [ Ui.wf
+                        , Ui.hf
+                        , Ui.r size
+                        , Ui.p pad
+                        , Ui.cx
+                        , Ui.cy
+                        , Background.color Colors.green2
+                        ]
+                    <|
+                        Element.el
+                            [ Ui.wf
+                            , Ui.hf
+                            , Ui.r size
+                            , Ui.cx
+                            , Ui.cy
+                            , Background.color <| Colors.grey 6
+                            ]
+                            Element.none
+
+                else
+                    Element.none
+
+        animationProductionDot : Animation
+        animationProductionDot =
+            Animation.steps
+                { startAt = [ P.scale 0.0 ]
+                , options = []
+                }
+                [ Animation.wait 600
+                , Animation.step 150 [ P.scale 1.5 ]
+                , Animation.step 50 [ P.scale 1.0 ]
+                ]
+
+        productionDot : Element App.Msg
+        productionDot =
+            Element.el
+                [ Ui.wpx size
+                , Ui.hpx size
+                , Ui.r size
+                , Ui.p (pad - 2)
+                , Background.color <| Colors.grey 6
+                , Element.moveLeft (3 * size / 2 + pad + len - len / 2)
+                , Border.shadow
+                    { size = 1
+                    , blur = 8
+                    , color = Colors.alpha 0.1
+                    , offset = ( 0, 0 )
+                    }
+                ]
+            <|
+                case capsule.produced of
+                    Data.Done ->
+                        Animated.ui
+                            { behindContent = Element.behindContent
+                            , htmlAttribute = Element.htmlAttribute
+                            , html = Element.html
+                            }
+                            (\attr el -> Element.el attr el)
+                            animationProductionDot
+                            []
+                        <|
+                            circleProgress (size / 2 - (pad - 2) - pad / 2) pad 1.0
+
+                    Data.Running (Just p) ->
+                        circleProgress (size / 2 - (pad - 2) - pad / 2) pad p
+
+                    _ ->
+                        Element.none
+
+        animationPublicationDot : Animation
+        animationPublicationDot =
+            Animation.steps
+                { startAt = [ P.scale 0.0 ]
+                , options = []
+                }
+                [ Animation.wait 1100
+                , Animation.step 150 [ P.scale 1.5 ]
+                , Animation.step 50 [ P.scale 1.0 ]
+                ]
+
+        publicationDot : Element App.Msg
+        publicationDot =
+            Element.el
+                [ Ui.wpx size
+                , Ui.hpx size
+                , Ui.r size
+                , Ui.p (pad - 2)
+                , Background.color <| Colors.grey 6
+                , Element.moveLeft (5 * size / 2 + pad + len - 3 * len / 4)
+                , Border.shadow
+                    { size = 1
+                    , blur = 8
+                    , color = Colors.alpha 0.1
+                    , offset = ( 0, 0 )
+                    }
+                ]
+            <|
+                if capsule.published == Data.Done then
+                    Animated.ui
+                        { behindContent = Element.behindContent
+                        , htmlAttribute = Element.htmlAttribute
+                        , html = Element.html
+                        }
+                        (\attr el -> Element.el attr el)
+                        animationPublicationDot
+                        [ Ui.wf
+                        , Ui.hf
+                        , Ui.r size
+                        , Ui.p pad
+                        , Ui.cx
+                        , Ui.cy
+                        , Background.color Colors.green2
+                        ]
+                    <|
+                        Element.el
+                            [ Ui.wf
+                            , Ui.hf
+                            , Ui.r size
+                            , Ui.cx
+                            , Ui.cy
+                            , Background.color <| Colors.grey 6
+                            ]
+                            Element.none
+
+                else
+                    Element.none
     in
-    Element.row [ Ui.hf, Ui.wf, Element.centerY ]
-        [ acquisition, production, publication, duration ]
+    Element.row []
+        [ Element.el
+            [ Ui.p pad
+            , Ui.wpx (len + 2 * pad)
+            , Ui.hpx 15
+            , Ui.r 20
+            , Ui.ar
+            , Background.color <| Colors.grey 6
+            , Border.shadow
+                { size = 1
+                , blur = 8
+                , color = Colors.alpha 0.1
+                , offset = ( 0, 0 )
+                }
+            ]
+          <|
+            Element.el
+                [ Ui.wf
+                , Ui.hf
+                , Element.htmlAttribute <| style "overflow" "hidden"
+                , Ui.r 100
+                ]
+            <|
+                Animated.ui
+                    { behindContent = Element.behindContent
+                    , htmlAttribute = Element.htmlAttribute
+                    , html = Element.html
+                    }
+                    (\attr el -> Element.el attr el)
+                    animationBar
+                    [ Ui.wf, Ui.hf, Ui.r 5, Background.color Colors.green2 ]
+                    Element.none
+        , acquisitionDot
+        , productionDot
+        , publicationDot
+        ]
+
+
+circleProgress : Float -> Float -> Float -> Element App.Msg
+circleProgress radius width value =
+    let
+        circumference : Float
+        circumference =
+            2 * pi * radius
+    in
+    Element.el [ Ui.cx, Ui.cy ] <|
+        Element.html <|
+            Svg.svg
+                [ Svg.Attributes.width <| String.fromFloat (2 * radius + width)
+                , Svg.Attributes.height <| String.fromFloat (2 * radius + width)
+                ]
+                [ Svg.circle
+                    [ Svg.Attributes.cx <| String.fromFloat ((2 * radius + width) / 2)
+                    , Svg.Attributes.cy <| String.fromFloat ((2 * radius + width) / 2)
+                    , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
+                    , Html.Attributes.style "transform" "rotate(90deg)"
+                    , Html.Attributes.style "transform-origin" "50% 50%"
+                    , Svg.Attributes.r (String.fromFloat radius)
+                    , Svg.Attributes.stroke <| Colors.colorToString Colors.green2
+                    , Svg.Attributes.strokeWidth (String.fromFloat width)
+                    , Svg.Attributes.fill "transparent"
+                    , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
+                    , (1.0 - value)
+                        * circumference
+                        |> String.fromFloat
+                        |> Svg.Attributes.strokeDashoffset
+                    ]
+                    []
+                ]
 
 
 {-| The progress icons of a caspule.
