@@ -316,6 +316,11 @@ actions lang poc _ =
                   else
                     Element.none
                 , Ui.secondaryIcon []
+                    { icon = Icons.folder_copy
+                    , tooltip = Strings.actionsDeleteCapsule lang
+                    , action = Ui.None
+                    }
+                , Ui.secondaryIcon []
                     { icon = Icons.delete
                     , tooltip = Strings.actionsDeleteProject lang
                     , action = Ui.Msg (App.HomeMsg (Home.DeleteProject Utils.Request p))
@@ -350,6 +355,11 @@ actions lang poc _ =
 
                   else
                     Element.none
+                , Ui.secondaryIcon []
+                    { icon = Icons.content_copy
+                    , tooltip = Strings.actionsDuplicateCapsule lang
+                    , action = Ui.Msg <| App.HomeMsg <| Home.DuplicateCapsule c
+                    }
                 , Ui.secondaryIcon []
                     { icon =
                         if isOwner then

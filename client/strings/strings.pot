@@ -952,6 +952,10 @@ msgstr ""
 msgid "Actions.deleteCapsule"
 msgstr ""
 
+#. Duplicate capsule.
+msgid "Actions.duplicateCapsule"
+msgstr ""
+
 #. Rename project.
 msgid "Actions.renameProject"
 msgstr ""

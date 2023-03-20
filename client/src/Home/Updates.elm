@@ -407,6 +407,19 @@ update msg model =
                     in
                     ( { model | user = { user | projects = newProjects } }, Cmd.none )
 
+                Home.DuplicateCapsule c ->
+                    ( model
+                    , Api.duplicateCapsule c
+                        (\r ->
+                            case r of
+                                RemoteData.Success duplicated ->
+                                    App.HomeMsg (Home.CapsuleUpdated duplicated)
+
+                                _ ->
+                                    App.Noop
+                        )
+                    )
+
         _ ->
             ( model, Cmd.none )
 

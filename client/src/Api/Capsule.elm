@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord
+@docs uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord
 
 -}
 
@@ -144,6 +144,18 @@ deleteRecord : Data.Capsule -> Int -> (WebData () -> msg) -> Cmd msg
 deleteRecord capsule gosId toMsg =
     Api.delete
         { url = "/api/delete-record/" ++ capsule.id ++ "/" ++ String.fromInt gosId
+        , body = Http.emptyBody
+        , toMsg = toMsg
+        }
+
+
+{-| Duplicates a capsule.
+-}
+duplicateCapsule : Data.Capsule -> (WebData Data.Capsule -> msg) -> Cmd msg
+duplicateCapsule capsule toMsg =
+    Api.postJson
+        { url = "/api/duplicate/" ++ capsule.id
+        , decoder = Data.decodeCapsule
         , body = Http.emptyBody
         , toMsg = toMsg
         }
