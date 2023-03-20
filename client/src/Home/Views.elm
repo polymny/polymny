@@ -548,7 +548,7 @@ capsuleProgress lang capsule =
                 p =
                     acquired
             in
-            Element.el
+            Ui.navigationElement (Ui.Route <| Route.Acquisition capsule.id 0)
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.tooltip <| Strings.stepsAcquisitionAcquisition lang
@@ -603,7 +603,7 @@ capsuleProgress lang capsule =
                         _ ->
                             0
             in
-            Element.el
+            Ui.navigationElement (Ui.Route <| Route.Production capsule.id 0)
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
@@ -655,7 +655,7 @@ capsuleProgress lang capsule =
                         Data.Done ->
                             1
             in
-            Element.el
+            Ui.navigationElement (Ui.Route <| Route.Publication capsule.id)
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
