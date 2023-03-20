@@ -26,13 +26,14 @@ isSameTab m1 m2 =
         ( ChangeEmail _, ChangeEmail _ ) ->
             True
 
+        ( ChangePassword _, ChangePassword _ ) ->
+            True
+
+        ( DeleteAccount _, DeleteAccount _ ) ->
+            True
+
         _ ->
             False
-
-
-
--- _ ->
---     False
 
 
 {-| Initializes a model.
