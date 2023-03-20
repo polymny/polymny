@@ -18,6 +18,7 @@ import Element.Font as Font
 import Element.Input
 import Home.Types as Home
 import Html.Attributes exposing (style)
+import Json.Decode exposing (float)
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
@@ -224,7 +225,7 @@ makeHeader text config key =
                         Ui.icon 24 Icons.arrow_right
 
                 Nothing ->
-                    Element.el [ Ui.h 24 ] Element.none
+                    Element.el [ Ui.hpx 24 ] Element.none
     in
     Ui.navigationElement action [] <|
         Element.row [ Ui.p 10, Font.bold ]
@@ -423,71 +424,11 @@ It is a kind of progress bar that shows the different steps between acquisition,
 capsuleProgress : Lang -> Data.Capsule -> Element App.Msg
 capsuleProgress lang capsule =
     let
-        computeColor : Data.TaskStatus -> Element.Attribute msg
-        computeColor status =
-            Background.color <|
-                case status of
-                    Data.Idle ->
-                        Colors.greyBackground
-
-                    _ ->
-                        Colors.green2
-
-        makeText : String -> Element msg
-        makeText text =
-            Element.el [ Element.centerX, Element.centerY ] (Element.text text)
-
-        acquired =
-            capsule.structure
-                |> List.filterMap .record
-                |> List.isEmpty
-                |> not
-                |> (||) (capsule.produced /= Data.Idle)
-
-        acquisition =
-            Element.el
-                [ Ui.wf
-                , Ui.p 10
-                , computeColor (Utils.tern acquired Data.Done Data.Idle)
-                , Border.roundEach { topLeft = 10, bottomLeft = 10, topRight = 0, bottomRight = 0 }
-                , Border.color Colors.black
-                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                ]
-                (makeText (Strings.stepsAcquisitionAcquisition lang))
-
-        production =
-            Element.el
-                [ Ui.wf
-                , Ui.p 10
-                , computeColor capsule.produced
-                , Border.color Colors.black
-                , Border.widthEach { left = 1, top = 1, right = 0, bottom = 1 }
-                ]
-                (makeText (Strings.stepsProductionProduction lang))
-
-        publication =
-            Element.el
-                [ Ui.wf
-                , computeColor capsule.published
-                , Ui.p 10
-                , Border.roundEach { topLeft = 0, bottomLeft = 0, topRight = 10, bottomRight = 10 }
-                , Border.color Colors.black
-                , Border.width 1
-                ]
-                (makeText (Strings.stepsPublicationPublication lang))
-
-        duration =
-            Utils.tern (capsule.duration /= 0) (Just capsule.duration) Nothing
-                |> Maybe.map TimeUtils.formatDuration
-                |> Maybe.map Element.text
-                |> Maybe.map (Element.el [ Ui.p 10 ])
-                |> Maybe.withDefault Element.none
-
         pad =
             5
 
         length =
-            75
+            50
 
         totalLength =
             4 * (length + 2 * pad)
@@ -498,6 +439,18 @@ capsuleProgress lang capsule =
         size =
             26
 
+        acquired : Float
+        acquired =
+            if capsule.produced /= Data.Idle then
+                1.0
+
+            else
+                capsule.structure
+                    |> List.filterMap .record
+                    |> List.length
+                    |> toFloat
+                    |> (\x -> x / toFloat (List.length capsule.structure))
+
         startAnimation : Animation
         startAnimation =
             Animation.steps
@@ -506,11 +459,11 @@ capsuleProgress lang capsule =
                 }
                 [ Animation.step 200
                     [ P.x <|
-                        if not acquired then
-                            -(length / 2)
+                        if acquired > 0.0 then
+                            0
 
                         else
-                            0
+                            -(length / 2)
                     ]
                 ]
 
@@ -523,7 +476,7 @@ capsuleProgress lang capsule =
                 [ Animation.wait 400
                 , Animation.step 200
                     [ P.x <|
-                        case ( acquired, capsule.produced ) of
+                        case ( acquired == 1.0, capsule.produced ) of
                             ( False, _ ) ->
                                 -length
 
@@ -593,16 +546,12 @@ capsuleProgress lang capsule =
             let
                 p : Float
                 p =
-                    if acquired then
-                        1.0
-
-                    else
-                        0.0
+                    acquired
             in
             Element.el
                 [ Ui.wpx size
                 , Ui.hpx size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsAcquisitionAcquisition lang
+                , Ui.tooltip <| Strings.stepsAcquisitionAcquisition lang
                 , Ui.r size
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (size / 2 + 3 * totalLength / 4)
@@ -658,7 +607,7 @@ capsuleProgress lang capsule =
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsProductionProduction lang
+                , Ui.tooltip <| Strings.stepsProductionProduction lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (3 * size / 2 + totalLength / 2)
                 , Border.shadow
@@ -710,7 +659,7 @@ capsuleProgress lang capsule =
                 [ Ui.wpx size
                 , Ui.hpx size
                 , Ui.r size
-                , Element.htmlAttribute <| Html.Attributes.title <| Strings.stepsPublicationPublication lang
+                , Ui.tooltip <| Strings.stepsPublicationPublication lang
                 , Background.color <| Colors.grey 6
                 , Element.moveLeft (5 * size / 2 + 1 * totalLength / 4)
                 , Border.shadow
@@ -789,7 +738,24 @@ circleProgress width height radius strokeWidth value =
         circumference =
             2 * pi * radius
     in
-    Element.el [ Ui.cx, Ui.cy ] <|
+    Element.el
+        [ Ui.cx
+        , Ui.cy
+        , Element.inFront <|
+            Element.el
+                [ Ui.wf
+                , Ui.hf
+                , Background.color <| Colors.alpha 0.0
+                , Ui.r <| round width
+                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                , Transition.properties
+                    [ Transition.backgroundColor 200 []
+                    ]
+                    |> Element.htmlAttribute
+                ]
+                Element.none
+        ]
+    <|
         Element.html <|
             Svg.svg
                 [ Svg.Attributes.width <| String.fromFloat width

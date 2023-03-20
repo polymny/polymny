@@ -444,7 +444,7 @@ navButtons lang capsuleId page =
 
         separator : Element msg
         separator =
-            Element.el [ Ui.w 1, Ui.h 30, Background.color Colors.greyBackground ] Element.none
+            Element.el [ Ui.wpx 1, Ui.hpx 30, Background.color Colors.greyBackground ] Element.none
 
         makeButton : Route -> String -> Bool -> Element msg
         makeButton route label hoverable =
@@ -462,8 +462,8 @@ navButtons lang capsuleId page =
                         |> Element.htmlAttribute
                     ]
             in
-            Element.column [ Ui.hf, Ui.w buttonWidth ]
-                [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+            Element.column [ Ui.hf, Ui.wpx buttonWidth ]
+                [ Element.el [ Ui.hpx 5, Ui.wf ] Element.none
                 , Ui.navigationElement (Ui.Route route) attr <| Element.el [ Ui.wf, Font.center ] (Element.text label)
                 ]
 
@@ -502,11 +502,11 @@ navButtons lang capsuleId page =
                     [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                     , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
                     , Element.moveRight selectorMove
-                    , Ui.w (buttonWidth + 2)
+                    , Ui.wpx (buttonWidth + 2)
                     , Element.htmlAttribute <|
                         Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
                     ]
-                    [ Element.el [ Ui.h 5, Ui.wf ] Element.none
+                    [ Element.el [ Ui.hpx 5, Ui.wf ] Element.none
                     , Element.el [ Ui.hf, Ui.wf, Font.bold, Ui.rt 10, Background.color Colors.greyBackground ] Element.none
                     ]
     in
