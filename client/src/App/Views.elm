@@ -163,7 +163,7 @@ viewSuccess model =
             Options.view model.config model.user (Options.withCapsule capsule m)
                 |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        ( App.Settings m, Just _, _ ) ->
+        ( App.Settings m, _, _ ) ->
             Settings.view model.config model.user m
 
         _ ->
