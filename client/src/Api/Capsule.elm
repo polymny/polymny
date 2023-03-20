@@ -1,18 +1,18 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack, deleteRecord)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, uploadTrack, deleteRecord
+@docs uploadSlideShow, updateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord
 
 -}
 
 import Api.Utils as Api
+import Config
 import Data.Capsule as Data
 import File exposing (File)
 import FileValue
 import Http
 import RemoteData exposing (WebData)
-import Config
 
 
 {-| Uploads a slideshow to the server, creating a new capsule.
@@ -102,6 +102,17 @@ publishCapsule : Data.Capsule -> (WebData () -> msg) -> Cmd msg
 publishCapsule capsule toMsg =
     Api.post
         { url = "/api/publish/" ++ capsule.id
+        , body = Http.emptyBody
+        , toMsg = toMsg
+        }
+
+
+{-| Triggers the removal of a publication of a capsule.
+-}
+unpublishCapsule : Data.Capsule -> (WebData () -> msg) -> Cmd msg
+unpublishCapsule capsule toMsg =
+    Api.post
+        { url = "/api/unpublish/" ++ capsule.id
         , body = Http.emptyBody
         , toMsg = toMsg
         }

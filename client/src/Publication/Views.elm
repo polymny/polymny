@@ -159,10 +159,24 @@ view config _ model =
 
         -- Publish button
         publishButton =
-            Ui.primary []
-                { label = Element.text <| Strings.stepsPublicationPublishVideo lang
-                , action = Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
-                }
+            case model.capsule.published of
+                Data.Idle ->
+                    Ui.primary []
+                        { label = Element.text <| Strings.stepsPublicationPublishVideo lang
+                        , action = Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+                        }
+
+                Data.Running _ ->
+                    Ui.primary []
+                        { label = Ui.spinningSpinner [] 25
+                        , action = Ui.None
+                        }
+
+                Data.Done ->
+                    Ui.primary []
+                        { label = Element.text <| Strings.stepsPublicationUnpublishVideo lang
+                        , action = Ui.Msg <| App.PublicationMsg <| Publication.UnpublishVideo
+                        }
 
         -- Title for additionnal information of published capsule
         publicationInformationTitle =
@@ -171,7 +185,7 @@ view config _ model =
         -- Text area showing the iframe code for the capsule
         iframeCode =
             Input.multiline []
-                { label = Input.labelHidden "oops"
+                { label = Input.labelHidden "HTML"
                 , onChange = \_ -> App.Noop
                 , placeholder = Nothing
                 , spellcheck = False

@@ -32,3 +32,4 @@ type Msg
     | SetPrivacy Data.Privacy
     | SetPromptSubtitles Bool
     | PublishVideo
+    | UnpublishVideo

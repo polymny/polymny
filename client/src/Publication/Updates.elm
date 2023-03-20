@@ -59,6 +59,11 @@ update msg model =
                     , Api.publishCapsule capsule (\_ -> App.Noop)
                     )
 
+                Publication.UnpublishVideo ->
+                    ( { model | user = Data.updateUser { capsule | published = Data.Idle } model.user }
+                    , Api.unpublishCapsule capsule (\_ -> App.Noop)
+                    )
+
         _ ->
             ( model, Cmd.none )
 

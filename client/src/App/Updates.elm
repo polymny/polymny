@@ -392,7 +392,7 @@ updateModel msg model =
                                 , user =
                                     Data.updateUser
                                         { capsule
-                                            | produced =
+                                            | published =
                                                 Utils.tern
                                                     finished
                                                     Data.Done
