@@ -488,7 +488,7 @@ capsuleProgress lang capsule =
 
         length =
             75
-        
+
         totalLength =
             4 * (length + 2 * pad)
 
@@ -645,6 +645,22 @@ capsuleProgress lang capsule =
 
         productionDot : Element App.Msg
         productionDot =
+            let
+                p : Float
+                p =
+                    case capsule.produced of
+                        Data.Idle ->
+                            0
+
+                        Data.Running (Just pp) ->
+                            pp
+
+                        Data.Done ->
+                            1
+
+                        _ ->
+                            0
+            in
             Element.el
                 [ Ui.wpx size
                 , Ui.hpx size
@@ -660,24 +676,16 @@ capsuleProgress lang capsule =
                     }
                 ]
             <|
-                case capsule.produced of
-                    Data.Done ->
-                        Animated.ui
-                            { behindContent = Element.behindContent
-                            , htmlAttribute = Element.htmlAttribute
-                            , html = Element.html
-                            }
-                            (\attr el -> Element.el attr el)
-                            animationProductionDot
-                            []
-                        <|
-                            circleProgress (size / 2 - (pad - 2) - pad / 2) pad 1.0
-
-                    Data.Running (Just p) ->
-                        circleProgress (size / 2 - (pad - 2) - pad / 2) pad p
-
-                    _ ->
-                        Element.none
+                Animated.ui
+                    { behindContent = Element.behindContent
+                    , htmlAttribute = Element.htmlAttribute
+                    , html = Element.html
+                    }
+                    (\attr el -> Element.el attr el)
+                    animationProductionDot
+                    []
+                <|
+                    circleProgress (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationPublicationDot : Animation
         animationPublicationDot =
