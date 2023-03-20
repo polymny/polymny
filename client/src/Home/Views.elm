@@ -27,7 +27,7 @@ import Simple.Animation.Property as P
 import Simple.Transition as Transition
 import Strings
 import Svg
-import Svg.Attributes
+import Svg.Attributes exposing (in_)
 import Time
 import TimeUtils
 import Ui.Colors as Colors
@@ -486,8 +486,14 @@ capsuleProgress lang capsule =
         pad =
             5
 
-        len =
-            300
+        length =
+            75
+        
+        totalLength =
+            4 * (length + 2 * pad)
+
+        height =
+            15
 
         size =
             26
@@ -495,82 +501,78 @@ capsuleProgress lang capsule =
         startAnimation : Animation
         startAnimation =
             Animation.steps
-                { startAt = [ P.x -len ]
+                { startAt = [ P.x -length ]
                 , options = []
                 }
-                [ Animation.step 200 [ P.x (len / 8 - len) ]
+                [ Animation.step 200
+                    [ P.x <|
+                        if not acquired then
+                            -(length / 2)
+
+                        else
+                            0
+                    ]
                 ]
 
         acquisitionAnimation : Animation
         acquisitionAnimation =
             Animation.steps
-                { startAt = [ P.x -len ]
+                { startAt = [ P.x -length ]
                 , options = []
                 }
-                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (3 * len / 8 - len) ]
+                [ Animation.wait 400
+                , Animation.step 200
+                    [ P.x <|
+                        case ( acquired, capsule.produced ) of
+                            ( False, _ ) ->
+                                -length
+
+                            ( True, Data.Idle ) ->
+                                -length / 2
+
+                            _ ->
+                                0
+                    ]
                 ]
 
         productionAnimation : Animation
         productionAnimation =
             Animation.steps
-                { startAt = [ P.x -len ]
+                { startAt = [ P.x -length ]
                 , options = []
                 }
-                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
-                ]
+                [ Animation.wait 800
+                , Animation.step 200
+                    [ P.x <|
+                        case ( capsule.produced, capsule.published ) of
+                            ( Data.Done, Data.Idle ) ->
+                                -length / 2
 
-        productedAnimation : Animation
-        productedAnimation =
-            Animation.steps
-                { startAt = [ P.x -len ]
-                , options = []
-                }
-                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (5 * len / 8 - len) ]
+                            ( Data.Done, Data.Done ) ->
+                                0
+
+                            _ ->
+                                -length
+                    ]
                 ]
 
         publicationAnimation : Animation
         publicationAnimation =
             Animation.steps
-                { startAt = [ P.x -len ]
+                { startAt = [ P.x -length ]
                 , options = []
                 }
-                [ Animation.step 200 [ P.x (2 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (4 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (6 * len / 8 - len) ]
-                , Animation.wait 200
-                , Animation.step 200 [ P.x (8 * len / 8 - len) ]
+                [ Animation.wait 1200
+                , Animation.step 200
+                    [ P.x <|
+                        case capsule.published of
+                            Data.Done ->
+                                0
+
+                            _ ->
+                                -length
+                    ]
                 ]
-
-        animationBar : Animation
-        animationBar =
-            case ( acquired, capsule.produced, capsule.published ) of
-                ( False, _, _ ) ->
-                    startAnimation
-
-                ( True, Data.Idle, _ ) ->
-                    acquisitionAnimation
-
-                ( True, Data.Running _, Data.Idle ) ->
-                    productionAnimation
-
-                ( True, Data.Done, Data.Idle ) ->
-                    productedAnimation
-
-                ( True, Data.Done, Data.Done ) ->
-                    publicationAnimation
-
-                _ ->
-                    startAnimation
 
         animationAcquisitionDot : Animation
         animationAcquisitionDot =
@@ -591,7 +593,7 @@ capsuleProgress lang capsule =
                 , Ui.r size
                 , Ui.p (pad - 2)
                 , Background.color <| Colors.grey 6
-                , Element.moveLeft (size / 2 + pad + len - len / 4)
+                , Element.moveLeft (size / 2 + 3 * totalLength / 4)
                 , Border.shadow
                     { size = 1
                     , blur = 8
@@ -649,7 +651,7 @@ capsuleProgress lang capsule =
                 , Ui.r size
                 , Ui.p (pad - 2)
                 , Background.color <| Colors.grey 6
-                , Element.moveLeft (3 * size / 2 + pad + len - len / 2)
+                , Element.moveLeft (3 * size / 2 + totalLength / 2)
                 , Border.shadow
                     { size = 1
                     , blur = 8
@@ -683,7 +685,7 @@ capsuleProgress lang capsule =
                 { startAt = [ P.scale 0.0 ]
                 , options = []
                 }
-                [ Animation.wait 1100
+                [ Animation.wait 1000
                 , Animation.step 150 [ P.scale 1.5 ]
                 , Animation.step 50 [ P.scale 1.0 ]
                 ]
@@ -696,7 +698,7 @@ capsuleProgress lang capsule =
                 , Ui.r size
                 , Ui.p (pad - 2)
                 , Background.color <| Colors.grey 6
-                , Element.moveLeft (5 * size / 2 + pad + len - 3 * len / 4)
+                , Element.moveLeft (5 * size / 2 + 1 * totalLength / 4)
                 , Border.shadow
                     { size = 1
                     , blur = 8
@@ -736,41 +738,53 @@ capsuleProgress lang capsule =
                     Element.none
     in
     Element.row []
-        [ Element.el
-            [ Ui.p pad
-            , Ui.wpx (len + 2 * pad)
-            , Ui.hpx 15
-            , Ui.r 20
-            , Ui.ar
-            , Background.color <| Colors.grey 6
-            , Border.shadow
-                { size = 1
-                , blur = 8
-                , color = Colors.alpha 0.1
-                , offset = ( 0, 0 )
-                }
+        [ Element.row []
+            [ progressBar [ Ui.wpx (length + 2 * pad), Ui.hpx height, Ui.p pad ] startAnimation
+            , progressBar [ Ui.wpx (length + 2 * pad), Ui.hpx height, Ui.p pad ] acquisitionAnimation
+            , progressBar [ Ui.wpx (length + 2 * pad), Ui.hpx height, Ui.p pad ] productionAnimation
+            , progressBar [ Ui.wpx (length + 2 * pad), Ui.hpx height, Ui.p pad ] publicationAnimation
             ]
-          <|
-            Element.el
-                [ Ui.wf
-                , Ui.hf
-                , Element.htmlAttribute <| style "overflow" "hidden"
-                , Ui.r 100
-                ]
-            <|
-                Animated.ui
-                    { behindContent = Element.behindContent
-                    , htmlAttribute = Element.htmlAttribute
-                    , html = Element.html
-                    }
-                    (\attr el -> Element.el attr el)
-                    animationBar
-                    [ Ui.wf, Ui.hf, Ui.r 5, Background.color Colors.green2 ]
-                    Element.none
         , acquisitionDot
         , productionDot
         , publicationDot
         ]
+
+
+progressBar : List (Element.Attribute App.Msg) -> Animation -> Element App.Msg
+progressBar attributes animation =
+    Element.el
+        ([ Ui.p 5
+         , Ui.wpx 100
+         , Ui.hpx 20
+         , Ui.r 100
+         , Ui.ar
+         , Background.color <| Colors.grey 6
+         , Border.shadow
+            { size = 1
+            , blur = 8
+            , color = Colors.alpha 0.1
+            , offset = ( 0, 0 )
+            }
+         ]
+            ++ attributes
+        )
+    <|
+        Element.el
+            [ Ui.wf
+            , Ui.hf
+            , Element.htmlAttribute <| style "overflow" "hidden"
+            , Ui.r 100
+            ]
+        <|
+            Animated.ui
+                { behindContent = Element.behindContent
+                , htmlAttribute = Element.htmlAttribute
+                , html = Element.html
+                }
+                (\attr el -> Element.el attr el)
+                animation
+                [ Ui.wf, Ui.hf, Ui.r 100, Background.color Colors.green2 ]
+                Element.none
 
 
 circleProgress : Float -> Float -> Float -> Element App.Msg
