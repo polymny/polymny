@@ -792,10 +792,10 @@ pointerControl model =
             let
                 borderColor : Element.Color
                 borderColor =
-                    Utils.tern (colorToString color == model.pointerStyle.color) Colors.green2 (Colors.alpha 0.3)
+                    Utils.tern (Colors.colorToString color == model.pointerStyle.color) Colors.green2 (Colors.alpha 0.3)
             in
             Ui.navigationElement
-                (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| colorToString color)
+                (Ui.Msg <| App.AcquisitionMsg <| Acquisition.SetPointerColor <| Colors.colorToString color)
                 [ Background.color color
                 , Ui.r 10
                 , Ui.b 4
@@ -938,26 +938,6 @@ palette =
     , ( Element.rgb255 255 128 128, Element.rgb255 128 128 255 )
     , ( Element.rgb255 128 255 128, Element.rgb255 255 255 128 )
     ]
-
-
-{-| Convers an element color to a css string.
--}
-colorToString : Element.Color -> String
-colorToString color =
-    let
-        { red, green, blue } =
-            Element.toRgb color
-
-        r =
-            floor (255 * red) |> String.fromInt
-
-        g =
-            floor (255 * green) |> String.fromInt
-
-        b =
-            floor (255 * blue) |> String.fromInt
-    in
-    "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
 
 
 {-| Easily creates the Ui.Msg for options msg.

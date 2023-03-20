@@ -1,15 +1,16 @@
 module Ui.Colors exposing
-    ( green1, green2, green3, yellow, blue, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
+    ( green1, green2, green3, yellow, blue, red, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground, colorToString
     , redLight
     )
 
 {-| This module contains all the color definitions that will be used in the app.
 
-@docs green1, green2, green3, yellow, blue, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground
+@docs green1, green2, green3, yellow, blue, red, redLigth, orange, orangeLight, greenLight, white, black, alpha, alphaColor, transparent, grey, greyBackground, greyFont, greyFontDisabled, greyBorder, tableBackground, colorToString
 
 -}
 
 import Element
+import Json.Decode exposing (int)
 
 
 {-| The dark green color from Polymny logo.
@@ -189,3 +190,23 @@ greyFontDisabled =
 tableBackground : Element.Color
 tableBackground =
     Element.rgb 228 233 230
+
+
+{-| Convers an element color to a css string.
+-}
+colorToString : Element.Color -> String
+colorToString color =
+    let
+        rgb =
+            Element.toRgb color
+
+        r =
+            floor (255 * rgb.red) |> String.fromInt
+
+        g =
+            floor (255 * rgb.green) |> String.fromInt
+
+        b =
+            floor (255 * rgb.blue) |> String.fromInt
+    in
+    "rgb(" ++ r ++ "," ++ g ++ "," ++ b ++ ")"
