@@ -89,7 +89,7 @@ update msg model =
         ( App.NewCapsule m, NewCapsule.Cancel ) ->
             case m.slideUpload of
                 RemoteData.Success ( c, _ ) ->
-                    ( model, Route.push model.config.clientState.key Route.Home )
+                    ( { model | page = App.Home Home.init } , Api.deleteCapsule c (\_ -> App.Noop) )
 
                 _ ->
                     ( model, Cmd.none )
