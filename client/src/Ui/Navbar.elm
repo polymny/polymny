@@ -11,7 +11,7 @@ import App.Utils as App
 import Config exposing (ClientState, Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
-import Data.User exposing (User)
+import Data.User exposing (User, getCapsuleById)
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -43,8 +43,32 @@ navbar config page user =
         lang =
             Maybe.map .clientState config |> Maybe.map .lang |> Maybe.withDefault Lang.default
 
-        capsule =
+        capsule2 =
             Maybe.andThen App.capsuleIdFromPage page
+
+        getNamesFromPage : User -> ( String, String )
+        getNamesFromPage u =
+            case capsule2 of
+                Just c ->
+                    getCapsuleById c u
+                        |> Maybe.map (\x -> ( x.project, x.name ))
+                        |> Maybe.withDefault ( "", "" )
+
+                Nothing ->
+                    ( "", "" )
+
+        title : String
+        title =
+            case ( capsule2, user ) of
+                ( Just _, Just u ) ->
+                    let
+                        ( proj, caps ) =
+                            getNamesFromPage u
+                    in
+                    "[" ++ proj ++ "] " ++ caps
+
+                _ ->
+                    ""
 
         logo =
             case Maybe.map .plan user of
@@ -76,7 +100,8 @@ navbar config page user =
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
         [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
-        , case ( capsule, page ) of
+        , Ui.longText [ Ui.pr 30, Ui.wpx 300, Font.bold, Font.color Colors.greyBackground ] title
+        , case ( capsule2, page ) of
             ( Just c, Just p ) ->
                 navButtons lang c p
 
