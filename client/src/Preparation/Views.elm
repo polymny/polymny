@@ -53,11 +53,14 @@ view config user model =
         --
         popup : Element App.Msg
         popup =
-            case ( ( model.deleteSlide, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
-                ( ( Just s, _ ), _ ) ->
+            case ( ( model.deleteSlide, model.deleteExtra, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
+                ( ( Just s, _, _ ), _ ) ->
                     deleteSlideConfirmPopup lang model s
 
-                ( ( _, Just f ), _ ) ->
+                ( ( _, Just s, _ ), _ ) ->
+                    deleteExtraConfirmPopup lang model s
+
+                ( ( _, _, Just f ), _ ) ->
                     selectPageNumberPopup lang model f
 
                 ( _, ( Just s, _ ) ) ->
@@ -205,7 +208,12 @@ slideView config _ model ghost default s =
                         , Ui.primaryIcon []
                             { icon = Icons.delete
                             , tooltip = Strings.actionsDeleteSlide lang
-                            , action = mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
+                            , action =
+                                if dataSlide.extra == Nothing then
+                                    mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
+
+                                else
+                                    mkUiMsg (Preparation.DeleteExtra Utils.Request dataSlide)
                             }
                         ]
 
@@ -271,6 +279,27 @@ deleteSlideConfirmPopup lang _ s =
             ]
         ]
         |> Ui.popup 1 (Strings.actionsDeleteSlide lang)
+
+
+{-| Popup to confirm the extra deletion.
+-}
+deleteExtraConfirmPopup : Lang -> Preparation.Model Capsule -> Data.Slide -> Element App.Msg
+deleteExtraConfirmPopup lang _ s =
+    Element.column [ Ui.wf, Ui.hf ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+            [ Element.text (Lang.question Strings.actionsConfirmDeleteExtra lang) ]
+        , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
+            [ Ui.secondary []
+                { action = mkUiMsg (Preparation.DeleteExtra Utils.Cancel s)
+                , label = Element.text <| Strings.uiCancel lang
+                }
+            , Ui.primary []
+                { action = mkUiMsg (Preparation.DeleteExtra Utils.Confirm s)
+                , label = Element.text <| Strings.uiConfirm lang
+                }
+            ]
+        ]
+        |> Ui.popup 1 (Strings.actionsDeleteExtra lang)
 
 
 {-| Popup to input prompt texts.

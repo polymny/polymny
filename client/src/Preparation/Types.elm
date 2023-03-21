@@ -29,6 +29,7 @@ type alias Model a =
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
     , deleteSlide : Maybe Data.Slide
+    , deleteExtra : Maybe Data.Slide
     , changeSlide : RemoteData.WebData Data.Capsule
     , changeSlideForm : Maybe ChangeSlideForm
     , editPrompt : Maybe Data.Slide
@@ -46,6 +47,7 @@ withCapsule capsule model =
     , gosModel = model.gosModel
     , capsuleUpdate = model.capsuleUpdate
     , deleteSlide = model.deleteSlide
+    , deleteExtra = model.deleteExtra
     , changeSlide = model.changeSlide
     , changeSlideForm = model.changeSlideForm
     , editPrompt = model.editPrompt
@@ -80,6 +82,7 @@ init capsule =
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
     , deleteSlide = Nothing
+    , deleteExtra = Nothing
     , changeSlide = RemoteData.NotAsked
     , changeSlideForm = Nothing
     , editPrompt = Nothing
@@ -93,6 +96,7 @@ type Msg
     = DnD DnDMsg
     | CapsuleUpdate Int (RemoteData.WebData ())
     | DeleteSlide Utils.Confirmation Data.Slide
+    | DeleteExtra Utils.Confirmation Data.Slide
     | Extra ExtraMsg
     | EditPrompt Data.Slide
     | PromptChanged Utils.Confirmation Data.Slide

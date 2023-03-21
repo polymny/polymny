@@ -1,7 +1,7 @@
 module Data.Capsule exposing
     ( Capsule, emptyCapsule, assetPath, iframeHtml
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString, updateGos
-    , Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
+    , Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, deleteExtra, updateSlide, updateSlideInGos
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
@@ -25,7 +25,7 @@ module Data.Capsule exposing
 
 ## Slides
 
-@docs Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, updateSlide, updateSlideInGos
+@docs Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, deleteExtra, updateSlide, updateSlideInGos
 
 
 ## Records
@@ -321,6 +321,18 @@ deleteSlide slide capsule =
                 |> List.filter (\x -> x.slides /= [])
     in
     { capsule | structure = newStructure }
+
+
+{-| Removes a specific extra from a slide.
+-}
+deleteExtra : Slide -> Capsule -> Capsule
+deleteExtra slide capsule =
+    let
+        gosMapper : Gos -> Gos
+        gosMapper gos =
+            { gos | slides = List.map (\x -> Utils.tern (x.uuid == slide.uuid) { x | extra = Nothing } x) gos.slides }
+    in
+    { capsule | structure = List.map gosMapper capsule.structure }
 
 
 {-| Updates a specific slide in a gos.

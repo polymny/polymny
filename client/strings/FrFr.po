@@ -837,6 +837,14 @@ msgstr "Supprimer la planche"
 msgid "Actions.Confirm.deleteSlide"
 msgstr "Voulez-vous vraiment supprimer cette planche"
 
+#. Delete a extra.
+msgid "Actions.deleteExtra"
+msgstr "Supprimer l'extra"
+
+#. The question to ask to confirm a deletion of an extra.
+msgid "Actions.Confirm.deleteExtra"
+msgstr "Voulez-vous vraiment supprimer cet extra"
+
 #. A webcam.
 msgid "Device.webcam"
 msgstr "Webcam"

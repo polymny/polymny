@@ -68,6 +68,31 @@ update msg model =
                       }
                     , sync
                     )
+                
+                Preparation.DeleteExtra Utils.Request slide ->
+                    ( { model | page = App.Preparation { m | deleteExtra = Just slide } }, Cmd.none )
+
+                Preparation.DeleteExtra Utils.Cancel _ ->
+                    ( { model | page = App.Preparation { m | deleteExtra = Nothing } }, Cmd.none )
+
+                Preparation.DeleteExtra Utils.Confirm slide ->
+                    let
+                        newCapsule =
+                            Data.deleteExtra slide capsule
+
+                        ( sync, newConfig ) =
+                            ( Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+                            , Config.incrementRequest model.config
+                            )
+                    in
+                    ( { model
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Preparation (Preparation.init newCapsule)
+                        , config = newConfig
+                      }
+                    , sync
+                    )
 
                 Preparation.Extra sMsg ->
                     let

@@ -796,6 +796,14 @@ msgstr ""
 msgid "Actions.Confirm.deleteSlide"
 msgstr ""
 
+#. Delete a extra.
+msgid "Actions.deleteExtra"
+msgstr ""
+
+#. The question to ask to confirm a deletion of an extra.
+msgid "Actions.Confirm.deleteExtra"
+msgstr ""
+
 #. A webcam.
 msgid "Device.webcam"
 msgstr ""
