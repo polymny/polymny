@@ -207,7 +207,12 @@ slideView config _ model ghost default s =
                             }
                         , Ui.primaryIcon []
                             { icon = Icons.delete
-                            , tooltip = Strings.actionsDeleteSlide lang
+                            , tooltip =
+                                if dataSlide.extra == Nothing then
+                                    Strings.actionsDeleteSlide lang
+                                
+                                else
+                                    Strings.actionsDeleteExtra lang
                             , action =
                                 if dataSlide.extra == Nothing then
                                     mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
