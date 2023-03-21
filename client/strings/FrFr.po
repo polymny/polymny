@@ -489,6 +489,10 @@ msgstr "La webcam est-elle utilisée par un autre logiciel"
 msgid "Steps.Acquisition.errorUploadingRecord"
 msgstr "Échec de l'envoi de l'enregistrement, veuillez recommencer"
 
+#. Starts recording the pointer.
+msgid "Steps.Acquisition.recordPointer"
+msgstr "Enregistrer le pointeur"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"

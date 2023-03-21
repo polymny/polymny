@@ -460,6 +460,10 @@ msgstr ""
 msgid "Steps.Acquisition.errorUploadingRecord"
 msgstr ""
 
+#. Starts recording the pointer.
+msgid "Steps.Acquisition.recordPointer"
+msgstr ""
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr ""
