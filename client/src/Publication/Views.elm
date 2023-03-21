@@ -20,6 +20,7 @@ import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
+import Utils
 
 
 {-| View of the publication page.
@@ -159,29 +160,48 @@ view config _ model =
 
         -- Publish button
         publishButton =
-            case model.capsule.published of
-                Data.Idle ->
-                    Ui.primary []
-                        { label = Element.text <| Strings.stepsPublicationPublishVideo lang
-                        , action =
-                            if model.capsule.produced == Data.Done then
-                                Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+            let
+                canPublish : Bool
+                canPublish =
+                    case model.capsule.published of
+                        Data.Running _ ->
+                            False
 
-                            else
-                                Ui.None
-                        }
+                        _ ->
+                            model.capsule.produced == Data.Done
 
-                Data.Running _ ->
-                    Ui.primary []
-                        { label = Ui.spinningSpinner [] 25
-                        , action = Ui.None
-                        }
+                spinnerElement : Element App.Msg
+                spinnerElement =
+                    Element.el
+                        [ Ui.wf
+                        , Ui.hf
+                        , Font.color <| Utils.tern canPublish Colors.transparent Colors.white
+                        ]
+                    <|
+                        Ui.spinningSpinner [ Ui.cx, Ui.cy ] 20
 
-                Data.Done ->
-                    Ui.primary []
-                        { label = Element.text <| Strings.stepsPublicationUnpublishVideo lang
-                        , action = Ui.Msg <| App.PublicationMsg <| Publication.UnpublishVideo
-                        }
+                label : Element App.Msg
+                label =
+                    Element.el
+                        [ Font.color <| Utils.tern canPublish Colors.white Colors.transparent
+                        , Element.inFront spinnerElement
+                        ]
+                    <|
+                        Element.text <|
+                            Strings.stepsPublicationPublishVideo lang
+
+                action : Ui.Action App.Msg
+                action =
+                    if canPublish then
+                        Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+
+                    else
+                        Ui.None
+            in
+            Ui.primary []
+                { label = label
+                , action = action
+                }
 
         -- Can't publish if the video is not produced
         cantPublish =
