@@ -11,7 +11,7 @@ import Config exposing (Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.User exposing (User)
 import DnDList.Groups
-import Element exposing (Element)
+import Element exposing (Element, modular)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -75,11 +75,14 @@ view config user model =
         --     makeBorder Colors.yellow (Element.text "Error")
         -- ( _, RemoteData.Success () ) ->
         --     makeBorder Colors.green1 (Element.text "Success")
+        groupedSlides : List (NeList Preparation.Slide)
+        groupedSlides =
+            model.slides
+                |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
+                |> filterConsecutiveVirtualGos
     in
-    ( model.slides
-        |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
-        |> filterConsecutiveVirtualGos
-        |> List.map (gosView config user model)
+    ( groupedSlides
+        |> List.indexedMap (\gosIndex gos -> gosView config user model gos (modBy (List.length groupedSlides) (gosIndex + 1)))
         |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf, Element.inFront inFront ]
     , popup
     )
@@ -87,11 +90,22 @@ view config user model =
 
 {-| Displays a grain.
 -}
-gosView : Config -> User -> Preparation.Model Capsule -> ( Preparation.Slide, List Preparation.Slide ) -> Element App.Msg
-gosView config user model ( head, gos ) =
+gosView : Config -> User -> Preparation.Model Capsule -> ( Preparation.Slide, List Preparation.Slide ) -> Int -> Element App.Msg
+gosView config user model ( head, gos ) gosIndex =
     let
+        lang =
+            config.clientState.lang
+
         isDragging =
             maybeDragSlide model.slideModel model.slides /= Nothing
+
+        gosId =
+            if gosIndex == 0 then
+                -- Last virtual gos, don't display label
+                -1
+
+            else
+                gosIndex // 2 + 1
 
         last =
             neListLast ( head, gos )
@@ -118,15 +132,20 @@ gosView config user model ( head, gos ) =
             case ( head.slide, gos, isDragging ) of
                 ( Nothing, [], False ) ->
                     -- Virtual gos
-                    Element.none
-                        |> Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ]
-                        |> Element.el
-                            (Ui.wf
-                                :: Ui.p 20
-                                :: Ui.id ("slide-" ++ String.fromInt head.totalSlideId)
-                                :: slideStyle model.slideModel head.totalSlideId Drop
-                            )
-                        |> Element.el [ Ui.wf, Ui.id ("gos-" ++ String.fromInt head.totalGosId) ]
+                    if gosId > 0 then
+                        Element.row [ Ui.p 20, Ui.wf ]
+                            [ Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ] Element.none
+                            , Element.el [ Ui.px 20 ] <|
+                                Element.text <|
+                                    Strings.dataCapsuleGrain lang 1
+                                        ++ " "
+                                        ++ String.fromInt gosId
+                            , Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ] Element.none
+                            ]
+
+                    else
+                        Element.el [ Ui.p 20, Ui.wf ] <|
+                            Element.el [ Ui.wf, Ui.bt 1, Border.color Colors.greyBorder ] Element.none
 
                 ( Nothing, [], True ) ->
                     -- Virtual gos
@@ -164,11 +183,7 @@ slideView config _ model ghost default s =
         ( Just slide, Just dataSlide ) ->
             let
                 inFrontLabel =
-                    Strings.dataCapsuleGrain lang 1
-                        ++ " "
-                        ++ String.fromInt (slide.gosId + 1)
-                        ++ " / "
-                        ++ Strings.dataCapsuleSlide lang 1
+                    Strings.dataCapsuleSlide lang 1
                         ++ " "
                         ++ String.fromInt (slide.slideId + 1)
                         |> Element.text
