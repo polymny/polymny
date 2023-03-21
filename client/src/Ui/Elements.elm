@@ -61,7 +61,7 @@ primaryGeneric outerAttr innerAttr { label, action } =
                 ++ [ Font.center
                    , Ui.wf
                    , Ui.hf
-                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                   , Element.mouseOver <| [ Background.color <| Colors.alpha 0.1 ]
                    , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -120,12 +120,18 @@ secondaryGeneric outerAttr innerAttr { label, action } =
                 ++ [ Font.center
                    , Ui.wf
                    , Ui.hf
-                   , Element.mouseOver <| [ Background.color <| Colors.alphaColor 0.1 Colors.black ]
+                   , Element.mouseOver <| [ Background.color <| Colors.alpha 0.1 ]
                    , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
                         |> Element.htmlAttribute
                    ]
+                ++ (if action == None then
+                        [ Background.color <| Colors.alpha 0.1 ]
+
+                    else
+                        []
+                   )
     in
     navigationElement action outer (Element.el inner label)
 
@@ -137,11 +143,11 @@ secondary attr { label, action } =
     let
         outerAttr : List (Element.Attribute msg)
         outerAttr =
-            Border.rounded 100 :: attr
+            Border.rounded 100 :: Font.color Colors.black :: attr
 
         innerAttr : List (Element.Attribute msg)
         innerAttr =
-            [ Border.rounded 100, Ui.p 12, Font.bold, Font.color Colors.black ]
+            [ Border.rounded 100, Ui.p 12, Font.bold ]
     in
     secondaryGeneric outerAttr innerAttr { label = label, action = action }
 
@@ -300,7 +306,7 @@ popup size titleText content =
                     { offset = ( 0.0, 0.0 )
                     , size = 3.0
                     , blur = 3.0
-                    , color = Colors.alphaColor 0.1 Colors.black
+                    , color = Colors.alpha 0.1
                     }
                 ]
                 [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)

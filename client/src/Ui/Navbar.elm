@@ -92,7 +92,7 @@ navbar config page user =
                     panelButtonColor : Element.Attr decorative msg
                     panelButtonColor =
                         if showPanel then
-                            Background.color <| Colors.alphaColor 0.18 Colors.black
+                            Background.color <| Colors.alpha 0.18
 
                         else
                             Background.color <| Colors.alpha 0.0
