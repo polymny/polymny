@@ -12,6 +12,7 @@ import Data.Capsule as Data exposing (Capsule)
 import Data.Types as Data
 import Data.User as Data
 import Json.Decode as Decode
+import Material.Icons exposing (anchor)
 import Production.Types as Production exposing (getWebcamSettings)
 
 
@@ -32,19 +33,29 @@ update msg model =
             in
             case msg of
                 Production.ResetOptions ->
-                    updateModel capsule (resetOptions gos) model m
+                    let
+                        newPosition : ( Float, Float )
+                        newPosition =
+                            case capsule.defaultWebcamSettings of
+                                Data.Pip { position } ->
+                                    Tuple.mapBoth toFloat toFloat position
+
+                                _ ->
+                                    ( 0.0, 0.0 )
+                    in
+                    updateModel capsule (resetOptions gos) model { m | webcamPosition = newPosition }
 
                 Production.ToggleVideo ->
                     let
                         newWebcamSettings =
                             case ( recordSize, getWebcamSettings capsule gos ) of
                                 ( Just size, Data.Disabled ) ->
-                                    Data.defaultWebcamSettings (Production.setWidth 533 size)
+                                    Nothing
 
                                 _ ->
-                                    Data.Disabled
+                                    Just Data.Disabled
                     in
-                    updateModel capsule { gos | webcamSettings = Just newWebcamSettings } model m
+                    updateModel capsule { gos | webcamSettings = newWebcamSettings } model m
 
                 Production.SetAnchor anchor ->
                     let
@@ -148,7 +159,7 @@ update msg model =
                             , progress = Just 0.0
                             , finished = False
                             , aborted = False
-                                , global = True
+                            , global = True
                             }
 
                         ( newConfig, _ ) =
