@@ -644,6 +644,10 @@ msgstr ""
 msgid "Steps.Publication.copyVideoUrl"
 msgstr ""
 
+#. Not produced yet.
+msgid "Steps.Publication.notProducedYet"
+msgstr ""
+
 #. Share capsule with someone.
 msgid "Steps.Config.share"
 msgstr ""

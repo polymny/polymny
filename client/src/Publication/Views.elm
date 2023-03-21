@@ -163,7 +163,12 @@ view config _ model =
                 Data.Idle ->
                     Ui.primary []
                         { label = Element.text <| Strings.stepsPublicationPublishVideo lang
-                        , action = Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+                        , action =
+                            if model.capsule.produced == Data.Done then
+                                Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+
+                            else
+                                Ui.None
                         }
 
                 Data.Running _ ->
@@ -177,6 +182,15 @@ view config _ model =
                         { label = Element.text <| Strings.stepsPublicationUnpublishVideo lang
                         , action = Ui.Msg <| App.PublicationMsg <| Publication.UnpublishVideo
                         }
+
+        -- Can't publish if the video is not produced
+        cantPublish =
+            if model.capsule.produced == Data.Done then
+                Element.none
+
+            else
+                Element.el [ Background.color Colors.redLight, Border.color Colors.red, Ui.b 1, Ui.r 10, Ui.p 10 ]
+                    (Element.paragraph [] [ Element.text (Strings.stepsPublicationNotProducedYet lang) ])
 
         -- Title for additionnal information of published capsule
         publicationInformationTitle =
@@ -202,7 +216,10 @@ view config _ model =
                 , Element.column [ Ui.s 10 ]
                     [ publicationTitle
                     , usePromptForSubtitles
-                    , publishButton
+                    , Element.column [ Ui.s 5 ]
+                        [ publishButton
+                        , cantPublish
+                        ]
                     ]
                 , Element.column [ Ui.s 10 ]
                     [ publicationInformationTitle

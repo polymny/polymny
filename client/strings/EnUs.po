@@ -682,6 +682,10 @@ msgstr "Use prompt to generate subtitles"
 msgid "Steps.Publication.copyVideoUrl"
 msgstr "Copy video URL"
 
+#. Not produced yet.
+msgid "Steps.Publication.notProducedYet"
+msgstr "Video has not been produced yet. You will be able to publish it once it is produced."
+
 #. Share capsule with someone.
 msgid "Steps.Config.share"
 msgstr "Share"

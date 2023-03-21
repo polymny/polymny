@@ -55,6 +55,12 @@ primaryGeneric outerAttr innerAttr { label, action } =
                    , Border.color Colors.greyBorder
                    , Ui.b 1
                    ]
+                ++ (if action == None then
+                        [ Background.color <| Colors.alpha 0.1 ]
+
+                    else
+                        []
+                   )
 
         inner =
             innerAttr
@@ -67,6 +73,12 @@ primaryGeneric outerAttr innerAttr { label, action } =
                         ]
                         |> Element.htmlAttribute
                    ]
+                ++ (if action == None then
+                        [ Background.color <| Colors.alpha 0.1 ]
+
+                    else
+                        []
+                   )
     in
     navigationElement action outer (Element.el inner label)
 
