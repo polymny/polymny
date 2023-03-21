@@ -220,16 +220,27 @@ slideView config _ model ghost default s =
                 slideElement =
                     case Maybe.andThen .extra slide.slide of
                         Just v ->
-                            Element.html
-                                (Html.video
-                                    [ Html.Attributes.class "wf", Html.Attributes.controls True ]
-                                    [ Html.source
-                                        [ Html.Attributes.src <| Data.assetPath model.capsule v ++ ".mp4"
-                                        , Html.Attributes.controls True
-                                        ]
-                                        []
-                                    ]
+                            Element.el
+                                (Ui.wf
+                                    :: Ui.b 1
+                                    :: Border.color Colors.greyBorder
+                                    :: Element.inFront inFrontLabel
+                                    :: slideStyle model.slideModel slide.totalSlideId Drag
+                                    ++ slideStyle model.slideModel slide.totalSlideId Drop
+                                    ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
                                 )
+                            <|
+                                Element.html
+                                    (Html.video
+                                        [ Html.Attributes.class "wf"
+                                        , Html.Attributes.controls True ]
+                                        [ Html.source
+                                            [ Html.Attributes.src <| Data.assetPath model.capsule v ++ ".mp4"
+                                            , Html.Attributes.controls True
+                                            ]
+                                            []
+                                        ]
+                                    )
 
                         _ ->
                             Element.image
