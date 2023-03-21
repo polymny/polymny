@@ -68,7 +68,7 @@ update msg model =
                       }
                     , sync
                     )
-                
+
                 Preparation.DeleteExtra Utils.Request slide ->
                     ( { model | page = App.Preparation { m | deleteExtra = Just slide } }, Cmd.none )
 
@@ -272,7 +272,13 @@ updateExtra user msg model config =
             ( { model | changeSlideForm = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none, config )
 
         ( Preparation.ChangeSlideUpdated (RemoteData.Success c), Just _ ) ->
-            ( Preparation.init c, Cmd.none, config )
+            let
+                cmd : Cmd App.Msg
+                cmd =
+                    Api.updateCapsule c
+                        (\_ -> App.Noop)
+            in
+            ( Preparation.init c, cmd, config )
 
         ( Preparation.ChangeSlideUpdated d, Just _ ) ->
             ( { model | changeSlide = d }, Cmd.none, config )
