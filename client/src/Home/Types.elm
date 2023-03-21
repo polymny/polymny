@@ -33,6 +33,7 @@ type Msg
     | EscapePressed
     | ExportCapsule Data.Capsule
     | CapsuleUpdated Data.Capsule
+    | DuplicateCapsule Data.Capsule
 
 
 type PopupType
