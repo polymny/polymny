@@ -287,6 +287,11 @@ view config _ model =
 promptElement : Config -> Acquisition.Model Data.Capsule Data.Gos -> Element App.Msg
 promptElement _ model =
     let
+        -- Whether a prompt exists in the grain
+        hasPrompt : Bool
+        hasPrompt =
+            model.gos.slides |> List.map .prompt |> List.any (\x -> x /= "")
+
         -- The current slide (Nothing should be unreachable)
         currentSlide : Maybe Data.Slide
         currentSlide =
@@ -373,7 +378,8 @@ promptElement _ model =
                         )
 
                   else
-                    Element.none
+                    Ui.icon 25 Material.Icons.navigate_before
+                        |> Element.el [ Element.htmlAttribute (Html.Attributes.style "visibility" "hidden") ]
                 ]
 
         -- Displays the current line of the prompt text
@@ -410,14 +416,14 @@ promptElement _ model =
                     }
                 )
     in
-    case ( Maybe.map .prompt currentSlide, currentSentence ) of
-        ( Just "", _ ) ->
+    case ( hasPrompt, currentSentence ) of
+        ( False, _ ) ->
             Element.none
 
         ( _, Just s ) ->
             Element.column [ Ui.wf, Background.color Colors.black, Font.color Colors.white, Ui.p 10, Ui.s 10 ]
                 [ currentSentencePrompt s
-                , Maybe.map nextSentencePrompt nextSentence |> Maybe.withDefault Element.none
+                , Maybe.withDefault "" nextSentence |> nextSentencePrompt
                 , navigationButtons
                 ]
 
