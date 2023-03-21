@@ -363,6 +363,14 @@ msgstr ""
 msgid "Steps.Preparation.enterNewNameForCapsule"
 msgstr ""
 
+#. When editing the prompt, go the the next slide.
+msgid "Steps.Preparation.goToNextSlide"
+msgstr ""
+
+#. When editing the prompt, go the the previous slide.
+msgid "Steps.Preparation.goToPreviousSlide"
+msgstr ""
+
 #. Step of video and audio acquisition.
 msgid "Steps.Acquisition.acquisition"
 msgstr ""

@@ -88,13 +88,47 @@ update msg model =
                 Preparation.PromptChanged Utils.Confirm slide ->
                     let
                         newCapsule =
-                            Data.updateSlide slide capsule
+                            Data.updateSlide { slide | prompt = fixPrompt slide.prompt } capsule
 
                         sync =
                             Api.updateCapsule newCapsule
                                 (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                     in
                     ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
+
+                Preparation.GoToPreviousSlide currentSlideIndex currentSlide ->
+                    let
+                        newCapsule =
+                            Data.updateSlide { currentSlide | prompt = fixPrompt currentSlide.prompt } capsule
+
+                        sync =
+                            Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+
+                        previousSlide =
+                            capsule.structure
+                                |> List.concatMap .slides
+                                |> List.drop (currentSlideIndex - 2)
+                                |> List.head
+                    in
+                    ( { model | page = App.Preparation { m | editPrompt = previousSlide } }, sync )
+
+                Preparation.GoToNextSlide currentSlideIndex currentSlide ->
+                    let
+                        newCapsule =
+                            Data.updateSlide { currentSlide | prompt = fixPrompt currentSlide.prompt } capsule
+
+                        sync =
+                            Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+
+                        nextSlide =
+                            capsule.structure
+                                |> List.concatMap .slides
+                                |> List.drop currentSlideIndex
+                                |> List.head
+                    in
+                    ( { model | page = App.Preparation { m | editPrompt = nextSlide } }, sync )
 
                 Preparation.EscapePressed ->
                     ( { model
@@ -185,13 +219,22 @@ updateExtra user msg model config =
                     in
                     case changeSlide of
                         Preparation.AddSlide gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addSlide capsule gos p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }
+                            , Api.addSlide capsule gos p file config.clientState.taskId mkMsg
+                            , Config.incrementTaskId newConfig
+                            )
 
                         Preparation.AddGos gos ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.addGos capsule gos p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }
+                            , Api.addGos capsule gos p file config.clientState.taskId mkMsg
+                            , Config.incrementTaskId newConfig
+                            )
 
                         Preparation.ReplaceSlide slide ->
-                            ( { model | changeSlide = RemoteData.Loading Nothing }, Api.replaceSlide capsule slide p file config.clientState.taskId mkMsg, Config.incrementTaskId newConfig )
+                            ( { model | changeSlide = RemoteData.Loading Nothing }
+                            , Api.replaceSlide capsule slide p file config.clientState.taskId mkMsg
+                            , Config.incrementTaskId newConfig
+                            )
 
         ( Preparation.PageChanged page, Just _ ) ->
             let
@@ -343,6 +386,17 @@ fixStructure old new =
             List.map fix new
     in
     ( broken, ret )
+
+
+{-| Fixes the empty lines and trailing spaces in a prompt string.
+-}
+fixPrompt : String -> String
+fixPrompt input =
+    input
+        |> String.split "\n"
+        |> List.filter (not << String.isEmpty)
+        |> List.map String.trim
+        |> String.join "\n"
 
 
 {-| Keyboard shortcuts of the preparation page.

@@ -313,8 +313,15 @@ updateModel msg model =
                     let
                         newPage =
                             case model.page of
-                                App.Preparation _ ->
-                                    App.Preparation (Preparation.init c)
+                                App.Preparation m ->
+                                    let
+                                        newModel =
+                                            Preparation.init c
+
+                                        final =
+                                            { newModel | editPrompt = m.editPrompt }
+                                    in
+                                    App.Preparation final
 
                                 _ ->
                                     model.page
