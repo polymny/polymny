@@ -96,6 +96,40 @@ update msg model =
                     in
                     ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
 
+                Preparation.GoToPreviousSlide currentSlideIndex currentSlide ->
+                    let
+                        newCapsule =
+                            Data.updateSlide currentSlide capsule
+
+                        sync =
+                            Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+
+                        previousSlide =
+                            capsule.structure
+                                |> List.concatMap .slides
+                                |> List.drop (currentSlideIndex - 2)
+                                |> List.head
+                    in
+                    ( { model | page = App.Preparation { m | editPrompt = previousSlide } }, sync )
+
+                Preparation.GoToNextSlide currentSlideIndex currentSlide ->
+                    let
+                        newCapsule =
+                            Data.updateSlide currentSlide capsule
+
+                        sync =
+                            Api.updateCapsule newCapsule
+                                (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
+
+                        nextSlide =
+                            capsule.structure
+                                |> List.concatMap .slides
+                                |> List.drop currentSlideIndex
+                                |> List.head
+                    in
+                    ( { model | page = App.Preparation { m | editPrompt = nextSlide } }, sync )
+
                 Preparation.EscapePressed ->
                     ( { model
                         | page =

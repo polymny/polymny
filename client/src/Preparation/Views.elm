@@ -262,12 +262,52 @@ deleteSlideConfirmPopup lang _ s =
 -}
 promptPopup : Lang -> Preparation.Model Capsule -> Data.Slide -> Element App.Msg
 promptPopup lang model slide =
+    let
+        gosIndex =
+            model.capsule.structure
+                |> List.indexedMap Tuple.pair
+                |> List.filter (\( _, x ) -> List.any (\y -> y.uuid == slide.uuid) x.slides)
+                |> List.head
+                |> Maybe.map (\i -> Tuple.first i + 1)
+                |> Maybe.withDefault 0
+
+        allSlides =
+            model.capsule.structure |> List.concatMap .slides
+
+        slideIndex =
+            allSlides
+                |> List.indexedMap Tuple.pair
+                |> List.filter (\( _, x ) -> x.uuid == slide.uuid)
+                |> List.head
+                |> Maybe.map (\i -> Tuple.first i + 1)
+                |> Maybe.withDefault 0
+
+        slidesLength =
+            List.length allSlides
+    in
     Element.row [ Ui.wf, Ui.hf, Ui.s 10 ]
-        [ Element.column [ Ui.wf, Ui.cy ]
-            [ Element.image [ Ui.wf ]
+        [ Element.column [ Ui.wf, Ui.cy, Ui.s 10 ]
+            [ Element.image [ Ui.wf, Ui.b 1, Border.color Colors.greyBorder ]
                 { description = Strings.dataCapsuleSlide lang 1
                 , src = Data.slidePath model.capsule slide
                 }
+            , Element.row [ Ui.wf ]
+                [ Ui.secondaryIcon [ Ui.al ]
+                    { icon = Icons.arrow_back
+                    , action = Utils.tern (slideIndex <= 1) Ui.None <| Ui.Msg <| App.PreparationMsg <| Preparation.GoToPreviousSlide slideIndex slide
+                    , tooltip = Strings.stepsPreparationGoToPreviousSlide lang
+                    }
+                , Element.row [ Ui.s 10, Ui.cx ]
+                    [ Element.text (Strings.dataCapsuleGrain lang 1 ++ " " ++ String.fromInt gosIndex)
+                    , Element.text "/"
+                    , Element.text (Strings.dataCapsuleSlide lang 1 ++ " " ++ String.fromInt slideIndex)
+                    ]
+                , Ui.secondaryIcon [ Ui.ar ]
+                    { icon = Icons.arrow_forward
+                    , action = Utils.tern (slideIndex >= slidesLength - 1) Ui.None <| Ui.Msg <| App.PreparationMsg <| Preparation.GoToNextSlide slideIndex slide
+                    , tooltip = Strings.stepsPreparationGoToNextSlide lang
+                    }
+                ]
             ]
         , Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
             [ Input.multiline [ Ui.wf, Ui.hf ]

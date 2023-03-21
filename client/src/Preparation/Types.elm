@@ -96,6 +96,8 @@ type Msg
     | Extra ExtraMsg
     | EditPrompt Data.Slide
     | PromptChanged Utils.Confirmation Data.Slide
+    | GoToPreviousSlide Int Data.Slide
+    | GoToNextSlide Int Data.Slide
     | EscapePressed
     | ConfirmUpdateCapsule
     | CancelUpdateCapsule

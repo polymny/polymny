@@ -391,6 +391,14 @@ msgstr "Choisir un projet"
 msgid "Steps.Preparation.enterNewNameForCapsule"
 msgstr "Entrez un nouveau nom pour la capsule"
 
+#. When editing the prompt, go the the next slide.
+msgid "Steps.Preparation.goToNextSlide"
+msgstr "Aller à la planche suivante"
+
+#. When editing the prompt, go the the previous slide.
+msgid "Steps.Preparation.goToPreviousSlide"
+msgstr "Aller à la planche précedente"
+
 #. Step of video and audio acquisition.
 msgid "Steps.Acquisition.acquisition"
 msgstr "Acquisition"
