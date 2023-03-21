@@ -52,20 +52,6 @@ view config _ model =
         recordView : Int -> Acquisition.Record -> Element App.Msg
         recordView index record =
             let
-                -- Attributes to show things as disabled
-                disableAttr : List (Element.Attribute App.Msg)
-                disableAttr =
-                    [ Font.color Colors.greyFontDisabled ]
-
-                -- Gives disable attributes if element is disabled
-                disableAttrIf : Bool -> List (Element.Attribute App.Msg)
-                disableAttrIf disabled =
-                    if disabled then
-                        disableAttr
-
-                    else
-                        []
-
                 -- Play button
                 playButton : Element App.Msg
                 playButton =
@@ -78,18 +64,14 @@ view config _ model =
                                 Nothing ->
                                     False
 
-                        attr =
-                            disableAttrIf isPlaying
-
                         action =
-                            if isPlaying then
+                            if isPlaying || model.recording /= Nothing then
                                 Ui.None
 
                             else
                                 Ui.Msg <| App.AcquisitionMsg <| Acquisition.PlayRecord ( index, record )
                     in
-                    Ui.secondaryIcon
-                        attr
+                    Ui.secondaryIcon []
                         { icon = Material.Icons.play_arrow
                         , tooltip = Strings.stepsAcquisitionPlayRecord lang
                         , action = action
@@ -107,9 +89,6 @@ view config _ model =
                                 Nothing ->
                                     False
 
-                        attr =
-                            disableAttrIf (not isPlaying)
-
                         action =
                             if isPlaying then
                                 Ui.Msg <| App.AcquisitionMsg <| Acquisition.StopRecord
@@ -117,8 +96,7 @@ view config _ model =
                             else
                                 Ui.None
                     in
-                    Ui.secondaryIcon
-                        attr
+                    Ui.secondaryIcon []
                         { icon = Material.Icons.stop
                         , tooltip = Strings.stepsAcquisitionStopRecord lang
                         , action = action
@@ -141,8 +119,13 @@ view config _ model =
                 pointerButton =
                     Ui.secondaryIcon []
                         { icon = Material.Icons.gps_fixed
-                        , tooltip = ""
-                        , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.StartPointerRecording index record
+                        , tooltip = Strings.stepsAcquisitionRecordPointer lang
+                        , action =
+                            if model.recordPlaying /= Nothing || model.recording /= Nothing then
+                                Ui.None
+
+                            else
+                                Ui.Msg <| App.AcquisitionMsg <| Acquisition.StartPointerRecording index record
                         }
 
                 -- Delete or validate button
@@ -530,7 +513,7 @@ devicePlayer config model =
             case ( model.state /= Acquisition.Ready, preferredVideo ) of
                 ( True, _ ) ->
                     [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
-                    , Element.text (Strings.stepsAcquisitionBindingWebcam lang)
+                    , Ui.paragraph [ Font.center ] (Strings.stepsAcquisitionBindingWebcam lang)
                     ]
                         |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
                         |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
