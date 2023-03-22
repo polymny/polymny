@@ -1,8 +1,8 @@
 
 # Preparation
  - [x] afficher le slide / gos
- - [ ] ajouter des flèches pour naviguer au slide suivant / précédent
- - [ ] remove empty lines / trailing spaces
+ - [x] ajouter des flèches pour naviguer au slide suivant / précédent
+ - [x] remove empty lines / trailing spaces
  - [ ] drag n drop toujours capricieux
  - [ ] scoll vers haut au bas de page si slide drag
  - [ ] left column non clickable
@@ -16,16 +16,16 @@
  - [ ] ajouter un slide ne supprime pas le record
  - [ ] feedback sur l'existence du prompt
  - [ ] message d'erreur si cam utilisée
-  
+
 # Aciquisition
- - [ ] interdire rec pointer si record playing
+ - [x] interdire rec pointer si record playing
  - [ ] deuxieme ligne de promteur éditable mais rien ne se passe
- - [ ] le prompteur fait des truc chelous quand dans un gos certaines slides ont du prompt et les autres non
- - [ ] manque tooltip sur le bouton "enregistrer le pointeur"
+ - [x] le prompteur fait des truc chelous quand dans un gos certaines slides ont du prompt et les autres non
+ - [x] manque tooltip sur le bouton "enregistrer le pointeur"
  - [ ] ui ne fait pas de diff si on rec la cam ou le pointeur
- - [ ] taille du prompteur change sur dernière ligne du promteur
+ - [x] taille du prompteur change sur dernière ligne du promteur
  - [ ] manque de ui sur raccourcis clavier, ou on est dans la capsule gos slide
- - [ ] pointeur peut se faire désactiver entre slide avec prompt vs sans prompt
+ - [x] pointeur peut se faire désactiver entre slide avec prompt vs sans prompt
  - [ ] clear cache dans les settings ?
  - [ ] manque un clear canvas à la fin du record
  - [ ] il faut clear proprement quand on change de page
@@ -58,5 +58,5 @@
 # Home
  - [ ] quotas ont disparu
  - [ ] plus de boutons (copier l'URL de la vidéo)
- - [ ] bouton dupliquer la capsule
+ - [x] bouton dupliquer la capsule
  - [ ] long text sur project name / capsule name
