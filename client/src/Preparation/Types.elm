@@ -1,5 +1,5 @@
 module Preparation.Types exposing
-    ( Model, ChangeSlideForm, ChangeSlide(..), Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), ExtraMsg(..), DnDMsg(..), enumerate
+    ( Model, ChangeSlideForm, ChangeSlide(..), Slide, slideSystem, gosSystem, setupSlides, init, Msg(..), ExtraMsg(..), DnDMsg(..), enumerate, PopupType(..)
     , withCapsule
     )
 
@@ -8,7 +8,7 @@ module Preparation.Types exposing
 In all the following documentation, DnD refers to Drag'n'Drop. It is necessary to have a user-friendly interface, but is
 quite a pain to deal with.
 
-@docs Model, ChangeSlideForm, ChangeSlide, Slide, slideSystem, gosSystem, setupSlides, init, Msg, ExtraMsg, DnDMsg, enumerate
+@docs Model, ChangeSlideForm, ChangeSlide, Slide, slideSystem, gosSystem, setupSlides, init, Msg, ExtraMsg, DnDMsg, enumerate, PopupType
 
 -}
 
@@ -18,6 +18,7 @@ import DnDList.Groups
 import File exposing (File)
 import RemoteData
 import Utils
+import Home.Types exposing (Msg(..))
 
 
 {-| The type for the model of the preparation page.
@@ -28,13 +29,19 @@ type alias Model a =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
-    , deleteSlide : Maybe Data.Slide
-    , deleteExtra : Maybe Data.Slide
+    , popupType : Maybe PopupType
     , changeSlide : RemoteData.WebData Data.Capsule
-    , changeSlideForm : Maybe ChangeSlideForm
-    , editPrompt : Maybe Data.Slide
-    , confirmUpdateCapsule : Maybe Capsule
     }
+
+
+{-| The type for the popup that can be displayed.
+-}
+type PopupType
+    = DeleteSlidePopup Data.Slide
+    | DeleteExtraPopup Data.Slide
+    | ChangeSlidePopup ChangeSlideForm
+    | EditPromptPopup Data.Slide
+    | ConfirmUpdateCapsulePopup Capsule
 
 
 {-| Transforms the capsule id into a real capsule.
@@ -46,12 +53,8 @@ withCapsule capsule model =
     , slideModel = model.slideModel
     , gosModel = model.gosModel
     , capsuleUpdate = model.capsuleUpdate
-    , deleteSlide = model.deleteSlide
-    , deleteExtra = model.deleteExtra
     , changeSlide = model.changeSlide
-    , changeSlideForm = model.changeSlideForm
-    , editPrompt = model.editPrompt
-    , confirmUpdateCapsule = model.confirmUpdateCapsule
+    , popupType = model.popupType
     }
 
 
@@ -81,12 +84,8 @@ init capsule =
     , slideModel = slideSystem.model
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
-    , deleteSlide = Nothing
-    , deleteExtra = Nothing
     , changeSlide = RemoteData.NotAsked
-    , changeSlideForm = Nothing
-    , editPrompt = Nothing
-    , confirmUpdateCapsule = Nothing
+    , popupType = Nothing
     }
 
 
@@ -103,6 +102,7 @@ type Msg
     | GoToPreviousSlide Int Data.Slide
     | GoToNextSlide Int Data.Slide
     | EscapePressed
+    | EnterPressed
     | ConfirmUpdateCapsule
     | CancelUpdateCapsule
 

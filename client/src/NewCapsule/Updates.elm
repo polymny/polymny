@@ -13,6 +13,7 @@ import Data.Capsule as Data
 import Data.User as Data
 import Home.Types as Home
 import NewCapsule.Types as NewCapsule
+import Keyboard
 import RemoteData
 import Route
 
@@ -89,7 +90,7 @@ update msg model =
         ( App.NewCapsule m, NewCapsule.Cancel ) ->
             case m.slideUpload of
                 RemoteData.Success ( c, _ ) ->
-                    ( { model | page = App.Home Home.init } , Api.deleteCapsule c (\_ -> App.Noop) )
+                    ( { model | page = App.Home Home.init }, Api.deleteCapsule c (\_ -> App.Noop) )
 
                 _ ->
                     ( model, Cmd.none )
@@ -110,3 +111,26 @@ mkModel m model =
 updateCapsule : NewCapsule.NextPage -> Data.Capsule -> Cmd App.Msg
 updateCapsule nextPage capsule =
     Api.updateCapsule capsule (\x -> App.NewCapsuleMsg (NewCapsule.CapsuleUpdate ( nextPage, x )))
+
+
+{-| Keyboard shortcuts of the home page.
+-}
+shortcuts : Keyboard.RawKey -> App.Msg
+shortcuts msg =
+    case Keyboard.rawValue msg of
+        "Escape" ->
+            App.NewCapsuleMsg NewCapsule.Cancel
+
+        "Enter" ->
+            App.NewCapsuleMsg <| NewCapsule.Submit NewCapsule.Preparation
+
+        _ ->
+            App.Noop
+
+
+{-| Subscriptions of the page.
+-}
+subs : Sub App.Msg
+subs =
+    Sub.batch
+        [ Keyboard.ups shortcuts ]

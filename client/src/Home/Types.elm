@@ -31,6 +31,7 @@ type Msg
     | ProjectNameChanged Data.Project String
     | SortBy Data.SortKey
     | EscapePressed
+    | EnterPressed
     | ExportCapsule Data.Capsule
     | CapsuleUpdated Data.Capsule
     | DuplicateCapsule Data.Capsule

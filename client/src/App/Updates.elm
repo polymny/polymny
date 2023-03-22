@@ -319,7 +319,7 @@ updateModel msg model =
                                             Preparation.init c
 
                                         final =
-                                            { newModel | editPrompt = m.editPrompt }
+                                            { newModel | popupType = m.popupType }
                                     in
                                     App.Preparation final
 

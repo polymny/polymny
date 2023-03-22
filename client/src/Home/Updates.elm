@@ -350,6 +350,23 @@ update msg model =
                 Home.EscapePressed ->
                     ( { model | page = App.Home { m | popupType = Nothing } }, Cmd.none )
 
+                Home.EnterPressed ->
+                    case m.popupType of
+                        Just (Home.RenameProjectPopup project) ->
+                            update (Home.RenameProject Utils.Confirm project) model
+
+                        Just (Home.RenameCapsulePopup capsule) ->
+                            update (Home.RenameCapsule Utils.Confirm capsule) model
+
+                        Just (Home.DeleteProjectPopup project) ->
+                            update (Home.DeleteProject Utils.Confirm project) model
+
+                        Just (Home.DeleteCapsulePopup capsule) ->
+                            update (Home.DeleteCapsule Utils.Confirm capsule) model
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
                 Home.ExportCapsule capsule ->
                     let
                         task : Config.TaskStatus
@@ -447,7 +464,10 @@ shortcuts : Keyboard.RawKey -> App.Msg
 shortcuts msg =
     case Keyboard.rawValue msg of
         "Escape" ->
-            App.HomeMsg <| Home.EscapePressed
+            App.HomeMsg Home.EscapePressed
+
+        "Enter" ->
+            App.HomeMsg Home.EnterPressed
 
         _ ->
             App.Noop

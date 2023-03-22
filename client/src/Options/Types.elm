@@ -52,6 +52,7 @@ type Msg
     | Play
     | Stop
     | EscapePressed
+    | EnterPressed
 
 
 init : Capsule -> Model String

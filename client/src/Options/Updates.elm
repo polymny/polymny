@@ -212,6 +212,13 @@ update msg model =
                 Options.EscapePressed ->
                     ( { model | page = App.Options { m | deleteTrack = Nothing } }, Cmd.none )
 
+                Options.EnterPressed ->
+                    if m.deleteTrack == Nothing then
+                        ( model, Cmd.none )
+
+                    else
+                        update (Options.DeleteTrack Utils.Confirm m.deleteTrack) model
+
         _ ->
             ( model, Cmd.none )
 
@@ -294,7 +301,10 @@ shortcuts : Keyboard.RawKey -> App.Msg
 shortcuts msg =
     case Keyboard.rawValue msg of
         "Escape" ->
-            App.OptionsMsg <| Options.EscapePressed
+            App.OptionsMsg Options.EscapePressed
+
+        "Enter" ->
+            App.OptionsMsg Options.EnterPressed
 
         _ ->
             App.Noop

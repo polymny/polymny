@@ -53,23 +53,36 @@ view config user model =
         --
         popup : Element App.Msg
         popup =
-            case ( ( model.deleteSlide, model.deleteExtra, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
-                ( ( Just s, _, _ ), _ ) ->
+            -- case ( ( model.deleteSlide, model.deleteExtra, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
+            --     ( ( Just s, _, _ ), _ ) ->
+            --         deleteSlideConfirmPopup lang model s
+            --     ( ( _, Just s, _ ), _ ) ->
+            --         deleteExtraConfirmPopup lang model s
+            --     ( ( _, _, Just f ), _ ) ->
+            --         selectPageNumberPopup lang model f
+            --     ( _, ( Just s, _ ) ) ->
+            --         promptPopup lang model s
+            --     ( _, ( _, Just _ ) ) ->
+            --         confirmUpdateCapsulePopup lang
+            --     _ ->
+            --         Element.none
+            case model.popupType of
+                Just (Preparation.DeleteSlidePopup s) ->
                     deleteSlideConfirmPopup lang model s
 
-                ( ( _, Just s, _ ), _ ) ->
+                Just (Preparation.DeleteExtraPopup s) ->
                     deleteExtraConfirmPopup lang model s
 
-                ( ( _, _, Just f ), _ ) ->
+                Just (Preparation.ChangeSlidePopup f) ->
                     selectPageNumberPopup lang model f
 
-                ( _, ( Just s, _ ) ) ->
+                Just (Preparation.EditPromptPopup s) ->
                     promptPopup lang model s
 
-                ( _, ( _, Just _ ) ) ->
+                Just (Preparation.ConfirmUpdateCapsulePopup c) ->
                     confirmUpdateCapsulePopup lang
 
-                _ ->
+                Nothing ->
                     Element.none
 
         -- ( _, RemoteData.Loading _ ) ->
@@ -210,7 +223,7 @@ slideView config _ model ghost default s =
                             , tooltip =
                                 if dataSlide.extra == Nothing then
                                     Strings.actionsDeleteSlide lang
-                                
+
                                 else
                                     Strings.actionsDeleteExtra lang
                             , action =
@@ -238,7 +251,8 @@ slideView config _ model ghost default s =
                                 Element.html
                                     (Html.video
                                         [ Html.Attributes.class "wf"
-                                        , Html.Attributes.controls True ]
+                                        , Html.Attributes.controls True
+                                        ]
                                         [ Html.source
                                             [ Html.Attributes.src <| Data.assetPath model.capsule v ++ ".mp4"
                                             , Html.Attributes.controls True
