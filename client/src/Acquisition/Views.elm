@@ -48,6 +48,11 @@ view config _ model =
         lang =
             config.clientState.lang
 
+        -- Shortcut for the current slide
+        currentSlide : Maybe Data.Slide
+        currentSlide =
+            List.head (List.drop model.currentSlide model.gos.slides)
+
         -- Formats a view of a record, whether it is on the client or on the server
         recordView : Int -> Acquisition.Record -> Element App.Msg
         recordView index record =
@@ -225,10 +230,37 @@ view config _ model =
                 [ Element.el [ Ui.cx ] <|
                     case model.recording of
                         Just t ->
-                            Element.row [ Ui.s 10 ]
+                            let
+                                slideIndexDisplay =
+                                    String.fromInt (model.currentSlide + 1)
+                                        ++ " / "
+                                        ++ String.fromInt (List.length model.gos.slides)
+
+                                promptLength =
+                                    currentSlide
+                                        |> Maybe.map .prompt
+                                        |> Maybe.withDefault ""
+                                        |> String.split "\n"
+                                        |> List.length
+                                        |> String.fromInt
+
+                                lineIndexDisplay =
+                                    String.fromInt (model.currentSentence + 1) ++ " / " ++ promptLength
+                            in
+                            Element.row [ Ui.s 30 ]
                                 [ Element.el [ Ui.class "blink", Font.color Colors.red ] (Element.text "⬤ REC")
-                                , Element.text (Lang.dots Strings.stepsAcquisitionRecording lang)
-                                , Element.text (TimeUtils.formatDuration (Time.posixToMillis config.clientState.time - Time.posixToMillis t))
+                                , Strings.dataCapsuleSlide lang 1
+                                    ++ " "
+                                    ++ slideIndexDisplay
+                                    |> Element.text
+                                , Strings.dataCapsuleLine lang 1
+                                    ++ " "
+                                    ++ lineIndexDisplay
+                                    |> Element.text
+                                , (Time.posixToMillis config.clientState.time - Time.posixToMillis t)
+                                    |> TimeUtils.formatDuration
+                                    |> Element.text
+                                    |> Element.el [ Element.width (Element.minimum 50 Element.shrink) ]
                                 ]
 
                         Nothing ->
@@ -238,7 +270,7 @@ view config _ model =
         -- Displays the current slide
         slideElement : Element App.Msg
         slideElement =
-            case List.head (List.drop model.currentSlide model.gos.slides) of
+            case currentSlide of
                 Just s ->
                     Element.el
                         [ Ui.wf
