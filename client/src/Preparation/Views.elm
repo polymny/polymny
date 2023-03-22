@@ -207,33 +207,37 @@ slideView config _ model ghost default s =
                         |> Utils.tern ghost Element.none
 
                 inFrontButtons =
-                    Element.row [ Ui.s 10, Ui.p 10, Ui.at, Ui.ar ]
-                        [ Ui.primaryIcon []
-                            { icon = Icons.speaker_notes
-                            , tooltip = Strings.actionsEditPrompt lang
-                            , action = mkUiMsg (Preparation.EditPrompt dataSlide)
-                            }
-                        , Ui.primaryIcon []
-                            { icon = Icons.image
-                            , tooltip = Strings.stepsPreparationReplaceSlideOrAddExternalResource lang
-                            , action = mkUiExtra (Preparation.Select (Preparation.ReplaceSlide dataSlide))
-                            }
-                        , Ui.primaryIcon []
-                            { icon = Icons.delete
-                            , tooltip =
-                                if dataSlide.extra == Nothing then
-                                    Strings.actionsDeleteSlide lang
+                    if ghost then
+                        Element.none
 
-                                else
-                                    Strings.actionsDeleteExtra lang
-                            , action =
-                                if dataSlide.extra == Nothing then
-                                    mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
+                    else
+                        Element.row [ Ui.s 10, Ui.p 10, Ui.at, Ui.ar ]
+                            [ Ui.primaryIcon []
+                                { icon = Icons.speaker_notes
+                                , tooltip = Strings.actionsEditPrompt lang
+                                , action = mkUiMsg (Preparation.EditPrompt dataSlide)
+                                }
+                            , Ui.primaryIcon []
+                                { icon = Icons.image
+                                , tooltip = Strings.stepsPreparationReplaceSlideOrAddExternalResource lang
+                                , action = mkUiExtra (Preparation.Select (Preparation.ReplaceSlide dataSlide))
+                                }
+                            , Ui.primaryIcon []
+                                { icon = Icons.delete
+                                , tooltip =
+                                    if dataSlide.extra == Nothing then
+                                        Strings.actionsDeleteSlide lang
 
-                                else
-                                    mkUiMsg (Preparation.DeleteExtra Utils.Request dataSlide)
-                            }
-                        ]
+                                    else
+                                        Strings.actionsDeleteExtra lang
+                                , action =
+                                    if dataSlide.extra == Nothing then
+                                        mkUiMsg (Preparation.DeleteSlide Utils.Request dataSlide)
+
+                                    else
+                                        mkUiMsg (Preparation.DeleteExtra Utils.Request dataSlide)
+                                }
+                            ]
 
                 slideElement =
                     case Maybe.andThen .extra slide.slide of
@@ -243,7 +247,6 @@ slideView config _ model ghost default s =
                                     :: Ui.b 1
                                     :: Border.color Colors.greyBorder
                                     :: Element.inFront inFrontLabel
-                                    :: Element.inFront inFrontButtons
                                     :: slideStyle model.slideModel slide.totalSlideId Drag
                                     ++ slideStyle model.slideModel slide.totalSlideId Drop
                                     ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
@@ -268,7 +271,6 @@ slideView config _ model ghost default s =
                                     :: Ui.b 1
                                     :: Border.color Colors.greyBorder
                                     :: Element.inFront inFrontLabel
-                                    :: Element.inFront inFrontButtons
                                     :: slideStyle model.slideModel slide.totalSlideId Drag
                                     ++ slideStyle model.slideModel slide.totalSlideId Drop
                                     ++ Utils.tern ghost (slideStyle model.slideModel slide.totalSlideId Ghost) []
@@ -281,6 +283,7 @@ slideView config _ model ghost default s =
                 [ Ui.wf
                 , Ui.pl 20
                 , Ui.id ("slide-" ++ String.fromInt slide.totalSlideId)
+                , Element.inFront inFrontButtons
                 ]
                 slideElement
 
