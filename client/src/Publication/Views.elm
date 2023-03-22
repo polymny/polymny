@@ -21,6 +21,7 @@ import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
+import Html exposing (canvas)
 
 
 {-| View of the publication page.
@@ -161,6 +162,15 @@ view config _ model =
         -- Publish button
         publishButton =
             let
+                publishing : Bool
+                publishing =
+                    case model.capsule.published of
+                        Data.Running _ ->
+                            True
+
+                        _ ->
+                            False
+                
                 canPublish : Bool
                 canPublish =
                     case model.capsule.published of
@@ -175,7 +185,7 @@ view config _ model =
                     Element.el
                         [ Ui.wf
                         , Ui.hf
-                        , Font.color <| Utils.tern canPublish Colors.transparent Colors.white
+                        , Font.color <| Utils.tern publishing Colors.white Colors.transparent
                         ]
                     <|
                         Ui.spinningSpinner [ Ui.cx, Ui.cy ] 20
@@ -183,7 +193,7 @@ view config _ model =
                 label : Element App.Msg
                 label =
                     Element.el
-                        [ Font.color <| Utils.tern canPublish Colors.white Colors.transparent
+                        [ Font.color <| Utils.tern publishing Colors.transparent Colors.white
                         , Element.inFront spinnerElement
                         ]
                     <|
