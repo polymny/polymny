@@ -5,7 +5,7 @@
  - [x] remove empty lines / trailing spaces
  - [ ] drag n drop toujours capricieux
  - [ ] scoll vers haut au bas de page si slide drag
- - [ ] left column non clickable
+ - [x] left column non clickable
  - [ ] pas de zoom / dezoom possible
  - [ ] envoi de slide au format pdf :
    - [ ] touche entrée ne valide pas
