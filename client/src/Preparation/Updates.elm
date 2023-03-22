@@ -156,7 +156,12 @@ update msg model =
                     ( { model | page = App.Preparation { m | popupType = Maybe.map Preparation.EditPromptPopup nextSlide } }, sync )
 
                 Preparation.EscapePressed ->
-                    ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
+                    case m.popupType of
+                        Just (Preparation.ConfirmUpdateCapsulePopup _) ->
+                            update Preparation.CancelUpdateCapsule model
+
+                        _ ->
+                            ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
 
                 Preparation.EnterPressed ->
                     case m.popupType of
@@ -373,7 +378,7 @@ updateDnD user msg model config =
             in
             ( ( { model
                     | slideModel = slideModel
-                    , popupType = Nothing
+                    , popupType = Utils.tern broken (Just (Preparation.ConfirmUpdateCapsulePopup newCapsule)) model.popupType
                     , slides = newSlides
                 }
               , newConfig
