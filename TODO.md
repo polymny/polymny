@@ -7,9 +7,7 @@
  - [ ] scoll vers haut au bas de page si slide drag
  - [x] left column non clickable
  - [ ] pas de zoom / dezoom possible
- - [ ] envoi de slide au format pdf :
-   - [ ] touche entrée ne valide pas
-   - [ ] peut être enlever le pop up et laisser le client se balader (task) conversion PDF/PNG un peu lente
+ - [ ] peut être enlever le pop up et laisser le client se balader (task) conversion PDF/PNG un peu lente
  - [x] impossilité de supprimer un extra
  - [x] impossibilité de drag n drop un extra
  - [x] envoi de slide change pas la vu du grain dans left column
@@ -52,6 +50,7 @@
  - [x] nom projet / capsule dans la navbar ?
  - [ ] title de la page html
  - [ ] feedback sur l'etat du websocket ?
+ - [x] touche entrée ne valide pas
  - [ ] plus d'info sur les tasks (quelle capsule)
  - [ ] validate e-mail : add trailing slash + redirect
  - [x] disabled button doesn't show up greyed
