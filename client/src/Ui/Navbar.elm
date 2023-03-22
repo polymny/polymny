@@ -602,10 +602,10 @@ bottombar config =
 
 {-| This function creates the left column of the capsule pages, which presents the grains.
 -}
-leftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> Element msg
+leftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> Element App.Msg
 leftColumn lang page capsule selectedGos =
     let
-        gosView : Int -> Data.Gos -> Element msg
+        gosView : Int -> Data.Gos -> Element App.Msg
         gosView id gos =
             let
                 inFrontLabel =
@@ -648,19 +648,17 @@ leftColumn lang page capsule selectedGos =
                     else
                         Colors.greyBorder
 
+                action : Ui.Action App.Msg
                 action =
                     case page of
                         App.Preparation _ ->
-                            id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
+                            Ui.Msg <| App.ConfigMsg <| Config.ScrollToGos (toFloat id / toFloat (List.length capsule.structure)) "main-content"
 
-                        App.Publication _ ->
-                            id + 1 |> String.fromInt |> (\x -> "#" ++ x) |> Route.Custom |> Ui.Route
-
-                        App.Options _ ->
-                            Route.Production capsule.id id |> Ui.Route
+                        App.Acquisition _ ->
+                            id + 1 |> String.fromInt |> Route.Custom |> Ui.Route
 
                         _ ->
-                            id + 1 |> String.fromInt |> Route.Custom |> Ui.Route
+                            Route.Production capsule.id id |> Ui.Route
             in
             Element.image
                 [ Ui.wf
@@ -688,11 +686,11 @@ leftColumn lang page capsule selectedGos =
 
 {-| Adds the left column to an already existing element.
 -}
-addLeftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element App.Msg, Element App.Msg ) -> ( Element App.Msg, Element App.Msg )
 addLeftColumn lang page capsule selectedGos ( element, popup ) =
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
         [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang page capsule selectedGos)
-        , Element.el [ Ui.wfp 5, Ui.hf, Element.scrollbarY ] element
+        , Element.el [ Ui.wfp 5, Ui.hf, Element.scrollbarY, Element.htmlAttribute <| Html.Attributes.id "main-content" ] element
         ]
     , popup
     )
@@ -700,7 +698,7 @@ addLeftColumn lang page capsule selectedGos ( element, popup ) =
 
 {-| Adds the left column to an already existing element with its own right column.
 -}
-addLeftAndRightColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element msg, Element msg, Element msg ) -> ( Element msg, Element msg )
+addLeftAndRightColumn : Lang -> App.Page -> Capsule -> Maybe Int -> ( Element App.Msg, Element App.Msg, Element App.Msg ) -> ( Element App.Msg, Element App.Msg )
 addLeftAndRightColumn lang page capsule selectedGos ( element, rightColumn, popup ) =
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
         [ Element.el [ Ui.wfp 1, Ui.hf, Element.scrollbarY ] (leftColumn lang page capsule selectedGos)

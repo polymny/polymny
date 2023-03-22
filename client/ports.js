@@ -1465,6 +1465,14 @@ function init(node, flags) {
         app.ports[name + "Port"].subscribe(fn);
     }
 
+    // Scroll to the element view.
+    makePort("scrollIntoView", args => {
+        let scrollVal = args[0];
+        let scrollId = args[1]
+        let gosElement = document.getElementById(scrollId);
+        gosElement.scrollTo(0, scrollVal * gosElement.scrollHeight)
+    })
+
     // Saves the client config into the local storage.
     makePort("saveStorage", function (clientConfig) {
         localStorage.setItem('clientConfig', JSON.stringify(clientConfig));

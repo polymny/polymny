@@ -506,6 +506,7 @@ type Msg
     | DisableTaskPanel
     | RemoveTask Task
     | AbortTask Task
+    | ScrollToGos Float String
 
 
 {-| This functions updates the config.
@@ -853,6 +854,15 @@ update msg { serverConfig, clientConfig, clientState } =
                     , []
                     )
 
+                ScrollToGos scrollVal elementId ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = clientState
+                      }
+                    , False
+                    , [ scrollIntoViewPort ( scrollVal, elementId ) ]
+                    )
+
         saveCmd : List (Cmd Msg)
         saveCmd =
             if saveRequired then
@@ -1005,3 +1015,8 @@ port panelBlur : (Encode.Value -> msg) -> Sub msg
 {-| Remove a task.
 -}
 port abortTaskPort : String -> Cmd msg
+
+
+{-| Scroll to a gos.
+-}
+port scrollIntoViewPort : ( Float, String ) -> Cmd msg
