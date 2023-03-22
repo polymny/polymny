@@ -134,6 +134,15 @@ update msg model =
                     else
                         ( { model | page = App.Acquisition { m | currentReplacementPrompt = Just sentence } }, Cmd.none )
 
+                Acquisition.NextSentenceChanged sentence ->
+                    if String.contains "\n" sentence then
+                        ( { model | page = App.Acquisition m }
+                        , Task.attempt (\_ -> App.Noop) <| Dom.blur Acquisition.promptSecondSentenceId
+                        )
+
+                    else
+                        ( { model | page = App.Acquisition { m | nextReplacementPrompt = Just sentence } }, Cmd.none )
+
                 Acquisition.PreviousSentence ->
                     ( { model | page = App.Acquisition { m | currentSentence = max (m.currentSentence - 1) 0 } }, Cmd.none )
 
@@ -171,8 +180,8 @@ update msg model =
                                 |> Maybe.map List.length
                                 |> Maybe.withDefault 0
                     in
-                    case ( m.currentReplacementPrompt, ( m.currentSentence + 1 < lineNumber, nextSlide ), ( m.recording, m.state, shouldRecord ) ) of
-                        ( Nothing, ( _, _ ), ( Nothing, Acquisition.Ready, True ) ) ->
+                    case ( ( m.currentReplacementPrompt, m.nextReplacementPrompt ), ( m.currentSentence + 1 < lineNumber, nextSlide ), ( m.recording, m.state, shouldRecord ) ) of
+                        ( ( Nothing, Nothing ), ( _, _ ), ( Nothing, Acquisition.Ready, True ) ) ->
                             -- If not recording, start recording (useful for remotes)
                             ( { model
                                 | page =
@@ -186,23 +195,23 @@ update msg model =
                             , startRecording |> cancelCommand
                             )
 
-                        ( Nothing, ( _, _ ), ( Nothing, _, True ) ) ->
+                        ( ( Nothing, Nothing ), ( _, _ ), ( Nothing, _, True ) ) ->
                             -- If not recording but device is not ready, do nothing
                             ( model, Cmd.none )
 
-                        ( Nothing, ( True, _ ), ( _, _, _ ) ) ->
+                        ( ( Nothing, Nothing ), ( True, _ ), ( _, _, _ ) ) ->
                             -- If there is another line, go to the next line
                             ( { model | page = App.Acquisition { m | currentSentence = m.currentSentence + 1 } }
                             , registerEvent Data.NextSentence |> cancelCommand
                             )
 
-                        ( Nothing, ( _, Just _ ), ( _, _, _ ) ) ->
+                        ( ( Nothing, Nothing ), ( _, Just _ ), ( _, _, _ ) ) ->
                             -- If there is no other line but a next slide, go to the next slide
                             ( { model | page = App.Acquisition { m | currentSlide = m.currentSlide + 1, currentSentence = 0 } }
                             , registerEvent Data.NextSlide |> cancelCommand
                             )
 
-                        ( Nothing, ( _, _ ), ( _, _, _ ) ) ->
+                        ( ( Nothing, Nothing ), ( _, _ ), ( _, _, _ ) ) ->
                             -- If recording and end reach, stop recording
                             ( { model
                                 | page =
@@ -216,7 +225,10 @@ update msg model =
                             , stopRecording |> cancelCommand
                             )
 
-                        ( Just _, _, _ ) ->
+                        ( ( Just _, _ ), _, _ ) ->
+                            ( model, Cmd.none )
+
+                        ( ( _, Just _ ), _, _ ) ->
                             ( model, Cmd.none )
 
                 Acquisition.RecordArrived ( index, record ) ->
@@ -376,7 +388,7 @@ update msg model =
                 Acquisition.StopEditingPrompt ->
                     let
                         realSentence =
-                            m.currentReplacementPrompt |> Maybe.withDefault "" |> String.replace "\n" ""
+                            m.currentReplacementPrompt |> Maybe.withDefault "" |> String.replace "\n" "" |> String.trim
 
                         currentSlide : Maybe Data.Slide
                         currentSlide =
@@ -410,6 +422,88 @@ update msg model =
                     ( { model
                         | user = Data.updateUser newCapsule model.user
                         , page = App.Acquisition { m | currentReplacementPrompt = Nothing }
+                      }
+                    , Api.updateCapsule newCapsule (\_ -> App.Noop)
+                    )
+
+                Acquisition.StartEditingSecondPrompt ->
+                    let
+                        currentSlide : Maybe Data.Slide
+                        currentSlide =
+                            List.head (List.drop m.currentSlide gos.slides)
+
+                        ( sentenceToChange, slideToChange ) =
+                            let
+                                promptLength =
+                                    Maybe.map .prompt currentSlide |> Maybe.withDefault "" |> String.split "\n" |> List.length
+                            in
+                            if m.currentSentence >= promptLength - 1 then
+                                ( 0, List.head (List.drop (m.currentSlide + 1) gos.slides) )
+
+                            else
+                                ( m.currentSentence + 1, currentSlide )
+
+                        line =
+                            slideToChange
+                                |> Maybe.map .prompt
+                                |> Maybe.withDefault ""
+                                |> String.split "\n"
+                                |> List.drop sentenceToChange
+                                |> List.head
+                    in
+                    ( { model | page = App.Acquisition { m | nextReplacementPrompt = line } }, Cmd.none )
+
+                Acquisition.StopEditingSecondPrompt ->
+                    let
+                        realSentence =
+                            m.nextReplacementPrompt
+                                |> Maybe.withDefault ""
+                                |> String.replace "\n" ""
+                                |> String.trim
+
+                        currentSlide : Maybe Data.Slide
+                        currentSlide =
+                            List.head (List.drop m.currentSlide gos.slides)
+
+                        ( sentenceToChange, slideToChange ) =
+                            let
+                                promptLength =
+                                    Maybe.map .prompt currentSlide |> Maybe.withDefault "" |> String.split "\n" |> List.length
+                            in
+                            if m.currentSentence >= promptLength - 1 then
+                                ( 0, List.head (List.drop (m.currentSlide + 1) gos.slides) )
+
+                            else
+                                ( m.currentSentence + 1, currentSlide )
+
+                        newPrompt : Maybe String
+                        newPrompt =
+                            case slideToChange of
+                                Just s ->
+                                    let
+                                        split =
+                                            String.split "\n" s.prompt
+
+                                        splitReplaced =
+                                            List.take sentenceToChange split
+                                                ++ (realSentence :: List.drop (sentenceToChange + 1) split)
+                                    in
+                                    Just <| String.join "\n" splitReplaced
+
+                                _ ->
+                                    Nothing
+
+                        newCapsule =
+                            case ( slideToChange, newPrompt ) of
+                                ( Just s, Just p ) ->
+                                    Data.updateSlide { s | prompt = p } capsule
+
+                                _ ->
+                                    capsule
+                    in
+                    ( { model
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Acquisition { m | nextReplacementPrompt = Nothing }
                       }
                     , Api.updateCapsule newCapsule (\_ -> App.Noop)
                     )

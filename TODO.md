@@ -19,7 +19,7 @@
 
 # Aciquisition
  - [x] interdire rec pointer si record playing
- - [ ] deuxieme ligne de promteur éditable mais rien ne se passe
+ - [x] deuxieme ligne de promteur éditable mais rien ne se passe
  - [x] le prompteur fait des truc chelous quand dans un gos certaines slides ont du prompt et les autres non
  - [x] manque tooltip sur le bouton "enregistrer le pointeur"
  - [ ] ui ne fait pas de diff si on rec la cam ou le pointeur

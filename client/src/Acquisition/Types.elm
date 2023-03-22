@@ -1,6 +1,6 @@
 port module Acquisition.Types exposing
     ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
-    , clearPointer, promptFirstSentenceId, setPointerStyle, withCapsuleAndGos
+    , clearPointer, promptFirstSentenceId, promptSecondSentenceId, setPointerStyle, withCapsuleAndGos
     )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
@@ -38,6 +38,7 @@ type alias Model a b =
     , currentSlide : Int
     , currentSentence : Int
     , currentReplacementPrompt : Maybe String
+    , nextReplacementPrompt : Maybe String
     , records : List Record
     , recordPlaying : Maybe ( Int, Record )
     , savedRecord : Maybe Data.Record
@@ -60,6 +61,7 @@ withCapsuleAndGos capsule gos model =
     , currentSlide = model.currentSlide
     , currentSentence = model.currentSentence
     , currentReplacementPrompt = model.currentReplacementPrompt
+    , nextReplacementPrompt = model.nextReplacementPrompt
     , records = model.records
     , recordPlaying = model.recordPlaying
     , savedRecord = model.savedRecord
@@ -181,6 +183,7 @@ init gos capsule =
                   , currentSlide = 0
                   , currentSentence = 0
                   , currentReplacementPrompt = Nothing
+                  , nextReplacementPrompt = Nothing
                   , records =
                         case Data.recordPath capsule h of
                             Just recordPath ->
@@ -212,7 +215,10 @@ type Msg
     = DeviceChanged
     | StartEditingPrompt
     | StopEditingPrompt
+    | StartEditingSecondPrompt
+    | StopEditingSecondPrompt
     | CurrentSentenceChanged String
+    | NextSentenceChanged String
     | DetectDevicesFinished
     | DeviceBound
     | DeviceLevel Float
@@ -262,6 +268,13 @@ pointerCanvasId =
 promptFirstSentenceId : String
 promptFirstSentenceId =
     "prompt-first-sentence"
+
+
+{-| Id of the second line of the prompt.
+-}
+promptSecondSentenceId : String
+promptSecondSentenceId =
+    "prompt-second-sentence"
 
 
 {-| Helper to change the pointer style.

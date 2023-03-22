@@ -338,11 +338,14 @@ promptElement _ model =
                         |> Maybe.map (\x -> List.head (String.split "\n" x.prompt))
                         |> Maybe.withDefault Nothing
             in
-            case nextSentenceCurrentSlide of
-                Nothing ->
+            case ( model.nextReplacementPrompt, nextSentenceCurrentSlide ) of
+                ( Just s, _ ) ->
+                    Just s
+
+                ( _, Nothing ) ->
                     tmp
 
-                x ->
+                ( _, x ) ->
                     x
 
         -- A small icon that indicates to the speaker that the next sentence belongs to the next slide
@@ -407,9 +410,18 @@ promptElement _ model =
         nextSentencePrompt : String -> Element App.Msg
         nextSentencePrompt s =
             Element.el [ Ui.cx, Font.center, Font.size 40, Font.color (Colors.grey 5) ]
-                (Input.multiline [ Font.center, Background.color Colors.black, Ui.b 0 ]
+                (Input.multiline
+                    [ Font.center
+                    , Background.color Colors.black
+                    , Ui.b 0
+                    , Ui.id Acquisition.promptSecondSentenceId
+                    , Element.htmlAttribute (Html.Attributes.style "-moz-text-align-last" "center")
+                    , Element.htmlAttribute (Html.Attributes.style "text-align-last" "center")
+                    , Element.htmlAttribute <| Html.Events.onFocus <| App.AcquisitionMsg <| Acquisition.StartEditingSecondPrompt
+                    , Element.htmlAttribute <| Html.Events.onBlur <| App.AcquisitionMsg <| Acquisition.StopEditingSecondPrompt
+                    ]
                     { label = Input.labelHidden ""
-                    , onChange = \_ -> App.Noop
+                    , onChange = \x -> App.AcquisitionMsg <| Acquisition.NextSentenceChanged x
                     , placeholder = Nothing
                     , spellcheck = False
                     , text = s
