@@ -660,7 +660,7 @@ settingsPopup config model =
         -- Element that contains all the device settings
         settings : Element App.Msg
         settings =
-            Element.column [ Ui.wf, Ui.at, Ui.s 10 ]
+            Element.column [ Ui.wf, Ui.cy, Ui.s 10 ]
                 [ videoTitle
                 , video
                 , resolutionTitle
@@ -669,9 +669,9 @@ settingsPopup config model =
                 , audio
                 ]
     in
-    Element.column [ Ui.wf, Ui.hf ]
-        [ Element.row [ Ui.wf, Ui.hf ]
-            [ Element.el [ Ui.wf ] settings
+    Element.column [ Ui.wf, Ui.hf, Element.scrollbars ]
+        [ Element.row [ Ui.wf, Ui.hf, Element.scrollbars ]
+            [ Element.el [ Ui.wf, Ui.hf, Element.scrollbars ] settings
             , Element.el [ Ui.wf ] <| devicePlayer config model
             ]
         , Ui.primary [ Ui.ab, Ui.ar ]
