@@ -243,7 +243,7 @@ update msg model =
                                 -- No record changed, which means we received a new record, add it to the list
                                 record :: m.records
                     in
-                    ( { model | page = App.Acquisition { m | records = newRecords } }, Cmd.none )
+                    ( { model | page = App.Acquisition { m | records = newRecords } }, Acquisition.clearPointer )
 
                 Acquisition.UploadRecord record ->
                     let
