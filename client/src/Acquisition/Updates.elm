@@ -508,6 +508,9 @@ update msg model =
                     , Api.updateCapsule newCapsule (\_ -> App.Noop)
                     )
 
+                Acquisition.ToggleHelp ->
+                    ( { model | page = App.Acquisition { m | showHelp = not m.showHelp } }, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 

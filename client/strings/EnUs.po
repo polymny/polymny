@@ -1088,6 +1088,10 @@ msgstr "Server tasks"
 msgid "Ui.tasksNone"
 msgstr "No tasks"
 
+#. Help.
+msgid "Ui.help"
+msgstr "Help"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Upload record"

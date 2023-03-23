@@ -720,6 +720,10 @@ msgstr ""
 msgid "Ui.transcoding"
 msgstr ""
 
+#. Help.
+msgid "Ui.help"
+msgstr ""
+
 #. The admin can edit a user.
 msgid "Admin.editUser"
 msgstr ""

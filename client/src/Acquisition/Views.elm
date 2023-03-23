@@ -200,6 +200,19 @@ view config _ model =
                 ]
                 |> Ui.popup 1 (Strings.uiWarning lang)
 
+        -- Popup to show the help to the user
+        helpPopup : Element App.Msg
+        helpPopup =
+            Element.column [ Ui.wf, Ui.hf ]
+                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+                    [ Element.text " sup" ]
+                , Ui.primary [ Ui.ab, Ui.ar ]
+                    { action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleHelp
+                    , label = Element.text <| Strings.uiConfirm lang
+                    }
+                ]
+                |> Ui.popup 1 (Strings.uiHelp lang)
+
         -- Column that contains the device feedback element, the info, and the list of records
         rightColumn : Element App.Msg
         rightColumn =
@@ -264,7 +277,14 @@ view config _ model =
                                 ]
 
                         Nothing ->
-                            Element.text (Strings.stepsAcquisitionReadyForRecording lang)
+                            Element.row [ Ui.s 30 ]
+                                [ Element.text (Strings.stepsAcquisitionReadyForRecording lang)
+                                , Ui.primaryIcon []
+                                    { icon = Material.Icons.help_outline
+                                    , tooltip = Strings.uiHelp lang
+                                    , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleHelp
+                                    }
+                                ]
                 ]
 
         -- Displays the current slide
@@ -307,6 +327,9 @@ view config _ model =
 
             else if model.warnLeaving /= Nothing then
                 warnLeavingPopup
+
+            else if model.showHelp then
+                helpPopup
 
             else
                 Element.none

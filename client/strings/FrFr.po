@@ -691,7 +691,7 @@ msgstr "Copier l'URL de la vidéo"
 
 #. Not produced yet.
 msgid "Steps.Publication.notProducedYet"
-msgstr "La vidéo n'a pas encore été produite. Vous pouvez la publier uniquement après sa production." 
+msgstr "La vidéo n'a pas encore été produite. Vous pouvez la publier uniquement après sa production."
 
 #. Share capsule with someone.
 msgid "Steps.Config.share"
@@ -1094,6 +1094,10 @@ msgstr "Tâches serveur"
 #. No tasks.
 msgid "Ui.tasksNone"
 msgstr "Pas de tâche en cours"
+
+#. Help.
+msgid "Ui.help"
+msgstr "Aide"
 
 #. Upload record task.
 msgid "Tasks.uploadRecord"

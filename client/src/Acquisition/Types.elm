@@ -45,6 +45,7 @@ type alias Model a b =
     , deleteRecord : Bool
     , pointerStyle : PointerStyle
     , warnLeaving : Maybe Route
+    , showHelp : Bool
     }
 
 
@@ -68,6 +69,7 @@ withCapsuleAndGos capsule gos model =
     , deleteRecord = model.deleteRecord
     , pointerStyle = model.pointerStyle
     , warnLeaving = model.warnLeaving
+    , showHelp = model.showHelp
     }
 
 
@@ -201,6 +203,7 @@ init gos capsule =
                   , deleteRecord = False
                   , pointerStyle = defaultPointerStyle
                   , warnLeaving = Nothing
+                  , showHelp = False
                   }
                 , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
@@ -242,6 +245,7 @@ type Msg
     | SetPointerSize Int
     | ClearPointer
     | Leave Utils.Confirmation
+    | ToggleHelp
 
 
 {-| Alias for the setup canvas port.
