@@ -464,6 +464,22 @@ msgstr ""
 msgid "Steps.Acquisition.recordPointer"
 msgstr ""
 
+#. First line of help.
+msgid "Steps.Acquisition.Help.first"
+msgstr ""
+
+#. Second line of help.
+msgid "Steps.Acquisition.Help.second"
+msgstr ""
+
+#. Third line of help.
+msgid "Steps.Acquisition.Help.third"
+msgstr ""
+
+#. Fourth line of help.
+msgid "Steps.Acquisition.Help.fourth"
+msgstr ""
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr ""

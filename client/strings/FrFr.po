@@ -493,6 +493,22 @@ msgstr "Échec de l'envoi de l'enregistrement, veuillez recommencer"
 msgid "Steps.Acquisition.recordPointer"
 msgstr "Enregistrer le pointeur"
 
+#. First line of help.
+msgid "Steps.Acquisition.Help.first"
+msgstr "Appuyez sur la flèche à droite pour commencer l'enregistrement"
+
+#. Second line of help.
+msgid "Steps.Acquisition.Help.second"
+msgstr "Si vous avez un prompteur, la flèche à droite vous permet de progresser de ligne en ligne"
+
+#. Third line of help.
+msgid "Steps.Acquisition.Help.third"
+msgstr "Si votre grain contient plusieurs planches, la flèche à droite vous permet de progresser de planche en planche"
+
+#. Fourth line of help.
+msgid "Steps.Acquisition.Help.fourth"
+msgstr "Vous pouvez ensuite appuyez sur la flèche à droite pour terminer l'enregistrement"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"

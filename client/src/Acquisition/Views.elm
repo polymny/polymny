@@ -203,9 +203,11 @@ view config _ model =
         -- Popup to show the help to the user
         helpPopup : Element App.Msg
         helpPopup =
-            Element.column [ Ui.wf, Ui.hf ]
-                [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
-                    [ Element.text " sup" ]
+            Element.column [ Ui.wf, Ui.hf, Ui.s 30 ]
+                [ Ui.paragraph [ Ui.wf, Ui.cy, Font.center ] <| Strings.stepsAcquisitionHelpFirst lang ++ "."
+                , Ui.paragraph [ Ui.wf, Ui.cy, Font.center ] <| Strings.stepsAcquisitionHelpSecond lang ++ "."
+                , Ui.paragraph [ Ui.wf, Ui.cy, Font.center ] <| Strings.stepsAcquisitionHelpThird lang ++ "."
+                , Ui.paragraph [ Ui.wf, Ui.cy, Font.center ] <| Strings.stepsAcquisitionHelpFourth lang ++ "."
                 , Ui.primary [ Ui.ab, Ui.ar ]
                     { action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleHelp
                     , label = Element.text <| Strings.uiConfirm lang
