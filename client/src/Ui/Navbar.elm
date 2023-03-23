@@ -470,6 +470,10 @@ navButtons lang capsuleId page =
         buttonWidth =
             100
 
+        roundRadius : Int
+        roundRadius =
+            10
+
         separator : Element msg
         separator =
             Element.el [ Ui.wpx 1, Ui.hpx 30, Background.color Colors.greyBackground ] Element.none
@@ -482,7 +486,7 @@ navButtons lang capsuleId page =
                     [ Ui.hf
                     , Ui.wf
                     , Font.bold
-                    , Ui.rt 10
+                    , Ui.r 10
                     , Element.mouseOver [ Background.color <| Colors.alphaColor (Utils.tern hoverable 0.1 0.0) Colors.black ]
                     , Transition.properties
                         [ Transition.backgroundColor 200 []
@@ -518,7 +522,7 @@ navButtons lang capsuleId page =
 
         selectorMove : Float
         selectorMove =
-            toFloat (selectorIndex * (buttonWidth + 1) - 1)
+            toFloat <| (selectorIndex * (buttonWidth + 1) - 1) - roundRadius
 
         selector : Int -> Element msg
         selector index =
@@ -530,12 +534,18 @@ navButtons lang capsuleId page =
                     [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                     , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
                     , Element.moveRight selectorMove
-                    , Ui.wpx (buttonWidth + 2)
+                    , Ui.wpx (buttonWidth + 2 * roundRadius + 2)
                     , Element.htmlAttribute <|
                         Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
                     ]
                     [ Element.el [ Ui.hpx 5, Ui.wf ] Element.none
-                    , Element.el [ Ui.hf, Ui.wf, Font.bold, Ui.rt 10, Background.color Colors.greyBackground ] Element.none
+                    , Element.row [ Ui.wf, Ui.hf ]
+                        [ Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
+                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbr roundRadius, Background.color Colors.green2 ] Element.none
+                        , Element.el [ Ui.hf, Ui.wf, Ui.rt roundRadius, Background.color Colors.greyBackground ] Element.none
+                        , Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
+                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbl roundRadius, Background.color Colors.green2 ] Element.none
+                        ]
                     ]
     in
     Element.row [ Ui.hf ]
