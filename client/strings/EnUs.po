@@ -491,6 +491,22 @@ msgstr "Error uploading record, please try again"
 msgid "Steps.Acquisition.recordPointer"
 msgstr "Record pointer"
 
+#. First line of help.
+msgid "Steps.Acquisition.Help.first"
+msgstr "Use the right arrow on the keyboard to start recording"
+
+#. Second line of help.
+msgid "Steps.Acquisition.Help.second"
+msgstr "If you have a prompt, the right arrow will go through the lines of the prompt"
+
+#. Third line of help.
+msgid "Steps.Acquisition.Help.third"
+msgstr "If you have multiple slides in the grain, the right arrow will go through the slides of the grain"
+
+#. Fourth line of help.
+msgid "Steps.Acquisition.Help.fourth"
+msgstr "You can then use the right arrow to end your recording"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"
