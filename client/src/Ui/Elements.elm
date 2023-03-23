@@ -323,7 +323,21 @@ popup size titleText content =
                 , Element.scrollbars
                 ]
                 [ Element.el [ Ui.p 10, Ui.cx, Font.color Colors.white, Font.bold ] (Element.text titleText)
-                , Element.el [ Ui.wf, Ui.hf, Background.color Colors.greyBackground, Ui.p 10, Ui.r 10, Element.scrollbars ] content
+                , Element.el
+                    [ Ui.wf
+                    , Ui.hf
+                    , Background.color Colors.greyBackground
+                    , Ui.p 10
+                    , Ui.r 10
+                    , Element.scrollbars
+                    , Border.shadow
+                        { offset = ( 0.0, 0.0 )
+                        , size = 3.0
+                        , blur = 3.0
+                        , color = Colors.alpha 0.1
+                        }
+                    ]
+                    content
                 ]
             , Element.el [ Ui.hfp 1 ] Element.none
             ]

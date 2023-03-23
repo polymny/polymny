@@ -98,7 +98,7 @@ navbar config page user =
                     )
     in
     Element.row
-        [ Background.color Colors.green2, Ui.wf ]
+        [ Ui.wf ]
         [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
         , Ui.longText [ Ui.pr 30, Ui.wfp 1, Font.bold, Font.color Colors.greyBackground ] title
         , case ( capsule2, page ) of
@@ -538,13 +538,45 @@ navButtons lang capsuleId page =
                     , Element.htmlAttribute <|
                         Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
                     ]
-                    [ Element.el [ Ui.hpx 5, Ui.wf ] Element.none
+                    [ Element.el
+                        [ Ui.hpx 5
+                        , Ui.wf
+                        ]
+                        Element.none
                     , Element.row [ Ui.wf, Ui.hf ]
-                        [ Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
-                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbr roundRadius, Background.color Colors.green2 ] Element.none
-                        , Element.el [ Ui.hf, Ui.wf, Ui.rt roundRadius, Background.color Colors.greyBackground ] Element.none
-                        , Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
-                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbl roundRadius, Background.color Colors.green2 ] Element.none
+                        [ Element.el
+                            [ Ui.hf
+                            , Ui.wpx 10
+                            , Background.color Colors.greyBackground
+                            ]
+                          <|
+                            Element.el
+                                [ Ui.hf
+                                , Ui.wpx 10
+                                , Ui.rbr roundRadius
+                                , Background.color Colors.green2
+                                ]
+                                Element.none
+                        , Element.el
+                            [ Ui.hf
+                            , Ui.wf
+                            , Ui.rt roundRadius
+                            , Background.color Colors.greyBackground
+                            ]
+                            Element.none
+                        , Element.el
+                            [ Ui.hf
+                            , Ui.wpx 10
+                            , Background.color Colors.greyBackground
+                            ]
+                          <|
+                            Element.el
+                                [ Ui.hf
+                                , Ui.wpx 10
+                                , Ui.rbl roundRadius
+                                , Background.color Colors.green2
+                                ]
+                                Element.none
                         ]
                     ]
     in

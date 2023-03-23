@@ -7,13 +7,14 @@ import App.Types as App
 import Config exposing (Config)
 import Data.User as Data exposing (User)
 import Element exposing (Element)
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
 import Http
-import RemoteData
 import Profile.Types as Profile
+import RemoteData
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -26,6 +27,15 @@ import Utils
 view : Config -> User -> Profile.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
+        side : Element App.Msg
+        side =
+            Element.column [ Ui.wf, Ui.hf, Ui.p 20, Ui.s 10 ]
+                [ Element.text "Profile"
+                , Element.text "Change email"
+                , Element.text "Change password"
+                , Element.text "Delete account"
+                ]
+
         ( content, popup ) =
             case model of
                 Profile.Info ->
@@ -40,12 +50,21 @@ view config user model =
                 Profile.DeleteAccount s ->
                     deleteAccount config user model s
     in
-    ( Element.row [ Ui.wf, Ui.hf ]
-        [ Element.el [ Ui.wfp 2 ] Element.none
-        , Element.el [ Ui.wfp 1, Ui.hf ] <| tabs config user model
-        , Element.row [ Ui.wfp 5, Ui.at, Ui.p 10 ] [ content, Element.el [ Ui.wf ] Element.none ]
-        , Element.el [ Ui.wfp 2 ] Element.none
-        ]
+    ( Element.el [ Ui.wf, Ui.hf ] <|
+        Element.row
+            [ Ui.cx
+            , Ui.cy
+            , Border.shadow
+                { offset = ( 0.0, 0.0 )
+                , size = 1
+                , blur = 10
+                , color = Colors.alpha 0.3
+                }
+            , Ui.r 10
+            , Ui.p 20
+            , Background.color Colors.greyBackground
+            ]
+            [ side, content ]
     , popup
     )
 
