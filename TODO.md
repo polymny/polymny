@@ -22,7 +22,7 @@
  - [x] manque tooltip sur le bouton "enregistrer le pointeur"
  - [ ] ui ne fait pas de diff si on rec la cam ou le pointeur
  - [x] taille du prompteur change sur dernière ligne du promteur
- - [ ] manque de ui sur raccourcis clavier
+ - [x] manque de ui sur raccourcis clavier
  - [x] manque de ui sur ou on est dans la capsule gos slide
  - [x] pointeur peut se faire désactiver entre slide avec prompt vs sans prompt
  - [ ] clear cache dans les settings ?
