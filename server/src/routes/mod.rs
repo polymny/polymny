@@ -253,9 +253,9 @@ pub async fn options(
     index_without_cors(config, db, user, lang).await
 }
 
-/// The route to the settings page.
-#[get("/settings")]
-pub async fn settings(
+/// The route to the profile page.
+#[get("/profile")]
+pub async fn profile(
     config: &S<Config>,
     db: Db,
     user: Option<User>,

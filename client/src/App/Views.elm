@@ -26,7 +26,7 @@ import Production.Types as Production
 import Production.Views as Production
 import Publication.Types as Publication
 import Publication.Views as Publication
-import Settings.Views as Settings
+import Profile.Views as Profile
 import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
@@ -163,8 +163,8 @@ viewSuccess model =
             Options.view model.config model.user (Options.withCapsule capsule m)
                 |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        ( App.Settings m, _, _ ) ->
-            Settings.view model.config model.user m
+        ( App.Profile m, _, _ ) ->
+            Profile.view model.config model.user m
 
         _ ->
             ( Element.none, Element.none )

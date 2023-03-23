@@ -1,4 +1,4 @@
-module Settings.Types exposing (..)
+module Profile.Types exposing (..)
 
 {-| This module contains everything required for the settings view.
 -}

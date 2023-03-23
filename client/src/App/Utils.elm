@@ -25,7 +25,7 @@ import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
 import Route exposing (Route)
-import Settings.Types as Settings
+import Profile.Types as Profile
 import Unlogged.Types as Unlogged
 import Url exposing (Url)
 
@@ -232,8 +232,8 @@ pageFromRoute _ user route =
             , Cmd.none
             )
 
-        Route.Settings ->
-            ( App.Settings Settings.init, Cmd.none )
+        Route.Profile ->
+            ( App.Profile Profile.init, Cmd.none )
 
         _ ->
             ( App.Home Home.init, Cmd.none )
@@ -265,5 +265,5 @@ routeFromPage page =
         App.Options m ->
             Route.Options m.capsule
 
-        App.Settings _ ->
-            Route.Settings
+        App.Profile _ ->
+            Route.Profile

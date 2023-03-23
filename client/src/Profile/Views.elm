@@ -1,6 +1,6 @@
-module Settings.Views exposing (..)
+module Profile.Views exposing (..)
 
-{-| This module contains the views for the settings page.
+{-| This module contains the views for the profile page.
 -}
 
 import App.Types as App
@@ -13,7 +13,7 @@ import Element.Input as Input
 import Html.Attributes
 import Http
 import RemoteData
-import Settings.Types as Settings
+import Profile.Types as Profile
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -21,23 +21,23 @@ import Ui.Utils as Ui
 import Utils
 
 
-{-| The view function for the settings page.
+{-| The view function for the profile page.
 -}
-view : Config -> User -> Settings.Model -> ( Element App.Msg, Element App.Msg )
+view : Config -> User -> Profile.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
         ( content, popup ) =
             case model of
-                Settings.Info ->
+                Profile.Info ->
                     info config user
 
-                Settings.ChangeEmail s ->
+                Profile.ChangeEmail s ->
                     changeEmail config user model s
 
-                Settings.ChangePassword s ->
+                Profile.ChangePassword s ->
                     changePassword config user model s
 
-                Settings.DeleteAccount s ->
+                Profile.DeleteAccount s ->
                     deleteAccount config user model s
     in
     ( Element.row [ Ui.wf, Ui.hf ]
@@ -59,7 +59,7 @@ info _ _ =
 
 {-| The view that lets users change their email..
 -}
-changeEmail : Config -> User -> Settings.Model -> Settings.ChangeEmailModel -> ( Element App.Msg, Element App.Msg )
+changeEmail : Config -> User -> Profile.Model -> Profile.ChangeEmailModel -> ( Element App.Msg, Element App.Msg )
 changeEmail config user _ m =
     let
         -- Shortcut for lang
@@ -108,7 +108,7 @@ changeEmail config user _ m =
         newEmail =
             Input.email newEmailAttr
                 { label = Input.labelAbove titleAttr <| Element.text <| Strings.dataUserNewEmailAddress lang
-                , onChange = \x -> App.SettingsMsg <| Settings.ChangeEmailNewEmailChanged x
+                , onChange = \x -> App.ProfileMsg <| Profile.ChangeEmailNewEmailChanged x
                 , placeholder = Nothing
                 , text = m.newEmail
                 }
@@ -152,7 +152,7 @@ changeEmail config user _ m =
                 Ui.primary
                 Ui.secondary
                 [ Ui.wf ]
-                { action = Utils.tern (newEmailValid && canSend) (Ui.Msg <| App.SettingsMsg <| Settings.ChangeEmailConfirm) Ui.None
+                { action = Utils.tern (newEmailValid && canSend) (Ui.Msg <| App.ProfileMsg <| Profile.ChangeEmailConfirm) Ui.None
                 , label = newEmailButtonText
                 }
 
@@ -174,7 +174,7 @@ changeEmail config user _ m =
 
 {-| View that lets the user change their password.
 -}
-changePassword : Config -> User -> Settings.Model -> Settings.ChangePasswordModel -> ( Element App.Msg, Element App.Msg )
+changePassword : Config -> User -> Profile.Model -> Profile.ChangePasswordModel -> ( Element App.Msg, Element App.Msg )
 changePassword config _ _ m =
     let
         lang =
@@ -183,7 +183,7 @@ changePassword config _ _ m =
         -- Current password field
         currentPassword =
             Input.currentPassword []
-                { onChange = \x -> App.SettingsMsg <| Settings.ChangePasswordCurrentPasswordChanged x
+                { onChange = \x -> App.ProfileMsg <| Profile.ChangePasswordCurrentPasswordChanged x
                 , label = Input.labelAbove titleAttr <| Element.text <| Strings.loginCurrentPassword lang
                 , placeholder = Nothing
                 , show = False
@@ -193,7 +193,7 @@ changePassword config _ _ m =
         -- New password field
         newPassword =
             Input.newPassword passwordAttr
-                { onChange = \x -> App.SettingsMsg <| Settings.ChangePasswordNewPasswordChanged x
+                { onChange = \x -> App.ProfileMsg <| Profile.ChangePasswordNewPasswordChanged x
                 , label = Input.labelAbove titleAttr <| Element.text <| Strings.loginNewPassword lang
                 , placeholder = Nothing
                 , show = False
@@ -258,7 +258,7 @@ changePassword config _ _ m =
         -- New password repeat
         newPasswordRepeat =
             Input.newPassword newPasswordRepeatAttr
-                { onChange = \x -> App.SettingsMsg <| Settings.ChangePasswordNewPasswordRepeatChanged x
+                { onChange = \x -> App.ProfileMsg <| Profile.ChangePasswordNewPasswordRepeatChanged x
                 , label = Input.labelAbove titleAttr <| Element.text <| Strings.loginRepeatPassword lang
                 , placeholder = Nothing
                 , show = False
@@ -316,7 +316,7 @@ changePassword config _ _ m =
                 { action =
                     Utils.tern
                         (canSend && passwordAccepted && newPasswordRepeatAccepted)
-                        (Ui.Msg <| App.SettingsMsg <| Settings.ChangePasswordConfirm)
+                        (Ui.Msg <| App.ProfileMsg <| Profile.ChangePasswordConfirm)
                         Ui.None
                 , label = changePasswordButtonText
                 }
@@ -343,7 +343,7 @@ changePassword config _ _ m =
 
 {-| View that lets the user delete their account.
 -}
-deleteAccount : Config -> User -> Settings.Model -> Settings.DeleteAccountModel -> ( Element App.Msg, Element App.Msg )
+deleteAccount : Config -> User -> Profile.Model -> Profile.DeleteAccountModel -> ( Element App.Msg, Element App.Msg )
 deleteAccount config _ _ m =
     let
         lang =
@@ -352,7 +352,7 @@ deleteAccount config _ _ m =
         -- Current password field
         currentPassword =
             Input.currentPassword []
-                { onChange = \x -> App.SettingsMsg <| Settings.DeleteAccountPasswordChanged x
+                { onChange = \x -> App.ProfileMsg <| Profile.DeleteAccountPasswordChanged x
                 , label = Input.labelAbove titleAttr <| Element.text <| Strings.dataUserPassword lang
                 , placeholder = Nothing
                 , show = False
@@ -410,7 +410,7 @@ deleteAccount config _ _ m =
                 { action =
                     Utils.tern
                         canSend
-                        (Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirm)
+                        (Ui.Msg <| App.ProfileMsg <| Profile.DeleteAccountConfirm)
                         Ui.None
                 , label = deleteAccountButtonText
                 }
@@ -422,8 +422,8 @@ deleteAccount config _ _ m =
                     Element.column [ Ui.wf, Ui.hf ]
                         [ Ui.paragraph [ Ui.cy ] <| Strings.loginConfirmDeleteAccount lang ++ "."
                         , Element.row [ Ui.s 10, Ui.ab, Ui.ar ]
-                            [ Ui.secondary [] { label = Element.text <| Strings.uiCancel lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountCancel }
-                            , Ui.primary [] { label = Element.text <| Strings.uiConfirm lang, action = Ui.Msg <| App.SettingsMsg <| Settings.DeleteAccountConfirmTwice }
+                            [ Ui.secondary [] { label = Element.text <| Strings.uiCancel lang, action = Ui.Msg <| App.ProfileMsg <| Profile.DeleteAccountCancel }
+                            , Ui.primary [] { label = Element.text <| Strings.uiConfirm lang, action = Ui.Msg <| App.ProfileMsg <| Profile.DeleteAccountConfirmTwice }
                             ]
                         ]
 
@@ -443,25 +443,25 @@ deleteAccount config _ _ m =
 
 {-| Column to navigate in tabs.
 -}
-tabs : Config -> User -> Settings.Model -> Element App.Msg
+tabs : Config -> User -> Profile.Model -> Element App.Msg
 tabs config _ _ =
     let
         lang =
             config.clientState.lang
 
-        link : String -> Settings.Model -> Element App.Msg
+        link : String -> Profile.Model -> Element App.Msg
         link label tab =
             Ui.link []
-                { action = Ui.Msg <| App.SettingsMsg <| Settings.TabChanged tab
+                { action = Ui.Msg <| App.ProfileMsg <| Profile.TabChanged tab
                 , label = label
                 }
     in
     Element.el [ Ui.p 10, Ui.wf, Ui.hf ] <|
         Element.column [ Ui.wf, Ui.hf, Ui.s 10, Ui.br 1, Border.color Colors.greyBorder ]
             [ Element.el [ Font.bold, Font.size 23 ] <| Element.text <| Strings.navigationSettings lang
-            , link (Strings.dataUserEmailAddress lang) Settings.initChangeEmail
-            , link (Strings.dataUserPassword lang) Settings.initChangePassword
-            , link (Strings.loginDeleteAccount lang) Settings.initDeleteAccount
+            , link (Strings.dataUserEmailAddress lang) Profile.initChangeEmail
+            , link (Strings.dataUserPassword lang) Profile.initChangePassword
+            , link (Strings.loginDeleteAccount lang) Profile.initDeleteAccount
             ]
 
 

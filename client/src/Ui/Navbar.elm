@@ -161,7 +161,7 @@ navbar config page user =
                             ]
                             (Ui.icon 25 Icons.event_note)
                         )
-                    , Ui.navigationElement (Ui.Route Route.Settings)
+                    , Ui.navigationElement (Ui.Route Route.Profile)
                         [ Font.color Colors.white
                         , Ui.r 100
                         , Ui.p 4
@@ -172,7 +172,7 @@ navbar config page user =
                             |> Element.htmlAttribute
                         ]
                       <|
-                        Ui.icon 25 Icons.settings
+                        Ui.icon 25 Icons.person
                     , Element.text u.username
                     , Ui.secondary
                         []
