@@ -143,12 +143,12 @@ viewContent fullModel =
             , Element.scrollbarY
             , Background.color Colors.greyBackground
             , Ui.r 10
-            -- , Border.shadow
-            --     { offset = ( 0.0, 0.0 )
-            --     , size = 1
-            --     , blur = 10
-            --     , color = Colors.alpha 0.3
-            --     }
+            , Border.shadow
+                { offset = ( 0.0, 0.0 )
+                , size = 1
+                , blur = 10
+                , color = Colors.alpha 0.3
+                }
             ]
             content
         , Ui.bottombar (fullModel |> App.toMaybe |> Maybe.map .config)

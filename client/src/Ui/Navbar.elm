@@ -488,6 +488,7 @@ navButtons lang capsuleId page =
                     , Font.bold
                     , Ui.r 10
                     , Element.mouseOver [ Background.color <| Colors.alphaColor (Utils.tern hoverable 0.1 0.0) Colors.black ]
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -533,6 +534,7 @@ navButtons lang capsuleId page =
                 Element.column
                     [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                     , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     , Element.moveRight selectorMove
                     , Ui.wpx (buttonWidth + 2 * roundRadius + 2)
                     , Element.htmlAttribute <|
@@ -546,15 +548,21 @@ navButtons lang capsuleId page =
                     , Element.row [ Ui.wf, Ui.hf ]
                         [ Element.el
                             [ Ui.hf
-                            , Ui.wpx 10
+                            , Ui.wpx roundRadius
                             , Background.color Colors.greyBackground
                             ]
                           <|
                             Element.el
                                 [ Ui.hf
-                                , Ui.wpx 10
+                                , Ui.wpx roundRadius
                                 , Ui.rbr roundRadius
                                 , Background.color Colors.green2
+                                , Border.innerShadow
+                                    { offset = ( 0.0, -11.0 )
+                                    , size = -10.0
+                                    , blur = 10.0
+                                    , color = Colors.alpha 0.3
+                                    }
                                 ]
                                 Element.none
                         , Element.el
@@ -575,6 +583,12 @@ navButtons lang capsuleId page =
                                 , Ui.wpx 10
                                 , Ui.rbl roundRadius
                                 , Background.color Colors.green2
+                                , Border.innerShadow
+                                    { offset = ( 0.0, -11.0 )
+                                    , size = -10.0
+                                    , blur = 10.0
+                                    , color = Colors.alpha 0.3
+                                    }
                                 ]
                                 Element.none
                         ]
