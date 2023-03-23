@@ -154,7 +154,7 @@ view config _ model =
             Element.el [ Element.paddingXY 10 0, Ui.wf ] <|
                 Element.el [ Element.paddingXY 5 10, Ui.wf, Ui.r 10, Ui.b 1, Border.color Colors.greyBorder ] <|
                     Element.row [ Ui.wf, Ui.s 10 ]
-                        [ Ui.longText [ Ui.wf ] label
+                        [ Ui.longText [] label
                         , Element.text (TimeUtils.formatDuration (Acquisition.recordDuration record))
                         , playButton
                         , stopButton

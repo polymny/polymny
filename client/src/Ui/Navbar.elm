@@ -100,7 +100,7 @@ navbar config page user =
     Element.row
         [ Background.color Colors.green2, Ui.wf ]
         [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
-        , Ui.longText [ Ui.pr 30, Ui.wpx 300, Font.bold, Font.color Colors.greyBackground ] title
+        , Ui.longText [ Ui.pr 30, Ui.wfp 1, Font.bold, Font.color Colors.greyBackground ] title
         , case ( capsule2, page ) of
             ( Just c, Just p ) ->
                 navButtons lang c p
@@ -136,6 +136,7 @@ navbar config page user =
                     , Ui.s 10
                     , Ui.hf
                     , Ui.pr 5
+                    , Ui.wfp 5
                     ]
                     [ Element.el
                         [ Ui.hf
@@ -143,6 +144,7 @@ navbar config page user =
                         , Element.htmlAttribute <| Html.Attributes.tabindex 0
                         , Element.below <| taskPanel <| Maybe.map .clientState <| config
                         , Element.behindContent <| taskGlobalProgress <| Maybe.withDefault 0.0 taskProgress
+                        , Element.alignRight
                         ]
                         (Ui.navigationElement
                             (Ui.Msg <| App.ConfigMsg Config.ToggleTaskPanel)
@@ -172,7 +174,8 @@ navbar config page user =
                       <|
                         Ui.icon 25 Icons.settings
                     , Element.text u.username
-                    , Ui.secondary []
+                    , Ui.secondary
+                        []
                         { action = Ui.Msg App.Logout
                         , label = Element.text <| Strings.loginLogout lang
                         }

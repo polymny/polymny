@@ -375,4 +375,8 @@ longText attr text =
         ]
         [ Html.text text ]
         |> Element.html
-        |> Element.el (Element.htmlAttribute (Html.Attributes.style "overflow" "hidden") :: attr)
+        |> Element.el
+            (Element.htmlAttribute (Html.Attributes.style "overflow" "hidden")
+                :: Element.htmlAttribute (Html.Attributes.class "wf")
+                :: attr
+            )

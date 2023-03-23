@@ -275,14 +275,18 @@ name poc =
             in
             Ui.navigationElement action
                 (Ui.addLinkAttr [ Ui.p 10, Font.bold ])
-                (Element.row [ Ui.wf, Ui.hf, Ui.cy ]
+                (Element.row [ Ui.wpx 400 ]
                     [ Utils.tern p.folded (Ui.icon 22 Icons.expand_more) (Ui.icon 22 Icons.expand_less)
-                    , Element.text p.name
+                    , Ui.longText [] p.name
                     ]
                 )
 
         Capsule c ->
-            Ui.link [ Ui.pl 30 ] { action = Ui.Route (Route.Preparation c.id), label = Ui.shrink 50 c.name }
+            Ui.navigationElement
+                (Ui.Route (Route.Preparation c.id))
+                (Ui.addLinkAttr [ Ui.wpx 400, Ui.pl 30 ])
+            <|
+                Ui.longText [] c.name
 
 
 {-| This functions returns the actions that can be done on a capsule.

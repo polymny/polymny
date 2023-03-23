@@ -59,4 +59,4 @@
  - [ ] quotas ont disparu
  - [ ] plus de boutons (copier l'URL de la vidéo)
  - [x] bouton dupliquer la capsule
- - [ ] long text sur project name / capsule name
+ - [x] long text sur project name / capsule name
