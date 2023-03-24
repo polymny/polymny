@@ -29,7 +29,8 @@ type alias Model a =
     , slideModel : DnDList.Groups.Model
     , gosModel : DnDList.Model
     , capsuleUpdate : RemoteData.WebData ()
-    , popupType : Maybe PopupType
+    , popupType : PopupType
+    , displayPopup : Bool
     , changeSlide : RemoteData.WebData Data.Capsule
     }
 
@@ -37,7 +38,8 @@ type alias Model a =
 {-| The type for the popup that can be displayed.
 -}
 type PopupType
-    = DeleteSlidePopup Data.Slide
+    = NoPopup
+    | DeleteSlidePopup Data.Slide
     | DeleteExtraPopup Data.Slide
     | ChangeSlidePopup ChangeSlideForm
     | EditPromptPopup Data.Slide
@@ -55,6 +57,7 @@ withCapsule capsule model =
     , capsuleUpdate = model.capsuleUpdate
     , changeSlide = model.changeSlide
     , popupType = model.popupType
+    , displayPopup = model.displayPopup
     }
 
 
@@ -85,7 +88,8 @@ init capsule =
     , gosModel = gosSystem.model
     , capsuleUpdate = RemoteData.NotAsked
     , changeSlide = RemoteData.NotAsked
-    , popupType = Nothing
+    , popupType = NoPopup
+    , displayPopup = False
     }
 
 

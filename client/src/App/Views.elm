@@ -28,7 +28,6 @@ import Production.Views as Production
 import Profile.Views as Profile
 import Publication.Types as Publication
 import Publication.Views as Publication
-import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -103,28 +102,11 @@ viewContent fullModel =
 
             else
                 popup
-
-        animatedPopup =
-            if realPopup == Element.none then
-                Element.el [ Element.transparent True ] Element.none
-
-            else
-                Element.el
-                    [ Ui.wf
-                    , Ui.hf
-                    , Element.transparent False
-                    , Transition.properties
-                        [ Transition.opacity 200 []
-                        ]
-                        |> Element.htmlAttribute
-                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
-                    ]
-                    realPopup
     in
     Element.column
         [ Ui.wf
         , Ui.hf
-        , Element.inFront animatedPopup
+        , Element.inFront realPopup
         , Background.gradient
             { angle = pi
             , steps =

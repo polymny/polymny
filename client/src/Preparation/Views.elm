@@ -23,6 +23,7 @@ import List.Extra
 import Material.Icons as Icons
 import Preparation.Types as Preparation
 import RemoteData
+import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -44,53 +45,39 @@ view config user model =
                 |> Maybe.map (\x -> slideView config user model True x (Just x))
                 |> Maybe.withDefault Element.none
 
-        --makeBorder : Element.Color -> Element App.Msg -> Element App.Msg
-        --makeBorder c elt =
-        --    elt
-        --        |> Element.el [ Ui.p 10, Background.color c, Ui.r 10 ]
-        --        |> Element.el [ Ui.ab, Ui.ar, Ui.p 10 ]
-        --
-        --
         popup : Element App.Msg
         popup =
-            -- case ( ( model.deleteSlide, model.deleteExtra, model.changeSlideForm ), ( model.editPrompt, model.confirmUpdateCapsule ) ) of
-            --     ( ( Just s, _, _ ), _ ) ->
-            --         deleteSlideConfirmPopup lang model s
-            --     ( ( _, Just s, _ ), _ ) ->
-            --         deleteExtraConfirmPopup lang model s
-            --     ( ( _, _, Just f ), _ ) ->
-            --         selectPageNumberPopup lang model f
-            --     ( _, ( Just s, _ ) ) ->
-            --         promptPopup lang model s
-            --     ( _, ( _, Just _ ) ) ->
-            --         confirmUpdateCapsulePopup lang
-            --     _ ->
-            --         Element.none
-            case model.popupType of
-                Just (Preparation.DeleteSlidePopup s) ->
-                    deleteSlideConfirmPopup lang model s
+            Element.el
+                [ Ui.zIndex 1
+                , Ui.wf
+                , Ui.hf
+                , Element.transparent <| not model.displayPopup
+                , Element.htmlAttribute <| Html.Attributes.style "pointer-events" <| Utils.tern model.displayPopup "auto" "none"
+                , Transition.properties
+                    [ Transition.opacity 200 []
+                    ]
+                    |> Element.htmlAttribute
+                ]
+            <|
+                case model.popupType of
+                    Preparation.NoPopup ->
+                        Element.none
 
-                Just (Preparation.DeleteExtraPopup s) ->
-                    deleteExtraConfirmPopup lang model s
+                    Preparation.DeleteSlidePopup s ->
+                        deleteSlideConfirmPopup lang model s
 
-                Just (Preparation.ChangeSlidePopup f) ->
-                    selectPageNumberPopup lang model f
+                    Preparation.DeleteExtraPopup s ->
+                        deleteExtraConfirmPopup lang model s
 
-                Just (Preparation.EditPromptPopup s) ->
-                    promptPopup lang model s
+                    Preparation.ChangeSlidePopup f ->
+                        selectPageNumberPopup lang model f
 
-                Just (Preparation.ConfirmUpdateCapsulePopup c) ->
-                    confirmUpdateCapsulePopup lang
+                    Preparation.EditPromptPopup s ->
+                        promptPopup lang model s
 
-                Nothing ->
-                    Element.none
+                    Preparation.ConfirmUpdateCapsulePopup c ->
+                        confirmUpdateCapsulePopup lang
 
-        -- ( _, RemoteData.Loading _ ) ->
-        --     makeBorder Colors.yellow (Element.text "Saving")
-        -- ( _, RemoteData.Failure _ ) ->
-        --     makeBorder Colors.yellow (Element.text "Error")
-        -- ( _, RemoteData.Success () ) ->
-        --     makeBorder Colors.green1 (Element.text "Success")
         groupedSlides : List (NeList Preparation.Slide)
         groupedSlides =
             model.slides

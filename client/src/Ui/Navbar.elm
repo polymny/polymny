@@ -488,7 +488,7 @@ navButtons lang capsuleId page =
                     , Font.bold
                     , Ui.r 10
                     , Element.mouseOver [ Background.color <| Colors.alphaColor (Utils.tern hoverable 0.1 0.0) Colors.black ]
-                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
+                    , Ui.zIndex 1
                     , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -534,7 +534,7 @@ navButtons lang capsuleId page =
                 Element.column
                     [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                     , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
-                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
+                    , Ui.zIndex 1
                     , Element.moveRight selectorMove
                     , Ui.wpx (buttonWidth + 2 * roundRadius + 2)
                     , Element.htmlAttribute <|
