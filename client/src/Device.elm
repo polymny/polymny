@@ -5,6 +5,7 @@ port module Device exposing (..)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import List.Extra
 
 
 {-| A video device, e.g. a webcam.
@@ -215,11 +216,21 @@ mergeDevices old new =
             else
                 l1
 
+        -- Checks if two video devices are the same (same deviceId or same label )
+        isSameVideo : Video -> Video -> Bool
+        isSameVideo video x =
+            x.deviceId == video.deviceId || (x.label == video.label)
+
+        -- Checks if two audio devices are the same (same deviceId or same label)
+        isSameAudio : Audio -> Audio -> Bool
+        isSameAudio audio x =
+            audio.deviceId == x.deviceId || audio.label == x.label
+
         -- Updates the state of the video device (sets the available flag depending on if its has been currently
         -- detected).
         updateVideo : Video -> Video
         updateVideo video =
-            case List.filter (\x -> x.deviceId == video.deviceId) new.video of
+            case List.filter (isSameVideo video) new.video of
                 [] ->
                     { video | available = False }
 
@@ -228,17 +239,18 @@ mergeDevices old new =
                         | available = True
                         , label = notEmptyString h.label video.label
                         , resolutions = notEmptyList h.resolutions video.resolutions
+                        , deviceId = h.deviceId
                     }
 
         -- Same thing with audio
         updateAudio : Audio -> Audio
         updateAudio audio =
-            case List.filter (\x -> x.deviceId == audio.deviceId) new.audio of
+            case List.filter (isSameAudio audio) new.audio of
                 [] ->
                     { audio | available = False }
 
                 h :: _ ->
-                    { audio | available = True, label = notEmptyString h.label audio.label }
+                    { audio | available = True, label = notEmptyString h.label audio.label, deviceId = h.deviceId }
 
         oldVideos =
             List.map updateVideo old.video
@@ -249,12 +261,12 @@ mergeDevices old new =
         -- Filters the new video devices that are already in the old video devices.
         filterNewVideo : Video -> Bool
         filterNewVideo video =
-            List.all (\x -> x.deviceId /= video.deviceId) old.video
+            List.all (isSameVideo video) old.video
 
         -- Same for audio.
         filterNewAudio : Audio -> Bool
         filterNewAudio audio =
-            List.all (\x -> x.deviceId /= audio.deviceId) old.audio
+            List.all (isSameAudio audio) old.audio
 
         newVideos =
             List.filter filterNewVideo new.video
@@ -262,8 +274,8 @@ mergeDevices old new =
         newAudios =
             List.filter filterNewAudio new.audio
     in
-    { video = oldVideos ++ newVideos
-    , audio = oldAudios ++ newAudios
+    { video = (oldVideos ++ newVideos) |> List.Extra.uniqueBy .deviceId
+    , audio = (oldAudios ++ newAudios) |> List.Extra.uniqueBy .deviceId
     }
 
 

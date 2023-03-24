@@ -213,7 +213,7 @@ view config _ model =
                     , label = Element.text <| Strings.uiConfirm lang
                     }
                 ]
-                |> Ui.popup 1 (Strings.uiHelp lang)
+                |> Ui.popup 2 (Strings.uiHelp lang)
 
         -- Column that contains the device feedback element, the info, and the list of records
         rightColumn : Element App.Msg

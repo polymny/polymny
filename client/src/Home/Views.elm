@@ -1035,7 +1035,7 @@ renameCapsulePopup lang capsule =
     let
         nameInput =
             Element.Input.text
-                []
+                [ Ui.cy ]
                 { onChange = \x -> App.HomeMsg (Home.CapsuleNameChanged capsule x)
                 , text = capsule.name
                 , placeholder = Nothing
@@ -1090,19 +1090,19 @@ renameProjectPopup lang project =
     let
         nameInput =
             Element.Input.text
-                []
+                [ Ui.cy ]
                 { onChange = \x -> App.HomeMsg (Home.ProjectNameChanged project x)
                 , text = project.name
                 , placeholder = Nothing
                 , label = Element.Input.labelAbove [] (Ui.title (Strings.dataProjectProjectName lang))
                 }
     in
-    Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
-        [ nameInput
-        , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
+    Element.column [ Ui.wf, Ui.hf, Ui.s 30 ]
+        [ Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Lang.warning Strings.uiWarning lang) ]
         , Element.paragraph [ Ui.wf, Ui.cy, Font.center ]
             [ Element.text (Strings.actionsConfirmRenameProjectWarning lang) ]
+        , nameInput
         , Element.row [ Ui.ab, Ui.ar, Ui.s 10 ]
             [ Ui.secondary []
                 { action = mkUiMsg (Home.RenameProject Utils.Cancel project)
