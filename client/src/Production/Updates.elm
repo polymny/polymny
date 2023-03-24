@@ -172,6 +172,7 @@ update msg model =
                                     Data.updateUser
                                         { capsule
                                             | produced = Data.Running (Just 0.0)
+                                            , published = Data.Idle
                                         }
                                         model.user
                                 , config = Config.incrementTaskId newConfig
