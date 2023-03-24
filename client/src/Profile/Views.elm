@@ -14,6 +14,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
 import Http
+import Lang exposing (Lang)
 import Material.Icons as Icons
 import Material.Icons.Types exposing (Icon)
 import Profile.Types as Profile
@@ -21,7 +22,7 @@ import RemoteData
 import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
-import Ui.Elements as Ui
+import Ui.Elements as Ui exposing (title)
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
 import Utils
@@ -32,6 +33,10 @@ import Utils
 view : Config -> User -> Profile.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
+        lang : Lang
+        lang =
+            config.clientState.lang
+
         logo : Element App.Msg
         logo =
             case user.plan of
@@ -44,11 +49,35 @@ view config user model =
                 _ ->
                     Ui.logo
 
+        titles : List String
+        titles =
+            [ Strings.uiProfile lang
+            , Strings.uiProfileChangeEmail lang
+            , Strings.uiProfileChangePassword lang
+            , Strings.uiProfileDeleteAccount lang
+            ]
+
+        actions : List (Ui.Action App.Msg)
+        actions =
+            List.map (Ui.Msg << App.ProfileMsg << Profile.TabChanged)
+                [ Profile.initInfo
+                , Profile.initChangeEmail
+                , Profile.initChangePassword
+                , Profile.initDeleteAccount
+                ]
+
+        icons =
+            [ Icons.person
+            , Icons.mail
+            , Icons.password
+            , Icons.delete_forever
+            ]
+
         -- Create the selector
         selectorColor : Color
         selectorColor =
             Colors.greenLight
-        
+
         backgroundColor : Color
         backgroundColor =
             Colors.greyBackground
@@ -111,40 +140,19 @@ view config user model =
                     , Element.el [ Ui.cx ] <| Element.text user.username
                     ]
                 , Element.column [ Ui.wf ]
-                    [ selector
-                    , Ui.navigationElement
-                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initInfo)
-                        []
-                      <|
-                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
-                            [ Element.el [] <| Ui.icon 20 Icons.person
-                            , Element.text "Profile"
-                            ]
-                    , Ui.navigationElement
-                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangeEmail)
-                        []
-                      <|
-                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
-                            [ Element.el [] <| Ui.icon 20 Icons.mail
-                            , Element.text "Change email"
-                            ]
-                    , Ui.navigationElement
-                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangePassword)
-                        []
-                      <|
-                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
-                            [ Element.el [] <| Ui.icon 20 Icons.password
-                            , Element.text "Change password"
-                            ]
-                    , Ui.navigationElement
-                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initDeleteAccount)
-                        []
-                      <|
-                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
-                            [ Element.el [] <| Ui.icon 20 Icons.delete_forever
-                            , Element.text "Delete account"
-                            ]
-                    ]
+                    (selector
+                        :: List.map3
+                            (\title action icon ->
+                                Ui.navigationElement action [] <|
+                                    Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                                        [ Element.el [] <| Ui.icon 20 icon
+                                        , Element.text title
+                                        ]
+                            )
+                            titles
+                            actions
+                            icons
+                    )
                 ]
 
         ( content, popup ) =
@@ -160,13 +168,34 @@ view config user model =
 
                 Profile.DeleteAccount s ->
                     deleteAccount config user model s
+
+        finalContent : Element App.Msg
+        finalContent =
+            Element.column
+                [ Ui.s 30
+                , Background.color selectorColor
+                , Ui.r 10
+                , Ui.p 20
+                , Ui.wfp 5
+                , Ui.hf
+                ]
+                [ Element.el [ Font.bold, Font.size 22 ] <|
+                    Element.text <|
+                        case Utils.get titles selectorIndex of
+                            Just title ->
+                                title
+
+                            Nothing ->
+                                ""
+                , Element.el [ Ui.pl 30, Ui.wf ] content
+                ]
     in
     ( Element.el [ Ui.wf, Ui.hf ] <|
         Element.row
             [ Ui.cx
             , Ui.cy
             , Ui.wpx 800
-            , Ui.hpx 500
+            , Ui.hpx 600
             , Ui.r 10
             , Ui.p 20
             , Background.color backgroundColor
@@ -178,15 +207,7 @@ view config user model =
                 }
             ]
             [ side
-            , Element.el
-                [ Background.color selectorColor
-                , Ui.r 10
-                , Ui.p 20
-                , Ui.wfp 5
-                , Ui.hf
-                ]
-                <| Element.el [] 
-                content
+            , finalContent
             ]
     , popup
     )
