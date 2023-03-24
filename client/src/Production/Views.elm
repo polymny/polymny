@@ -522,9 +522,18 @@ rightColumn config user model =
 
                 _ ->
                     Element.none
+
+        -- Link to watch the video
+        videoLink =
+            case Data.videoPath model.capsule of
+                Just path ->
+                    Ui.link [] { label = Strings.stepsProductionWatchVideo lang, action = Ui.NewTab path }
+
+                _ ->
+                    Element.none
     in
     Element.column [ Ui.at, Ui.wfp 3, Ui.s 10 ]
         [ Element.el [ Ui.wf, Ui.cy, Element.inFront overlay, Element.clip ] slide
-        , produceButton
+        , Element.row [ Ui.ar, Ui.s 10 ] [ videoLink, produceButton ]
         , progressBar
         ]
