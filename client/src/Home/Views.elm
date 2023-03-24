@@ -88,13 +88,124 @@ It contains the button to start a new capsule, but also gives information about 
 
 -}
 leftColumn : Config -> User -> Element App.Msg
-leftColumn config _ =
+leftColumn config user =
     let
+        lang : Lang
+        lang =
+            config.clientState.lang
+
+        uploadSlidesButton : Element App.Msg
         uploadSlidesButton =
             Ui.primary [ Ui.wf ]
                 { label = Element.text <| Strings.stepsPreparationSelectPdf config.clientState.lang
                 , action = Ui.Msg <| App.HomeMsg <| Home.SlideUploadClicked Nothing
                 }
+
+        storageBar : Element App.Msg
+        storageBar =
+            let
+                barHeight : Int
+                barHeight =
+                    10
+
+                storage : Float
+                storage =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.role == Data.Owner)
+                        |> List.map .diskUsage
+                        |> List.sum
+                        |> toFloat
+                        |> (\x -> x / toFloat user.quota / 1000)
+
+                storageColor : Element.Attribute App.Msg
+                storageColor =
+                    Background.gradient
+                        { angle = pi
+                        , steps =
+                            [ Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.orange
+                            , Colors.orange
+                            , Colors.red
+                            , Colors.red
+                            ]
+                        }
+
+                bar : Element App.Msg
+                bar =
+                    Element.el
+                        [ Ui.wf
+                        , Ui.hpx 1000
+                        , Element.moveUp ((1000.0 - toFloat barHeight) * storage)
+                        , Ui.wf
+                        , storageColor
+                        ]
+                        Element.none
+            in
+            Element.el
+                [ Ui.p 3
+                , Ui.wpx 300
+                , Ui.hpx (barHeight + 2 * 3)
+                , Ui.r 20
+                , Background.color <| Colors.alpha 0.1
+                , Border.shadow
+                    { size = 1
+                    , blur = 8
+                    , color = Colors.alpha 0.1
+                    , offset = ( 0, 0 )
+                    }
+                ]
+            <|
+                Element.el
+                    [ Ui.wf
+                    , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                    , Ui.r 15
+                    , Ui.hpx barHeight
+                    ]
+                <|
+                    Element.el
+                        [ Ui.wpx (round (storage * (300.0 - 2.0 * 3.0)))
+                        , Ui.hpx barHeight
+                        , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                        , Ui.r 5
+                        ]
+                        bar
+
+        storageInfo : Element App.Msg
+        storageInfo =
+            let
+                storage : Float
+                storage =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.role == Data.Owner)
+                        |> List.map .diskUsage
+                        |> List.sum
+                        |> toFloat
+                        |> (\x -> x / 1000)
+            in
+            Element.row
+                [ Ui.wf ]
+                [ Element.el [ Ui.ar ] <|
+                    Element.text <|
+                        String.fromFloat storage
+                            ++ " "
+                            ++ Strings.uiGB lang
+                , Element.el [ Font.color Colors.greyFontDisabled ] <|
+                    Element.text <|
+                        " "
+                            ++ Strings.uiOf lang
+                            ++ " "
+                            ++ String.fromInt user.quota
+                            ++ " "
+                            ++ Strings.uiGB lang
+                ]
     in
     Element.column
         [ Ui.hf
@@ -103,7 +214,12 @@ leftColumn config _ =
         , Element.padding 10
         , Border.color (Colors.grey 6)
         ]
-        [ uploadSlidesButton ]
+        [ uploadSlidesButton
+        , Element.column [ Ui.ab, Ui.s 4 ]
+            [ storageInfo
+            , storageBar
+            ]
+        ]
 
 
 {-| This type can be a project or a capsule.

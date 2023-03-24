@@ -35,6 +35,7 @@ type alias PrivateUser =
     , email : String
     , plan : Data.Plan
     , capsules : List Capsule
+    , quota: Int
     }
 
 
@@ -42,16 +43,16 @@ type alias PrivateUser =
 -}
 decodePrivateUser : Decoder PrivateUser
 decodePrivateUser =
-    Decode.map4 PrivateUser
+    Decode.map5 PrivateUser
         (Decode.field "username" Decode.string)
         (Decode.field "email" Decode.string)
         (Decode.field "plan" Data.decodePlan)
         (Decode.field "capsules" (Decode.list Data.decodeCapsule))
+        (Decode.field "disk_quota" Decode.int)
 
 
 
 --(Decode.field "notifications" (Decode.list decodeNotification))
---(Decode.field "disk_quota" Decode.int)
 
 
 {-| This type represents a user with all the info we have on them.
@@ -61,6 +62,7 @@ type alias User =
     , email : String
     , plan : Data.Plan
     , projects : List Project
+    , quota: Int
     }
 
 
@@ -90,6 +92,7 @@ decodeUser sortBy =
                 , email = user.email
                 , plan = user.plan
                 , projects = capsulesToProjects user.capsules |> sortProjects sortBy
+                , quota = user.quota
                 }
             )
 

@@ -253,8 +253,127 @@ view config user model =
 {-| The info view, that displays global information on the user.
 -}
 info : Config -> User -> ( Element App.Msg, Element App.Msg )
-info _ _ =
-    ( Element.none, Element.none )
+info config user =
+    let
+        lang : Lang
+        lang =
+            config.clientState.lang
+
+        storageBar : Element App.Msg
+        storageBar =
+            let
+                barHeight : Int
+                barHeight =
+                    10
+
+                storage : Float
+                storage =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.role == Data.Owner)
+                        |> List.map .diskUsage
+                        |> List.sum
+                        |> toFloat
+                        |> (\x -> x / toFloat user.quota / 1000)
+
+                storageColor : Element.Attribute App.Msg
+                storageColor =
+                    Background.gradient
+                        { angle = pi
+                        , steps =
+                            [ Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.green2
+                            , Colors.orange
+                            , Colors.orange
+                            , Colors.red
+                            , Colors.red
+                            ]
+                        }
+
+                bar : Element App.Msg
+                bar =
+                    Element.el
+                        [ Ui.wf
+                        , Ui.hpx 1000
+                        , Element.moveUp ((1000.0 - toFloat barHeight) * storage)
+                        , Ui.wf
+                        , storageColor
+                        ]
+                        Element.none
+            in
+            Element.el
+                [ Ui.p 3
+                , Ui.wpx 300
+                , Ui.hpx (barHeight + 2 * 3)
+                , Ui.r 20
+                , Background.color <| Colors.alpha 0.1
+                , Border.shadow
+                    { size = 1
+                    , blur = 8
+                    , color = Colors.alpha 0.1
+                    , offset = ( 0, 0 )
+                    }
+                ]
+            <|
+                Element.el
+                    [ Ui.wf
+                    , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                    , Ui.r 15
+                    , Ui.hpx barHeight
+                    ]
+                <|
+                    Element.el
+                        [ Ui.wpx (round (storage * (300.0 - 2.0 * 3.0)))
+                        , Ui.hpx barHeight
+                        , Element.htmlAttribute <| Html.Attributes.style "overflow" "hidden"
+                        , Ui.r 5
+                        ]
+                        bar
+
+        storageInfo : Element App.Msg
+        storageInfo =
+            let
+                storage : Float
+                storage =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.role == Data.Owner)
+                        |> List.map .diskUsage
+                        |> List.sum
+                        |> toFloat
+                        |> (\x -> x / 1000)
+            in
+            Element.row
+                [ Ui.wf ]
+                [ Element.el [ Font.bold ] <|
+                    Element.text <|
+                        Strings.uiStorage lang
+                , Element.el [ Ui.ar ] <|
+                    Element.text <|
+                        String.fromFloat storage
+                            ++ " "
+                            ++ Strings.uiGB lang
+                , Element.el [ Font.color Colors.greyFontDisabled ] <|
+                    Element.text <|
+                        " "
+                            ++ Strings.uiOf lang
+                            ++ " "
+                            ++ String.fromInt user.quota
+                            ++ " "
+                            ++ Strings.uiGB lang
+                ]
+    in
+    ( Element.column [ Ui.ab, Ui.s 4 ]
+        [ storageInfo
+        , storageBar
+        ]
+    , Element.none
+    )
 
 
 {-| The view that lets users change their email..

@@ -1124,6 +1124,18 @@ msgstr "No tasks"
 msgid "Ui.help"
 msgstr "Help"
 
+#. Of.
+msgid "Ui.Of"
+msgstr "of"
+
+#. GB.
+msgid "Ui.GB"
+msgstr "GB"
+
+#. Storage.
+msgid "Ui.Storage"
+msgstr "Storage"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Upload record"

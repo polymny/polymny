@@ -1084,6 +1084,18 @@ msgstr ""
 msgid "Ui.tasksNone"
 msgstr ""
 
+#. Of.
+msgid "Ui.Of"
+msgstr ""
+
+#. GB.
+msgid "Ui.GB"
+msgstr ""
+
+#. Storage.
+msgid "Ui.Storage"
+msgstr ""
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr ""

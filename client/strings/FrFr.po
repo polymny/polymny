@@ -1131,6 +1131,18 @@ msgstr "Pas de tâche en cours"
 msgid "Ui.help"
 msgstr "Aide"
 
+#. Of.
+msgid "Ui.Of"
+msgstr "sur"
+
+#. GB.
+msgid "Ui.GB"
+msgstr "Go"
+
+#. Storage.
+msgid "Ui.Storage"
+msgstr "Stockage"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Téléversement de l'enregistrement"
