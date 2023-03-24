@@ -166,7 +166,7 @@ update msg model =
                 Preparation.EnterPressed ->
                     case m.popupType of
                         Just (Preparation.EditPromptPopup slide) ->
-                            update (Preparation.PromptChanged Utils.Confirm slide) model
+                            ( model, Cmd.none )
 
                         Just (Preparation.DeleteExtraPopup slide) ->
                             update (Preparation.DeleteExtra Utils.Confirm slide) model

@@ -49,6 +49,9 @@ function init(node, flags) {
     // The callbacks that trigger a change of slide or sentences during the replay of a record.
     let nextSlideCallbacks = [];
 
+    // Whether there is a request to clear the pointer canvas and remove the callbacks.
+    let clearRequested = false;
+
     // The audio context helps us show how much sound the microphone is capturing.
     let audioContext = null;
 
@@ -500,6 +503,10 @@ function init(node, flags) {
             await unbindDevice();
         }
 
+        if (clearRequested) {
+            clearPointerAndCallbacks();
+        }
+
         console.log("Device bound");
         app.ports.deviceBound.send(null);
     }
@@ -704,6 +711,19 @@ function init(node, flags) {
         });
     }
 
+    function clearPointerAndCallbacks(pointerCanvas, pointerCtx) {
+        if (pointerCtx != undefined) {
+            pointerCtx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+        }
+
+        for (let timeoutId of nextSlideCallbacks) {
+            clearTimeout(timeoutId);
+        }
+
+        nextSlideCallbacks = [];
+        clearRequested = false;
+    }
+
     // Plays a specific record.
     async function playRecord(record) {
         let pointerCanvas = null, pointerCtx = null;
@@ -739,6 +759,14 @@ function init(node, flags) {
                 pointerVideo.src = URL.createObjectURL(record.pointer_blob);
             }
         }
+
+        // Render pointer
+        if (pointerCanvas !== null) {
+            pointerCtx = pointerCanvas.getContext('2d');
+        }
+
+        clearPointerAndCallbacks(pointerCanvas, pointerCtx);
+
 
         // Manage slides
         // Skip last transition which is the end of the video.
@@ -776,18 +804,24 @@ function init(node, flags) {
 
         video.play();
 
-        // Render pointer
         if (pointerCanvas !== null) {
-            pointerCtx = pointerCanvas.getContext('2d');
             pointerVideo.play();
             renderPointer();
         }
 
         function renderPointer() {
-            if (video.paused || video.ended) {
+            if (video.paused || video.ended || clearRequested) {
                 pointerCtx.clearRect(0, 0, pointerCanvas.width, pointerCanvas.height);
+
+                for (let timeoutId of nextSlideCallbacks) {
+                    clearTimeout(timeoutId);
+                }
+
+                nextSlideCallbacks = [];
+                clearRequested = false;
                 return;
             }
+
 
             tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
             tmpCtx.drawImage(pointerVideo, 0, 0);
@@ -1458,7 +1492,7 @@ function init(node, flags) {
         }
 
         if (app.ports[name + "Port"] === undefined) {
-            console.log("app.ports." + name + " is undefined, not mounting port...");
+            console.warn("app.ports." + name + " is undefined, not mounting port...");
             return;
         }
 
@@ -1626,6 +1660,7 @@ function init(node, flags) {
     makePort("stopRecord", stopRecord);
     makePort("uploadRecord", uploadRecord);
     makePort("setupCanvas", setupCanvas);
+    makePort("clearPointerAndCallbacks", () => clearRequested = true);
     makePort("exportCapsule", exportCapsule);
     makePort("importCapsule", importCapsule);
 }

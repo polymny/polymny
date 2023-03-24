@@ -186,6 +186,29 @@ updateModel msg model =
                 _ ->
                     Cmd.none
 
+        -- We check if the user is moving from acquisition to another acquisition, in which case we need to clear the
+        -- pointer and the callbacks.
+        clearPointerAndCallbacksCmd =
+            let
+                shouldClear =
+                    case ( model.page, updatedModel.page ) of
+                        -- If we're staying on acqusition page
+                        ( App.Acquisition m1, App.Acquisition m2 ) ->
+                            -- but we changed gos or capsule
+                            m1.gos /= m2.gos || m1.capsule /= m2.capsule || m1.warnLeaving /= Nothing
+
+                        ( _, App.Acquisition _ ) ->
+                            False
+
+                        _ ->
+                            True
+            in
+            if shouldClear then
+                clearPointerAndCallbacksPort ()
+
+            else
+                Cmd.none
+
         -- We check if the user is leaving the acquisition page, and if they have an unvalidated record.
         ( leavingAcquisitionWithRecord, leavingModel ) =
             case ( model.page, updatedModel.page ) of
@@ -489,6 +512,7 @@ updateModel msg model =
         , cancelNewCapsCmd
         , unbindDevice
         , beforeUnloadCmd
+        , clearPointerAndCallbacksCmd
         ]
     )
 
@@ -598,3 +622,8 @@ port webSocketMsg : (Decode.Value -> msg) -> Sub msg
 {-| Port to set the on before unload value.
 -}
 port onBeforeUnloadPort : Bool -> Cmd msg
+
+
+{-| Port to set the clear flag to true (clear pointer and callbacks).
+-}
+port clearPointerAndCallbacksPort : () -> Cmd msg
