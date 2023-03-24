@@ -160,7 +160,7 @@ view config user model =
         side : Element App.Msg
         side =
             Element.column [ Ui.wfp 1, Ui.hf, Ui.s roundRadius ]
-                [ Element.column [ Ui.wf ]
+                [ Element.column [ Ui.wf, Ui.pt 30 ]
                     [ Element.el [ Ui.cx ] logo
                     , Element.el [ Ui.cx, Font.bold, Font.size 24 ] <| Element.text user.username
                     ]
@@ -178,6 +178,12 @@ view config user model =
                             actions
                             icons
                     )
+                , Element.el [ Ui.pr 20, Ui.wf, Ui.ab ] <|
+                    Ui.secondary
+                        [ Ui.wf ]
+                        { action = Ui.Msg App.Logout
+                        , label = Element.text <| Strings.loginLogout lang
+                        }
                 ]
 
         ( content, popup ) =
