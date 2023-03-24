@@ -86,10 +86,9 @@ view config user model =
         buttonHeight =
             50
         
-
         roundRadius : Int
         roundRadius =
-            20
+            buttonHeight // 2
 
         selectorIndex : Int
         selectorIndex =
@@ -115,7 +114,7 @@ view config user model =
             Element.column
                 [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                 , Ui.wf
-                , Ui.hpx (buttonHeight + roundRadius * 2)
+                , Ui.hpx (buttonHeight + buttonHeight)
                 , Element.moveDown selectorMove
                 , Element.htmlAttribute <|
                     Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]

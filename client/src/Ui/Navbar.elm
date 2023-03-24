@@ -453,12 +453,12 @@ taskPanel clientState =
         [ Element.alignRight
         , Element.height <| Element.maximum 300 Element.fill
         , Element.alpha <| Utils.tern showTaskPanel 1.0 0.0
+        , Element.htmlAttribute <| Html.Attributes.style "pointer-events" <| Utils.tern showTaskPanel "auto" "none"
         , Transition.properties
             [ Transition.opacity 200 [] ]
             |> Element.htmlAttribute
         ]
-    <|
-        Utils.tern showTaskPanel taskView Element.none
+        taskView
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.

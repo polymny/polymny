@@ -36,6 +36,8 @@ import Ui.Graphics as Ui
 import Ui.Navbar as Ui
 import Ui.Utils as Ui
 import Unlogged.Views as Unlogged
+import Html
+import Html.Attributes
 
 
 {-| Returns the view of the model.
@@ -115,6 +117,7 @@ viewContent fullModel =
                         [ Transition.opacity 200 []
                         ]
                         |> Element.htmlAttribute
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     ]
                     realPopup
     in
