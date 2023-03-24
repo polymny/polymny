@@ -986,15 +986,9 @@ pointerControl model =
 -}
 palette : List ( Element.Color, Element.Color )
 palette =
-    [ ( Element.rgb255 255 0 0, Element.rgb255 128 0 0 )
-    , ( Element.rgb255 255 128 0, Element.rgb255 128 64 0 )
-    , ( Element.rgb255 255 255 0, Element.rgb255 128 128 0 )
-    , ( Element.rgb255 0 255 0, Element.rgb255 0 128 0 )
-    , ( Element.rgb255 0 255 255, Element.rgb255 0 128 128 )
-    , ( Element.rgb255 0 0 255, Element.rgb255 0 0 128 )
-    , ( Element.rgb255 255 0 255, Element.rgb255 128 0 128 )
-    , ( Element.rgb255 255 128 128, Element.rgb255 128 128 255 )
-    , ( Element.rgb255 128 255 128, Element.rgb255 255 255 128 )
+    [ ( Element.rgb255 255 0 0, Element.rgb255 0 0 255 )
+    , ( Element.rgb255 0 255 0, Element.rgb255 255 255 0 )
+    , ( Element.rgb255 0 255 255, Element.rgb255 255 128 0 )
     ]
 
 
