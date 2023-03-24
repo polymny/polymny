@@ -6,7 +6,7 @@ module Ui.Utils exposing
     , rbl, rbr, rtl, rtr, rl, rr, rb, rt, r
     , cx, cy
     , shrink, paragraph
-    , id, class, sortAttributes, tooltip
+    , id, class, sortAttributes, tooltip, zIndex
     )
 
 {-| This module contains shortcuts to very used elm-ui values, as well as some other utility functions.
@@ -49,7 +49,7 @@ module Ui.Utils exposing
 
 # HTML utilities
 
-@docs id, class, sortAttributes, tooltip
+@docs id, class, sortAttributes, tooltip, zIndex
 
 -}
 
@@ -382,3 +382,10 @@ sortAttributes attributes =
 tooltip : String -> Element.Attribute msg
 tooltip text =
     Element.htmlAttribute (Html.Attributes.title text)
+
+
+{-| A helper to add a z-index.
+-}
+zIndex : Int -> Element.Attribute msg
+zIndex index =
+    Element.htmlAttribute (Html.Attributes.style "z-index" (String.fromInt index))

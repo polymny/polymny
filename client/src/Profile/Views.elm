@@ -41,13 +41,13 @@ view config user model =
         logo =
             case user.plan of
                 Data.Admin ->
-                    Ui.logoRed
+                    Ui.logoRed 100
 
                 Data.PremiumLvl1 ->
-                    Ui.logoBlue
+                    Ui.logoBlue 100
 
                 _ ->
-                    Ui.logo
+                    Ui.logo 100
 
         titles : List String
         titles =
@@ -85,7 +85,7 @@ view config user model =
         buttonHeight : Int
         buttonHeight =
             50
-        
+
         roundRadius : Int
         roundRadius =
             buttonHeight // 2
@@ -116,11 +116,24 @@ view config user model =
                 , Ui.wf
                 , Ui.hpx (buttonHeight + buttonHeight)
                 , Element.moveDown selectorMove
+                , Ui.zIndex 1
                 , Element.htmlAttribute <|
                     Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
                 ]
                 [ Element.el [ Background.color selectorColor, Ui.wf ] <|
-                    Element.el [ Ui.hpx roundRadius, Ui.rbr roundRadius, Background.color backgroundColor, Ui.wf ] Element.none
+                    Element.el
+                        [ Ui.hpx roundRadius
+                        , Ui.rbr roundRadius
+                        , Background.color backgroundColor
+                        , Ui.wf
+                        , Border.innerShadow
+                            { offset = ( -11.0, 0.0 )
+                            , size = -10.0
+                            , blur = 10.0
+                            , color = Colors.alpha 0.3
+                            }
+                        ]
+                        Element.none
                 , Element.el
                     [ Ui.wf
                     , Ui.hf
@@ -129,7 +142,19 @@ view config user model =
                     ]
                     Element.none
                 , Element.el [ Background.color selectorColor, Ui.wf ] <|
-                    Element.el [ Ui.hpx roundRadius, Ui.rtr roundRadius, Background.color backgroundColor, Ui.wf ] Element.none
+                    Element.el
+                        [ Ui.hpx roundRadius
+                        , Ui.rtr roundRadius
+                        , Background.color backgroundColor
+                        , Ui.wf
+                        , Border.innerShadow
+                            { offset = ( -11.0, 0.0 )
+                            , size = -10.0
+                            , blur = 10.0
+                            , color = Colors.alpha 0.3
+                            }
+                        ]
+                        Element.none
                 ]
 
         side : Element App.Msg
@@ -137,14 +162,14 @@ view config user model =
             Element.column [ Ui.wfp 1, Ui.hf, Ui.s roundRadius ]
                 [ Element.column [ Ui.wf ]
                     [ Element.el [ Ui.cx ] logo
-                    , Element.el [ Ui.cx ] <| Element.text user.username
+                    , Element.el [ Ui.cx, Font.bold, Font.size 24 ] <| Element.text user.username
                     ]
                 , Element.column [ Ui.wf ]
                     (selector
                         :: List.map3
                             (\title action icon ->
                                 Ui.navigationElement action [] <|
-                                    Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                                    Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10, Ui.zIndex 1 ]
                                         [ Element.el [] <| Ui.icon 20 icon
                                         , Element.text title
                                         ]
@@ -178,6 +203,12 @@ view config user model =
                 , Ui.p 20
                 , Ui.wfp 5
                 , Ui.hf
+                , Border.shadow
+                    { offset = ( 0.0, 0.0 )
+                    , size = 1
+                    , blur = 10
+                    , color = Colors.alpha 0.3
+                    }
                 ]
                 [ Element.el [ Font.bold, Font.size 22 ] <|
                     Element.text <|

@@ -99,7 +99,7 @@ navbar config page user =
     in
     Element.row
         [ Ui.wf ]
-        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
+        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] (logo 46)
         , Ui.longText [ Ui.pr 30, Ui.wfp 1, Font.bold, Font.color Colors.greyBackground ] title
         , case ( capsule2, page ) of
             ( Just c, Just p ) ->
