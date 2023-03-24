@@ -49,31 +49,25 @@ view config user model =
                 _ ->
                     Ui.logo 100
 
-        titles : List String
-        titles =
-            [ Strings.uiProfile lang
-            , Strings.uiProfileChangeEmail lang
-            , Strings.uiProfileChangePassword lang
-            , Strings.uiProfileDeleteAccount lang
+        profileTabs =
+            [ { title = Strings.uiProfile lang
+              , action = Profile.initInfo
+              , icon = Icons.person
+              }
+            , { title = Strings.uiProfileChangeEmail lang
+              , action = Profile.initChangeEmail
+              , icon = Icons.mail
+              }
+            , { title = Strings.uiProfileChangePassword lang
+              , action = Profile.initChangePassword
+              , icon = Icons.password
+              }
+            , { title = Strings.uiProfileDeleteAccount lang
+              , action = Profile.initDeleteAccount
+              , icon = Icons.delete_forever
+              }
             ]
 
-        actions : List (Ui.Action App.Msg)
-        actions =
-            List.map (Ui.Msg << App.ProfileMsg << Profile.TabChanged)
-                [ Profile.initInfo
-                , Profile.initChangeEmail
-                , Profile.initChangePassword
-                , Profile.initDeleteAccount
-                ]
-
-        icons =
-            [ Icons.person
-            , Icons.mail
-            , Icons.password
-            , Icons.delete_forever
-            ]
-
-        -- Create the selector
         selectorColor : Color
         selectorColor =
             Colors.greyBackground
@@ -113,6 +107,7 @@ view config user model =
         selector =
             Element.column
                 [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
+                , Element.htmlAttribute <| Html.Attributes.style "pointer-events" "none"
                 , Ui.wf
                 , Ui.hpx (buttonHeight + buttonHeight)
                 , Element.moveDown selectorMove
@@ -166,17 +161,31 @@ view config user model =
                     ]
                 , Element.column [ Ui.wf ]
                     (selector
-                        :: List.map3
-                            (\title action icon ->
-                                Ui.navigationElement action [] <|
-                                    Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10, Ui.zIndex 1 ]
+                        :: List.indexedMap
+                            (\index { title, action, icon } ->
+                                Ui.navigationElement (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged action)
+                                    [ Ui.wf
+                                    , Ui.r roundRadius
+                                    , Ui.zIndex 1
+                                    , Background.color Colors.transparent
+                                    , Element.mouseOver <|
+                                        Utils.tern
+                                            (index == selectorIndex)
+                                            []
+                                            [ Background.color <| Colors.alpha 0.1 ]
+                                    , Element.htmlAttribute <| Transition.properties [ Transition.backgroundColor 200 [] ]
+                                    ]
+                                <|
+                                    Element.row
+                                        [ Ui.px 20
+                                        , Ui.hpx buttonHeight
+                                        , Ui.s 10
+                                        ]
                                         [ Element.el [] <| Ui.icon 20 icon
                                         , Element.text title
                                         ]
                             )
-                            titles
-                            actions
-                            icons
+                            profileTabs
                     )
                 , Element.el [ Ui.pr 20, Ui.wf, Ui.ab ] <|
                     Ui.secondary
@@ -218,8 +227,8 @@ view config user model =
                 ]
                 [ Element.el [ Font.bold, Font.size 22 ] <|
                     Element.text <|
-                        case Utils.get titles selectorIndex of
-                            Just title ->
+                        case Utils.get selectorIndex profileTabs of
+                            Just { title } ->
                                 title
 
                             Nothing ->

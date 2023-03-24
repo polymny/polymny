@@ -30,8 +30,8 @@ andMap =
 
 {-| Get item in list by index.
 -}
-get : List a -> Int -> Maybe a
-get list index =
+get : Int -> List a -> Maybe a
+get index list =
     if index < 0 then
         Nothing
 
