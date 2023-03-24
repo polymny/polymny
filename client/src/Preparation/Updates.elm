@@ -19,6 +19,7 @@ import Keyboard
 import List.Extra
 import Preparation.Types as Preparation
 import RemoteData
+import Svg.Attributes exposing (display)
 import Utils
 
 
@@ -45,10 +46,19 @@ update msg model =
                         ( model, Cmd.none )
 
                 Preparation.DeleteSlide Utils.Request slide ->
-                    ( { model | page = App.Preparation { m | popupType = Just (Preparation.DeleteSlidePopup slide) } }, Cmd.none )
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | popupType = Preparation.DeleteSlidePopup slide
+                                    , displayPopup = True
+                                }
+                      }
+                    , Cmd.none
+                    )
 
                 Preparation.DeleteSlide Utils.Cancel _ ->
-                    ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
+                    ( { model | page = App.Preparation { m | displayPopup = False } }, Cmd.none )
 
                 Preparation.DeleteSlide Utils.Confirm slide ->
                     let
@@ -70,10 +80,19 @@ update msg model =
                     )
 
                 Preparation.DeleteExtra Utils.Request slide ->
-                    ( { model | page = App.Preparation { m | popupType = Just (Preparation.DeleteExtraPopup slide) } }, Cmd.none )
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | popupType = Preparation.DeleteExtraPopup slide
+                                    , displayPopup = True
+                                }
+                      }
+                    , Cmd.none
+                    )
 
                 Preparation.DeleteExtra Utils.Cancel _ ->
-                    ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
+                    ( { model | page = App.Preparation { m | displayPopup = False } }, Cmd.none )
 
                 Preparation.DeleteExtra Utils.Confirm slide ->
                     let
@@ -102,13 +121,31 @@ update msg model =
                     ( { model | page = App.Preparation newM, config = newConfig }, cmd )
 
                 Preparation.EditPrompt slide ->
-                    ( { model | page = App.Preparation { m | popupType = Just (Preparation.EditPromptPopup slide) } }, Cmd.none )
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | popupType = Preparation.EditPromptPopup slide
+                                    , displayPopup = True
+                                }
+                      }
+                    , Cmd.none
+                    )
 
                 Preparation.PromptChanged Utils.Request slide ->
-                    ( { model | page = App.Preparation { m | popupType = Just (Preparation.EditPromptPopup slide) } }, Cmd.none )
+                    ( { model
+                        | page =
+                            App.Preparation
+                                { m
+                                    | popupType = Preparation.EditPromptPopup slide
+                                    , displayPopup = True
+                                }
+                      }
+                    , Cmd.none
+                    )
 
                 Preparation.PromptChanged Utils.Cancel _ ->
-                    ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
+                    ( { model | page = App.Preparation { m | displayPopup = False } }, Cmd.none )
 
                 Preparation.PromptChanged Utils.Confirm slide ->
                     let
@@ -136,7 +173,21 @@ update msg model =
                                 |> List.drop (currentSlideIndex - 2)
                                 |> List.head
                     in
-                    ( { model | page = App.Preparation { m | popupType = Maybe.map Preparation.EditPromptPopup previousSlide } }, sync )
+                    ( { model
+                        | page =
+                            App.Preparation <|
+                                case previousSlide of
+                                    Just previousSlidee ->
+                                        { m
+                                            | popupType = Preparation.EditPromptPopup previousSlidee
+                                            , displayPopup = True
+                                        }
+
+                                    Nothing ->
+                                        { m | displayPopup = False }
+                      }
+                    , sync
+                    )
 
                 Preparation.GoToNextSlide currentSlideIndex currentSlide ->
                     let
@@ -153,62 +204,88 @@ update msg model =
                                 |> List.drop currentSlideIndex
                                 |> List.head
                     in
-                    ( { model | page = App.Preparation { m | popupType = Maybe.map Preparation.EditPromptPopup nextSlide } }, sync )
+                    ( { model
+                        | page =
+                            App.Preparation <|
+                                case nextSlide of
+                                    Just nextSlidee ->
+                                        { m
+                                            | popupType = Preparation.EditPromptPopup nextSlidee
+                                            , displayPopup = True
+                                        }
+
+                                    Nothing ->
+                                        { m | displayPopup = False }
+                      }
+                    , sync
+                    )
 
                 Preparation.EscapePressed ->
-                    case m.popupType of
-                        Just (Preparation.ConfirmUpdateCapsulePopup _) ->
-                            update Preparation.CancelUpdateCapsule model
+                    if m.displayPopup then
+                        case m.popupType of
+                            Preparation.ConfirmUpdateCapsulePopup _ ->
+                                update Preparation.CancelUpdateCapsule model
 
-                        _ ->
-                            ( { model | page = App.Preparation { m | popupType = Nothing } }, Cmd.none )
+                            _ ->
+                                ( { model | page = App.Preparation { m | displayPopup = False } }, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
 
                 Preparation.EnterPressed ->
-                    case m.popupType of
-                        Just (Preparation.EditPromptPopup slide) ->
-                            ( model, Cmd.none )
+                    if m.displayPopup then
+                        case m.popupType of
+                            Preparation.NoPopup ->
+                                ( model, Cmd.none )
 
-                        Just (Preparation.DeleteExtraPopup slide) ->
-                            update (Preparation.DeleteExtra Utils.Confirm slide) model
+                            Preparation.EditPromptPopup slide ->
+                                ( model, Cmd.none )
 
-                        Just (Preparation.DeleteSlidePopup slide) ->
-                            update (Preparation.DeleteSlide Utils.Confirm slide) model
+                            Preparation.DeleteExtraPopup slide ->
+                                update (Preparation.DeleteExtra Utils.Confirm slide) model
 
-                        Just (Preparation.ConfirmUpdateCapsulePopup c) ->
-                            update Preparation.ConfirmUpdateCapsule model
+                            Preparation.DeleteSlidePopup slide ->
+                                update (Preparation.DeleteSlide Utils.Confirm slide) model
 
-                        Just (Preparation.ChangeSlidePopup f) ->
-                            update
-                                (Preparation.Extra <|
-                                    Preparation.Selected
-                                        f.slide
-                                        f.file
-                                        (case String.toInt f.page of
-                                            Just x ->
-                                                if x > 0 then
-                                                    Just x
+                            Preparation.ConfirmUpdateCapsulePopup c ->
+                                update Preparation.ConfirmUpdateCapsule model
 
-                                                else
+                            Preparation.ChangeSlidePopup f ->
+                                update
+                                    (Preparation.Extra <|
+                                        Preparation.Selected
+                                            f.slide
+                                            f.file
+                                            (case String.toInt f.page of
+                                                Just x ->
+                                                    if x > 0 then
+                                                        Just x
+
+                                                    else
+                                                        Nothing
+
+                                                _ ->
                                                     Nothing
+                                            )
+                                    )
+                                    model
 
-                                            _ ->
-                                                Nothing
-                                        )
-                                )
-                                model
-
-                        Nothing ->
-                            ( model, Cmd.none )
+                    else
+                        ( model, Cmd.none )
 
                 Preparation.ConfirmUpdateCapsule ->
-                    case m.popupType of
-                        Just (Preparation.ConfirmUpdateCapsulePopup c) ->
-                            ( { model | page = App.Preparation <| Preparation.init c }
-                            , Api.updateCapsule c (\_ -> App.Noop)
-                            )
+                    if m.displayPopup then
+                        case m.popupType of
+                            Preparation.ConfirmUpdateCapsulePopup c ->
+                                ( { model | page = App.Preparation <| Preparation.init c }
+                                , Api.updateCapsule c (\_ -> App.Noop)
+                                )
 
-                        _ ->
-                            ( model, Cmd.none )
+                            _ ->
+                                ( model, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
 
                 Preparation.CancelUpdateCapsule ->
                     ( { model | page = App.Preparation <| Preparation.init capsule }, Cmd.none )
@@ -244,7 +321,13 @@ updateExtra user msg model config =
         ( Preparation.Selected changeSlide file page, Just capsule ) ->
             case ( File.mime file, page ) of
                 ( "application/pdf", Nothing ) ->
-                    ( { model | popupType = Just (Preparation.ChangeSlidePopup { slide = changeSlide, file = file, page = "1" }) }, Cmd.none, config )
+                    ( { model
+                        | popupType = Preparation.ChangeSlidePopup { slide = changeSlide, file = file, page = "1" }
+                        , displayPopup = True
+                      }
+                    , Cmd.none
+                    , config
+                    )
 
                 _ ->
                     let
@@ -296,18 +379,25 @@ updateExtra user msg model config =
 
         ( Preparation.PageChanged page, Just _ ) ->
             let
-                changeSlideForm =
-                    case model.popupType of
-                        Just (Preparation.ChangeSlidePopup c) ->
-                            Just (Preparation.ChangeSlidePopup { c | page = page })
+                newModel =
+                    if model.displayPopup then
+                        case model.popupType of
+                            Preparation.ChangeSlidePopup c ->
+                                { model
+                                    | popupType = Preparation.ChangeSlidePopup { c | page = page }
+                                    , displayPopup = True
+                                }
 
-                        _ ->
-                            Nothing
+                            _ ->
+                                { model | displayPopup = False }
+
+                    else
+                        { model | displayPopup = False }
             in
-            ( { model | popupType = changeSlideForm }, Cmd.none, config )
+            ( newModel, Cmd.none, config )
 
         ( Preparation.PageCancel, Just _ ) ->
-            ( { model | popupType = Nothing, changeSlide = RemoteData.NotAsked }, Cmd.none, config )
+            ( { model | displayPopup = False, changeSlide = RemoteData.NotAsked }, Cmd.none, config )
 
         ( Preparation.ChangeSlideUpdated (RemoteData.Success c), Just _ ) ->
             let
@@ -378,7 +468,8 @@ updateDnD user msg model config =
             in
             ( ( { model
                     | slideModel = slideModel
-                    , popupType = Utils.tern broken (Just (Preparation.ConfirmUpdateCapsulePopup newCapsule)) model.popupType
+                    , popupType = Utils.tern broken (Preparation.ConfirmUpdateCapsulePopup newCapsule) model.popupType
+                    , displayPopup = Utils.tern broken True model.displayPopup
                     , slides = newSlides
                 }
               , newConfig
