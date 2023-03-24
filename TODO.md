@@ -34,7 +34,7 @@
 # Production
  - [ ] taille de la webcam : autotriser la chaine vide serait vachement pratique
  - [x] réinitialiser les options ne réinitialise pas la pos de la miniature
- - [ ] produire dépublie la capsule mais la capsule reste à published = done
+ - [x] produire dépublie la capsule mais la capsule reste à published = done
  - [x] format 4:3 fait chier
 
 # Settings
