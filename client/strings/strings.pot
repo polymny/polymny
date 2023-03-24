@@ -756,8 +756,8 @@ msgstr ""
 msgid "Navigation.goToPolymny"
 msgstr ""
 
-#. Go to the settings page.
-msgid "Navigation.settings"
+#. Go to the profile page.
+msgid "Navigation.profile"
 msgstr ""
 
 #. Go to the grain recording page.
@@ -1054,6 +1054,22 @@ msgstr ""
 
 #. Delete a record.
 msgid "Actions.Confirm.deleteRecord"
+msgstr ""
+
+#. Profile button.
+msgid "Ui.profile"
+msgstr ""
+
+#. Change email.
+msgid "Ui.profile.changeEmail"
+msgstr ""
+
+#. Change password.
+msgid "Ui.profile.changePassword"
+msgstr ""
+
+#. DeleteAccount.
+msgid "Ui.profile.deleteAccount"
 msgstr ""
 
 #. Client tasks.

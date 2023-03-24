@@ -31,8 +31,8 @@ import Publication.Types as Publication
 import Publication.Updates as Publication
 import RemoteData
 import Route
-import Settings.Types as Settings
-import Settings.Updates as Settings
+import Profile.Types as Profile
+import Profile.Updates as Profile
 import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
 import Utils
@@ -61,7 +61,7 @@ update message model =
                     (\x -> Cmd.batch [ Cmd.map App.LoggedMsg x, Route.push m.config.clientState.key Route.Home ])
 
         -- When the user deletes their account
-        ( App.LoggedMsg (App.SettingsMsg (Settings.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
+        ( App.LoggedMsg (App.ProfileMsg (Profile.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
             ( App.Unlogged (Unlogged.init m.config Nothing)
             , case m.config.serverConfig.home of
                 Just url ->
@@ -306,8 +306,8 @@ updateModel msg model =
                 App.OptionsMsg oMsg ->
                     Options.update oMsg model
 
-                App.SettingsMsg sMsg ->
-                    Settings.update sMsg model
+                App.ProfileMsg sMsg ->
+                    Profile.update sMsg model
 
                 App.WebSocketMsg (App.CapsuleUpdated c) ->
                     let
@@ -535,7 +535,7 @@ subs m =
                     ( App.Options _, _, _ ) ->
                         Options.subs
 
-                    ( App.Settings _, _, _ ) ->
+                    ( App.Profile _, _, _ ) ->
                         Sub.none
 
                     _ ->

@@ -98,8 +98,8 @@ navbar config page user =
                     )
     in
     Element.row
-        [ Background.color Colors.green2, Ui.wf ]
-        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] logo
+        [ Ui.wf ]
+        [ Ui.navigationElement (Ui.Route Route.Home) [ Ui.pl 10, Ui.pr 30 ] (logo 46)
         , Ui.longText [ Ui.pr 30, Ui.wfp 1, Font.bold, Font.color Colors.greyBackground ] title
         , case ( capsule2, page ) of
             ( Just c, Just p ) ->
@@ -161,7 +161,7 @@ navbar config page user =
                             ]
                             (Ui.icon 25 Icons.event_note)
                         )
-                    , Ui.navigationElement (Ui.Route Route.Settings)
+                    , Ui.navigationElement (Ui.Route Route.Profile)
                         [ Font.color Colors.white
                         , Ui.r 100
                         , Ui.p 4
@@ -172,7 +172,7 @@ navbar config page user =
                             |> Element.htmlAttribute
                         ]
                       <|
-                        Ui.icon 25 Icons.settings
+                        Ui.icon 25 Icons.person
                     , Element.text u.username
                     , Ui.secondary
                         []
@@ -453,12 +453,12 @@ taskPanel clientState =
         [ Element.alignRight
         , Element.height <| Element.maximum 300 Element.fill
         , Element.alpha <| Utils.tern showTaskPanel 1.0 0.0
+        , Element.htmlAttribute <| Html.Attributes.style "pointer-events" <| Utils.tern showTaskPanel "auto" "none"
         , Transition.properties
             [ Transition.opacity 200 [] ]
             |> Element.htmlAttribute
         ]
-    <|
-        Utils.tern showTaskPanel taskView Element.none
+        taskView
 
 
 {-| This function creates a row with the navigation buttons of the different tabs of a capsule.
@@ -488,6 +488,7 @@ navButtons lang capsuleId page =
                     , Font.bold
                     , Ui.r 10
                     , Element.mouseOver [ Background.color <| Colors.alphaColor (Utils.tern hoverable 0.1 0.0) Colors.black ]
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     , Transition.properties
                         [ Transition.backgroundColor 200 []
                         ]
@@ -533,18 +534,63 @@ navButtons lang capsuleId page =
                 Element.column
                     [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                     , Element.htmlAttribute <| Html.Attributes.style "height" "100%"
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     , Element.moveRight selectorMove
                     , Ui.wpx (buttonWidth + 2 * roundRadius + 2)
                     , Element.htmlAttribute <|
                         Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
                     ]
-                    [ Element.el [ Ui.hpx 5, Ui.wf ] Element.none
+                    [ Element.el
+                        [ Ui.hpx 5
+                        , Ui.wf
+                        ]
+                        Element.none
                     , Element.row [ Ui.wf, Ui.hf ]
-                        [ Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
-                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbr roundRadius, Background.color Colors.green2 ] Element.none
-                        , Element.el [ Ui.hf, Ui.wf, Ui.rt roundRadius, Background.color Colors.greyBackground ] Element.none
-                        , Element.el [ Ui.hf, Ui.wpx 10, Background.color Colors.greyBackground ] <|
-                            Element.el [ Ui.hf, Ui.wpx 10, Ui.rbl roundRadius, Background.color Colors.green2 ] Element.none
+                        [ Element.el
+                            [ Ui.hf
+                            , Ui.wpx roundRadius
+                            , Background.color Colors.greyBackground
+                            ]
+                          <|
+                            Element.el
+                                [ Ui.hf
+                                , Ui.wpx roundRadius
+                                , Ui.rbr roundRadius
+                                , Background.color Colors.green2
+                                , Border.innerShadow
+                                    { offset = ( 0.0, -11.0 )
+                                    , size = -10.0
+                                    , blur = 10.0
+                                    , color = Colors.alpha 0.3
+                                    }
+                                ]
+                                Element.none
+                        , Element.el
+                            [ Ui.hf
+                            , Ui.wf
+                            , Ui.rt roundRadius
+                            , Background.color Colors.greyBackground
+                            ]
+                            Element.none
+                        , Element.el
+                            [ Ui.hf
+                            , Ui.wpx 10
+                            , Background.color Colors.greyBackground
+                            ]
+                          <|
+                            Element.el
+                                [ Ui.hf
+                                , Ui.wpx 10
+                                , Ui.rbl roundRadius
+                                , Background.color Colors.green2
+                                , Border.innerShadow
+                                    { offset = ( 0.0, -11.0 )
+                                    , size = -10.0
+                                    , blur = 10.0
+                                    , color = Colors.alpha 0.3
+                                    }
+                                ]
+                                Element.none
                         ]
                     ]
     in

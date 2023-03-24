@@ -1099,6 +1099,22 @@ msgstr "Supprimer l'enregistrement"
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Voulez vous vraiment supprimer l'enregistrement"
 
+#. Profile button.
+msgid "Ui.profile"
+msgstr "Profile"
+
+#. Change email.
+msgid "Ui.profile.changeEmail"
+msgstr "Adresse email"
+
+#. Change password.
+msgid "Ui.profile.changePassword"
+msgstr "Password"
+
+#. DeleteAccount.
+msgid "Ui.profile.deleteAccount"
+msgstr "Supprimer le compte"
+
 #. Client tasks.
 msgid "Ui.tasksClient"
 msgstr "Tâches client"

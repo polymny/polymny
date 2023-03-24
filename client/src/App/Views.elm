@@ -14,6 +14,7 @@ import Browser
 import Config
 import Element exposing (Element)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Home.Views as Home
 import Lang exposing (Lang)
@@ -24,9 +25,9 @@ import Preparation.Types as Preparation
 import Preparation.Views as Preparation
 import Production.Types as Production
 import Production.Views as Production
+import Profile.Views as Profile
 import Publication.Types as Publication
 import Publication.Views as Publication
-import Settings.Views as Settings
 import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
@@ -35,6 +36,8 @@ import Ui.Graphics as Ui
 import Ui.Navbar as Ui
 import Ui.Utils as Ui
 import Unlogged.Views as Unlogged
+import Html
+import Html.Attributes
 
 
 {-| Returns the view of the model.
@@ -114,16 +117,43 @@ viewContent fullModel =
                         [ Transition.opacity 200 []
                         ]
                         |> Element.htmlAttribute
+                    , Element.htmlAttribute <| Html.Attributes.style "z-index" "1"
                     ]
                     realPopup
     in
-    Element.column [ Ui.wf, Ui.hf, Element.inFront animatedPopup ]
+    Element.column
+        [ Ui.wf
+        , Ui.hf
+        , Element.inFront animatedPopup
+        , Background.gradient
+            { angle = pi
+            , steps =
+                [ Colors.green2
+                ,Colors.green2
+                , Colors.grey 3
+                , Colors.grey 3
+                ]
+            }
+        ]
         [ Ui.navbar
             (fullModel |> App.toMaybe |> Maybe.map .config)
             (fullModel |> App.toMaybe |> Maybe.map .page)
             (fullModel |> App.toMaybe |> Maybe.map .user)
             |> Element.map App.LoggedMsg
-        , Element.el [ Ui.wf, Ui.hf, Element.scrollbarY ] content
+        , Element.el
+            [ Ui.wf
+            , Ui.hf
+            , Element.scrollbarY
+            , Background.color Colors.greyBackground
+            , Ui.r 10
+            , Border.shadow
+                { offset = ( 0.0, 0.0 )
+                , size = 1
+                , blur = 10
+                , color = Colors.alpha 0.3
+                }
+            ]
+            content
         , Ui.bottombar (fullModel |> App.toMaybe |> Maybe.map .config)
         ]
 
@@ -163,8 +193,8 @@ viewSuccess model =
             Options.view model.config model.user (Options.withCapsule capsule m)
                 |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
-        ( App.Settings m, _, _ ) ->
-            Settings.view model.config model.user m
+        ( App.Profile m, _, _ ) ->
+            Profile.view model.config model.user m
 
         _ ->
             ( Element.none, Element.none )

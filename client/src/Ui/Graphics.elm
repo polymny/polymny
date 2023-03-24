@@ -12,10 +12,10 @@ import Ui.Utils as Ui
 
 {-| Helper to easily create logos.
 -}
-mkLogo : String -> Element msg
-mkLogo path =
+mkLogo : Int -> String -> Element msg
+mkLogo size path =
     Element.el [ Ui.p 5 ]
-        (Element.image [ Ui.hpx 46, Ui.wpx 46 ]
+        (Element.image [ Ui.hpx size, Ui.wpx size ]
             { src = "/dist/" ++ path
             , description = "The logo of Polymny Studio"
             }
@@ -24,20 +24,20 @@ mkLogo path =
 
 {-| The logo of the polymny application.
 -}
-logo : Element msg
-logo =
-    mkLogo "logo.webp"
+logo : Int -> Element msg
+logo size =
+    mkLogo size "logo.webp"
 
 
 {-| The blue version of the logo of Polymny.
 -}
-logoBlue : Element msg
-logoBlue =
-    mkLogo "logo-blue.webp"
+logoBlue : Int -> Element msg
+logoBlue size =
+    mkLogo size "logo-blue.webp"
 
 
 {-| The red version of the logo of Polymny.
 -}
-logoRed : Element msg
-logoRed =
-    mkLogo "logo-red.webp"
+logoRed : Int -> Element msg
+logoRed size =
+    mkLogo size "logo-red.webp"

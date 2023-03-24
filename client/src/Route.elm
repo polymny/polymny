@@ -19,7 +19,7 @@ type Route
     | Production String Int
     | Publication String
     | Options String
-    | Settings
+    | Profile
     | NotFound
     | Custom String
 
@@ -47,8 +47,8 @@ toUrl route =
         Options s ->
             "/capsule/options/" ++ s
 
-        Settings ->
-            "/settings"
+        Profile ->
+            "/profile"
 
         NotFound ->
             "/"
@@ -104,8 +104,8 @@ fromUrl url =
         "capsule" :: "options" :: id :: [] ->
             Options id
 
-        "settings" :: [] ->
-            Settings
+        "profile" :: [] ->
+            Profile
 
         _ ->
             NotFound
@@ -134,7 +134,7 @@ compareTab r1 r2 =
         ( Options _, Options _ ) ->
             True
 
-        ( Settings, Settings ) ->
+        ( Profile, Profile ) ->
             True
 
         _ ->

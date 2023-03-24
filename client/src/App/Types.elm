@@ -30,7 +30,7 @@ import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
 import Publication.Types as Publication
-import Settings.Types as Settings
+import Profile.Types as Profile
 import Unlogged.Types as Unlogged
 import Url
 
@@ -81,7 +81,7 @@ type Page
     | Production (Production.Model String Int)
     | Publication (Publication.Model String)
     | Options (Options.Model String)
-    | Settings Settings.Model
+    | Profile Profile.Model
 
 
 {-| This type represents the errors that can occur when the page starts.
@@ -110,7 +110,7 @@ type Msg
     | ProductionMsg Production.Msg
     | PublicationMsg Publication.Msg
     | OptionsMsg Options.Msg
-    | SettingsMsg Settings.Msg
+    | ProfileMsg Profile.Msg
     | ConfigMsg Config.Msg
     | WebSocketMsg WebSocketMsg
     | OnUrlChange Url.Url

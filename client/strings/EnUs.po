@@ -1092,6 +1092,22 @@ msgstr "Delete record"
 msgid "Actions.Confirm.deleteRecord"
 msgstr "Do you really want to delete this record"
 
+#. Profile button.
+msgid "Ui.profile"
+msgstr "Profile"
+
+#. Change email.
+msgid "Ui.profile.changeEmail"
+msgstr "Change email"
+
+#. Change password.
+msgid "Ui.profile.changePassword"
+msgstr "Password"
+
+#. DeleteAccount.
+msgid "Ui.profile.deleteAccount"
+msgstr "Delete account"
+
 #. Client tasks.
 msgid "Ui.tasksClient"
 msgstr "Client tasks"

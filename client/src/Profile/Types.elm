@@ -1,4 +1,4 @@
-module Settings.Types exposing (..)
+module Profile.Types exposing (..)
 
 {-| This module contains everything required for the settings view.
 -}
@@ -40,10 +40,10 @@ isSameTab m1 m2 =
 -}
 init : Model
 init =
-    Info
+    initInfo
 
 
-{-| Inits an info model.
+{-| Initializes model as info.
 -}
 initInfo : Model
 initInfo =
