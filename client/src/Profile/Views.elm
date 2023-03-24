@@ -76,19 +76,20 @@ view config user model =
         -- Create the selector
         selectorColor : Color
         selectorColor =
-            Colors.greenLight
+            Colors.greyBackground
 
         backgroundColor : Color
         backgroundColor =
-            Colors.greyBackground
+            Colors.green2
 
         buttonHeight : Int
         buttonHeight =
-            60
+            50
+        
 
         roundRadius : Int
         roundRadius =
-            10
+            20
 
         selectorIndex : Int
         selectorIndex =
@@ -107,14 +108,14 @@ view config user model =
 
         selectorMove : Float
         selectorMove =
-            toFloat <| (selectorIndex * (buttonHeight + 1) - 1)
+            toFloat <| selectorIndex * buttonHeight - roundRadius
 
         selector : Element App.Msg
         selector =
             Element.column
                 [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
                 , Ui.wf
-                , Ui.hpx buttonHeight
+                , Ui.hpx (buttonHeight + roundRadius * 2)
                 , Element.moveDown selectorMove
                 , Element.htmlAttribute <|
                     Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
@@ -125,7 +126,7 @@ view config user model =
                     [ Ui.wf
                     , Ui.hf
                     , Background.color selectorColor
-                    , Ui.rl roundRadius
+                    , Ui.rl buttonHeight
                     ]
                     Element.none
                 , Element.el [ Background.color selectorColor, Ui.wf ] <|
@@ -134,7 +135,7 @@ view config user model =
 
         side : Element App.Msg
         side =
-            Element.column [ Ui.wfp 1, Ui.hf, Ui.s 30 ]
+            Element.column [ Ui.wfp 1, Ui.hf, Ui.s roundRadius ]
                 [ Element.column [ Ui.wf ]
                     [ Element.el [ Ui.cx ] logo
                     , Element.el [ Ui.cx ] <| Element.text user.username
