@@ -40,7 +40,14 @@ isSameTab m1 m2 =
 -}
 init : Model
 init =
-    ChangeEmail { newEmail = "", data = RemoteData.NotAsked }
+    initInfo
+
+
+{-| Initializes model as info.
+-}
+initInfo : Model
+initInfo =
+    Info
 
 
 {-| The data required to change email address.

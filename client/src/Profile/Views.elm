@@ -5,19 +5,24 @@ module Profile.Views exposing (..)
 
 import App.Types as App
 import Config exposing (Config)
+import Data.Types as Data
 import Data.User as Data exposing (User)
-import Element exposing (Element)
+import Element exposing (Color, Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
 import Http
+import Material.Icons as Icons
+import Material.Icons.Types exposing (Icon)
 import Profile.Types as Profile
 import RemoteData
+import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
+import Ui.Graphics as Ui
 import Ui.Utils as Ui
 import Utils
 
@@ -27,13 +32,119 @@ import Utils
 view : Config -> User -> Profile.Model -> ( Element App.Msg, Element App.Msg )
 view config user model =
     let
+        logo : Element App.Msg
+        logo =
+            case user.plan of
+                Data.Admin ->
+                    Ui.logoRed
+
+                Data.PremiumLvl1 ->
+                    Ui.logoBlue
+
+                _ ->
+                    Ui.logo
+
+        -- Create the selector
+        selectorColor : Color
+        selectorColor =
+            Colors.greenLight
+        
+        backgroundColor : Color
+        backgroundColor =
+            Colors.greyBackground
+
+        buttonHeight : Int
+        buttonHeight =
+            60
+
+        roundRadius : Int
+        roundRadius =
+            10
+
+        selectorIndex : Int
+        selectorIndex =
+            case model of
+                Profile.Info ->
+                    0
+
+                Profile.ChangeEmail _ ->
+                    1
+
+                Profile.ChangePassword _ ->
+                    2
+
+                Profile.DeleteAccount _ ->
+                    3
+
+        selectorMove : Float
+        selectorMove =
+            toFloat <| (selectorIndex * (buttonHeight + 1) - 1)
+
+        selector : Element App.Msg
+        selector =
+            Element.column
+                [ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
+                , Ui.wf
+                , Ui.hpx buttonHeight
+                , Element.moveDown selectorMove
+                , Element.htmlAttribute <|
+                    Transition.properties [ Transition.transform 200 [ Transition.easeInOut ] ]
+                ]
+                [ Element.el [ Background.color selectorColor, Ui.wf ] <|
+                    Element.el [ Ui.hpx roundRadius, Ui.rbr roundRadius, Background.color backgroundColor, Ui.wf ] Element.none
+                , Element.el
+                    [ Ui.wf
+                    , Ui.hf
+                    , Background.color selectorColor
+                    , Ui.rl roundRadius
+                    ]
+                    Element.none
+                , Element.el [ Background.color selectorColor, Ui.wf ] <|
+                    Element.el [ Ui.hpx roundRadius, Ui.rtr roundRadius, Background.color backgroundColor, Ui.wf ] Element.none
+                ]
+
         side : Element App.Msg
         side =
-            Element.column [ Ui.wf, Ui.hf, Ui.p 20, Ui.s 10 ]
-                [ Element.text "Profile"
-                , Element.text "Change email"
-                , Element.text "Change password"
-                , Element.text "Delete account"
+            Element.column [ Ui.wfp 1, Ui.hf, Ui.s 30 ]
+                [ Element.column [ Ui.wf ]
+                    [ Element.el [ Ui.cx ] logo
+                    , Element.el [ Ui.cx ] <| Element.text user.username
+                    ]
+                , Element.column [ Ui.wf ]
+                    [ selector
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initInfo)
+                        []
+                      <|
+                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                            [ Element.el [] <| Ui.icon 20 Icons.person
+                            , Element.text "Profile"
+                            ]
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangeEmail)
+                        []
+                      <|
+                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                            [ Element.el [] <| Ui.icon 20 Icons.mail
+                            , Element.text "Change email"
+                            ]
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangePassword)
+                        []
+                      <|
+                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                            [ Element.el [] <| Ui.icon 20 Icons.password
+                            , Element.text "Change password"
+                            ]
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initDeleteAccount)
+                        []
+                      <|
+                        Element.row [ Ui.px 20, Ui.hpx buttonHeight, Ui.s 10 ]
+                            [ Element.el [] <| Ui.icon 20 Icons.delete_forever
+                            , Element.text "Delete account"
+                            ]
+                    ]
                 ]
 
         ( content, popup ) =
@@ -54,17 +165,29 @@ view config user model =
         Element.row
             [ Ui.cx
             , Ui.cy
+            , Ui.wpx 800
+            , Ui.hpx 500
+            , Ui.r 10
+            , Ui.p 20
+            , Background.color backgroundColor
             , Border.shadow
                 { offset = ( 0.0, 0.0 )
                 , size = 1
                 , blur = 10
                 , color = Colors.alpha 0.3
                 }
-            , Ui.r 10
-            , Ui.p 20
-            , Background.color Colors.greyBackground
             ]
-            [ side, content ]
+            [ side
+            , Element.el
+                [ Background.color selectorColor
+                , Ui.r 10
+                , Ui.p 20
+                , Ui.wfp 5
+                , Ui.hf
+                ]
+                <| Element.el [] 
+                content
+            ]
     , popup
     )
 
