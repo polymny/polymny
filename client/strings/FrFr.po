@@ -1157,7 +1157,7 @@ msgstr "Connecté"
 
 #. Disconnected.
 msgid "Ui.disconnected"
-msgstr "Disconnecté"
+msgstr "Déconnecté"
 
 #. This icon indicates the state of the websocket.
 msgid "Ui.iconIndicatesWebSocketState"
