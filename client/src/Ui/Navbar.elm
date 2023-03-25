@@ -106,7 +106,17 @@ navbar config page user =
                     (\x ->
                         Ui.navigationElement
                             (Ui.Msg <| App.ConfigMsg <| Config.ToggleWebSocketInfo)
-                            [ Font.color Colors.white, Ui.ar, Ui.p 4, Ui.tooltip <| Strings.uiWebSocketState lang ]
+                            [ Font.color Colors.white
+                            , Ui.ar
+                            , Ui.r 100
+                            , Ui.p 4
+                            , Ui.tooltip <| Strings.uiWebSocketState lang
+                            , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                            , Transition.properties
+                                [ Transition.backgroundColor 200 []
+                                ]
+                                |> Element.htmlAttribute
+                            ]
                             (Ui.icon 25 <| Utils.tern x Icons.wifi Icons.wifi_off)
                     )
                 |> Maybe.withDefault Element.none
