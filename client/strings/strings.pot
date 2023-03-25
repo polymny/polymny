@@ -1096,6 +1096,30 @@ msgstr ""
 msgid "Ui.Storage"
 msgstr ""
 
+#. Websocket.
+msgid "Ui.webSocketState"
+msgstr ""
+
+#. Information
+msgid "Ui.info"
+msgstr ""
+
+#. Connected.
+msgid "Ui.connected"
+msgstr ""
+
+#. Disconnected.
+msgid "Ui.disconnected"
+msgstr ""
+
+#. This icon indicates the state of the websocket.
+msgid "Ui.iconIndicatesWebSocketState"
+msgstr ""
+
+#. If the websocket is not working, Polymny Studio won't work correctly.
+msgid "Ui.noWebSocketWillCauseProblems"
+msgstr ""
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr ""

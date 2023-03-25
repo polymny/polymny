@@ -6,7 +6,7 @@ port module Config exposing
     , Msg(..)
     , update, subs
     , saveStorage
-    , TaskId, decodeTaskStatus, isClientTask, isServerTask, taskProgress
+    , PopupType(..), TaskId, decodeTaskStatus, isClientTask, isServerTask, taskProgress
     )
 
 {-| This module contains the core types for Polymny app.
@@ -58,6 +58,7 @@ import Json.Encode as Encode
 import Lang exposing (Lang)
 import Task
 import Time
+import Utils
 
 
 {-| This type stores the settings from the server, such as various URL and options that are enabled or disabled on the
@@ -221,9 +222,13 @@ It is not in the client config since it cannot be persisted, and is recreated wi
     this will mimic it, but otherwise, it will give a lang chosen either by requesting info from the browser or a
     default lang.
   - `lastRequest` is the number of the last request sent. It allows us to ignore responses to old requests.
-  - `tasks` is the list of tasks being run by the client;
+  - `tasks` is the list of tasks being run by the client.
   - `showLangPicker` is a bool that tells us whether we should show the lang picker or not.
   - `showNotificationPanel` is a bool that tells us whether we should show the notification panel or not.
+  - `showTaskPanel` is a bool that tells if the task panel is visible on the client
+  - `taskId` is a integer that represents the id of the next task to spawn, it must be incremented when a new task is
+    addeda.
+  - `webSocketStatus` is a bool that tells if the web socket is correctly connected or not.
 
 -}
 type alias ClientState =
@@ -233,10 +238,17 @@ type alias ClientState =
     , lang : Lang
     , lastRequest : Int
     , tasks : List TaskStatus
-    , showLangPicker : Bool
     , showTaskPanel : Bool
     , taskId : TaskId
+    , webSocketStatus : Bool
+    , popupType : PopupType
     }
+
+
+type PopupType
+    = NoPopup
+    | LangPicker
+    | WebSocketInfo
 
 
 {-| Task id
@@ -391,9 +403,10 @@ initClientState key lang =
     , lang = Maybe.withDefault Lang.default lang
     , lastRequest = 0
     , tasks = []
-    , showLangPicker = False
+    , popupType = NoPopup
     , showTaskPanel = False
     , taskId = 0
+    , webSocketStatus = False
     }
 
 
@@ -501,12 +514,14 @@ type Msg
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
     | UpdateTaskStatus TaskStatus
     | ToggleLangPicker
+    | ToggleWebSocketInfo
     | ToggleTaskPanel
     | FocusResult (Result Dom.Error ())
     | DisableTaskPanel
     | RemoveTask Task
     | AbortTask Task
     | ScrollToGos Float String
+    | WebSocketStatus Bool
 
 
 {-| This functions updates the config.
@@ -682,7 +697,24 @@ update msg { serverConfig, clientConfig, clientState } =
                 ToggleLangPicker ->
                     ( { serverConfig = serverConfig
                       , clientConfig = clientConfig
-                      , clientState = { clientState | showLangPicker = not clientState.showLangPicker }
+                      , clientState =
+                            { clientState
+                                | popupType =
+                                    Utils.tern (clientState.popupType == LangPicker) NoPopup LangPicker
+                            }
+                      }
+                    , False
+                    , []
+                    )
+
+                ToggleWebSocketInfo ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState =
+                            { clientState
+                                | popupType =
+                                    Utils.tern (clientState.popupType == WebSocketInfo) NoPopup WebSocketInfo
+                            }
                       }
                     , False
                     , []
@@ -863,6 +895,15 @@ update msg { serverConfig, clientConfig, clientState } =
                     , [ scrollIntoViewPort ( scrollVal, elementId ) ]
                     )
 
+                WebSocketStatus b ->
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | webSocketStatus = b }
+                      }
+                    , False
+                    , []
+                    )
+
         saveCmd : List (Cmd Msg)
         saveCmd =
             if saveRequired then
@@ -884,6 +925,7 @@ subs : Config -> Sub Msg
 subs config =
     Sub.batch
         (Time.every 500 Time
+            :: webSocketStatus WebSocketStatus
             :: Device.detectDevicesResponse
                 (\x ->
                     case Decode.decodeValue Device.decodeDevicesAndPreferredDevice x of
@@ -1020,3 +1062,8 @@ port abortTaskPort : String -> Cmd msg
 {-| Scroll to a gos.
 -}
 port scrollIntoViewPort : ( Float, String ) -> Cmd msg
+
+
+{-| A change in the status of web socket.
+-}
+port webSocketStatus : (Bool -> msg) -> Sub msg

@@ -96,6 +96,20 @@ navbar config page user =
                         else
                             Just <| List.sum p / toFloat (List.length p)
                     )
+
+        webSocketStatus : Element App.Msg
+        webSocketStatus =
+            config
+                |> Maybe.map .clientState
+                |> Maybe.map .webSocketStatus
+                |> Maybe.map
+                    (\x ->
+                        Ui.navigationElement
+                            (Ui.Msg <| App.ConfigMsg <| Config.ToggleWebSocketInfo)
+                            [ Font.color Colors.white, Ui.ar, Ui.p 4, Ui.tooltip <| Strings.uiWebSocketState lang ]
+                            (Ui.icon 25 <| Utils.tern x Icons.wifi Icons.wifi_off)
+                    )
+                |> Maybe.withDefault Element.none
     in
     Element.row
         [ Ui.wf ]
@@ -138,7 +152,8 @@ navbar config page user =
                     , Ui.pr 5
                     , Ui.wfp 5
                     ]
-                    [ Element.el
+                    [ webSocketStatus
+                    , Element.el
                         [ Ui.hf
                         , Ui.id "task-panel"
                         , Element.htmlAttribute <| Html.Attributes.tabindex 0

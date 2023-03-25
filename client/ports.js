@@ -139,11 +139,13 @@ function init(node, flags) {
         socket = new WebSocket(flags.global.serverConfig.socketRoot);
 
         socket.onopen = function () {
+            app.ports.webSocketStatus.send(true);
             socket.send(flags.user.cookie);
         }
 
         socket.onclose = function () {
             // Automatically reconnect
+            app.ports.webSocketStatus.send(false);
             setTimeout(initWebSocket, 1000);
         }
 

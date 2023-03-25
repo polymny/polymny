@@ -49,14 +49,14 @@
 # Global
  - [x] nom projet / capsule dans la navbar ?
  - [ ] title de la page html
- - [ ] feedback sur l'etat du websocket ?
+ - [x] feedback sur l'etat du websocket ?
  - [x] touche entrée ne valide pas
  - [ ] plus d'info sur les tasks (quelle capsule)
  - [ ] validate e-mail : add trailing slash + redirect
  - [x] disabled button doesn't show up greyed
 
 # Home
- - [ ] quotas ont disparu
+ - [x] quotas ont disparu
  - [ ] plus de boutons (copier l'URL de la vidéo)
  - [x] bouton dupliquer la capsule
  - [x] long text sur project name / capsule name

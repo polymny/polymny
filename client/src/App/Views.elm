@@ -17,7 +17,10 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Home.Views as Home
+import Html
+import Html.Attributes
 import Lang exposing (Lang)
+import Material.Icons
 import NewCapsule.Views as NewCapsule
 import Options.Types as Options
 import Options.Views as Options
@@ -35,8 +38,6 @@ import Ui.Graphics as Ui
 import Ui.Navbar as Ui
 import Ui.Utils as Ui
 import Unlogged.Views as Unlogged
-import Html
-import Html.Attributes
 
 
 {-| Returns the view of the model.
@@ -97,11 +98,15 @@ viewContent fullModel =
                     Config.initClientState Nothing Nothing
 
         realPopup =
-            if clientState.showLangPicker then
-                langPicker clientState.lang
+            case clientState.popupType of
+                Config.NoPopup ->
+                    popup
 
-            else
-                popup
+                Config.LangPicker ->
+                    langPicker clientState.lang
+
+                Config.WebSocketInfo ->
+                    webSocketInfo clientState.lang
     in
     Element.column
         [ Ui.wf
@@ -111,7 +116,7 @@ viewContent fullModel =
             { angle = pi
             , steps =
                 [ Colors.green2
-                ,Colors.green2
+                , Colors.green2
                 , Colors.grey 3
                 , Colors.grey 3
                 ]
@@ -222,7 +227,39 @@ langPicker lang =
                 List.map langChoice Lang.langs
     in
     Ui.popup 1 (Strings.configLang lang) <|
-        Element.column [ Ui.wf, Ui.hf ]
+        Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
             [ langChoices
             , confirmButton
             ]
+
+
+{-| The popup that gives some info about the web socket.
+-}
+webSocketInfo : Lang -> Element App.MaybeMsg
+webSocketInfo lang =
+    let
+        info =
+            Element.column [ Font.center, Ui.cx, Ui.cy, Ui.s 50 ]
+                [ Ui.paragraph [] <| Strings.uiIconIndicatesWebSocketState lang ++ "."
+                , Element.row [ Ui.cx, Ui.s 50 ]
+                    [ Element.column [ Ui.s 20 ]
+                        [ Element.el [ Ui.cx ] <| Ui.icon 25 Material.Icons.wifi
+                        , Element.el [ Ui.cx ] <| Element.text <| Strings.uiConnected lang
+                        ]
+                    , Element.column [ Ui.s 20 ]
+                        [ Element.el [ Ui.cx ] <| Ui.icon 25 Material.Icons.wifi_off
+                        , Element.el [ Ui.cx ] <| Element.text <| Strings.uiDisconnected lang
+                        ]
+                    ]
+                , Ui.paragraph [] <| Strings.uiNoWebSocketWillCauseProblems lang ++ "."
+                ]
+
+        confirmButton =
+            Ui.primary [ Ui.ab, Ui.ar ]
+                { action = Ui.Msg <| App.LoggedMsg <| App.ConfigMsg <| Config.ToggleWebSocketInfo
+                , label = Element.text <| Strings.uiConfirm lang
+                }
+    in
+    Ui.popup 1 (Strings.uiInfo lang) <|
+        Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
+            [ info, confirmButton ]
