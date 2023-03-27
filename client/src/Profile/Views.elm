@@ -3,6 +3,7 @@ module Profile.Views exposing (..)
 {-| This module contains the views for the profile page.
 -}
 
+import Api.Capsule exposing (produceCapsule)
 import App.Types as App
 import Config exposing (Config)
 import Data.Types as Data
@@ -22,7 +23,7 @@ import RemoteData
 import Simple.Transition as Transition
 import Strings
 import Ui.Colors as Colors
-import Ui.Elements as Ui exposing (title)
+import Ui.Elements as Ui
 import Ui.Graphics as Ui
 import Ui.Utils as Ui
 import Utils
@@ -268,6 +269,118 @@ info config user =
         lang =
             config.clientState.lang
 
+        userName : Element App.Msg
+        userName =
+            Element.column [ Ui.wf, Ui.s 4 ]
+                [ Element.el [ Font.bold, Ui.wf ] <|
+                    Element.text <|
+                        Strings.uiProfileUsername lang
+                , Element.el [ Ui.wf ] <|
+                    Element.text user.username
+                ]
+
+        email : Element App.Msg
+        email =
+            Element.column [ Ui.wf, Ui.s 4 ]
+                [ Element.row [ Ui.s 10 ]
+                    [ Element.el [ Font.bold ] <|
+                        Element.text <|
+                            Strings.uiProfileEmail lang
+                    , Ui.navigationElement
+                        (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangeEmail)
+                        [ Font.color <| Colors.alpha 0.4
+                        , Element.mouseOver [ Font.color <| Colors.alpha 0.8 ]
+                        , Element.htmlAttribute <| Transition.properties [ Transition.color 200 [] ]
+                        ]
+                      <|
+                        Ui.icon 20 Icons.edit
+                    ]
+                , Element.text user.email
+                ]
+
+        projects : Element App.Msg
+        projects =
+            let
+                nbProjects : Int
+                nbProjects =
+                    List.length user.projects
+
+                nbCapsules : Int
+                nbCapsules =
+                    List.concatMap .capsules user.projects
+                        |> List.length
+
+                nbProduced : Int
+                nbProduced =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.produced == Data.Done)
+                        |> List.length
+
+                nbPublished : Int
+                nbPublished =
+                    List.concatMap .capsules user.projects
+                        |> List.filter (\c -> c.published == Data.Done)
+                        |> List.length
+
+                circle : Int -> Int -> String -> Element App.Msg
+                circle nb total label =
+                    let
+                        p : Float
+                        p =
+                            toFloat nb / toFloat total
+
+                        size : Float
+                        size =
+                            100
+
+                        strokeWidth : Float
+                        strokeWidth =
+                            5
+                    in
+                    Element.el
+                        [ Ui.cx
+                        , Ui.cy
+                        , Element.inFront <|
+                            Element.el [ Ui.cx, Ui.cy, Font.bold ] <|
+                                Element.text <|
+                                    String.fromInt nb
+                                        ++ " / "
+                                        ++ String.fromInt total
+                        ]
+                    <|
+                        Ui.circleProgress
+                            size
+                            size
+                            ((size - strokeWidth) / 2)
+                            strokeWidth
+                            p
+            in
+            Element.column [ Ui.wf, Ui.s 4 ]
+                [ Element.el [ Font.bold ] <|
+                    Element.text <|
+                        String.fromInt nbProjects
+                            ++ " "
+                            ++ Strings.uiProfileProjects lang
+                            ++ " - "
+                            ++ String.fromInt nbCapsules
+                            ++ " "
+                            ++ Strings.uiProfileCapsules lang
+                , Element.row [ Ui.s 30, Ui.p 10 ]
+                    [ Element.column [ Ui.s 10 ]
+                        [ circle nbProduced nbCapsules (Strings.uiProfileProduced lang)
+                        , Element.el [  ] <|
+                            Element.text <|
+                                Strings.uiProfileProduced lang
+                        ]
+                    , Element.column [ Ui.s 10 ]
+                        [ circle nbPublished nbCapsules (Strings.uiProfilePublished lang)
+                        , Element.el [  ] <|
+                            Element.text <|
+                                Strings.uiProfilePublished lang
+                        ]
+                    ]
+                ]
+
         storageBar : Element App.Msg
         storageBar =
             let
@@ -377,9 +490,14 @@ info config user =
                             ++ Strings.uiGB lang
                 ]
     in
-    ( Element.column [ Ui.ab, Ui.s 4 ]
-        [ storageInfo
-        , storageBar
+    ( Element.column [ Ui.s 30 ]
+        [ userName
+        , email
+        , projects
+        , Element.column [ Ui.ab, Ui.s 4 ]
+            [ storageInfo
+            , storageBar
+            ]
         ]
     , Element.none
     )

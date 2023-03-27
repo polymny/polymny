@@ -702,7 +702,25 @@ capsuleProgress lang capsule =
                     animationAcquisitionDot
                     []
                 <|
-                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                    Element.el
+                        [ Ui.cx
+                        , Ui.cy
+                        , Element.inFront <|
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hf
+                                , Background.color <| Colors.alpha 0.0
+                                , Ui.r <| round size
+                                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                                , Transition.properties
+                                    [ Transition.backgroundColor 200 []
+                                    ]
+                                    |> Element.htmlAttribute
+                                ]
+                                Element.none
+                        ]
+                    <|
+                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationProductionDot : Animation
         animationProductionDot =
@@ -757,7 +775,25 @@ capsuleProgress lang capsule =
                     animationProductionDot
                     []
                 <|
-                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                    Element.el
+                        [ Ui.cx
+                        , Ui.cy
+                        , Element.inFront <|
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hf
+                                , Background.color <| Colors.alpha 0.0
+                                , Ui.r <| round size
+                                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                                , Transition.properties
+                                    [ Transition.backgroundColor 200 []
+                                    ]
+                                    |> Element.htmlAttribute
+                                ]
+                                Element.none
+                        ]
+                    <|
+                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationPublicationDot : Animation
         animationPublicationDot =
@@ -809,7 +845,25 @@ capsuleProgress lang capsule =
                     animationPublicationDot
                     []
                 <|
-                    circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                    Element.el
+                        [ Ui.cx
+                        , Ui.cy
+                        , Element.inFront <|
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hf
+                                , Background.color <| Colors.alpha 0.0
+                                , Ui.r <| round size
+                                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
+                                , Transition.properties
+                                    [ Transition.backgroundColor 200 []
+                                    ]
+                                    |> Element.htmlAttribute
+                                ]
+                                Element.none
+                        ]
+                    <|
+                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
     in
     Element.row []
         [ Element.row []
@@ -859,56 +913,6 @@ progressBar attributes animation =
                 animation
                 [ Ui.wf, Ui.hf, Ui.r 100, Background.color Colors.green2 ]
                 Element.none
-
-
-circleProgress : Float -> Float -> Float -> Float -> Float -> Element App.Msg
-circleProgress width height radius strokeWidth value =
-    let
-        circumference : Float
-        circumference =
-            2 * pi * radius
-    in
-    Element.el
-        [ Ui.cx
-        , Ui.cy
-        , Element.inFront <|
-            Element.el
-                [ Ui.wf
-                , Ui.hf
-                , Background.color <| Colors.alpha 0.0
-                , Ui.r <| round width
-                , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
-                , Transition.properties
-                    [ Transition.backgroundColor 200 []
-                    ]
-                    |> Element.htmlAttribute
-                ]
-                Element.none
-        ]
-    <|
-        Element.html <|
-            Svg.svg
-                [ Svg.Attributes.width <| String.fromFloat width
-                , Svg.Attributes.height <| String.fromFloat height
-                ]
-                [ Svg.circle
-                    [ Svg.Attributes.cx <| String.fromFloat (width / 2)
-                    , Svg.Attributes.cy <| String.fromFloat (height / 2)
-                    , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
-                    , Html.Attributes.style "transform" "rotate(90deg)"
-                    , Html.Attributes.style "transform-origin" "50% 50%"
-                    , Svg.Attributes.r (String.fromFloat radius)
-                    , Svg.Attributes.stroke <| Colors.colorToString Colors.green2
-                    , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
-                    , Svg.Attributes.fill "transparent"
-                    , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
-                    , (1.0 - value)
-                        * circumference
-                        |> String.fromFloat
-                        |> Svg.Attributes.strokeDashoffset
-                    ]
-                    []
-                ]
 
 
 {-| The progress icons of a caspule.

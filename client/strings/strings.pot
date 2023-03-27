@@ -1072,6 +1072,34 @@ msgstr ""
 msgid "Ui.profile.deleteAccount"
 msgstr ""
 
+#. Profile username.
+msgid "Ui.profile.username"
+msgstr ""
+
+#. Profile email.
+msgid "Ui.profile.email"
+msgstr ""
+
+#. Profile projects and capsules.
+msgid "Ui.profile.projectsAndCapsules"
+msgstr ""
+
+#. Profile projects.
+msgid "Ui.profile.projects"
+msgstr ""
+
+#. Profile capsules.
+msgid "Ui.profile.capsules"
+msgstr ""
+
+#. Profile produced.
+msgid "Ui.profile.produced"
+msgstr ""
+
+#. Profile published.
+msgid "Ui.profile.published"
+msgstr ""
+
 #. Client tasks.
 msgid "Ui.tasksClient"
 msgstr ""
