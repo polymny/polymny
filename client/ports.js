@@ -462,6 +462,7 @@ function init(node, flags) {
                 currentSettings = settings;
             } catch (e) {
                 console.log(e);
+                bindingDevice = false;
                 app.ports.bindingDeviceFailed.send(null);
                 return;
             }

@@ -585,10 +585,25 @@ devicePlayer config model =
         -- Element displayed in front of the device feedback during loading or when camera is disabled
         inFrontElement : Element App.Msg
         inFrontElement =
-            case ( model.state /= Acquisition.Ready, preferredVideo ) of
-                ( True, _ ) ->
+            case ( model.state, preferredVideo ) of
+                ( Acquisition.DetectingDevices, _ ) ->
                     [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
                     , Ui.paragraph [ Font.center ] (Strings.stepsAcquisitionBindingWebcam lang)
+                    ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                ( Acquisition.BindingWebcam, _ ) ->
+                    [ Ui.spinningSpinner [ Font.color Colors.white, Ui.cx, Ui.cy ] 50
+                    , Ui.paragraph [ Font.center ] (Strings.stepsAcquisitionBindingWebcam lang)
+                    ]
+                        |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
+                        |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
+
+                ( Acquisition.Error, _ ) ->
+                    [ Element.el [ Ui.cx, Ui.cy ] <| Ui.icon 50 Material.Icons.videocam_off
+                    , Ui.paragraph [ Font.center ] (Strings.stepsAcquisitionErrorBindingWebcam lang ++ ".")
+                    , Ui.paragraph [ Font.center ] (Lang.question Strings.stepsAcquisitionIsWebcamUsed lang)
                     ]
                         |> Element.column [ Ui.cx, Ui.cy, Ui.s 10, Font.color Colors.white ]
                         |> Element.el [ Ui.wf, Ui.hf, Background.color Colors.black ]
@@ -604,7 +619,7 @@ devicePlayer config model =
         -- Element displayed in front of the device feedback with some buttons to manage the device settings
         settingsElement : Element App.Msg
         settingsElement =
-            if model.state == Acquisition.Ready && not model.showSettings then
+            if not model.showSettings then
                 Ui.navigationElement
                     (Ui.Msg <| App.AcquisitionMsg <| Acquisition.ToggleSettings)
                     [ Font.color Colors.white, Ui.ab, Ui.ar, Ui.p 10 ]

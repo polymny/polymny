@@ -24,6 +24,7 @@ type State
     = DetectingDevices
     | BindingWebcam
     | Ready
+    | Error
 
 
 {-| The type for the model of the acquisition page.
@@ -224,6 +225,7 @@ type Msg
     | NextSentenceChanged String
     | DetectDevicesFinished
     | DeviceBound
+    | BindingDeviceFailed
     | DeviceLevel Float
     | ToggleSettings
     | StartRecording
