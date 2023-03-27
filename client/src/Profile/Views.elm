@@ -22,6 +22,8 @@ import Profile.Types as Profile
 import RemoteData
 import Simple.Transition as Transition
 import Strings
+import Svg
+import Svg.Attributes
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Graphics as Ui
@@ -335,7 +337,7 @@ info config user =
 
                         strokeWidth : Float
                         strokeWidth =
-                            5
+                            8
                     in
                     Element.el
                         [ Ui.cx
@@ -348,7 +350,7 @@ info config user =
                                         ++ String.fromInt total
                         ]
                     <|
-                        Ui.circleProgress
+                        circleProgress
                             size
                             size
                             ((size - strokeWidth) / 2)
@@ -368,13 +370,13 @@ info config user =
                 , Element.row [ Ui.s 30, Ui.p 10 ]
                     [ Element.column [ Ui.s 10 ]
                         [ circle nbProduced nbCapsules (Strings.uiProfileProduced lang)
-                        , Element.el [  ] <|
+                        , Element.el [] <|
                             Element.text <|
                                 Strings.uiProfileProduced lang
                         ]
                     , Element.column [ Ui.s 10 ]
                         [ circle nbPublished nbCapsules (Strings.uiProfilePublished lang)
-                        , Element.el [  ] <|
+                        , Element.el [] <|
                             Element.text <|
                                 Strings.uiProfilePublished lang
                         ]
@@ -501,6 +503,68 @@ info config user =
         ]
     , Element.none
     )
+
+
+{-| Circle progress bar.
+-}
+circleProgress : Float -> Float -> Float -> Float -> Float -> Element msg
+circleProgress width height radius strokeWidth value =
+    let
+        circumference : Float
+        circumference =
+            2 * pi * radius
+    in
+    Element.html <|
+        Svg.svg
+            [ Svg.Attributes.width <| String.fromFloat width
+            , Svg.Attributes.height <| String.fromFloat height
+            ]
+            [ Svg.defs
+                []
+                [ Svg.linearGradient
+                    [ Svg.Attributes.id "gradient"
+                    , Svg.Attributes.gradientTransform "rotate(-30)"
+                    ]
+                    [ Svg.stop
+                        [ Svg.Attributes.offset "0%"
+                        , Svg.Attributes.stopColor <| Colors.colorToString Colors.green2
+                        ]
+                        []
+                    , Svg.stop
+                        [ Svg.Attributes.offset "100%"
+                        , Svg.Attributes.stopColor <| Colors.colorToString Colors.green3
+                        ]
+                        []
+                    ]
+                ]
+            , Svg.circle
+                [ Svg.Attributes.cx <| String.fromFloat (width / 2)
+                , Svg.Attributes.cy <| String.fromFloat (height / 2)
+                , Svg.Attributes.r (String.fromFloat radius)
+                , Svg.Attributes.stroke <| Colors.colorToString <| Colors.grey 6
+                , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
+                , Svg.Attributes.fill "transparent"
+                , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
+                ]
+                []
+            , Svg.circle
+                [ Svg.Attributes.cx <| String.fromFloat (width / 2)
+                , Svg.Attributes.cy <| String.fromFloat (height / 2)
+                , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
+                , Html.Attributes.style "transform" "rotate(90deg)"
+                , Html.Attributes.style "transform-origin" "50% 50%"
+                , Svg.Attributes.r (String.fromFloat radius)
+                , Svg.Attributes.stroke "url(#gradient)"
+                , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
+                , Svg.Attributes.fill "transparent"
+                , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
+                , (1.0 - value)
+                    * circumference
+                    |> String.fromFloat
+                    |> Svg.Attributes.strokeDashoffset
+                ]
+                []
+            ]
 
 
 {-| The view that lets users change their email..

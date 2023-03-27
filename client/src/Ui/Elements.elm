@@ -1,13 +1,13 @@
 module Ui.Elements exposing
     ( primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action(..), navigationElement, icon, title, animatedEl, spin
-    , spinner, spinningSpinner, popup, circleProgress
+    , spinner, spinningSpinner, popup
     , addLinkAttr, errorModal, longText, successModal
     )
 
 {-| This module contains helpers to easily make buttons.
 
 @docs primary, primaryGeneric, primaryIcon, secondary, secondaryGeneric, secondaryIcon, link, Action, navigationElement, icon, title, animatedEl, spin
-@docs spinner, spinningSpinner, popup, circleProgress
+@docs spinner, spinningSpinner, popup
 @docs errorModaln successModal
 
 -}
@@ -394,55 +394,3 @@ longText attr text =
                 :: Element.htmlAttribute (Html.Attributes.class "wf")
                 :: attr
             )
-
-
-{-| Circle progress bar.
--}
-circleProgress : Float -> Float -> Float -> Float -> Float -> Element msg
-circleProgress width height radius strokeWidth value =
-    let
-        circumference : Float
-        circumference =
-            2 * pi * radius
-    in
-    Element.html <|
-        Svg.svg
-            [ Svg.Attributes.width <| String.fromFloat width
-            , Svg.Attributes.height <| String.fromFloat height
-            ]
-            [ Svg.defs
-                []
-                [ Svg.linearGradient
-                    [ id "myGradient"
-                    , gradientTransform "rotate(-30)"
-                    ]
-                    [ Svg.stop
-                        [ offset "5%"
-                        , stopColor <| Colors.colorToString Colors.green2
-                        ]
-                        []
-                    , Svg.stop
-                        [ offset "95%"
-                        , stopColor <| Colors.colorToString Colors.green3
-                        ]
-                        []
-                    ]
-                ]
-            , Svg.circle
-                [ Svg.Attributes.cx <| String.fromFloat (width / 2)
-                , Svg.Attributes.cy <| String.fromFloat (height / 2)
-                , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
-                , Html.Attributes.style "transform" "rotate(90deg)"
-                , Html.Attributes.style "transform-origin" "50% 50%"
-                , Svg.Attributes.r (String.fromFloat radius)
-                , Svg.Attributes.stroke "url(#myGradient)"
-                , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
-                , Svg.Attributes.fill "transparent"
-                , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
-                , (1.0 - value)
-                    * circumference
-                    |> String.fromFloat
-                    |> Svg.Attributes.strokeDashoffset
-                ]
-                []
-            ]

@@ -720,7 +720,7 @@ capsuleProgress lang capsule =
                                 Element.none
                         ]
                     <|
-                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                        circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationProductionDot : Animation
         animationProductionDot =
@@ -793,7 +793,7 @@ capsuleProgress lang capsule =
                                 Element.none
                         ]
                     <|
-                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                        circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
 
         animationPublicationDot : Animation
         animationPublicationDot =
@@ -863,7 +863,7 @@ capsuleProgress lang capsule =
                                 Element.none
                         ]
                     <|
-                        Ui.circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
+                        circleProgress size size (size / 2 - (pad - 2) - pad / 2) pad p
     in
     Element.row []
         [ Element.row []
@@ -950,6 +950,40 @@ progressIcons config poc =
             in
             Element.row [ Element.spacing 10 ]
                 [ watch ]
+
+
+{-| Circle progress bar.
+-}
+circleProgress : Float -> Float -> Float -> Float -> Float -> Element msg
+circleProgress width height radius strokeWidth value =
+    let
+        circumference : Float
+        circumference =
+            2 * pi * radius
+    in
+    Element.html <|
+        Svg.svg
+            [ Svg.Attributes.width <| String.fromFloat width
+            , Svg.Attributes.height <| String.fromFloat height
+            ]
+            [ Svg.circle
+                [ Svg.Attributes.cx <| String.fromFloat (width / 2)
+                , Svg.Attributes.cy <| String.fromFloat (height / 2)
+                , Html.Attributes.style "transition" "0.35s stroke-dashoffset"
+                , Html.Attributes.style "transform" "rotate(90deg)"
+                , Html.Attributes.style "transform-origin" "50% 50%"
+                , Svg.Attributes.r (String.fromFloat radius)
+                , Svg.Attributes.stroke <| Colors.colorToString Colors.green2
+                , Svg.Attributes.strokeWidth (String.fromFloat strokeWidth)
+                , Svg.Attributes.fill "transparent"
+                , Svg.Attributes.strokeDasharray (String.fromFloat circumference)
+                , (1.0 - value)
+                    * circumference
+                    |> String.fromFloat
+                    |> Svg.Attributes.strokeDashoffset
+                ]
+                []
+            ]
 
 
 {-| This function returns the role of a capsule, or an empty element if a project.
