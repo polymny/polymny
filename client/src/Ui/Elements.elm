@@ -303,7 +303,7 @@ spinningSpinner attr size =
 -}
 popup : Int -> String -> Element msg -> Element msg
 popup size titleText content =
-    Element.row [ Ui.wf, Ui.hf, Background.color (Element.rgba255 0 0 0 0.5), Element.scrollbars ]
+    Element.row [ Ui.zIndex 1, Ui.wf, Ui.hf, Background.color (Element.rgba255 0 0 0 0.5), Element.scrollbars ]
         [ Element.el [ Ui.wfp 1 ] Element.none
         , Element.column [ Ui.hf, Ui.wfp size, Element.scrollbars ]
             [ Element.el [ Ui.hfp 1 ] Element.none
