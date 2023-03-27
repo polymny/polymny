@@ -65,11 +65,23 @@ update msg model =
                 Acquisition.DeviceBound ->
                     ( { model | page = App.Acquisition { m | state = Acquisition.Ready } }, Cmd.none )
 
+                Acquisition.BindingDeviceFailed ->
+                    ( { model | page = App.Acquisition { m | state = Acquisition.Error } }, Cmd.none )
+
                 Acquisition.DeviceLevel x ->
                     ( { model | page = App.Acquisition { m | deviceLevel = Just x } }, Cmd.none )
 
                 Acquisition.ToggleSettings ->
-                    ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, showSettings = not m.showSettings } }
+                    let
+                        newState =
+                            case m.state of
+                                Acquisition.Error ->
+                                    Acquisition.Error
+
+                                _ ->
+                                    m.state
+                    in
+                    ( { model | page = App.Acquisition { m | state = newState, showSettings = not m.showSettings } }
                     , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
                     )
 
@@ -546,6 +558,7 @@ subs _ =
     Sub.batch
         [ detectDevicesFinished (\_ -> App.AcquisitionMsg Acquisition.DetectDevicesFinished)
         , deviceBound (\_ -> App.AcquisitionMsg Acquisition.DeviceBound)
+        , bindingDeviceFailed (\_ -> App.AcquisitionMsg Acquisition.BindingDeviceFailed)
         , deviceLevel (\x -> App.AcquisitionMsg (Acquisition.DeviceLevel x))
         , playRecordFinished (\_ -> App.AcquisitionMsg Acquisition.PlayRecordFinished)
         , recordPointerFinished (\_ -> App.AcquisitionMsg Acquisition.PointerRecordFinished)
@@ -682,3 +695,8 @@ port uploadRecordPort : ( ( String, Int ), ( Encode.Value, Config.TaskId ) ) -> 
 {-| Sub for when the js asks to go to the next sentence.
 -}
 port nextSentenceReceived : (() -> msg) -> Sub msg
+
+
+{-| Sub for when there is an error while binding the device.
+-}
+port bindingDeviceFailed : (() -> msg) -> Sub msg
