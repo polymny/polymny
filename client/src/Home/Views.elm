@@ -74,9 +74,9 @@ view config user model =
                 _ ->
                     Element.none
     in
-    ( Element.row [ Ui.wf, Ui.hf ]
+    ( Element.row [ Ui.wf, Ui.hf, Element.scrollbarX ]
         [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
-        , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop ] (table config user)
+        ,  Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop, Ui.hf, Element.scrollbarX ] (table config user)
         ]
     , popup
     )
