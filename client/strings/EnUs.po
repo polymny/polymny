@@ -1167,8 +1167,8 @@ msgid "Ui.Storage"
 msgstr "Storage"
 
 #. Websocket.
-msgid "Ui.webSocketState"
-msgstr "State of the websocket connection"
+msgid "Ui.webSocketNotWorking"
+msgstr "The websocket is disconnected"
 
 #. Connected.
 msgid "Ui.connected"
@@ -1183,12 +1183,16 @@ msgid "Ui.info"
 msgstr "Information"
 
 #. This icon indicates the state of the websocket.
-msgid "Ui.iconIndicatesWebSocketState"
-msgstr "This icon indicates the websocket state"
+msgid "Ui.iconIndicatesWebSocketBroken"
+msgstr "This icon indicates that the websocket is disconnected"
 
 #. If the websocket is not working, Polymny Studio won't work correctly.
 msgid "Ui.noWebSocketWillCauseProblems"
 msgstr "If the websocket is not working, Polymny Studio won't work correctly"
+
+#. Wait, refresh, or contact admin.
+msgid "Ui.webSocketWaitRefreshContactAdmin"
+msgstr "You can wait or try to refresh the page, or contact the administrator if the problem persists"
 
 #. Upload record task.
 msgid "Tasks.uploadRecord"

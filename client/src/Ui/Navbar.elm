@@ -110,14 +110,15 @@ navbar config page user =
                             , Ui.ar
                             , Ui.r 100
                             , Ui.p 4
-                            , Ui.tooltip <| Strings.uiWebSocketState lang
+                            , Ui.tooltip <| Strings.uiWebSocketNotWorking lang
                             , Element.mouseOver [ Background.color <| Colors.alpha 0.1 ]
                             , Transition.properties
                                 [ Transition.backgroundColor 200 []
                                 ]
                                 |> Element.htmlAttribute
                             ]
-                            (Ui.icon 25 <| Utils.tern x Icons.wifi Icons.wifi_off)
+                            (Ui.icon 25 Icons.warning)
+                            |> Utils.tern x Element.none
                     )
                 |> Maybe.withDefault Element.none
     in

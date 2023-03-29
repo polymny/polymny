@@ -1116,7 +1116,7 @@ msgid "Ui.Storage"
 msgstr ""
 
 #. Websocket.
-msgid "Ui.webSocketState"
+msgid "Ui.webSocketNotWorking"
 msgstr ""
 
 #. Information
@@ -1137,6 +1137,10 @@ msgstr ""
 
 #. If the websocket is not working, Polymny Studio won't work correctly.
 msgid "Ui.noWebSocketWillCauseProblems"
+msgstr ""
+
+#. Wait, refresh, or contact admin.
+msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr ""
 
 #. Upload record task.

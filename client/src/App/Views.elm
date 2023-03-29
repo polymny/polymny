@@ -240,18 +240,9 @@ webSocketInfo lang =
     let
         info =
             Element.column [ Font.center, Ui.cx, Ui.cy, Ui.s 50 ]
-                [ Ui.paragraph [] <| Strings.uiIconIndicatesWebSocketState lang ++ "."
-                , Element.row [ Ui.cx, Ui.s 50 ]
-                    [ Element.column [ Ui.s 20 ]
-                        [ Element.el [ Ui.cx ] <| Ui.icon 25 Material.Icons.wifi
-                        , Element.el [ Ui.cx ] <| Element.text <| Strings.uiConnected lang
-                        ]
-                    , Element.column [ Ui.s 20 ]
-                        [ Element.el [ Ui.cx ] <| Ui.icon 25 Material.Icons.wifi_off
-                        , Element.el [ Ui.cx ] <| Element.text <| Strings.uiDisconnected lang
-                        ]
-                    ]
+                [ Ui.paragraph [] <| Strings.uiIconIndicatesWebSocketBroken lang ++ "."
                 , Ui.paragraph [] <| Strings.uiNoWebSocketWillCauseProblems lang ++ "."
+                , Ui.paragraph [] <| Strings.uiWebSocketWaitRefreshContactAdmin lang ++ "."
                 ]
 
         confirmButton =
