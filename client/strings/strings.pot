@@ -205,6 +205,11 @@ msgid "Data.Capsule.capsule"
 msgid_plural ""
 msgstr[0] ""
 
+#. The project itself.
+msgid "Data.Capsule.project"
+msgid_plural ""
+msgstr[0] ""
+
 #. The hash id of a capsule.
 msgid "Data.Capsule.hashid"
 msgstr ""
@@ -757,7 +762,7 @@ msgid "Navigation.goToPolymny"
 msgstr ""
 
 #. Go to the profile page.
-msgid "Navigation.profile"
+msgid "Navigation.Profile"
 msgstr ""
 
 #. Go to the grain recording page.
@@ -1057,48 +1062,34 @@ msgid "Actions.Confirm.deleteRecord"
 msgstr ""
 
 #. Profile button.
-msgid "Ui.profile"
+msgid "Ui.Profile"
 msgstr ""
 
 #. Change email.
-msgid "Ui.profile.changeEmail"
+msgid "Ui.Profile.changeEmail"
 msgstr ""
 
 #. Change password.
-msgid "Ui.profile.changePassword"
+msgid "Ui.Profile.changePassword"
 msgstr ""
 
 #. DeleteAccount.
-msgid "Ui.profile.deleteAccount"
-msgstr ""
-
-#. Profile username.
-msgid "Ui.profile.username"
-msgstr ""
-
-#. Profile email.
-msgid "Ui.profile.email"
+msgid "Ui.Profile.deleteAccount"
 msgstr ""
 
 #. Profile projects and capsules.
-msgid "Ui.profile.projectsAndCapsules"
-msgstr ""
-
-#. Profile projects.
-msgid "Ui.profile.projects"
-msgstr ""
-
-#. Profile capsules.
-msgid "Ui.profile.capsules"
+msgid "Ui.Profile.projectsAndCapsules"
 msgstr ""
 
 #. Profile produced.
-msgid "Ui.profile.produced"
-msgstr ""
+msgid "Ui.Profile.produced"
+msgid_plural ""
+msgstr[0] ""
 
 #. Profile published.
-msgid "Ui.profile.published"
-msgstr ""
+msgid "Ui.Profile.published"
+msgid_plural ""
+msgstr[0] ""
 
 #. Client tasks.
 msgid "Ui.tasksClient"

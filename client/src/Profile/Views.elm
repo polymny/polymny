@@ -276,7 +276,7 @@ info config user =
             Element.column [ Ui.wf, Ui.s 4 ]
                 [ Element.el [ Font.bold, Ui.wf ] <|
                     Element.text <|
-                        Strings.uiProfileUsername lang
+                        Strings.dataUserUsername lang
                 , Element.el [ Ui.wf ] <|
                     Element.text user.username
                 ]
@@ -287,7 +287,7 @@ info config user =
                 [ Element.row [ Ui.s 10 ]
                     [ Element.el [ Font.bold ] <|
                         Element.text <|
-                            Strings.uiProfileEmail lang
+                            Strings.dataUserEmailAddress lang
                     , Ui.navigationElement
                         (Ui.Msg <| App.ProfileMsg <| Profile.TabChanged Profile.initChangeEmail)
                         [ Font.color <| Colors.alpha 0.4
@@ -362,23 +362,23 @@ info config user =
                     Element.text <|
                         String.fromInt nbProjects
                             ++ " "
-                            ++ Strings.uiProfileProjects lang
+                            ++ Strings.dataCapsuleProject lang nbProjects
                             ++ " - "
                             ++ String.fromInt nbCapsules
                             ++ " "
-                            ++ Strings.uiProfileCapsules lang
+                            ++ Strings.dataCapsuleCapsule lang nbCapsules
                 , Element.row [ Ui.s 30, Ui.p 10 ]
                     [ Element.column [ Ui.s 10 ]
-                        [ circle nbProduced nbCapsules (Strings.uiProfileProduced lang)
+                        [ circle nbProduced nbCapsules (Strings.uiProfileProduced lang nbProduced)
                         , Element.el [] <|
                             Element.text <|
-                                Strings.uiProfileProduced lang
+                                Strings.uiProfileProduced lang nbProduced
                         ]
                     , Element.column [ Ui.s 10 ]
-                        [ circle nbPublished nbCapsules (Strings.uiProfilePublished lang)
+                        [ circle nbPublished nbCapsules (Strings.uiProfilePublished lang nbPublished)
                         , Element.el [] <|
                             Element.text <|
-                                Strings.uiProfilePublished lang
+                                Strings.uiProfilePublished lang nbPublished
                         ]
                     ]
                 ]
