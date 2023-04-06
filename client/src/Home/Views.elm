@@ -76,7 +76,7 @@ view config user model =
     in
     ( Element.row [ Ui.wf, Ui.hf, Element.scrollbarX ]
         [ Element.el [ Ui.wfp 1, Ui.hf ] (leftColumn config user)
-        ,  Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop, Ui.hf, Element.scrollbarX ] (table config user)
+        , Element.el [ Ui.wfp 6, Ui.p 10, Element.alignTop, Ui.hf, Element.scrollbarX ] (table config user)
         ]
     , popup
     )
@@ -84,7 +84,7 @@ view config user model =
 
 {-| This function returns the left colum view.
 
-It contains the button to start a new capsule, but also gives information about users quota.
+It contains the button to start a new capsule.
 
 -}
 leftColumn : Config -> User -> Element App.Msg
@@ -215,10 +215,12 @@ leftColumn config user =
         , Border.color (Colors.grey 6)
         ]
         [ uploadSlidesButton
-        , Element.column [ Ui.ab, Ui.s 4 ]
-            [ storageInfo
-            , storageBar
-            ]
+
+        -- Storage bar limits the minimum size of the left column, and breaks the UI on smaller displays
+        --, Element.column [ Ui.ab, Ui.s 4 ]
+        --    [ storageInfo
+        --    , storageBar
+        --    ]
         ]
 
 
@@ -928,13 +930,22 @@ progressIcons config poc =
                 lang =
                     config.clientState.lang
 
+                duration : Element App.Msg
+                duration =
+                    case c.produced of
+                        Data.Done ->
+                            Element.text <| TimeUtils.formatDuration c.duration
+
+                        _ ->
+                            Element.none
+
                 watch : Element App.Msg
                 watch =
                     case ( c.published, Data.videoPath c ) of
                         ( Data.Done, _ ) ->
                             Ui.secondaryIcon []
                                 { icon = Icons.theaters
-                                , action = Ui.Route <| Route.Custom <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
+                                , action = Ui.NewTab <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
                                 , tooltip = Strings.actionsWatchCapsule lang
                                 }
 
@@ -947,9 +958,35 @@ progressIcons config poc =
 
                         _ ->
                             Element.none
+
+                download : Element App.Msg
+                download =
+                    case Data.videoPath c of
+                        Just url ->
+                            Ui.secondaryIcon []
+                                { icon = Icons.download
+                                , action = Ui.Download url
+                                , tooltip = Strings.stepsProductionDownloadVideo lang
+                                }
+
+                        _ ->
+                            Element.none
+
+                copy : Element App.Msg
+                copy =
+                    case c.published of
+                        Data.Done ->
+                            Ui.secondaryIcon []
+                                { icon = Icons.link
+                                , action = Ui.Msg <| App.CopyString <| config.serverConfig.videoRoot ++ "/" ++ c.id ++ "/"
+                                , tooltip = Strings.stepsPublicationCopyVideoUrl lang
+                                }
+
+                        _ ->
+                            Element.none
             in
             Element.row [ Element.spacing 10 ]
-                [ watch ]
+                [ duration, watch, download, copy ]
 
 
 {-| Circle progress bar.

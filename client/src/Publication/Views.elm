@@ -13,15 +13,15 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Html
+import Html exposing (canvas)
 import Html.Attributes
+import Material.Icons as Icons
 import Publication.Types as Publication
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
 import Ui.Utils as Ui
 import Utils
-import Html exposing (canvas)
 
 
 {-| View of the publication page.
@@ -170,7 +170,7 @@ view config _ model =
 
                         _ ->
                             False
-                
+
                 canPublish : Bool
                 canPublish =
                     case model.capsule.published of
@@ -192,18 +192,26 @@ view config _ model =
 
                 label : Element App.Msg
                 label =
-                    Element.el
-                        [ Font.color <| Utils.tern publishing Colors.transparent Colors.white
-                        , Element.inFront spinnerElement
-                        ]
-                    <|
-                        Element.text <|
-                            Strings.stepsPublicationPublishVideo lang
+                    (if model.capsule.published == Data.Done then
+                        Strings.stepsPublicationUnpublishVideo lang
+
+                     else
+                        Strings.stepsPublicationPublishVideo lang
+                    )
+                        |> Element.text
+                        |> Element.el
+                            [ Font.color <| Utils.tern publishing Colors.transparent Colors.white
+                            , Element.inFront spinnerElement
+                            ]
 
                 action : Ui.Action App.Msg
                 action =
                     if canPublish then
-                        Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
+                        if model.capsule.published == Data.Done then
+                            Ui.Msg <| App.PublicationMsg <| Publication.UnpublishVideo
+
+                        else
+                            Ui.Msg <| App.PublicationMsg <| Publication.PublishVideo
 
                     else
                         Ui.None
@@ -247,7 +255,18 @@ view config _ model =
                     [ publicationTitle
                     , usePromptForSubtitles
                     , Element.column [ Ui.s 5 ]
-                        [ publishButton
+                        [ Element.row [ Ui.s 10 ]
+                            [ publishButton
+                            , if model.capsule.published == Data.Done then
+                                Ui.secondaryIcon []
+                                    { icon = Icons.link
+                                    , action = Ui.Msg <| App.CopyString <| config.serverConfig.videoRoot ++ "/" ++ model.capsule.id ++ "/"
+                                    , tooltip = Strings.stepsPublicationCopyVideoUrl lang
+                                    }
+
+                              else
+                                Element.none
+                            ]
                         , cantPublish
                         ]
                     ]

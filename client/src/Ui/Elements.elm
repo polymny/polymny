@@ -40,6 +40,7 @@ trigger.
 type Action msg
     = Route Route
     | NewTab String
+    | Download String
     | Msg msg
     | None
 
@@ -209,6 +210,9 @@ navigationElement action attr label =
 
         NewTab url ->
             Element.newTabLink newAttr { url = url, label = label }
+
+        Download url ->
+            Element.download newAttr { url = url, label = label }
 
         Msg msg ->
             Input.button newAttr { onPress = Just msg, label = label }

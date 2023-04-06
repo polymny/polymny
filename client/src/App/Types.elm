@@ -29,8 +29,8 @@ import NewCapsule.Types as NewCapsule
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
-import Publication.Types as Publication
 import Profile.Types as Profile
+import Publication.Types as Publication
 import Unlogged.Types as Unlogged
 import Url
 
@@ -116,6 +116,7 @@ type Msg
     | OnUrlChange Url.Url
     | InternalUrl Url.Url
     | ExternalUrl String
+    | CopyString String
     | Logout
     | LoggedOut
 

@@ -1528,6 +1528,11 @@ function init(node, flags) {
         input.click();
     });
 
+    // Copies the string to the clipboard.
+    makePort("copyString", async function(args) {
+        await navigator.clipboard.writeText(args);
+    });
+
     // Sets the pointer capture to follow an element the right way.
     makePort("setPointerCapture", function setPointerCapture(args) {
         let id = args[0];

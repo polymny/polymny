@@ -27,12 +27,12 @@ import Preparation.Types as Preparation
 import Preparation.Updates as Preparation
 import Production.Types as Production
 import Production.Updates as Production
+import Profile.Types as Profile
+import Profile.Updates as Profile
 import Publication.Types as Publication
 import Publication.Updates as Publication
 import RemoteData
 import Route
-import Profile.Types as Profile
-import Profile.Updates as Profile
 import Unlogged.Types as Unlogged
 import Unlogged.Updates as Unlogged
 import Utils
@@ -483,8 +483,11 @@ updateModel msg model =
                         ( { model | page = page }, cmd )
 
                 App.InternalUrl url ->
-                    case model.config.clientState.key of
-                        Just k ->
+                    case ( String.startsWith "/data/" url.path, model.config.clientState.key ) of
+                        ( True, _ ) ->
+                            ( model, Browser.Navigation.load url.path )
+
+                        ( _, Just k ) ->
                             ( model, Browser.Navigation.pushUrl k url.path )
 
                         _ ->
@@ -500,6 +503,9 @@ updateModel msg model =
                     ( model
                     , Browser.Navigation.load (Maybe.withDefault model.config.serverConfig.root model.config.serverConfig.home)
                     )
+
+                App.CopyString string ->
+                    ( model, copyStringPort string )
     in
     ( if leavingAcquisitionWithRecord then
         leavingModel
@@ -627,3 +633,8 @@ port onBeforeUnloadPort : Bool -> Cmd msg
 {-| Port to set the clear flag to true (clear pointer and callbacks).
 -}
 port clearPointerAndCallbacksPort : () -> Cmd msg
+
+
+{-| Copies a string to the clipboard.
+-}
+port copyStringPort : String -> Cmd msg
