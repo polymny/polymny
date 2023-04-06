@@ -342,7 +342,7 @@ updateModel msg model =
                                             Preparation.init c
 
                                         final =
-                                            { newModel | popupType = m.popupType }
+                                            { newModel | popupType = m.popupType, displayPopup = m.displayPopup }
                                     in
                                     App.Preparation final
 

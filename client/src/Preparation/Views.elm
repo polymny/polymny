@@ -375,7 +375,11 @@ promptPopup lang model slide =
                 ]
             ]
         , Element.column [ Ui.wf, Ui.hf, Ui.s 10 ]
-            [ Input.multiline [ Ui.wf, Ui.hf ]
+            [ Input.multiline
+                [ Ui.wf
+                , Ui.hf
+                , Element.htmlAttribute <| Html.Attributes.style "pointer-events" <| Utils.tern model.displayPopup "auto" "none"
+                ]
                 { label = Input.labelHidden (Strings.actionsEditPrompt lang)
                 , onChange = \x -> mkMsg (Preparation.PromptChanged Utils.Request { slide | prompt = x })
                 , placeholder = Nothing
