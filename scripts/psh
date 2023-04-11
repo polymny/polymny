@@ -1179,7 +1179,7 @@ on-video-upload() {
 # EXAMPLE:
 #  trancode_audio input.xxx output.m4a
 transcode_audio() {
-    ffmpeg -i $1 -c:a aac -b:a 128k -ar 48000 $2
+    ffmpeg -i $1 -vn -c:a aac -b:a 128k -ar 48000 $2
 }
 # USAGE:
 #  format_time <time in milliseconds>
