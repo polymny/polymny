@@ -243,35 +243,41 @@ view config _ model =
         statusElement =
             Element.row [ Ui.wf, Ui.p 10 ]
                 [ Element.el [ Ui.cx ] <|
+                    let
+                        slideIndexDisplay =
+                            String.fromInt (model.currentSlide + 1)
+                                ++ " / "
+                                ++ String.fromInt (List.length model.gos.slides)
+
+                        slideIndexElement =
+                            Strings.dataCapsuleSlide lang 1
+                                ++ " "
+                                ++ slideIndexDisplay
+                                |> Element.text
+
+                        lineIndexElement =
+                            Strings.dataCapsuleLine lang 1
+                                ++ " "
+                                ++ lineIndexDisplay
+                                |> Element.text
+
+                        promptLength =
+                            currentSlide
+                                |> Maybe.map .prompt
+                                |> Maybe.withDefault ""
+                                |> String.split "\n"
+                                |> List.length
+                                |> String.fromInt
+
+                        lineIndexDisplay =
+                            String.fromInt (model.currentSentence + 1) ++ " / " ++ promptLength
+                    in
                     case model.recording of
                         Just t ->
-                            let
-                                slideIndexDisplay =
-                                    String.fromInt (model.currentSlide + 1)
-                                        ++ " / "
-                                        ++ String.fromInt (List.length model.gos.slides)
-
-                                promptLength =
-                                    currentSlide
-                                        |> Maybe.map .prompt
-                                        |> Maybe.withDefault ""
-                                        |> String.split "\n"
-                                        |> List.length
-                                        |> String.fromInt
-
-                                lineIndexDisplay =
-                                    String.fromInt (model.currentSentence + 1) ++ " / " ++ promptLength
-                            in
                             Element.row [ Ui.s 30 ]
                                 [ Element.el [ Ui.class "blink", Font.color Colors.red ] (Element.text "⬤ REC")
-                                , Strings.dataCapsuleSlide lang 1
-                                    ++ " "
-                                    ++ slideIndexDisplay
-                                    |> Element.text
-                                , Strings.dataCapsuleLine lang 1
-                                    ++ " "
-                                    ++ lineIndexDisplay
-                                    |> Element.text
+                                , slideIndexElement
+                                , lineIndexElement
                                 , (Time.posixToMillis config.clientState.time - Time.posixToMillis t)
                                     |> TimeUtils.formatDuration
                                     |> Element.text
@@ -281,6 +287,8 @@ view config _ model =
                         Nothing ->
                             Element.row [ Ui.s 30 ]
                                 [ Element.text (Strings.stepsAcquisitionReadyForRecording lang)
+                                , slideIndexElement
+                                , lineIndexElement
                                 , Ui.primaryIcon []
                                     { icon = Material.Icons.help_outline
                                     , tooltip = Strings.uiHelp lang
