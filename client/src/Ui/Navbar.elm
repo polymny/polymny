@@ -16,6 +16,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html
 import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons as Icons
@@ -744,17 +745,27 @@ leftColumn lang page capsule selectedGos =
 
                         _ ->
                             Route.Production capsule.id id |> Ui.Route
+
+                elementAttr =
+                    [ Ui.wf
+                    , Ui.b 5
+                    , Border.color borderColor
+                    , Element.inFront inFrontLabel
+                    , Element.inFront inFrontButtons
+                    ]
             in
-            Element.image
-                [ Ui.wf
-                , Ui.b 5
-                , Border.color borderColor
-                , Element.inFront inFrontLabel
-                , Element.inFront inFrontButtons
-                ]
-                { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
-                , description = ""
-                }
+            case Maybe.andThen .extra (List.head gos.slides) of
+                Just extra ->
+                    [ Html.source [ Html.Attributes.src <| Data.assetPath capsule extra ++ ".mp4" ] [] ]
+                        |> Html.video [ Html.Attributes.class "wf" ]
+                        |> Element.html
+                        |> Element.el elementAttr
+
+                _ ->
+                    Element.image elementAttr
+                        { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
+                        , description = ""
+                        }
     in
     Element.column
         [ Background.color Colors.greyBackground
