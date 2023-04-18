@@ -6,7 +6,7 @@
  - [ ] drag n drop toujours capricieux
  - [ ] scoll vers haut au bas de page si slide drag
  - [x] left column non clickable
- - [ ] pas de zoom / dezoom possible
+ - [x] pas de zoom / dezoom possible
  - [ ] peut être enlever le pop up et laisser le client se balader (task) conversion PDF/PNG un peu lente
  - [x] impossilité de supprimer un extra
  - [x] impossibilité de drag n drop un extra
@@ -38,7 +38,7 @@
  - [x] format 4:3 fait chier
 
 # Settings
- - [ ] page d'accueil vide
+ - [x] page d'accueil vide
  - [ ] touche entrée ne valide pas
  - [ ] spinning spinner est align right au lieu de center
 
@@ -48,7 +48,7 @@
 
 # Global
  - [x] nom projet / capsule dans la navbar ?
- - [ ] title de la page html
+ - [x] title de la page html
  - [x] feedback sur l'etat du websocket ?
  - [x] touche entrée ne valide pas
  - [ ] plus d'info sur les tasks (quelle capsule)
@@ -57,6 +57,6 @@
 
 # Home
  - [x] quotas ont disparu
- - [ ] plus de boutons (copier l'URL de la vidéo)
+ - [x] plus de boutons (copier l'URL de la vidéo)
  - [x] bouton dupliquer la capsule
  - [x] long text sur project name / capsule name
