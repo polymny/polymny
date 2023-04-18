@@ -52,15 +52,12 @@ update message model =
             ( model, Browser.Navigation.reload )
 
         -- When the user changes their password after reset
-        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
-            App.pageFromRoute m.config user Route.Home
-                |> Tuple.mapBoth
-                    (\x -> App.Logged { config = m.config, user = user, page = x })
-                    (\x -> Cmd.batch [ Cmd.map App.LoggedMsg x, Route.push m.config.clientState.key Route.Home ])
+        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success _)), App.Unlogged _ ) ->
+            ( model, Browser.Navigation.reload )
 
         -- When the user deletes their account
         ( App.LoggedMsg (App.ProfileMsg (Profile.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
-            ( App.Unlogged (Unlogged.init m.config Nothing)
+            ( model
             , case m.config.serverConfig.home of
                 Just url ->
                     Browser.Navigation.load url

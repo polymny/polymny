@@ -77,9 +77,6 @@ title model =
                 App.Logged { config } ->
                     config.clientState.lang
 
-                App.Unlogged { config } ->
-                    config.clientState.lang
-
                 _ ->
                     Lang.default
 
@@ -154,9 +151,6 @@ viewContent fullModel =
         clientState =
             case fullModel of
                 App.Logged { config } ->
-                    config.clientState
-
-                App.Unlogged { config } ->
                     config.clientState
 
                 _ ->
