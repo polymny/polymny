@@ -269,7 +269,7 @@ mergeDevices old new =
             not <| List.any (isSameAudio audio) old.audio
 
         newVideos =
-            List.filter filterNewVideo new.video |> Debug.log "yo"
+            List.filter filterNewVideo new.video
 
         newAudios =
             List.filter filterNewAudio new.audio
