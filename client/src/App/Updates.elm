@@ -47,11 +47,9 @@ update message model =
         -- because the submodulse will not know about UnloggedModel or LoggedModel.
         -- This can happen :
         -- When login succeeds
-        ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
-            App.pageFromRoute m.config user Route.Home
-                |> Tuple.mapBoth
-                    (\x -> App.Logged { config = m.config, user = user, page = x })
-                    (Cmd.map App.LoggedMsg)
+        ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success _)), App.Unlogged _ ) ->
+            -- Reload page to fetch server data and connect to websocket
+            ( model, Browser.Navigation.reload )
 
         -- When the user changes their password after reset
         ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->

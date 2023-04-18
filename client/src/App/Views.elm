@@ -12,6 +12,7 @@ import App.Types as App
 import App.Utils as App
 import Browser
 import Config
+import Data.User as Data
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -44,7 +45,7 @@ import Unlogged.Views as Unlogged
 -}
 view : App.MaybeModel -> Browser.Document App.MaybeMsg
 view fullModel =
-    { title = "Polymny Studio"
+    { title = title fullModel
     , body =
         [ Element.layout
             [ Ui.wf
@@ -61,6 +62,70 @@ view fullModel =
             (viewContent fullModel)
         ]
     }
+
+
+{-| Returns the title of the app.
+-}
+title : App.MaybeModel -> String
+title model =
+    let
+        base =
+            "Polymny Studio"
+
+        lang =
+            case model of
+                App.Logged { config } ->
+                    config.clientState.lang
+
+                App.Unlogged { config } ->
+                    config.clientState.lang
+
+                _ ->
+                    Lang.default
+
+        -- This is officially the ugliest piece of code I've ever written
+        pageParts =
+            case model of
+                App.Logged { user, page } ->
+                    case page of
+                        App.Home _ ->
+                            []
+
+                        App.NewCapsule _ ->
+                            []
+
+                        App.Preparation m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsPreparationPreparation lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Acquisition m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsAcquisitionAcquisition lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Production m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsProductionProduction lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Publication m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsPublicationPublication lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Options m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsPublicationPublication lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Profile _ ->
+                            [ Strings.uiProfile lang ]
+
+                _ ->
+                    []
+    in
+    String.join " — " (base :: pageParts)
 
 
 {-| Stylizes all the content of the app.
