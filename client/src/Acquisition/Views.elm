@@ -705,16 +705,27 @@ settingsPopup config model =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        -- Title before the reinit everything button
+        reinitTitle : Element App.Msg
+        reinitTitle =
+            Ui.title <| Strings.stepsAcquisitionReinitializeDevices lang
+
+        -- Button that reinitializes the camera detection
+        reinitButton : Element App.Msg
+        reinitButton =
+            Ui.primary []
+                { label = Element.text <| Strings.stepsAcquisitionReinitializeDevices lang
+                , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ReinitializeDevices
+                }
+
         -- Element that contains all the device settings
         settings : Element App.Msg
         settings =
-            Element.column [ Ui.wf, Ui.cy, Ui.s 10 ]
-                [ videoTitle
-                , video
-                , resolutionTitle
-                , resolution
-                , audioTitle
-                , audio
+            Element.column [ Ui.wf, Ui.cy, Ui.s 20 ]
+                [ Element.column [ Ui.wf, Ui.s 10 ] [ videoTitle, video ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ resolutionTitle, resolution ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ audioTitle, audio ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ reinitTitle, reinitButton ]
                 ]
     in
     Element.column [ Ui.wf, Ui.hf, Element.scrollbars ]

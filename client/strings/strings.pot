@@ -469,6 +469,10 @@ msgstr ""
 msgid "Steps.Acquisition.recordPointer"
 msgstr ""
 
+#. Reinitialize all devices.
+msgid "Steps.Acquisition.reinitializeDevices"
+msgstr ""
+
 #. First line of help.
 msgid "Steps.Acquisition.Help.first"
 msgstr ""

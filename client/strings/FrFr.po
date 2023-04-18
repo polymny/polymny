@@ -515,6 +515,10 @@ msgstr "Si votre grain contient plusieurs planches, la flèche à droite vous pe
 msgid "Steps.Acquisition.Help.fourth"
 msgstr "Vous pouvez ensuite appuyez sur la flèche à droite pour terminer l'enregistrement"
 
+#. Reinitialize all devices.
+msgid "Steps.Acquisition.reinitializeDevices"
+msgstr "Réinitialiser tous les périphériques"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"
