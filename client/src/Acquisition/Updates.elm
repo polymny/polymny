@@ -85,15 +85,6 @@ update msg model =
                     , Device.bindDevice (Device.getDevice clientConfig.devices clientConfig.preferredDevice)
                     )
 
-                Acquisition.StartRecording ->
-                    if m.state == Acquisition.Ready then
-                        ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
-                        , startRecording
-                        )
-
-                    else
-                        ( model, Cmd.none )
-
                 Acquisition.StartPointerRecording index record ->
                     if m.state == Acquisition.Ready then
                         ( { model | page = App.Acquisition { m | recording = Just clientState.time, currentSlide = 0, currentSentence = 0 } }
@@ -102,11 +93,6 @@ update msg model =
 
                     else
                         ( model, Cmd.none )
-
-                Acquisition.StopRecording ->
-                    ( { model | page = App.Acquisition { m | recording = Nothing, currentSlide = 0, currentSentence = 0 } }
-                    , stopRecording
-                    )
 
                 Acquisition.PointerRecordFinished ->
                     ( { model | page = App.Acquisition { m | recording = Nothing, currentSlide = 0, currentSentence = 0 } }
@@ -202,6 +188,7 @@ update msg model =
                                             | recording = Just clientState.time |> cancelRecording
                                             , currentSlide = 0
                                             , currentSentence = 0
+                                            , extraEventList = [ "0.0-" ++ Utils.tern m.extraEventPlaying "play" "pause" ++ "-0.0" ]
                                         }
                               }
                             , startRecording |> cancelCommand
@@ -225,6 +212,23 @@ update msg model =
 
                         ( ( Nothing, Nothing ), ( _, _ ), ( _, _, _ ) ) ->
                             -- If recording and end reach, stop recording
+                            let
+                                recordTime : Float
+                                recordTime =
+                                    case m.recording of
+                                        Just r ->
+                                            Time.posixToMillis model.config.clientState.time
+                                                - Time.posixToMillis r
+                                                |> toFloat
+                                                |> (\x -> x / 1000)
+
+                                        Nothing ->
+                                            0.0
+
+                                newExtraEventList : List String
+                                newExtraEventList =
+                                    Debug.log "EVENTS" <| List.append m.extraEventList [ String.fromFloat recordTime ++ "-pause" ]
+                            in
                             ( { model
                                 | page =
                                     App.Acquisition
@@ -232,6 +236,7 @@ update msg model =
                                             | currentSlide = 0
                                             , currentSentence = 0
                                             , recording = Nothing |> cancelRecording
+                                            , extraEventList = newExtraEventList
                                         }
                               }
                             , stopRecording |> cancelCommand
@@ -522,6 +527,97 @@ update msg model =
 
                 Acquisition.ToggleHelp ->
                     ( { model | page = App.Acquisition { m | showHelp = not m.showHelp } }, Cmd.none )
+
+                Acquisition.ExtraEvent (Acquisition.ExtraPlay time) ->
+                    let
+                        newExtraEventList : List String
+                        newExtraEventList =
+                            case m.recording of
+                                Just r ->
+                                    let
+                                        recordTime : Float
+                                        recordTime =
+                                            Time.posixToMillis model.config.clientState.time
+                                                - Time.posixToMillis r
+                                                |> toFloat
+                                                |> (\x -> x / 1000)
+                                    in
+                                    List.append m.extraEventList [ String.fromFloat recordTime ++ "-play-" ++ String.fromFloat time ]
+
+                                Nothing ->
+                                    m.extraEventList
+
+                        newModel : App.Model
+                        newModel =
+                            { model
+                                | page =
+                                    App.Acquisition
+                                        { m
+                                            | extraEventPlaying = True
+                                            , extraEventList = newExtraEventList
+                                        }
+                            }
+                    in
+                    ( newModel, Cmd.none )
+
+                Acquisition.ExtraEvent (Acquisition.ExtraPause time) ->
+                    let
+                        newExtraEventList : List String
+                        newExtraEventList =
+                            case m.recording of
+                                Just r ->
+                                    let
+                                        recordTime : Float
+                                        recordTime =
+                                            Time.posixToMillis model.config.clientState.time
+                                                - Time.posixToMillis r
+                                                |> toFloat
+                                                |> (\x -> x / 1000)
+                                    in
+                                    List.append m.extraEventList [ String.fromFloat recordTime ++ "-pause" ]
+
+                                Nothing ->
+                                    m.extraEventList
+
+                        newModel : App.Model
+                        newModel =
+                            { model
+                                | page =
+                                    App.Acquisition
+                                        { m
+                                            | extraEventPlaying = False
+                                            , extraEventList = newExtraEventList
+                                        }
+                            }
+                    in
+                    ( newModel, Cmd.none )
+
+                Acquisition.ExtraEvent (Acquisition.ExtraSeek time) ->
+                    let
+                        newExtraEventList : List String
+                        newExtraEventList =
+                            case ( m.recording, m.extraEventPlaying ) of
+                                ( Just r, False ) ->
+                                    let
+                                        recordTime : Float
+                                        recordTime =
+                                            Time.posixToMillis model.config.clientState.time
+                                                - Time.posixToMillis r
+                                                |> toFloat
+                                                |> (\x -> x / 1000)
+                                    in
+                                    List.append
+                                        m.extraEventList
+                                        [ String.fromFloat recordTime ++ "-pause-" ++ String.fromFloat time ]
+
+                                _ ->
+                                    m.extraEventList
+
+                        newModel : App.Model
+                        newModel =
+                            { model | page = App.Acquisition { m | extraEventList = newExtraEventList } }
+                    in
+                    ( newModel, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

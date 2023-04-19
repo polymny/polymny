@@ -1,11 +1,11 @@
 port module Acquisition.Types exposing
-    ( Model, State(..), Record, recordDuration, encodeRecord, decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
+    ( Model, State(..), Record, recordDuration, encodeRecord, ExtraEventType(..), decodeRecord, init, Msg(..), pointerCanvasId, PointerStyle, PointerMode(..), encodePointerStyle
     , clearPointer, promptFirstSentenceId, promptSecondSentenceId, setPointerStyle, withCapsuleAndGos
     )
 
 {-| This module contains the types for the acqusition page, where a user can record themself.
 
-@docs Model, State, Record, recordDuration, encodeRecord, decodeRecord, init, Msg, pointerCanvasId, PointerStyle, PointerMode, encodePointerStyle
+@docs Model, State, Record, recordDuration, encodeRecord, ExtraEventType, decodeRecord, init, Msg, pointerCanvasId, PointerStyle, PointerMode, encodePointerStyle
 
 -}
 
@@ -47,6 +47,8 @@ type alias Model a b =
     , pointerStyle : PointerStyle
     , warnLeaving : Maybe Route
     , showHelp : Bool
+    , extraEventPlaying : Bool
+    , extraEventList : List String
     }
 
 
@@ -71,6 +73,8 @@ withCapsuleAndGos capsule gos model =
     , pointerStyle = model.pointerStyle
     , warnLeaving = model.warnLeaving
     , showHelp = model.showHelp
+    , extraEventPlaying = model.extraEventPlaying
+    , extraEventList = model.extraEventList
     }
 
 
@@ -205,6 +209,8 @@ init gos capsule =
                   , pointerStyle = defaultPointerStyle
                   , warnLeaving = Nothing
                   , showHelp = False
+                  , extraEventPlaying = False
+                  , extraEventList = []
                   }
                 , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
@@ -228,9 +234,7 @@ type Msg
     | BindingDeviceFailed
     | DeviceLevel Float
     | ToggleSettings
-    | StartRecording
     | StartPointerRecording Int Record
-    | StopRecording
     | PointerRecordFinished
     | PreviousSentence
     | NextSentence Bool
@@ -248,6 +252,15 @@ type Msg
     | ClearPointer
     | Leave Utils.Confirmation
     | ToggleHelp
+    | ExtraEvent ExtraEventType
+
+
+{-| Extra event msg type.
+-}
+type ExtraEventType
+    = ExtraPlay Float
+    | ExtraPause Float
+    | ExtraSeek Float
 
 
 {-| Alias for the setup canvas port.

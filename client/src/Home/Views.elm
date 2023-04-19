@@ -18,7 +18,6 @@ import Element.Font as Font
 import Element.Input
 import Home.Types as Home
 import Html.Attributes exposing (style)
-import Json.Decode exposing (float)
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Route
@@ -28,7 +27,7 @@ import Simple.Animation.Property as P
 import Simple.Transition as Transition
 import Strings
 import Svg
-import Svg.Attributes exposing (in_)
+import Svg.Attributes
 import Time
 import TimeUtils
 import Ui.Colors as Colors

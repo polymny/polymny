@@ -3,7 +3,6 @@ module Profile.Views exposing (..)
 {-| This module contains the views for the profile page.
 -}
 
-import Api.Capsule exposing (produceCapsule)
 import App.Types as App
 import Config exposing (Config)
 import Data.Types as Data
@@ -17,7 +16,6 @@ import Html.Attributes
 import Http
 import Lang exposing (Lang)
 import Material.Icons as Icons
-import Material.Icons.Types exposing (Icon)
 import Profile.Types as Profile
 import RemoteData
 import Simple.Transition as Transition

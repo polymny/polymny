@@ -19,7 +19,6 @@ import Keyboard
 import List.Extra
 import Preparation.Types as Preparation
 import RemoteData
-import Svg.Attributes exposing (display)
 import Utils
 
 

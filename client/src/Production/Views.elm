@@ -5,7 +5,7 @@ module Production.Views exposing (..)
 
 import App.Types as App
 import App.Utils as App
-import Config exposing (Config, TaskStatus)
+import Config exposing (Config)
 import Data.Capsule as Data
 import Data.Types as Data
 import Data.User exposing (User)

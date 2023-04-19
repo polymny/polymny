@@ -11,7 +11,7 @@ import Element.Input as Input
 import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons as Icons
-import Material.Icons.Types exposing (Icon)
+import Material.Icons.Types
 import Options.Types as Options
 import RemoteData
 import Route exposing (Route(..))

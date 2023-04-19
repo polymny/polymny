@@ -11,7 +11,7 @@ import Config exposing (Config)
 import Data.Capsule as Data exposing (Capsule)
 import Data.User exposing (User)
 import DnDList.Groups
-import Element exposing (Element, modular)
+import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font

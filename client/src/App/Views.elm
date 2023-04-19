@@ -17,10 +17,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Home.Views as Home
-import Html
-import Html.Attributes
 import Lang exposing (Lang)
-import Material.Icons
 import NewCapsule.Views as NewCapsule
 import Options.Types as Options
 import Options.Views as Options

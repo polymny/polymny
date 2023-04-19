@@ -60,3 +60,56 @@
  - [ ] plus de boutons (copier l'URL de la vidéo)
  - [x] bouton dupliquer la capsule
  - [x] long text sur project name / capsule name
+
+
+# Extra & Events
+Voir les vidéos pas comme des extras mais plutot comme des éléments comme les slides ?
+
+ -> permet de ne pas ajouter une slide inutile pour ajouter une vidéo
+
+ - [ ] Afficher le fait que ce soit une vidéo dans la colonne de gauche.
+ - [x] Dans record, afficher la vidéo.
+ - [x] Ajouter les listeners sur le player :
+    - [x] Play
+        ```
+        if recording:
+            ajouter <record_time>-play-<video_time>
+        else:
+            retenir que la vidéo est en cours de lecture
+        ```
+    - [x] Pause
+        ```
+        if recording:
+            ajouter <record_time>-pause-<video_time>
+        else:
+            retenir que la vidéo est en pause
+        ```
+    - [x] Jump
+        ```
+        if recording && playing:
+            ajouter <record_time>-play-<video_time>
+        elif recording && pause:
+            ajouter <record_time>-pause-<video_time>
+        ```
+    - [x] End -> In fact, End triggers pause.
+        ```
+        if recording:
+            ajouter <record_time>-pause-<video_length>
+        else:
+            retenir que la vidéo est en pause
+            remettre à zero (en pause)
+        ```
+ - [x] Start recording
+    ```
+    if playing:
+        ajouter 0.0-play-<video_time>
+    elif pause:
+        ajouter 0.0-pause-<video_time>
+    ```
+ - [x] Stop recording
+    ```
+    ajouter <record_time>-pause-<video_time>
+    ```
+ - [ ] Validation : envoyer les events avec le record
+ - [x] Production : recréer la vidéo comme joué lors de l'enregistrement
+ - [ ] Production : superposer la vidéo rejoué avec le record (comme on le fait avec les slides mais avec une vidéo)

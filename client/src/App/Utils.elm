@@ -19,7 +19,7 @@ import Data.Types as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
-import List exposing (product)
+import List
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production

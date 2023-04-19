@@ -7,7 +7,7 @@ module Acquisition.Views exposing (view)
 -}
 
 import Acquisition.Types as Acquisition
-import App.Types as App
+import App.Types as App exposing (Page(..))
 import Config exposing (Config)
 import Data.Capsule as Data
 import Data.User exposing (User)
@@ -20,6 +20,7 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Html.Events
+import Json.Decode as Decode
 import Lang exposing (Lang)
 import Material.Icons
 import Strings
@@ -294,15 +295,53 @@ view config _ model =
         slideElement =
             case currentSlide of
                 Just s ->
-                    Element.el
-                        [ Ui.wf
-                        , Ui.hfp 2
-                        , Background.uncropped (Data.slidePath model.capsule s)
-                        , Element.html (Html.canvas [ Html.Attributes.id Acquisition.pointerCanvasId ] [])
-                            |> Element.el [ Ui.wf, Ui.cy ]
-                            |> Element.inFront
-                        ]
-                        Element.none
+                    case s.extra of
+                        Just e ->
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hfp 2
+                                , Element.html (Html.canvas [ Html.Attributes.id Acquisition.pointerCanvasId ] [])
+                                    |> Element.el [ Ui.wpx 0, Ui.hpx 0 ]
+                                    |> Element.inFront
+                                ]
+                            <|
+                                Element.html
+                                    (Html.video
+                                        [ Html.Attributes.controls True
+                                        , Html.Attributes.class "wf"
+                                        , Html.Attributes.id "recordVideo"
+                                        , Html.Events.on "seeked"
+                                            (Decode.map
+                                                (App.AcquisitionMsg << Acquisition.ExtraEvent << Acquisition.ExtraSeek)
+                                                (Decode.field "target" <| Decode.field "currentTime" Decode.float)
+                                            )
+                                        , Html.Events.on "play"
+                                            (Decode.map
+                                                (App.AcquisitionMsg << Acquisition.ExtraEvent << Acquisition.ExtraPlay)
+                                                (Decode.field "target" <| Decode.field "currentTime" Decode.float)
+                                            )
+                                        , Html.Events.on "pause"
+                                            (Decode.map
+                                                (App.AcquisitionMsg << Acquisition.ExtraEvent << Acquisition.ExtraPause)
+                                                (Decode.field "target" <| Decode.field "currentTime" Decode.float)
+                                            )
+                                        ]
+                                        [ Html.source
+                                            [ Html.Attributes.src <| Data.assetPath model.capsule e ++ ".mp4" ]
+                                            []
+                                        ]
+                                    )
+
+                        Nothing ->
+                            Element.el
+                                [ Ui.wf
+                                , Ui.hfp 2
+                                , Background.uncropped (Data.slidePath model.capsule s)
+                                , Element.html (Html.canvas [ Html.Attributes.id Acquisition.pointerCanvasId ] [])
+                                    |> Element.el [ Ui.wf, Ui.cy ]
+                                    |> Element.inFront
+                                ]
+                                Element.none
 
                 _ ->
                     Element.none

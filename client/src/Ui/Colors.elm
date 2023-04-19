@@ -10,7 +10,6 @@ module Ui.Colors exposing
 -}
 
 import Element
-import Json.Decode exposing (int)
 
 
 {-| The dark green color from Polymny logo.
