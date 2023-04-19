@@ -642,6 +642,9 @@ bottombar config =
     let
         lang =
             Maybe.map (\x -> x.clientState.lang) config |> Maybe.withDefault Lang.default
+
+        serverUrl =
+            Maybe.map (\x -> x.serverConfig.root) config
     in
     Element.row
         [ Background.color (Colors.grey 3)
@@ -657,6 +660,16 @@ bottombar config =
             { label = "contacter@polymny.studio"
             , action = Ui.NewTab "mailto:contacter@polymny.studio"
             }
+        , Maybe.map
+            (\x ->
+                Ui.link
+                    [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
+                    { label = Strings.uiGoBackToOldClient lang
+                    , action = Ui.Route <| Route.Custom <| x ++ "/o"
+                    }
+            )
+            serverUrl
+            |> Maybe.withDefault Element.none
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configLicense lang
             , action = Ui.NewTab "https://github.com/polymny/polymny/blob/master/LICENSE"

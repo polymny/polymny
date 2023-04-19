@@ -1205,6 +1205,10 @@ msgstr "Si la connexion au websocket ne fonctionne pas, l'application ne fonctio
 msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr "Vous pouvez patienter ou raffraîchir la page, ou contacter l'administrateur si le problème persiste"
 
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
+msgstr "Retourner à l'ancienne version"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Téléversement de l'enregistrement"

@@ -80,6 +80,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
@@ -107,6 +108,8 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <div id="root"></div>
         <script src="/dist/js/main.js"></script>
         <script src="/dist/js/ports.js"></script>
+        <script src="/dist/js/old-main.js"></script>
+        <script src="/dist/js/old-ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
@@ -118,6 +121,7 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="icon" type="image/png" href="/dist/favicon.ico"/>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
         <style>
             .blink {
                 animation: blinker 1s linear infinite;
@@ -145,12 +149,43 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
         <div id="root"></div>
         <script src="/dist/js/main.min.js"></script>
         <script src="/dist/js/ports.js"></script>
+        <script src="/dist/js/old-main.min.js"></script>
+        <script src="/dist/js/old-ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
 
 const INDEX_HTML_AFTER_FLAGS: &str = r#";
-            init(document.getElementById('root'), flags);
+            if (window.location.pathname.startsWith('/o')) {
+                // Fix old flags case and load old client
+
+                flags.global = flags.global.serverConfig || {};
+                flags.global.socket_root = flags.global.socketRoot;
+                flags.global.video_root = flags.global.videoRoot;
+                flags.global.registration_disabled = flags.global.registrationDisabled;
+                flags.global.request_language = flags.global.requestLanguage;
+
+                flags.global.width = window.innerWidth;
+                flags.global.height = window.innerHeight;
+                flags.global.storage_language = localStorage.getItem('language');
+                flags.global.acquisitionInverted = localStorage.getItem('acquisitionInverted') === "true";
+                flags.global.zoomLevel = parseInt(localStorage.getItem('zoomLevel'), 10);
+                if (isNaN(flags.global.zoomLevel)) {
+                    flags.global.zoomLevel = null;
+                }
+                flags.global.videoDeviceId = localStorage.getItem('videoDeviceId');
+                flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
+                flags.global.resolution = localStorage.getItem('resolution');
+                flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
+                flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
+                var app = Elm.OldMain.init({
+                    flags: flags,
+                    node: document.getElementById('root')
+                });
+                setupPorts(app);
+            } else {
+               init(document.getElementById('root'), flags);
+            }
         </script>
     </body>
 </html>

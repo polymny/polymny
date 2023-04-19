@@ -478,7 +478,7 @@ updateModel msg model =
                         ( { model | page = page }, cmd )
 
                 App.InternalUrl url ->
-                    case ( String.startsWith "/data/" url.path, model.config.clientState.key ) of
+                    case ( String.startsWith "/data/" url.path || String.startsWith "/o" url.path, model.config.clientState.key ) of
                         ( True, _ ) ->
                             ( model, Browser.Navigation.load url.path )
 

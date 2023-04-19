@@ -1198,6 +1198,10 @@ msgstr "If the websocket is not working, Polymny Studio won't work correctly"
 msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr "You can wait or try to refresh the page, or contact the administrator if the problem persists"
 
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
+msgstr "Go back to the old version"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Upload record"

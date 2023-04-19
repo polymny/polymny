@@ -1147,6 +1147,10 @@ msgstr ""
 msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr ""
 
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
+msgstr ""
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr ""
