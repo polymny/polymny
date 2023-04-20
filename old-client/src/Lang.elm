@@ -2016,3 +2016,13 @@ createGrain lang =
 
         _ ->
             "Create grain"
+
+
+goToNewClient : Lang -> String
+goToNewClient lang =
+    case lang of
+        FrFr ->
+            "Essayer la nouvelle version"
+
+        _ ->
+            "Try the new version"

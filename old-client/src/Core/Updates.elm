@@ -251,7 +251,7 @@ updateModel msg model =
                         ( { model | page = p }, cmd )
 
                 Core.InternalUrl url ->
-                    if String.startsWith "/data/" url.path then
+                    if String.startsWith "/data/" url.path || url.path == "/" then
                         ( model, Nav.load (Url.toString url) )
 
                     else

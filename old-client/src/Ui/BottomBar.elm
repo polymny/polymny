@@ -39,7 +39,11 @@ bottomBar langMsg global user =
             [ Element.alignRight
             , Element.spacing 20
             ]
-            [ newTabLink []
+            [ Ui.link []
+                { label = Element.text <| Lang.goToNewClient global.lang
+                , route = Route.Custom global.root
+                }
+            , newTabLink []
                 { route = Route.Custom "https://github.com/polymny/polymny/blob/master/LICENSE"
                 , label = Element.text "License GNU Affero V3"
                 }
