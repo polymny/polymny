@@ -629,6 +629,7 @@ encode capsule =
         , ( "privacy", encodePrivacy capsule.privacy )
         , ( "prompt_subtitles", Encode.bool capsule.promptSubtitles )
         , ( "structure", encodeStructure capsule.structure )
+        , ( "webcam_settings", encodeWebcamSettings defaultWebcamSettings )
         ]
 
 
