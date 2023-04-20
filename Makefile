@@ -12,9 +12,9 @@ endif
 
 BUILD_DIR=server/dist/js/
 
-all: client-dev server-dev
+all: client-dev old-client-dev unlogged-dev server-dev
 
-release: client-release unlogged-release server-release
+release: client-release old-client-release unlogged-release server-release
 
 .NOTPARALLEL: client-dev client-release client-watch
 
@@ -79,8 +79,7 @@ server/dist/js/ports.js: client/ports.js
 	@cp client/ports.js server/dist/js/ports.js
 
 multiview:
-	@rm -rf $$HOME/.npmbin/lib/node_modules/multiview/cli/multiview_main.sock && multiview [ sh -c "cd server && unbuffer cargo run" ] [ unbuffer make client-watch ]
-
+	@rm -rf $$HOME/.npmbin/lib/node_modules/multiview/cli/multiview_main.sock && multiview [ sh -c "cd server && unbuffer cargo run" ] [ unbuffer make client-watch ] [ unbuffer make old-client-watch ]
 
 old-client-dev: old-client/src/**
 	@/bin/echo -e "\033[32;1m   Compiling\033[0m old-client (debug)"
