@@ -649,10 +649,10 @@ bottombar config page =
                     "/o/capsule/preparation/" ++ s.capsule
 
                 Just (App.Acquisition s) ->
-                    "/o/capsule/acquisition/" ++ s.capsule ++ "/" ++ String.fromInt s.gos
+                    "/o/capsule/acquisition/" ++ s.capsule ++ "/" ++ String.fromInt (s.gos + 1)
 
                 Just (App.Production s) ->
-                    "/o/capsule/production/" ++ s.capsule ++ "/" ++ String.fromInt s.gos
+                    "/o/capsule/production/" ++ s.capsule ++ "/" ++ String.fromInt (s.gos + 1)
 
                 Just (App.Publication s) ->
                     "/o/capsule/publication/" ++ s.capsule

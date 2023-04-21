@@ -46,10 +46,10 @@ bottomBar langMsg global page user =
                             "/capsule/preparation/" ++ c ++ "/"
 
                         Route.Acquisition c id ->
-                            "/capsule/acquisition/" ++ c ++ "/" ++ String.fromInt (id + 1) ++ "/"
+                            "/capsule/acquisition/" ++ c ++ "/" ++ String.fromInt id
 
                         Route.Production c id ->
-                            "/capsule/production/" ++ c ++ "/" ++ String.fromInt (id + 1) ++ "/"
+                            "/capsule/production/" ++ c ++ "/" ++ String.fromInt id
 
                         Route.Publication id ->
                             "/capsule/publication/" ++ id ++ "/"
