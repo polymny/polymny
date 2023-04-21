@@ -200,7 +200,9 @@ viewContent fullModel =
                 }
             ]
             content
-        , Ui.bottombar (fullModel |> App.toMaybe |> Maybe.map .config)
+        , Ui.bottombar
+            (fullModel |> App.toMaybe |> Maybe.map .config)
+            (fullModel |> App.toMaybe |> Maybe.map .page)
         ]
 
 

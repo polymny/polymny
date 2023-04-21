@@ -637,11 +637,34 @@ navButtons lang capsuleId page =
 
 {-| This function creates the bottom bar of the application.
 -}
-bottombar : Maybe Config -> Element App.MaybeMsg
-bottombar config =
+bottombar : Maybe Config -> Maybe App.Page -> Element App.MaybeMsg
+bottombar config page =
     let
         lang =
             Maybe.map (\x -> x.clientState.lang) config |> Maybe.withDefault Lang.default
+
+        pagePath =
+            case page of
+                Just (App.Preparation s) ->
+                    "/o/capsule/preparation/" ++ s.capsule
+
+                Just (App.Acquisition s) ->
+                    "/o/capsule/acquisition/" ++ s.capsule ++ "/" ++ String.fromInt s.gos
+
+                Just (App.Production s) ->
+                    "/o/capsule/production/" ++ s.capsule ++ "/" ++ String.fromInt s.gos
+
+                Just (App.Publication s) ->
+                    "/o/capsule/publication/" ++ s.capsule
+
+                Just (App.Options s) ->
+                    "/o/capsule/preparation/" ++ s.capsule
+
+                Just (App.Profile _) ->
+                    "/o/settings/"
+
+                _ ->
+                    "/o/"
 
         serverUrl =
             Maybe.map (\x -> x.serverConfig.root) config
@@ -665,7 +688,7 @@ bottombar config =
                 Ui.link
                     [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
                     { label = Strings.uiGoBackToOldClient lang
-                    , action = Ui.Route <| Route.Custom <| x ++ "/o"
+                    , action = Ui.Route <| Route.Custom <| x ++ pagePath
                     }
             )
             serverUrl

@@ -21,8 +21,8 @@ newTabLink attr { route, label } =
     Ui.newTabLink (Element.mouseOver [ Font.color Colors.white ] :: attr) { route = route, label = label }
 
 
-bottomBar : (Lang -> msg) -> Core.Global -> Maybe User -> Element msg
-bottomBar langMsg global user =
+bottomBar : (Lang -> msg) -> Core.Global -> Core.Page -> Maybe User -> Element msg
+bottomBar langMsg global page user =
     Element.row
         [ Font.color Colors.white
         , Font.size 16
@@ -39,9 +39,33 @@ bottomBar langMsg global user =
             [ Element.alignRight
             , Element.spacing 20
             ]
-            [ Ui.link []
-                { label = Element.text <| Lang.goToNewClient global.lang
-                , route = Route.Custom global.root
+            [ let
+                pagePath =
+                    case Core.routeFromPage page of
+                        Route.Preparation c _ ->
+                            "/capsule/preparation/" ++ c ++ "/"
+
+                        Route.Acquisition c id ->
+                            "/capsule/acquisition/" ++ c ++ "/" ++ String.fromInt (id + 1) ++ "/"
+
+                        Route.Production c id ->
+                            "/capsule/production/" ++ c ++ "/" ++ String.fromInt (id + 1) ++ "/"
+
+                        Route.Publication id ->
+                            "/capsule/publication/" ++ id ++ "/"
+
+                        Route.CapsuleSettings c ->
+                            "/capsule/preparation/" ++ c ++ "/"
+
+                        Route.Settings ->
+                            "/profile/"
+
+                        _ ->
+                            ""
+              in
+              Ui.link []
+                { label = Element.el [ Element.mouseOver [ Font.color Colors.whiteBis ] ] <| Element.text <| Lang.goToNewClient global.lang
+                , route = Route.Custom <| global.root ++ pagePath
                 }
             , newTabLink []
                 { route = Route.Custom "https://github.com/polymny/polymny/blob/master/LICENSE"
