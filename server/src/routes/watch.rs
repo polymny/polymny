@@ -3,7 +3,6 @@
 use std::io::Cursor;
 use std::path::PathBuf;
 
-use rocket::fs::NamedFile;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
@@ -14,7 +13,7 @@ use crate::db::capsule::{Capsule, Privacy, Role};
 use crate::db::task_status::TaskStatus;
 use crate::db::user::Plan;
 use crate::db::user::User;
-use crate::routes::Cors;
+use crate::routes::{Cors, PartialContent, PartialContentResponse};
 use crate::templates::video_html;
 use crate::{Db, Error, HashId, Result};
 
@@ -81,29 +80,31 @@ pub async fn watch<'a>(
 
 /// The route that serves files inside published videos.
 #[get("/v/<capsule_id>/<path..>", rank = 2)]
-pub async fn watch_asset(
+pub async fn watch_asset<'a>(
     user: Option<User>,
     capsule_id: HashId,
     path: PathBuf,
     config: &S<Config>,
     db: Db,
-) -> Cors<Result<NamedFile>> {
+    partial_content: PartialContent,
+) -> Cors<Result<PartialContentResponse<'a>>> {
     Cors::new(
         &Some("*".to_string()),
-        watch_asset_aux(user, capsule_id, path, config, db).await,
+        watch_asset_aux(user, capsule_id, path, config, db, partial_content).await,
     )
 }
 
 /// Helper function to the route that serves files inside published videos.
 ///
 /// Makes us able to easily wrap cors.
-pub async fn watch_asset_aux(
+pub async fn watch_asset_aux<'a>(
     user: Option<User>,
     capsule_id: HashId,
     path: PathBuf,
     config: &S<Config>,
     db: Db,
-) -> Result<NamedFile> {
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
     let capsule = Capsule::get_by_id(*capsule_id as i32, &db)
         .await?
         .ok_or(Error(Status::NotFound))?;
@@ -123,21 +124,23 @@ pub async fn watch_asset_aux(
         }
     }
 
-    NamedFile::open(
-        config
-            .data_path
-            .join(format!("{}", *capsule_id))
-            .join("output")
-            .join(path),
-    )
-    .await
-    .map_err(|_| Error(Status::NotFound))
+    partial_content
+        .respond(
+            config
+                .data_path
+                .join(format!("{}", *capsule_id))
+                .join("output")
+                .join(path),
+        )
+        .await
 }
 
 /// The route for the js file that contains elm-video.
 #[get("/v/polymny-video-full.min.js")]
-pub async fn polymny_video() -> Result<NamedFile> {
-    NamedFile::open(PathBuf::from("dist").join("polymny-video-full.min.js"))
+pub async fn polymny_video<'a>(
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
+    partial_content
+        .respond(PathBuf::from("dist").join("polymny-video-full.min.js"))
         .await
-        .map_err(|_| Error(Status::NotFound))
 }

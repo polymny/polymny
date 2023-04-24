@@ -1,10 +1,16 @@
 //! This module contains all the routes of the app.
 
-use std::path::PathBuf;
+use std::io::SeekFrom;
+use std::path::{Path, PathBuf};
+use std::result::Result as StdResult;
+
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
+use tokio::io::AsyncSeekExt;
 
 use rocket::fs::NamedFile;
-use rocket::http::Status;
-use rocket::request::{FromRequest, Request};
+use rocket::http::{Header, Status};
+use rocket::request::{FromRequest, Outcome, Request};
 use rocket::response::content::RawHtml as Html;
 use rocket::response::{self, Redirect, Responder, Response};
 use rocket::serde::json::{json, Value};
@@ -333,6 +339,151 @@ pub async fn not_found<'a>(request: &'_ Request<'a>) -> Either<Html<String>, Red
     index_without_cors(config, db, user, lang).await
 }
 
+/// A struct for managing the partial content range header.
+#[derive(Debug)]
+pub struct Range {
+    /// The first byte to send.
+    pub start: Option<u64>,
+
+    /// The last byte to send.
+    pub end: Option<u64>,
+}
+
+/// The different ranges that have been send in the partial content header.
+#[derive(Debug)]
+pub struct PartialContent {
+    /// The ranges.
+    pub ranges: Vec<Range>,
+}
+
+impl Range {
+    /// Creates a range from a vec of two integers.
+    pub fn from_vec(vec: Vec<Option<u64>>) -> Option<Range> {
+        if vec.len() != 2 {
+            return None;
+        }
+
+        match (vec[0], vec[1]) {
+            (None, None) => None,
+            (Some(x), Some(y)) if x >= y => None,
+            _ => Some(Range {
+                start: vec[0],
+                end: vec[1],
+            }),
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for PartialContent {
+    type Error = ();
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let header = request.headers().get_one("range");
+        let header = match header {
+            Some(h) => h,
+            None => return Outcome::Success(PartialContent { ranges: vec![] }),
+        };
+
+        if !header.starts_with("bytes=") {
+            return Outcome::Failure((Status::NotImplemented, ()));
+        }
+
+        let ranges = header[6..]
+            .split(",")
+            .map(|x| {
+                x.split("-")
+                    .map(|y| {
+                        let y = y.trim();
+                        if y == "" {
+                            Ok(None)
+                        } else {
+                            y.parse::<u64>().map(Some)
+                        }
+                    })
+                    .collect::<StdResult<Vec<_>, _>>()
+                    .ok()
+            })
+            .map(|x| x.and_then(Range::from_vec))
+            .collect::<Option<Vec<_>>>();
+
+        let ranges = match ranges {
+            Some(r) => r,
+            None => return Outcome::Failure((Status::BadRequest, ())),
+        };
+
+        Outcome::Success(PartialContent { ranges })
+    }
+}
+
+/// Helper to respond with partial content.
+pub type PartialContentResponse<'a> = Either<NamedFile, FullResponse<'a>>;
+
+/// Responder with response.
+pub struct FullResponse<'a> {
+    /// Response to respond.
+    pub response: Response<'a>,
+}
+
+impl<'r, 'o: 'r> Responder<'r, 'o> for FullResponse<'o> {
+    fn respond_to(self, _request: &'r Request<'_>) -> response::Result<'o> {
+        Ok(self.response)
+    }
+}
+
+impl PartialContent {
+    /// Reads a file and responds with the right content range.
+    pub async fn read<'a, P: AsRef<Path>>(self, p: P) -> StdResult<Response<'a>, tokio::io::Error> {
+        let metadata = tokio::fs::metadata(p.as_ref()).await?;
+        let mut file = File::open(p.as_ref()).await?;
+
+        let start = self.ranges[0]
+            .start
+            .unwrap_or_else(|| metadata.len() - self.ranges[0].end.unwrap());
+
+        let end = self.ranges[0].end.unwrap_or(metadata.len() - 1);
+
+        file.seek(SeekFrom::Start(start)).await?;
+        let file = file.take(end - start + 1);
+
+        Ok(Response::build()
+            .status(Status::PartialContent)
+            .header(Header::new(
+                "Content-Range",
+                format!("bytes {}-{}/{}", start, end, metadata.len()),
+            ))
+            .header(Header::new(
+                "Content-Length",
+                format!("{}", end - start + 1),
+            ))
+            .streamed_body(file)
+            .finalize())
+    }
+
+    /// Responds to an HTTP request.
+    pub async fn respond<'a, P: AsRef<Path>>(self, p: P) -> Result<PartialContentResponse<'a>> {
+        match self.ranges.len() {
+            0 => Ok(Either::Left(
+                NamedFile::open(p.as_ref())
+                    .await
+                    .map_err(|_| Error(Status::NotFound))?,
+            )),
+            1 => Ok(Either::Right(FullResponse {
+                response: self.read(p).await.map_err(|_| Error(Status::BadRequest))?,
+            })),
+            _ => Err(Error(Status::NotImplemented)),
+        }
+    }
+}
+
+/// Helper type to respond managing partial content.
+pub struct PartialContentResponder {
+    /// The portion of the content to send.
+    pub partial_content: PartialContent,
+
+    /// The file from which we read the content.
+    pub content: Vec<u8>,
+}
+
 /// The route for asset static files that require authorization.
 #[get("/<capsule_id>/assets/<path..>")]
 pub async fn assets<'a>(
@@ -341,20 +492,21 @@ pub async fn assets<'a>(
     user: User,
     config: &S<Config>,
     db: Db,
-) -> Result<NamedFile> {
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
     let (_, _) = user
         .get_capsule_with_permission(*capsule_id, Role::Read, &db)
         .await?;
 
-    NamedFile::open(
-        config
-            .data_path
-            .join(format!("{}", *capsule_id))
-            .join("assets")
-            .join(path),
-    )
-    .await
-    .map_err(|_| Error(Status::NotFound))
+    partial_content
+        .respond(
+            config
+                .data_path
+                .join(format!("{}", *capsule_id))
+                .join("assets")
+                .join(path),
+        )
+        .await
 }
 
 /// The route for the output video of a capsule that requires authorization.
@@ -364,19 +516,20 @@ pub async fn produced_video<'a>(
     user: User,
     config: &S<Config>,
     db: Db,
-) -> Result<NamedFile> {
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
     let (_, _) = user
         .get_capsule_with_permission(*capsule_id, Role::Read, &db)
         .await?;
 
-    NamedFile::open(
-        config
-            .data_path
-            .join(format!("{}", *capsule_id))
-            .join("output.mp4"),
-    )
-    .await
-    .map_err(|_| Error(Status::NotFound))
+    partial_content
+        .respond(
+            config
+                .data_path
+                .join(format!("{}", *capsule_id))
+                .join("output.mp4"),
+        )
+        .await
 }
 
 /// The route for temporary static files that require authorization.
@@ -387,26 +540,30 @@ pub async fn tmp<'a>(
     user: User,
     config: &S<Config>,
     db: Db,
-) -> Result<NamedFile> {
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
     let (_, _) = user
         .get_capsule_with_permission(*capsule_id, Role::Read, &db)
         .await?;
 
-    NamedFile::open(
-        config
-            .data_path
-            .join(format!("{}", *capsule_id))
-            .join("tmp")
-            .join(path),
-    )
-    .await
-    .map_err(|_| Error(Status::NotFound))
+    partial_content
+        .respond(
+            config
+                .data_path
+                .join(format!("{}", *capsule_id))
+                .join("tmp")
+                .join(path),
+        )
+        .await
 }
 
 /// The route for static files.
 #[get("/<path..>")]
-pub async fn dist(path: PathBuf) -> Result<NamedFile> {
-    NamedFile::open(PathBuf::from("dist").join(path))
+pub async fn dist<'a>(
+    path: PathBuf,
+    partial_content: PartialContent,
+) -> Result<PartialContentResponse<'a>> {
+    partial_content
+        .respond(PathBuf::from("dist").join(path))
         .await
-        .map_err(|_| Error(Status::NotFound))
 }
