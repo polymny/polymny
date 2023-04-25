@@ -2,11 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use lettre::smtp::authentication::Credentials;
-use lettre::{SmtpClient, Transport};
-use lettre_email::Email;
+use lettre::message::{header, MultiPart, SinglePart};
+use lettre::transport::smtp::authentication::Credentials;
+use lettre::{Message, SmtpTransport, Transport};
 
-use crate::Result;
+use rocket::http::Status;
+
+use crate::{Error, Result};
 
 fn default_mailer_root() -> String {
     String::new()
@@ -71,22 +73,41 @@ impl Mailer {
 
     /// Uses a mailer to send an email.
     pub fn send_mail(&self, to: &str, subject: String, text: String, html: String) -> Result<()> {
-        let email = Email::builder()
-            .from(self.username.clone())
-            .to(to)
+        let email = Message::builder()
+            .from(
+                self.username
+                    .clone()
+                    .parse()
+                    .map_err(|_| Error(Status::InternalServerError))?,
+            )
+            .to(to.parse().map_err(|_| Error(Status::InternalServerError))?)
             .subject(subject)
-            .alternative(html, text)
-            .build()?;
+            .multipart(
+                MultiPart::alternative()
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(header::ContentType::TEXT_PLAIN)
+                            .body(text),
+                    )
+                    .singlepart(
+                        SinglePart::builder()
+                            .header(header::ContentType::TEXT_HTML)
+                            .body(html),
+                    ),
+            )
+            .map_err(|_| Error(Status::InternalServerError))?;
 
-        let mut client = SmtpClient::new_simple(&self.server)
+        let client = SmtpTransport::relay(&self.server)
             .expect("Failed to create smtp client")
             .credentials(Credentials::new(
                 self.username.clone(),
                 self.password.clone(),
             ))
-            .transport();
+            .build();
 
-        client.send(email.into())?;
+        client
+            .send(&email)
+            .map_err(|_| Error(Status::InternalServerError))?;
 
         Ok(())
     }

@@ -94,8 +94,6 @@ macro_rules! impl_from_error {
 impl_from_error!(std::io::Error);
 impl_from_error!(TpError);
 impl_from_error!(bcrypt::BcryptError);
-impl_from_error!(lettre_email::error::Error);
-impl_from_error!(lettre::smtp::error::Error);
 impl_from_error!(tungstenite::Error);
 impl_from_error!(std::str::Utf8Error);
 impl_from_error!(std::num::ParseIntError);
