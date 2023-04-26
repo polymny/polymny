@@ -219,7 +219,7 @@ mergeDevices old new =
         -- Checks if two video devices are the same (same deviceId or same label )
         isSameVideo : Video -> Video -> Bool
         isSameVideo video x =
-            x.deviceId == video.deviceId || (x.label == video.label)
+            x.deviceId == video.deviceId || x.label == video.label
 
         -- Checks if two audio devices are the same (same deviceId or same label)
         isSameAudio : Audio -> Audio -> Bool
@@ -261,12 +261,12 @@ mergeDevices old new =
         -- Filters the new video devices that are already in the old video devices.
         filterNewVideo : Video -> Bool
         filterNewVideo video =
-            List.all (isSameVideo video) old.video
+            not <| List.any (isSameVideo video) old.video
 
         -- Same for audio.
         filterNewAudio : Audio -> Bool
         filterNewAudio audio =
-            List.all (isSameAudio audio) old.audio
+            not <| List.any (isSameAudio audio) old.audio
 
         newVideos =
             List.filter filterNewVideo new.video
@@ -468,12 +468,12 @@ updateAvailable devices device =
 
 {-| Triggers a full detection of every device.
 -}
-port detectDevicesPort : Maybe String -> Cmd msg
+port detectDevicesPort : ( Maybe String, Bool ) -> Cmd msg
 
 
-detectDevices : Maybe String -> Cmd msg
-detectDevices deviceId =
-    detectDevicesPort deviceId
+detectDevices : Maybe String -> Bool -> Cmd msg
+detectDevices deviceId clearCache =
+    detectDevicesPort ( deviceId, clearCache )
 
 
 {-| Port where the javascript send the detected devices after detectDevices.

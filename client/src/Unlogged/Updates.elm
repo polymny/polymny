@@ -4,6 +4,8 @@ port module Unlogged.Updates exposing (..)
 -}
 
 import Api.User as Api
+import Browser.Navigation
+import Data.Types as Data
 import Keyboard
 import RemoteData
 import Unlogged.Types as Unlogged
@@ -15,7 +17,10 @@ update : Unlogged.Msg -> Unlogged.Model -> ( Unlogged.Model, Cmd Unlogged.Msg )
 update msg model =
     let
         root =
-            model.config.serverConfig.root
+            model.serverRoot
+
+        sortBy =
+            { key = Data.Name, ascending = False }
     in
     case ( msg, model.page ) of
         ( Unlogged.UsernameChanged newUsername, _ ) ->
@@ -43,7 +48,7 @@ update msg model =
             ( { model | loginRequest = RemoteData.Loading Nothing }
             , Api.login
                 root
-                model.config.clientConfig.sortBy
+                sortBy
                 model.username
                 model.password
                 (\x -> Unlogged.LoginRequestChanged x)
@@ -57,7 +62,7 @@ update msg model =
         ( Unlogged.ButtonClicked, Unlogged.ResetPassword key ) ->
             ( { model | newPasswordRequest = RemoteData.Loading Nothing }
             , Api.resetPassword
-                model.config.clientConfig.sortBy
+                sortBy
                 key
                 model.password
                 (\x -> Unlogged.ResetPasswordRequestChanged x)
@@ -78,6 +83,9 @@ update msg model =
 
         ( Unlogged.NewPasswordRequestChanged data, _ ) ->
             ( { model | newPasswordRequest = data }, Cmd.none )
+
+        ( Unlogged.ResetPasswordRequestChanged (RemoteData.Success _), _ ) ->
+            ( model, Browser.Navigation.load model.serverRoot )
 
         ( Unlogged.ResetPasswordRequestChanged data, _ ) ->
             ( { model | resetPasswordRequest = data }, Cmd.none )

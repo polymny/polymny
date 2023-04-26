@@ -469,6 +469,10 @@ msgstr ""
 msgid "Steps.Acquisition.recordPointer"
 msgstr ""
 
+#. Reinitialize all devices.
+msgid "Steps.Acquisition.reinitializeDevices"
+msgstr ""
+
 #. First line of help.
 msgid "Steps.Acquisition.Help.first"
 msgstr ""
@@ -1141,6 +1145,10 @@ msgstr ""
 
 #. Wait, refresh, or contact admin.
 msgid "Ui.webSocketWaitRefreshContactAdmin"
+msgstr ""
+
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
 msgstr ""
 
 #. Upload record task.

@@ -26,7 +26,7 @@ view : Unlogged.Model -> Element Unlogged.Msg
 view model =
     let
         lang =
-            model.config.clientState.lang
+            model.lang
 
         ( password, layout ) =
             case model.page of
@@ -320,7 +320,7 @@ view model =
         , Element.html <|
             Html.form
                 [ Html.Attributes.method "POST"
-                , Html.Attributes.action (model.config.serverConfig.root ++ "/login")
+                , Html.Attributes.action (model.serverRoot ++ "/login")
                 , Html.Attributes.style "display" "none"
                 , Html.Attributes.id "loginform"
                 ]

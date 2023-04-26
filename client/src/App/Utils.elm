@@ -23,9 +23,9 @@ import List
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
+import Profile.Types as Profile
 import Publication.Types as Publication
 import Route exposing (Route)
-import Profile.Types as Profile
 import Unlogged.Types as Unlogged
 import Url exposing (Url)
 
@@ -111,7 +111,7 @@ init flags url key =
                     )
 
                 ( Ok s, Ok c, Ok Nothing ) ->
-                    ( App.Unlogged <| Unlogged.init { serverConfig = s, clientConfig = c, clientState = clientState } (Just url)
+                    ( App.Unlogged <| Unlogged.init clientState.lang s.root (Just url)
                     , Cmd.none
                     )
 

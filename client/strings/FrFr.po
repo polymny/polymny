@@ -515,6 +515,10 @@ msgstr "Si votre grain contient plusieurs planches, la flèche à droite vous pe
 msgid "Steps.Acquisition.Help.fourth"
 msgstr "Vous pouvez ensuite appuyez sur la flèche à droite pour terminer l'enregistrement"
 
+#. Reinitialize all devices.
+msgid "Steps.Acquisition.reinitializeDevices"
+msgstr "Réinitialiser tous les périphériques"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"
@@ -1200,6 +1204,10 @@ msgstr "Si la connexion au websocket ne fonctionne pas, l'application ne fonctio
 #. Wait, refresh, or contact admin.
 msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr "Vous pouvez patienter ou raffraîchir la page, ou contacter l'administrateur si le problème persiste"
+
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
+msgstr "Retourner à l'ancienne version"
 
 #. Upload record task.
 msgid "Tasks.uploadRecord"

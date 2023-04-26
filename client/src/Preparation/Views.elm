@@ -39,6 +39,9 @@ view config user model =
         lang =
             config.clientState.lang
 
+        zoomLevel =
+            config.clientConfig.zoomLevel
+
         inFront : Element App.Msg
         inFront =
             maybeDragSlide model.slideModel model.slides
@@ -83,9 +86,25 @@ view config user model =
             model.slides
                 |> List.Extra.gatherWith (\a b -> a.totalGosId == b.totalGosId)
                 |> filterConsecutiveVirtualGos
+
+        zoomBar : Element App.Msg
+        zoomBar =
+            Element.row [ Ui.ar, Ui.s 10, Element.paddingEach { top = 10, right = 10, left = 0, bottom = 0 } ]
+                [ Ui.primaryIcon []
+                    { icon = Icons.zoom_out
+                    , action = Utils.tern (zoomLevel < 6) (Ui.Msg <| App.ConfigMsg <| Config.ZoomLevelChanged <| zoomLevel + 1) Ui.None
+                    , tooltip = Strings.actionsZoomOut lang
+                    }
+                , Ui.primaryIcon []
+                    { icon = Icons.zoom_in
+                    , action = Utils.tern (zoomLevel > 2) (Ui.Msg <| App.ConfigMsg <| Config.ZoomLevelChanged <| zoomLevel - 1) Ui.None
+                    , tooltip = Strings.actionsZoomIn lang
+                    }
+                ]
     in
     ( groupedSlides
         |> List.indexedMap (\gosIndex gos -> gosView config user model gos (modBy (List.length groupedSlides) (gosIndex + 1)))
+        |> (\x -> zoomBar :: x)
         |> Element.column [ Element.spacing 10, Ui.wf, Ui.hf, Element.inFront inFront ]
     , popup
     )

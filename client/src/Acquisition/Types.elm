@@ -212,7 +212,7 @@ init gos capsule =
                   , extraEventPlaying = False
                   , extraEventList = []
                   }
-                , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
+                , Cmd.batch [ Device.detectDevices Nothing False, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
 
         _ ->
@@ -253,6 +253,7 @@ type Msg
     | Leave Utils.Confirmation
     | ToggleHelp
     | ExtraEvent ExtraEventType
+    | ReinitializeDevices
 
 
 {-| Extra event msg type.

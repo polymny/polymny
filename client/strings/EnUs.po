@@ -513,6 +513,10 @@ msgstr "If you have multiple slides in the grain, the right arrow will go throug
 msgid "Steps.Acquisition.Help.fourth"
 msgstr "You can then use the right arrow to end your recording"
 
+#. Reinitialize all devices.
+msgid "Steps.Acquisition.reinitializeDevices"
+msgstr "Reinitialize all devices"
+
 #. Step of video production.
 msgid "Steps.Production.production"
 msgstr "Production"
@@ -1193,6 +1197,10 @@ msgstr "If the websocket is not working, Polymny Studio won't work correctly"
 #. Wait, refresh, or contact admin.
 msgid "Ui.webSocketWaitRefreshContactAdmin"
 msgstr "You can wait or try to refresh the page, or contact the administrator if the problem persists"
+
+#. Go back to the old client.
+msgid "Ui.goBackToOldClient"
+msgstr "Go back to the old version"
 
 #. Upload record task.
 msgid "Tasks.uploadRecord"

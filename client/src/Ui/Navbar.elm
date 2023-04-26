@@ -16,6 +16,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Html
 import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons as Icons
@@ -636,11 +637,37 @@ navButtons lang capsuleId page =
 
 {-| This function creates the bottom bar of the application.
 -}
-bottombar : Maybe Config -> Element App.MaybeMsg
-bottombar config =
+bottombar : Maybe Config -> Maybe App.Page -> Element App.MaybeMsg
+bottombar config page =
     let
         lang =
             Maybe.map (\x -> x.clientState.lang) config |> Maybe.withDefault Lang.default
+
+        pagePath =
+            case page of
+                Just (App.Preparation s) ->
+                    "/o/capsule/preparation/" ++ s.capsule
+
+                Just (App.Acquisition s) ->
+                    "/o/capsule/acquisition/" ++ s.capsule ++ "/" ++ String.fromInt (s.gos + 1)
+
+                Just (App.Production s) ->
+                    "/o/capsule/production/" ++ s.capsule ++ "/" ++ String.fromInt (s.gos + 1)
+
+                Just (App.Publication s) ->
+                    "/o/capsule/publication/" ++ s.capsule
+
+                Just (App.Options s) ->
+                    "/o/capsule/preparation/" ++ s.capsule
+
+                Just (App.Profile _) ->
+                    "/o/settings/"
+
+                _ ->
+                    "/o/"
+
+        serverUrl =
+            Maybe.map (\x -> x.serverConfig.root) config
     in
     Element.row
         [ Background.color (Colors.grey 3)
@@ -656,6 +683,16 @@ bottombar config =
             { label = "contacter@polymny.studio"
             , action = Ui.NewTab "mailto:contacter@polymny.studio"
             }
+        , Maybe.map
+            (\x ->
+                Ui.link
+                    [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
+                    { label = Strings.uiGoBackToOldClient lang
+                    , action = Ui.Route <| Route.Custom <| x ++ pagePath
+                    }
+            )
+            serverUrl
+            |> Maybe.withDefault Element.none
         , Ui.link [ Ui.ar, Element.mouseOver [ Font.color Colors.greyBackground ] ]
             { label = Strings.configLicense lang
             , action = Ui.NewTab "https://github.com/polymny/polymny/blob/master/LICENSE"
@@ -744,17 +781,27 @@ leftColumn lang page capsule selectedGos =
 
                         _ ->
                             Route.Production capsule.id id |> Ui.Route
+
+                elementAttr =
+                    [ Ui.wf
+                    , Ui.b 5
+                    , Border.color borderColor
+                    , Element.inFront inFrontLabel
+                    , Element.inFront inFrontButtons
+                    ]
             in
-            Element.image
-                [ Ui.wf
-                , Ui.b 5
-                , Border.color borderColor
-                , Element.inFront inFrontLabel
-                , Element.inFront inFrontButtons
-                ]
-                { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
-                , description = ""
-                }
+            case Maybe.andThen .extra (List.head gos.slides) of
+                Just extra ->
+                    [ Html.source [ Html.Attributes.src <| Data.assetPath capsule extra ++ ".mp4" ] [] ]
+                        |> Html.video [ Html.Attributes.class "wf" ]
+                        |> Element.html
+                        |> Element.el elementAttr
+
+                _ ->
+                    Element.image elementAttr
+                        { src = Maybe.map (Data.slidePath capsule) (List.head gos.slides) |> Maybe.withDefault "oops"
+                        , description = ""
+                        }
     in
     Element.column
         [ Background.color Colors.greyBackground
