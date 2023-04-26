@@ -105,8 +105,6 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/js/main.js"></script>
-        <script src="/dist/js/ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
@@ -143,14 +141,161 @@ const INDEX_HTML_BEFORE_FLAGS: &str = r#"<!doctype HTML>
     </head>
     <body>
         <div id="root"></div>
-        <script src="/dist/js/main.min.js"></script>
-        <script src="/dist/js/ports.js"></script>
         <script src="/dist/jszip.min.js"></script>
         <script>
             var flags = "#;
 
+#[cfg(debug_assertions)]
 const INDEX_HTML_AFTER_FLAGS: &str = r#";
-            init(document.getElementById('root'), flags);
+            let head = document.getElementsByTagName('head')[0];
+            let elmAppScript = document.createElement('script');
+            let portsScript = document.createElement('script');
+
+            function testElm(main) {
+                return typeof Elm !== "undefined" && Object.hasOwn(Elm, main);
+            }
+
+            if (window.location.pathname.startsWith('/o')) {
+                // Fix old flags case and load old client
+                let cssScript = document.createElement('link');
+                cssScript.type ='text/css';
+                cssScript.href ='https://use.fontawesome.com/releases/v5.7.2/css/all.css';
+                cssScript.rel='stylesheet';
+
+                elmAppScript.src = "/dist/js/old-main.js";
+                portsScript.src = "/dist/js/old-ports.js";
+                head.appendChild(cssScript);
+                head.appendChild(elmAppScript);
+                head.appendChild(portsScript);
+
+                function startApp() {
+                    if (!testElm("OldMain")) {
+                        setTimeout(startApp, 100);
+                        return;
+                    }
+
+                    flags.global = flags.global.serverConfig || {};
+                    flags.global.socket_root = flags.global.socketRoot;
+                    flags.global.video_root = flags.global.videoRoot;
+                    flags.global.registration_disabled = flags.global.registrationDisabled;
+                    flags.global.request_language = flags.global.requestLanguage;
+
+                    flags.global.width = window.innerWidth;
+                    flags.global.height = window.innerHeight;
+                    flags.global.storage_language = localStorage.getItem('language');
+                    flags.global.acquisitionInverted = localStorage.getItem('acquisitionInverted') === "true";
+                    flags.global.zoomLevel = parseInt(localStorage.getItem('zoomLevel'), 10);
+                    if (isNaN(flags.global.zoomLevel)) {
+                        flags.global.zoomLevel = null;
+                    }
+                    flags.global.videoDeviceId = localStorage.getItem('videoDeviceId');
+                    flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
+                    flags.global.resolution = localStorage.getItem('resolution');
+                    flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
+                    flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
+                    var app = Elm.OldMain.init({
+                        flags: flags,
+                        node: document.getElementById('root')
+                    });
+                    setupPorts(app);
+                }
+
+                setTimeout(startApp, 100);
+            } else {
+                elmAppScript.src = "/dist/js/main.js";
+                portsScript.src = "/dist/js/ports.js";
+                head.appendChild(elmAppScript);
+                head.appendChild(portsScript);
+
+                function startApp() {
+                    if (!testElm("Main")) {
+                        setTimeout(startApp, 100);
+                        return;
+                    }
+
+                    init(document.getElementById('root'), flags);
+                }
+
+                setTimeout(startApp, 100);
+            }
+        </script>
+    </body>
+</html>
+"#;
+
+#[cfg(not(debug_assertions))]
+const INDEX_HTML_AFTER_FLAGS: &str = r#";
+            let head = document.getElementsByTagName('head')[0];
+            let elmAppScript = document.createElement('script');
+            let portsScript = document.createElement('script');
+
+            function testElm(main) {
+                return typeof Elm !== "undefined" && Object.hasOwn(Elm, main);
+            }
+
+            if (window.location.pathname.startsWith('/o')) {
+                // Fix old flags case and load old client
+                let cssScript = document.createElement('link');
+                cssScript.type ='text/css';
+                cssScript.href ='https://use.fontawesome.com/releases/v5.7.2/css/all.css';
+                cssScript.rel='stylesheet';
+
+                elmAppScript.src = "/dist/js/old-main.min.js";
+                portsScript.src = "/dist/js/old-ports.js";
+                head.appendChild(cssScript);
+                head.appendChild(elmAppScript);
+                head.appendChild(portsScript);
+
+                function startApp() {
+                    if (!testElm("OldMain")) {
+                        setTimeout(startApp, 100);
+                        return;
+                    }
+
+                    flags.global = flags.global.serverConfig || {};
+                    flags.global.socket_root = flags.global.socketRoot;
+                    flags.global.video_root = flags.global.videoRoot;
+                    flags.global.registration_disabled = flags.global.registrationDisabled;
+                    flags.global.request_language = flags.global.requestLanguage;
+
+                    flags.global.width = window.innerWidth;
+                    flags.global.height = window.innerHeight;
+                    flags.global.storage_language = localStorage.getItem('language');
+                    flags.global.acquisitionInverted = localStorage.getItem('acquisitionInverted') === "true";
+                    flags.global.zoomLevel = parseInt(localStorage.getItem('zoomLevel'), 10);
+                    if (isNaN(flags.global.zoomLevel)) {
+                        flags.global.zoomLevel = null;
+                    }
+                    flags.global.videoDeviceId = localStorage.getItem('videoDeviceId');
+                    flags.global.audioDeviceId = localStorage.getItem('audioDeviceId');
+                    flags.global.resolution = localStorage.getItem('resolution');
+                    flags.global.sortBy = JSON.parse(localStorage.getItem('sortBy')) || ["lastModified", false];
+                    flags.global.promptSize = parseInt(localStorage.getItem('promptSize'), 10) || 25;
+                    var app = Elm.OldMain.init({
+                        flags: flags,
+                        node: document.getElementById('root')
+                    });
+                    setupPorts(app);
+                }
+
+                setTimeout(startApp, 100);
+            } else {
+                elmAppScript.src = "/dist/js/main.min.js";
+                portsScript.src = "/dist/js/ports.js";
+                head.appendChild(elmAppScript);
+                head.appendChild(portsScript);
+
+                function startApp() {
+                    if (!testElm("Main')) {
+                        setTimeout(startApp, 100);
+                        return;
+                    }
+
+                    init(document.getElementById('root'), flags);
+                }
+
+                setTimeout(startApp, 100);
+            }
         </script>
     </body>
 </html>

@@ -126,7 +126,12 @@ impl User {
 
         let unsubscribe_key = if subscribed {
             let rng = OsRng {};
-            Some(rng.sample_iter(&Alphanumeric).take(40).collect::<String>())
+            Some(
+                rng.sample_iter(&Alphanumeric)
+                    .map(char::from)
+                    .take(40)
+                    .collect::<String>(),
+            )
         } else {
             None
         };
@@ -134,7 +139,11 @@ impl User {
         let user = if let Some(mailer) = mailer {
             // Generate activation key
             let rng = OsRng {};
-            let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+            let activation_key = rng
+                .sample_iter(&Alphanumeric)
+                .map(char::from)
+                .take(40)
+                .collect::<String>();
 
             let activation_url = format!("{}/activate/{}", mailer.root, activation_key);
             let text = validation_email_plain_text(&activation_url);
@@ -185,7 +194,11 @@ impl User {
         if let Some(mailer) = mailer {
             // Generate activation key
             let rng = OsRng {};
-            let activation_key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+            let activation_key = rng
+                .sample_iter(&Alphanumeric)
+                .map(char::from)
+                .take(40)
+                .collect::<String>();
 
             let activation_url = format!("{}/validate-email/{}", mailer.root, activation_key);
             let text = validation_new_email_plain_text(&activation_url);
@@ -268,7 +281,11 @@ impl User {
     pub async fn save_session(&self, db: &Db) -> Result<Session> {
         // Generate the secret
         let rng = OsRng {};
-        let secret = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+        let secret = rng
+            .sample_iter(&Alphanumeric)
+            .map(char::from)
+            .take(40)
+            .collect::<String>();
 
         let session = Session::new(secret, self, db).await?;
         Ok(session)
@@ -328,7 +345,11 @@ impl User {
         db: &Db,
     ) -> Result<()> {
         let rng = OsRng {};
-        let key = rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+        let key = rng
+            .sample_iter(&Alphanumeric)
+            .map(char::from)
+            .take(40)
+            .collect::<String>();
 
         self.reset_password_key = Some(key.clone());
         self.save(&db).await?;
@@ -397,17 +418,27 @@ impl User {
                         // Generate a random password
                         let rng = OsRng {};
                         let hashed_password = bcrypt::hash(
-                            rng.sample_iter(&Alphanumeric).take(12).collect::<String>(),
+                            rng.sample_iter(&Alphanumeric)
+                                .map(char::from)
+                                .take(12)
+                                .collect::<String>(),
                             bcrypt::DEFAULT_COST,
                         )?;
                         // Generate activation key
                         let rng = OsRng {};
-                        let activation_key =
-                            rng.sample_iter(&Alphanumeric).take(40).collect::<String>();
+                        let activation_key = rng
+                            .sample_iter(&Alphanumeric)
+                            .map(char::from)
+                            .take(40)
+                            .collect::<String>();
 
                         let rng = OsRng {};
-                        let unsubscribe_key =
-                            Some(rng.sample_iter(&Alphanumeric).take(40).collect::<String>());
+                        let unsubscribe_key = Some(
+                            rng.sample_iter(&Alphanumeric)
+                                .map(char::from)
+                                .take(40)
+                                .collect::<String>(),
+                        );
 
                         let activation_url =
                             format!("{}/validate-invitation/{}", mailer.root, &activation_key);

@@ -3,9 +3,9 @@ module Unlogged.Types exposing (..)
 {-| This module contains the login form.
 -}
 
-import Config exposing (Config)
 import Data.User as Data exposing (User)
 import Json.Decode as Decode
+import Lang exposing (Lang)
 import RemoteData
 import Url exposing (Url)
 
@@ -13,7 +13,8 @@ import Url exposing (Url)
 {-| The model for the login form.
 -}
 type alias Model =
-    { config : Config
+    { serverRoot : String
+    , lang : Lang
     , page : Page
     , username : String
     , email : String
@@ -78,9 +79,10 @@ type Msg
 
 {-| Initializes the unlogged model.
 -}
-init : Config -> Maybe Url -> Model
-init config url =
-    { config = config
+init : Lang -> String -> Maybe Url -> Model
+init lang serverRoot url =
+    { serverRoot = serverRoot
+    , lang = lang
     , page = Maybe.map fromUrl url |> Maybe.withDefault Login
     , username = ""
     , email = ""
@@ -132,20 +134,15 @@ fromUrl url =
 initStandalone : Decode.Value -> ( Maybe Model, Cmd Msg )
 initStandalone flags =
     let
-        serverConfig =
-            Decode.decodeValue (Decode.field "global" (Decode.field "serverConfig" Config.decodeServerConfig)) flags
+        lang =
+            Decode.decodeValue (Decode.field "lang" Decode.string) flags
+                |> Result.toMaybe
+                |> Maybe.andThen Lang.fromString
+                |> Maybe.withDefault Lang.default
 
-        clientConfig =
-            Decode.decodeValue (Decode.field "global" (Decode.field "clientConfig" Config.decodeClientConfig)) flags
-
-        clientState =
-            Config.initClientState Nothing (clientConfig |> Result.toMaybe |> Maybe.andThen .lang)
+        model =
+            Decode.decodeValue (Decode.field "root" Decode.string) flags
+                |> Result.toMaybe
+                |> Maybe.map (\x -> init lang x Nothing)
     in
-    case ( clientConfig, serverConfig ) of
-        ( Ok c, Ok s ) ->
-            ( Just <| init { serverConfig = s, clientConfig = c, clientState = clientState } Nothing
-            , Cmd.none
-            )
-
-        _ ->
-            ( Nothing, Cmd.none )
+    ( model, Cmd.none )

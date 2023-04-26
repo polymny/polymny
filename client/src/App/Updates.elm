@@ -47,22 +47,17 @@ update message model =
         -- because the submodulse will not know about UnloggedModel or LoggedModel.
         -- This can happen :
         -- When login succeeds
-        ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
-            App.pageFromRoute m.config user Route.Home
-                |> Tuple.mapBoth
-                    (\x -> App.Logged { config = m.config, user = user, page = x })
-                    (Cmd.map App.LoggedMsg)
+        ( App.UnloggedMsg (Unlogged.LoginRequestChanged (RemoteData.Success _)), App.Unlogged _ ) ->
+            -- Reload page to fetch server data and connect to websocket
+            ( model, Browser.Navigation.reload )
 
         -- When the user changes their password after reset
-        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success user)), App.Unlogged m ) ->
-            App.pageFromRoute m.config user Route.Home
-                |> Tuple.mapBoth
-                    (\x -> App.Logged { config = m.config, user = user, page = x })
-                    (\x -> Cmd.batch [ Cmd.map App.LoggedMsg x, Route.push m.config.clientState.key Route.Home ])
+        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success _)), App.Unlogged _ ) ->
+            ( model, Browser.Navigation.reload )
 
         -- When the user deletes their account
         ( App.LoggedMsg (App.ProfileMsg (Profile.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
-            ( App.Unlogged (Unlogged.init m.config Nothing)
+            ( model
             , case m.config.serverConfig.home of
                 Just url ->
                     Browser.Navigation.load url
@@ -483,7 +478,7 @@ updateModel msg model =
                         ( { model | page = page }, cmd )
 
                 App.InternalUrl url ->
-                    case ( String.startsWith "/data/" url.path, model.config.clientState.key ) of
+                    case ( String.startsWith "/data/" url.path || String.startsWith "/o" url.path, model.config.clientState.key ) of
                         ( True, _ ) ->
                             ( model, Browser.Navigation.load url.path )
 

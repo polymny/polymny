@@ -206,7 +206,7 @@ init gos capsule =
                   , warnLeaving = Nothing
                   , showHelp = False
                   }
-                , Cmd.batch [ Device.detectDevices Nothing, setupCanvas, setPointerStyle defaultPointerStyle ]
+                , Cmd.batch [ Device.detectDevices Nothing False, setupCanvas, setPointerStyle defaultPointerStyle ]
                 )
 
         _ ->
@@ -248,6 +248,7 @@ type Msg
     | ClearPointer
     | Leave Utils.Confirmation
     | ToggleHelp
+    | ReinitializeDevices
 
 
 {-| Alias for the setup canvas port.

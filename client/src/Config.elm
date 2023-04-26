@@ -512,6 +512,7 @@ type Msg
     | DetectDevicesResponse Device.Devices (Maybe Device.Device)
     | SetAudio Device.Audio
     | SetVideo (Maybe ( Device.Video, Device.Resolution ))
+    | ReinitializeDevices
     | UpdateTaskStatus TaskStatus
     | ToggleLangPicker
     | ToggleWebSocketInfo
@@ -658,6 +659,20 @@ update msg { serverConfig, clientConfig, clientState } =
                       }
                     , True
                     , []
+                    )
+
+                ReinitializeDevices ->
+                    ( { clientConfig =
+                            { clientConfig
+                                | devices = { audio = [], video = [] }
+                                , preferredDevice = Nothing
+                            }
+                      , serverConfig = serverConfig
+                      , clientState = clientState
+                      }
+                      -- The port will clear the cache itself
+                    , False
+                    , [ Device.detectDevices Nothing True ]
                     )
 
                 UpdateTaskStatus task ->

@@ -50,7 +50,7 @@ update msg model =
             in
             case msg of
                 Acquisition.RequestCameraPermission deviceId ->
-                    ( { model | page = App.Acquisition { m | state = Acquisition.DetectingDevices } }, Device.detectDevices (Just deviceId) )
+                    ( { model | page = App.Acquisition { m | state = Acquisition.DetectingDevices } }, Device.detectDevices (Just deviceId) False )
 
                 Acquisition.DeviceChanged ->
                     ( { model | page = App.Acquisition { m | state = Acquisition.BindingWebcam, deviceLevel = Nothing } }
@@ -522,6 +522,18 @@ update msg model =
 
                 Acquisition.ToggleHelp ->
                     ( { model | page = App.Acquisition { m | showHelp = not m.showHelp } }, Cmd.none )
+
+                Acquisition.ReinitializeDevices ->
+                    let
+                        ( newConfig, cmd ) =
+                            Config.update Config.ReinitializeDevices model.config
+                    in
+                    ( { model
+                        | page = App.Acquisition { m | showSettings = False, state = Acquisition.DetectingDevices }
+                        , config = newConfig
+                      }
+                    , Cmd.map App.ConfigMsg cmd
+                    )
 
         _ ->
             ( model, Cmd.none )

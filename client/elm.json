@@ -18,8 +18,8 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/json-extra": "4.3.0",
-            "elm-community/list-extra": "8.2.4",
-            "icidasset/elm-material-icons": "10.0.0",
+            "elm-community/list-extra": "8.7.0",
+            "icidasset/elm-material-icons": "11.0.0",
             "mdgriffith/elm-ui": "1.1.8",
             "mpizenberg/elm-file": "1.0.0",
             "ohanhi/keyboard": "2.0.1"

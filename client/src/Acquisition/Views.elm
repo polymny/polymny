@@ -243,35 +243,41 @@ view config _ model =
         statusElement =
             Element.row [ Ui.wf, Ui.p 10 ]
                 [ Element.el [ Ui.cx ] <|
+                    let
+                        slideIndexDisplay =
+                            String.fromInt (model.currentSlide + 1)
+                                ++ " / "
+                                ++ String.fromInt (List.length model.gos.slides)
+
+                        slideIndexElement =
+                            Strings.dataCapsuleSlide lang 1
+                                ++ " "
+                                ++ slideIndexDisplay
+                                |> Element.text
+
+                        lineIndexElement =
+                            Strings.dataCapsuleLine lang 1
+                                ++ " "
+                                ++ lineIndexDisplay
+                                |> Element.text
+
+                        promptLength =
+                            currentSlide
+                                |> Maybe.map .prompt
+                                |> Maybe.withDefault ""
+                                |> String.split "\n"
+                                |> List.length
+                                |> String.fromInt
+
+                        lineIndexDisplay =
+                            String.fromInt (model.currentSentence + 1) ++ " / " ++ promptLength
+                    in
                     case model.recording of
                         Just t ->
-                            let
-                                slideIndexDisplay =
-                                    String.fromInt (model.currentSlide + 1)
-                                        ++ " / "
-                                        ++ String.fromInt (List.length model.gos.slides)
-
-                                promptLength =
-                                    currentSlide
-                                        |> Maybe.map .prompt
-                                        |> Maybe.withDefault ""
-                                        |> String.split "\n"
-                                        |> List.length
-                                        |> String.fromInt
-
-                                lineIndexDisplay =
-                                    String.fromInt (model.currentSentence + 1) ++ " / " ++ promptLength
-                            in
                             Element.row [ Ui.s 30 ]
                                 [ Element.el [ Ui.class "blink", Font.color Colors.red ] (Element.text "⬤ REC")
-                                , Strings.dataCapsuleSlide lang 1
-                                    ++ " "
-                                    ++ slideIndexDisplay
-                                    |> Element.text
-                                , Strings.dataCapsuleLine lang 1
-                                    ++ " "
-                                    ++ lineIndexDisplay
-                                    |> Element.text
+                                , slideIndexElement
+                                , lineIndexElement
                                 , (Time.posixToMillis config.clientState.time - Time.posixToMillis t)
                                     |> TimeUtils.formatDuration
                                     |> Element.text
@@ -281,6 +287,8 @@ view config _ model =
                         Nothing ->
                             Element.row [ Ui.s 30 ]
                                 [ Element.text (Strings.stepsAcquisitionReadyForRecording lang)
+                                , slideIndexElement
+                                , lineIndexElement
                                 , Ui.primaryIcon []
                                     { icon = Material.Icons.help_outline
                                     , tooltip = Strings.uiHelp lang
@@ -697,16 +705,27 @@ settingsPopup config model =
             List.map (audioView (Maybe.andThen .audio config.clientConfig.preferredDevice)) config.clientConfig.devices.audio
                 |> Element.column [ Ui.s 10, Ui.pb 10 ]
 
+        -- Title before the reinit everything button
+        reinitTitle : Element App.Msg
+        reinitTitle =
+            Ui.title <| Strings.stepsAcquisitionReinitializeDevices lang
+
+        -- Button that reinitializes the camera detection
+        reinitButton : Element App.Msg
+        reinitButton =
+            Ui.primary []
+                { label = Element.text <| Strings.stepsAcquisitionReinitializeDevices lang
+                , action = Ui.Msg <| App.AcquisitionMsg <| Acquisition.ReinitializeDevices
+                }
+
         -- Element that contains all the device settings
         settings : Element App.Msg
         settings =
-            Element.column [ Ui.wf, Ui.cy, Ui.s 10 ]
-                [ videoTitle
-                , video
-                , resolutionTitle
-                , resolution
-                , audioTitle
-                , audio
+            Element.column [ Ui.wf, Ui.cy, Ui.s 20 ]
+                [ Element.column [ Ui.wf, Ui.s 10 ] [ videoTitle, video ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ resolutionTitle, resolution ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ audioTitle, audio ]
+                , Element.column [ Ui.wf, Ui.s 10 ] [ reinitTitle, reinitButton ]
                 ]
     in
     Element.column [ Ui.wf, Ui.hf, Element.scrollbars ]

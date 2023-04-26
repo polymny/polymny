@@ -94,8 +94,6 @@ macro_rules! impl_from_error {
 impl_from_error!(std::io::Error);
 impl_from_error!(TpError);
 impl_from_error!(bcrypt::BcryptError);
-impl_from_error!(lettre_email::error::Error);
-impl_from_error!(lettre::smtp::error::Error);
 impl_from_error!(tungstenite::Error);
 impl_from_error!(std::str::Utf8Error);
 impl_from_error!(std::num::ParseIntError);
@@ -450,6 +448,26 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
                 routes::watch::watch,
                 routes::watch::watch_asset,
                 routes::watch::polymny_video,
+            ],
+        )
+        .mount(
+            "/o/",
+            routes![
+                routes::index,
+                routes::preparation,
+                routes::acquisition,
+                routes::production,
+                routes::publication,
+                routes::options,
+                routes::profile,
+                routes::admin_dashboard,
+                routes::admin_user,
+                routes::admin_users,
+                routes::admin_capsules,
+                routes::capsule_settings,
+                // routes::user::reset_password,
+                // routes::user::validate_email,
+                // routes::user::validate_invitation,
             ],
         )
         .mount("/dist", routes![routes::dist])

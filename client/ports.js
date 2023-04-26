@@ -309,18 +309,25 @@ function init(node, flags) {
     // correctly if not.
     async function getUserMedia(args) {
         let response = await navigator.mediaDevices.getUserMedia(args);
-        navigator.mediaDevices.ondevicechange = detectDevices;
+        navigator.mediaDevices.ondevicechange = () => detectDevices();
         return response;
     }
 
     // Detect the devices
-    async function detectDevices(elmAskedToDetectDevices = false, cameraDeviceId = null) {
+    async function detectDevices(elmAskedToDetectDevices = false, cameraDeviceId = null, clearCache = false) {
+
         if (detectingDevices === true) {
             shouldRedetectDevices = true;
             return;
         }
 
         let clientConfig = JSON.parse(localStorage.getItem('clientConfig'));
+
+        if (clearCache) {
+            clientConfig.devices = { audio: [], video: [] };
+            clientConfig.preferredDevice = undefined;
+        }
+
         let oldDevices = clientConfig.devices || { audio: [], video: [] };
 
         console.log("Detect devices");
@@ -1657,7 +1664,7 @@ function init(node, flags) {
         beforeUnloadValue = arg;
     });
 
-    makePort("detectDevices", (cameraDeviceId) => detectDevices(true, cameraDeviceId));
+    makePort("detectDevices", (args) => detectDevices(true, args[0], args[1]));
     makePort("bindDevice", bindDevice);
     makePort("unbindDevice", unbindDevice);
     makePort("registerEvent", registerEvent);
