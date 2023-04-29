@@ -1034,6 +1034,16 @@ msgstr "Play sound track preview"
 msgid "Steps.Options.stopPreview"
 msgstr "Stop sound track preview"
 
+#. Collaboration.
+msgid "Steps.Collaboration.collaboration"
+msgstr "Collaboration"
+
+#. Collaborators.
+msgid "Steps.Collaboration.collaborator"
+msgid_plural ""
+msgstr[0] "Collaborator"
+msgstr[1] "Collaborators"
+
 #. Delete project.
 msgid "Actions.deleteProject"
 msgstr "Delete project"

@@ -18,6 +18,7 @@ type Route
     | Acquisition String Int
     | Production String Int
     | Publication String
+    | Collaboration String
     | Options String
     | Profile
     | NotFound
@@ -46,6 +47,9 @@ toUrl route =
 
         Options s ->
             "/capsule/options/" ++ s
+
+        Collaboration s ->
+            "/capsule/collaborators/" ++ s
 
         Profile ->
             "/profile"
@@ -104,6 +108,9 @@ fromUrl url =
         "capsule" :: "options" :: id :: [] ->
             Options id
 
+        "capsule" :: "collaborators" :: id :: [] ->
+            Collaboration id
+
         "profile" :: [] ->
             Profile
 
@@ -132,6 +139,9 @@ compareTab r1 r2 =
             True
 
         ( Options _, Options _ ) ->
+            True
+
+        ( Collaboration _, Collaboration _ ) ->
             True
 
         ( Profile, Profile ) ->

@@ -20,6 +20,7 @@ module App.Types exposing
 
 import Acquisition.Types as Acquisition
 import Browser
+import Collaboration.Types as Collaboration
 import Config exposing (Config)
 import Data.Capsule as Data
 import Data.User as Data exposing (User)
@@ -81,6 +82,7 @@ type Page
     | Production (Production.Model String Int)
     | Publication (Publication.Model String)
     | Options (Options.Model String)
+    | Collaboration (Collaboration.Model String)
     | Profile Profile.Model
 
 
@@ -110,6 +112,7 @@ type Msg
     | ProductionMsg Production.Msg
     | PublicationMsg Publication.Msg
     | OptionsMsg Options.Msg
+    | CollaborationMsg Collaboration.Msg
     | ProfileMsg Profile.Msg
     | ConfigMsg Config.Msg
     | WebSocketMsg WebSocketMsg

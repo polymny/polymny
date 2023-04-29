@@ -1041,6 +1041,16 @@ msgstr "Jouer un aperçu de la musique de fond"
 msgid "Steps.Options.stopPreview"
 msgstr "Arrêter l'aperçu"
 
+#. Collaboration.
+msgid "Steps.Collaboration.collaboration"
+msgstr "Collaboration"
+
+#. Collaborators.
+msgid "Steps.Collaboration.collaborator"
+msgid_plural ""
+msgstr[0] "Collaborateur"
+msgstr[1] "Collaborateurs"
+
 #. Delete project.
 msgid "Actions.deleteProject"
 msgstr "Supprimer le projet"

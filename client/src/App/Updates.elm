@@ -12,6 +12,8 @@ import Api.User as Api
 import App.Types as App
 import App.Utils as App
 import Browser.Navigation
+import Collaboration.Types as Collaboration
+import Collaboration.Updates as Collaboration
 import Config
 import Data.Capsule as Data
 import Data.Types as Data
@@ -323,6 +325,9 @@ updateModel msg model =
 
                 App.OptionsMsg oMsg ->
                     Options.update oMsg model
+
+                App.CollaborationMsg cMsg ->
+                    Collaboration.update cMsg model
 
                 App.ProfileMsg sMsg ->
                     Profile.update sMsg model

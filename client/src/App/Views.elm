@@ -11,6 +11,8 @@ import Acquisition.Views as Acquisition
 import App.Types as App
 import App.Utils as App
 import Browser
+import Collaboration.Types as Collaboration
+import Collaboration.Views as Collaboration
 import Config
 import Data.User as Data
 import Element exposing (Element)
@@ -114,6 +116,11 @@ title model =
                         App.Options m ->
                             Data.getCapsuleById m.capsule user
                                 |> Maybe.map (\c -> [ Strings.stepsPublicationPublication lang, c.project, c.name ])
+                                |> Maybe.withDefault []
+
+                        App.Collaboration m ->
+                            Data.getCapsuleById m.capsule user
+                                |> Maybe.map (\c -> [ Strings.stepsCollaborationCollaboration lang, c.project, c.name ])
                                 |> Maybe.withDefault []
 
                         App.Profile _ ->
@@ -239,6 +246,10 @@ viewSuccess model =
 
         ( App.Options m, Just capsule, _ ) ->
             Options.view model.config model.user (Options.withCapsule capsule m)
+                |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
+
+        ( App.Collaboration m, Just capsule, _ ) ->
+            Collaboration.view model.config model.user (Collaboration.withCapsule capsule m)
                 |> Ui.addLeftColumn model.config.clientState.lang model.page capsule Nothing
 
         ( App.Profile m, _, _ ) ->

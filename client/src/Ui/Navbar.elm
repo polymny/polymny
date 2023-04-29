@@ -495,7 +495,7 @@ navButtons lang capsuleId page =
     let
         buttonWidth : Int
         buttonWidth =
-            100
+            120
 
         roundRadius : Int
         roundRadius =
@@ -544,6 +544,9 @@ navButtons lang capsuleId page =
 
                 App.Options _ ->
                     4
+
+                App.Collaboration _ ->
+                    5
 
                 _ ->
                     -1
@@ -632,6 +635,8 @@ navButtons lang capsuleId page =
         , makeButton (Route.Publication capsuleId) (Strings.stepsPublicationPublish lang) (selectorIndex /= 3)
         , separator
         , makeButton (Route.Options capsuleId) (Strings.stepsOptionsOptions lang) (selectorIndex /= 4)
+        , separator
+        , makeButton (Route.Collaboration capsuleId) (Strings.stepsCollaborationCollaboration lang) (selectorIndex /= 4)
         ]
 
 
@@ -659,6 +664,9 @@ bottombar config page =
 
                 Just (App.Options s) ->
                     "/o/capsule/preparation/" ++ s.capsule
+
+                Just (App.Collaboration s) ->
+                    "/o/capsule/settings/" ++ s.capsule
 
                 Just (App.Profile _) ->
                     "/o/settings/"

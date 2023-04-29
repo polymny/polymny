@@ -973,6 +973,15 @@ msgstr ""
 msgid "Steps.Options.noTrack"
 msgstr ""
 
+#. Collaboration.
+msgid "Steps.Collaboration.collaboration"
+msgstr ""
+
+#. Collaborators.
+msgid "Steps.Collaboration.collaborator"
+msgid_plural ""
+msgstr[0] ""
+
 #. Delete track action.
 msgid "Actions.Confirm.deleteTrack"
 msgstr ""

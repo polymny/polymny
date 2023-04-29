@@ -1,12 +1,12 @@
 module Data.Capsule exposing
-    ( Capsule, emptyCapsule, assetPath, iframeHtml
+    ( Capsule, emptyCapsule, assetPath, iframeHtml, Collaborator
     , Gos, gosFromSlides, WebcamSettings(..), defaultWebcamSettings, setWebcamSettingsSize, Fade, defaultFade, Anchor(..), Event, EventType(..), eventTypeToString, updateGos
     , Slide, slidePath, videoPath, recordPath, pointerPath, gosVideoPath, deleteSlide, deleteExtra, updateSlide, updateSlideInGos
     , Record
     , encodeCapsule, encodeGos, encodeWebcamSettings, encodeFade, encodeRecord, encodeEvent, encodeEventType, encodeAnchor
     , encodeSlide, encodePair
     , decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
-    , decodeEventType, decodeAnchor, decodeSlide, decodePair
+    , decodeEventType, decodeAnchor, decodeSlide, decodePair, decodeCollaborator
     , SoundTrack, encodeCapsuleAll, firstRecordPath, removeTrack, trackPath, trackPreviewPath
     )
 
@@ -15,7 +15,7 @@ module Data.Capsule exposing
 
 # The capsule type
 
-@docs Capsule, emptyCapsule, assetPath, iframeHtml
+@docs Capsule, emptyCapsule, assetPath, iframeHtml, Collaborator
 
 
 # The GoS (Group of Slides) type
@@ -45,7 +45,7 @@ module Data.Capsule exposing
 ## Decoders
 
 @docs decodeCapsule, decodeGos, decodeWebcamSettings, decodePip, decodeFullscreen, decodeFade, decodeRecord, decodeEvent
-@docs decodeEventType, decodeAnchor, decodeSlide, decodePair
+@docs decodeEventType, decodeAnchor, decodeSlide, decodePair, decodeCollaborator
 
 -}
 
@@ -63,6 +63,7 @@ type alias Capsule =
     , name : String
     , project : String
     , role : Data.Role
+    , collaborators : List Collaborator
     , videoUploaded : Data.TaskStatus
     , produced : Data.TaskStatus
     , published : Data.TaskStatus
@@ -77,6 +78,23 @@ type alias Capsule =
     }
 
 
+{-| This type represents a collaborator of a capsule.
+-}
+type alias Collaborator =
+    { username : String
+    , role : Data.Role
+    }
+
+
+{-| Decodes a collaborator.
+-}
+decodeCollaborator : Decoder Collaborator
+decodeCollaborator =
+    Decode.map2 Collaborator
+        (Decode.field "username" Decode.string)
+        (Decode.field "role" Data.decodeRole)
+
+
 {-| Create an empty capsule.
 -}
 emptyCapsule : Capsule
@@ -85,6 +103,7 @@ emptyCapsule =
     , name = ""
     , project = ""
     , role = Data.Owner
+    , collaborators = []
     , videoUploaded = Data.Idle
     , produced = Data.Idle
     , published = Data.Idle
@@ -141,6 +160,7 @@ decodeCapsule =
         |> andMap (Decode.field "name" Decode.string)
         |> andMap (Decode.field "project" Decode.string)
         |> andMap (Decode.field "role" Data.decodeRole)
+        |> andMap (Decode.field "users" (Decode.list decodeCollaborator))
         |> andMap (Decode.field "video_uploaded" Data.decodeTaskStatus)
         |> andMap (Decode.field "produced" Data.decodeTaskStatus)
         |> andMap (Decode.field "published" Data.decodeTaskStatus)
@@ -148,7 +168,6 @@ decodeCapsule =
         |> andMap (Decode.field "structure" (Decode.list decodeGos))
         |> andMap (Decode.field "webcam_settings" decodeWebcamSettings)
         |> andMap (Decode.field "last_modified" Decode.int)
-        -- |> andMap (Decode.field "users" (Decode.list decodeUser))
         |> andMap (Decode.field "prompt_subtitles" Decode.bool)
         |> andMap (Decode.field "disk_usage" Decode.int)
         |> andMap (Decode.field "duration_ms" Decode.int)
