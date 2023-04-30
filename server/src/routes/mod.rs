@@ -329,6 +329,18 @@ pub async fn capsule_settings(
     index_without_cors(config, db, user, lang).await
 }
 
+/// The route to the collaborators of a capsule.
+#[get("/capsule/collaborators/<_id>")]
+pub async fn capsule_collaborators(
+    config: &S<Config>,
+    db: Db,
+    user: Option<User>,
+    _id: String,
+    lang: Lang,
+) -> Either<Html<String>, Redirect> {
+    index_without_cors(config, db, user, lang).await
+}
+
 /// The 404 catcher.
 #[catch(404)]
 pub async fn not_found<'a>(request: &'_ Request<'a>) -> Either<Html<String>, Redirect> {

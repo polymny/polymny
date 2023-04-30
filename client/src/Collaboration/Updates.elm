@@ -3,9 +3,13 @@ module Collaboration.Updates exposing (..)
 {-| This module helps us deal with collaboration updates.
 -}
 
+import Api.Capsule as Api
 import App.Types as App
 import App.Utils as App
 import Collaboration.Types as Collaboration
+import Data.Types as Data
+import Data.User as Data
+import RemoteData
 
 
 {-| Update function for the collaboration page.
@@ -19,8 +23,51 @@ update msg model =
     case ( model.page, maybeCapsule ) of
         ( App.Collaboration m, Just capsule ) ->
             case msg of
-                _ ->
-                    ( model, Cmd.none )
+                Collaboration.NewCollaboratorChanged n ->
+                    ( { model | page = App.Collaboration { m | newCollaborator = n } }, Cmd.none )
+
+                Collaboration.NewCollaboratorFormChanged (RemoteData.Success ()) ->
+                    let
+                        newCollaborators =
+                            capsule.collaborators ++ [ { username = m.newCollaborator, role = Data.Read } ]
+
+                        newCapsule =
+                            { capsule | collaborators = newCollaborators }
+
+                        newUser =
+                            Data.updateUser newCapsule model.user
+                    in
+                    ( { model | user = newUser, page = App.Collaboration { m | newCollaboratorForm = RemoteData.Success () } }
+                    , Cmd.none
+                    )
+
+                Collaboration.NewCollaboratorFormChanged n ->
+                    ( { model | page = App.Collaboration { m | newCollaboratorForm = n } }, Cmd.none )
+
+                Collaboration.NewCollaboratorFormSubmitted ->
+                    ( { model | page = App.Collaboration { m | newCollaboratorForm = RemoteData.Loading Nothing } }
+                    , Api.addCollaborator
+                        capsule
+                        m.newCollaborator
+                        Data.Read
+                        (\x -> App.CollaborationMsg <| Collaboration.NewCollaboratorFormChanged x)
+                    )
+
+                Collaboration.RemoveCollaborator u ->
+                    let
+                        newCollaborators =
+                            capsule.collaborators
+                                |> List.filter (\x -> x.username /= u.username)
+
+                        newCapsule =
+                            { capsule | collaborators = newCollaborators }
+
+                        newUser =
+                            Data.updateUser newCapsule model.user
+                    in
+                    ( { model | user = newUser }
+                    , Api.removeCollaborator capsule u.username (\_ -> App.Noop)
+                    )
 
         _ ->
             ( model, Cmd.none )

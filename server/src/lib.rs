@@ -440,6 +440,7 @@ pub async fn rocket() -> StdResult<Rocket<Ignite>, rocket::Error> {
                 routes::admin_users,
                 routes::admin_capsules,
                 routes::capsule_settings,
+                routes::capsule_collaborators,
                 routes::user::activate,
                 routes::user::unsubscribe,
                 routes::user::reset_password,

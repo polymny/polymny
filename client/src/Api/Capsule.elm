@@ -1,17 +1,19 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord
+@docs uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator
 
 -}
 
 import Api.Utils as Api
 import Config
 import Data.Capsule as Data
+import Data.Types as Data
 import File exposing (File)
 import FileValue
 import Http
+import Json.Encode as Encode
 import RemoteData exposing (WebData)
 
 
@@ -157,5 +159,32 @@ duplicateCapsule capsule toMsg =
         { url = "/api/duplicate/" ++ capsule.id
         , decoder = Data.decodeCapsule
         , body = Http.emptyBody
+        , toMsg = toMsg
+        }
+
+
+{-| Adds a collaborator to a capsule.
+-}
+addCollaborator : Data.Capsule -> String -> Data.Role -> (WebData () -> msg) -> Cmd msg
+addCollaborator capsule username role toMsg =
+    Api.post
+        { url = "/api/invite/" ++ capsule.id
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "username", Encode.string username )
+                    , ( "role", Encode.string <| Data.encodeRole role )
+                    ]
+        , toMsg = toMsg
+        }
+
+
+{-| Removes a collaborator to a capsule.
+-}
+removeCollaborator : Data.Capsule -> String -> (WebData () -> msg) -> Cmd msg
+removeCollaborator capsule username toMsg =
+    Api.post
+        { url = "/api/deinvite/" ++ capsule.id
+        , body = Http.jsonBody <| Encode.object [ ( "username", Encode.string username ) ]
         , toMsg = toMsg
         }

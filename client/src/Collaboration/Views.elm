@@ -14,6 +14,9 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
+import Material.Icons
+import RemoteData
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -61,28 +64,27 @@ view config user model =
                             ( Ui.logo 50, Strings.dataCapsuleRoleRead lang )
 
                 attr =
-                    if id == List.length model.capsule.collaborators - 1 then
-                        [ Ui.wf
-                        , Ui.p 10
-                        , Border.widthEach { left = 1, right = 1, bottom = 1, top = 0 }
-                        , Border.color Colors.greyBorder
-                        , Ui.s 10
-                        , Background.color Colors.white
-                        ]
-
-                    else
-                        [ Ui.wf
-                        , Ui.p 10
-                        , Ui.bx 1
-                        , Border.color Colors.greyBorder
-                        , Ui.s 10
-                        , Background.color Colors.white
-                        ]
+                    [ Ui.wf
+                    , Ui.p 10
+                    , Border.widthEach { left = 1, right = 1, bottom = 1, top = 0 }
+                    , Border.color Colors.greyBorder
+                    , Ui.s 10
+                    , Background.color Colors.white
+                    ]
             in
             Element.row attr
                 [ logo
                 , Element.text u.username
                 , Element.el [ Font.italic, Ui.ar ] <| Element.text role
+                , if u.role /= Data.Owner then
+                    Ui.primaryIcon []
+                        { icon = Material.Icons.clear
+                        , action = Ui.Msg <| App.CollaborationMsg <| Collaboration.RemoveCollaborator u
+                        , tooltip = "[REMOVE]"
+                        }
+
+                  else
+                    Element.none
                 ]
 
         -- All collaborators
@@ -90,10 +92,41 @@ view config user model =
         collaborators =
             (collaboratorHead :: List.indexedMap collaboratorView model.capsule.collaborators)
                 |> Element.column [ Ui.wf ]
+
+        -- New collaborator form
+        addCollaboratorForm : Element App.Msg
+        addCollaboratorForm =
+            Element.row [ Ui.s 10, Ui.wf ]
+                [ Input.text [ Ui.wf ]
+                    { label = Input.labelHidden <| Strings.loginUsernameOrEmail lang
+                    , onChange =
+                        \x ->
+                            case model.newCollaboratorForm of
+                                RemoteData.Loading _ ->
+                                    App.Noop
+
+                                _ ->
+                                    App.CollaborationMsg <| Collaboration.NewCollaboratorChanged x
+                    , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginUsernameOrEmail lang
+                    , text = model.newCollaborator
+                    }
+                , Ui.primary []
+                    { action = Ui.Msg <| App.CollaborationMsg <| Collaboration.NewCollaboratorFormSubmitted
+                    , label = Element.text <| "[Add collab]"
+                    }
+                ]
+
+        -- Main content
+        content : Element App.Msg
+        content =
+            Element.column [ Ui.s 10, Ui.wf ]
+                [ collaborators
+                , addCollaboratorForm
+                ]
     in
     ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
         [ Element.el [ Ui.wf ] Element.none
-        , Element.el [ Ui.wf, Ui.at ] collaborators
+        , Element.el [ Ui.wf, Ui.at ] content
         , Element.el [ Ui.wf ] Element.none
         ]
     , Element.none
