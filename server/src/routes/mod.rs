@@ -330,7 +330,7 @@ pub async fn capsule_settings(
 }
 
 /// The route to the collaborators of a capsule.
-#[get("/capsule/collaborators/<_id>")]
+#[get("/capsule/collaboration/<_id>")]
 pub async fn capsule_collaborators(
     config: &S<Config>,
     db: Db,

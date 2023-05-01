@@ -49,7 +49,7 @@ toUrl route =
             "/capsule/options/" ++ s
 
         Collaboration s ->
-            "/capsule/collaborators/" ++ s
+            "/capsule/collaboration/" ++ s
 
         Profile ->
             "/profile"
@@ -108,7 +108,7 @@ fromUrl url =
         "capsule" :: "options" :: id :: [] ->
             Options id
 
-        "capsule" :: "collaborators" :: id :: [] ->
+        "capsule" :: "collaboration" :: id :: [] ->
             Collaboration id
 
         "profile" :: [] ->

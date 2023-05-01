@@ -55,7 +55,7 @@ bottomBar langMsg global page user =
                             "/capsule/publication/" ++ id ++ "/"
 
                         Route.CapsuleSettings c ->
-                            "/capsule/preparation/" ++ c ++ "/"
+                            "/capsule/collaboration/" ++ c ++ "/"
 
                         Route.Settings ->
                             "/profile/"
