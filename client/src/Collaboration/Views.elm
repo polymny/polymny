@@ -140,16 +140,10 @@ view config user model =
         -- Main content
         content : Element App.Msg
         content =
-            Element.column [ Ui.s 10, Ui.wf ]
+            Element.column [ Ui.p 10, Ui.cx, Element.width (Element.fill |> Element.maximum 1000), Ui.s 10 ]
                 [ collaborators
                 , addCollaboratorForm
                 , collaboratorError
                 ]
     in
-    ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
-        [ Element.el [ Ui.wf ] Element.none
-        , Element.el [ Ui.wf, Ui.at ] content
-        , Element.el [ Ui.wf ] Element.none
-        ]
-    , Element.none
-    )
+    ( content, Element.none )
