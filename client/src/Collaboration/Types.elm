@@ -43,3 +43,4 @@ type Msg
     | NewCollaboratorFormChanged (WebData ())
     | NewCollaboratorFormSubmitted
     | RemoveCollaborator Data.Collaborator
+    | SwitchRole Data.Collaborator

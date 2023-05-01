@@ -69,5 +69,31 @@ update msg model =
                     , Api.removeCollaborator capsule u.username (\_ -> App.Noop)
                     )
 
+                Collaboration.SwitchRole u ->
+                    let
+                        newRole =
+                            if u.role == Data.Read then
+                                Data.Write
+
+                            else
+                                Data.Read
+
+                        collaboratorUpdater collaborator =
+                            if collaborator.username == u.username then
+                                { collaborator | role = newRole }
+
+                            else
+                                collaborator
+
+                        newCapsule =
+                            { capsule | collaborators = List.map collaboratorUpdater capsule.collaborators }
+
+                        newUser =
+                            Data.updateUser newCapsule model.user
+                    in
+                    ( { model | user = newUser }
+                    , Api.changeCollaboratorRole capsule u.username newRole (\_ -> App.Noop)
+                    )
+
         _ ->
             ( model, Cmd.none )

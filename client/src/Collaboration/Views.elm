@@ -52,16 +52,16 @@ view config user model =
         collaboratorView : Int -> Data.Collaborator -> Element App.Msg
         collaboratorView id u =
             let
-                ( logo, role ) =
+                ( logo, role, switchAllowed ) =
                     case u.role of
                         Data.Owner ->
-                            ( Ui.logoRed 50, Strings.dataCapsuleRoleOwner lang )
+                            ( Ui.logoRed 50, Strings.dataCapsuleRoleOwner lang, False )
 
                         Data.Write ->
-                            ( Ui.logoBlue 50, Strings.dataCapsuleRoleWrite lang )
+                            ( Ui.logoBlue 50, Strings.dataCapsuleRoleWrite lang, True )
 
                         Data.Read ->
-                            ( Ui.logo 50, Strings.dataCapsuleRoleRead lang )
+                            ( Ui.logo 50, Strings.dataCapsuleRoleRead lang, True )
 
                 attr =
                     [ Ui.wf
@@ -75,7 +75,14 @@ view config user model =
             Element.row attr
                 [ logo
                 , Element.text u.username
-                , Element.el [ Font.italic, Ui.ar ] <| Element.text role
+                , if switchAllowed then
+                    Ui.link [ Font.italic, Ui.ar ]
+                        { label = role
+                        , action = Ui.Msg <| App.CollaborationMsg <| Collaboration.SwitchRole u
+                        }
+
+                  else
+                    Element.el [ Font.italic, Ui.ar ] <| Element.text role
                 , if u.role /= Data.Owner then
                     Ui.primaryIcon []
                         { icon = Material.Icons.clear

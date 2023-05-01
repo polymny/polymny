@@ -1,8 +1,8 @@
-module Api.Capsule exposing (uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator)
+module Api.Capsule exposing (uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator, changeCollaboratorRole)
 
 {-| This module contains all the functions to deal with the API of capsules.
 
-@docs uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator
+@docs uploadSlideShow, updateCapsule, duplicateCapsule, addSlide, addGos, replaceSlide, produceCapsule, publishCapsule, unpublishCapsule, uploadTrack, deleteRecord, addCollaborator, removeCollaborator, changeCollaboratorRole
 
 -}
 
@@ -186,5 +186,21 @@ removeCollaborator capsule username toMsg =
     Api.post
         { url = "/api/deinvite/" ++ capsule.id
         , body = Http.jsonBody <| Encode.object [ ( "username", Encode.string username ) ]
+        , toMsg = toMsg
+        }
+
+
+{-| Changes the role of a collaborator.
+-}
+changeCollaboratorRole : Data.Capsule -> String -> Data.Role -> (WebData () -> msg) -> Cmd msg
+changeCollaboratorRole capsule username role toMsg =
+    Api.post
+        { url = "/api/change-role/" ++ capsule.id
+        , body =
+            Http.jsonBody <|
+                Encode.object
+                    [ ( "username", Encode.string username )
+                    , ( "role", Encode.string <| Data.encodeRole role )
+                    ]
         , toMsg = toMsg
         }
