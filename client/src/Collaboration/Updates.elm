@@ -37,7 +37,7 @@ update msg model =
                         newUser =
                             Data.updateUser newCapsule model.user
                     in
-                    ( { model | user = newUser, page = App.Collaboration { m | newCollaboratorForm = RemoteData.Success () } }
+                    ( { model | user = newUser, page = App.Collaboration { m | newCollaborator = "", newCollaboratorForm = RemoteData.Success () } }
                     , Cmd.none
                     )
 

@@ -1044,6 +1044,22 @@ msgid_plural ""
 msgstr[0] "Collaborator"
 msgstr[1] "Collaborators"
 
+#. Add a collaborator.
+msgid "Steps.Collaboration.addCollaborator"
+msgstr "Add collaborator"
+
+#. Addition of a collaborator failed.
+msgid "Steps.Collaboration.addCollaboratorFailed"
+msgstr "Couldn't add collaborator"
+
+#. Is the username or email correct.
+msgid "Steps.Collaboration.addCollaboratorFailed2"
+msgstr "Is the username or email correct"
+
+#. Remove a collaborator.
+msgid "Steps.Collaboration.removeCollaborator"
+msgstr "Remove collaborator"
+
 #. Delete project.
 msgid "Actions.deleteProject"
 msgstr "Delete project"

@@ -15,6 +15,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Lang
 import Material.Icons
 import RemoteData
 import Strings
@@ -87,7 +88,7 @@ view config user model =
                     Ui.primaryIcon []
                         { icon = Material.Icons.clear
                         , action = Ui.Msg <| App.CollaborationMsg <| Collaboration.RemoveCollaborator u
-                        , tooltip = "[REMOVE]"
+                        , tooltip = Strings.stepsCollaborationRemoveCollaborator lang
                         }
 
                   else
@@ -119,9 +120,22 @@ view config user model =
                     }
                 , Ui.primary []
                     { action = Ui.Msg <| App.CollaborationMsg <| Collaboration.NewCollaboratorFormSubmitted
-                    , label = Element.text <| "[Add collab]"
+                    , label = Element.text <| Strings.stepsCollaborationAddCollaborator lang
                     }
                 ]
+
+        -- Error message if collaborator addition failed
+        collaboratorError : Element App.Msg
+        collaboratorError =
+            case model.newCollaboratorForm of
+                RemoteData.Failure _ ->
+                    Strings.stepsCollaborationAddCollaboratorFailed lang
+                        ++ ". "
+                        ++ Lang.question Strings.stepsCollaborationAddCollaboratorFailed2 lang
+                        |> Ui.paragraph [ Ui.p 10, Border.color Colors.red, Ui.b 1, Background.color Colors.redLight, Font.color Colors.red ]
+
+                _ ->
+                    Element.none
 
         -- Main content
         content : Element App.Msg
@@ -129,6 +143,7 @@ view config user model =
             Element.column [ Ui.s 10, Ui.wf ]
                 [ collaborators
                 , addCollaboratorForm
+                , collaboratorError
                 ]
     in
     ( Element.row [ Ui.wf, Ui.hf, Ui.s 10, Ui.p 10 ]
