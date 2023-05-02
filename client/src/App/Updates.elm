@@ -562,7 +562,7 @@ subs m =
                         Options.subs
 
                     ( App.Profile _, _, _ ) ->
-                        Sub.none
+                        Profile.subs
 
                     _ ->
                         Sub.none

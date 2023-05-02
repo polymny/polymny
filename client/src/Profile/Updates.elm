@@ -5,8 +5,9 @@ module Profile.Updates exposing (..)
 
 import Api.User as Api
 import App.Types as App
-import RemoteData
+import Keyboard
 import Profile.Types as Profile
+import RemoteData
 
 
 {-| Update function for the profile page.
@@ -82,5 +83,33 @@ update msg model =
             , Cmd.none
             )
 
+        ( Profile.EnterPressed, App.Profile (Profile.ChangeEmail _) ) ->
+            update Profile.ChangeEmailConfirm model
+
+        ( Profile.EnterPressed, App.Profile (Profile.ChangePassword _) ) ->
+            update Profile.ChangePasswordConfirm model
+
+        ( Profile.EnterPressed, App.Profile (Profile.DeleteAccount _) ) ->
+            update Profile.DeleteAccountConfirm model
+
         _ ->
             ( model, Cmd.none )
+
+
+{-| Keyboard shortcuts of the profile page.
+-}
+shortcuts : Keyboard.RawKey -> App.Msg
+shortcuts msg =
+    case Keyboard.rawValue msg of
+        "Enter" ->
+            App.ProfileMsg Profile.EnterPressed
+
+        _ ->
+            App.Noop
+
+
+{-| Subscriptions of the page.
+-}
+subs : Sub App.Msg
+subs =
+    Keyboard.ups shortcuts

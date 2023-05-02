@@ -124,3 +124,4 @@ type Msg
     | DeleteAccountCancel
     | DeleteAccountConfirmTwice
     | DeleteAccountDataChanged (WebData ())
+    | EnterPressed

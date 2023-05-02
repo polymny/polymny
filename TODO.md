@@ -13,7 +13,6 @@
  - [x] envoi de slide change pas la vu du grain dans left column
  - [ ] ajouter un slide ne supprime pas le record
  - [ ] feedback sur l'existence du prompt
- - [ ] message d'erreur si cam utilisée
 
 # Aciquisition
  - [x] interdire rec pointer si record playing
@@ -27,9 +26,10 @@
  - [x] pointeur peut se faire désactiver entre slide avec prompt vs sans prompt
  - [ ] clear cache dans les settings ?
  - [x] manque un clear canvas à la fin du record
- - [X] il faut clear proprement quand on change de page
+ - [x] il faut clear proprement quand on change de page
  - [ ] scroll bar dans aqcquisition
  - [ ] si autorisation au mic refusée : inifnite loop binding device
+ - [x] message d'erreur si cam utilisée
 
 # Production
  - [ ] taille de la webcam : autotriser la chaine vide serait vachement pratique
@@ -39,8 +39,8 @@
 
 # Settings
  - [x] page d'accueil vide
- - [ ] touche entrée ne valide pas
- - [ ] spinning spinner est align right au lieu de center
+ - [x] touche entrée ne valide pas
+ - [x] spinning spinner est align right au lieu de center
 
 # Publication
  - [ ] bouton published en bas a droite ?
@@ -52,7 +52,7 @@
  - [x] feedback sur l'etat du websocket ?
  - [x] touche entrée ne valide pas
  - [ ] plus d'info sur les tasks (quelle capsule)
- - [ ] validate e-mail : add trailing slash + redirect
+ - [x] validate e-mail : add trailing slash + redirect
  - [x] disabled button doesn't show up greyed
 
 # Home
