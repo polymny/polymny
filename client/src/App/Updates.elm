@@ -53,10 +53,6 @@ update message model =
             -- Reload page to fetch server data and connect to websocket
             ( model, Browser.Navigation.reload )
 
-        -- When the user changes their password after reset
-        ( App.UnloggedMsg (Unlogged.ResetPasswordRequestChanged (RemoteData.Success _)), App.Unlogged _ ) ->
-            ( model, Browser.Navigation.reload )
-
         -- When the user deletes their account
         ( App.LoggedMsg (App.ProfileMsg (Profile.DeleteAccountDataChanged (RemoteData.Success _))), App.Logged m ) ->
             ( model

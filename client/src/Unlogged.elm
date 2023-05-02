@@ -16,7 +16,7 @@ main : Program Decode.Value (Maybe Unlogged.Model) Unlogged.Msg
 main =
     Browser.element
         { init = Unlogged.initStandalone
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> Unlogged.subs
         , update = Unlogged.updateStandalone
         , view = Unlogged.viewStandalone
         }
