@@ -749,6 +749,10 @@ msgstr ""
 msgid "Ui.help"
 msgstr ""
 
+#. Open Polymny.
+msgid "Ui.openPolymny"
+msgstr ""
+
 #. The admin can edit a user.
 msgid "Admin.editUser"
 msgstr ""

@@ -13,7 +13,8 @@ import Url exposing (Url)
 {-| The model for the login form.
 -}
 type alias Model =
-    { serverRoot : String
+    { hasCookie : Bool
+    , serverRoot : String
     , lang : Lang
     , page : Page
     , username : String
@@ -79,9 +80,10 @@ type Msg
 
 {-| Initializes the unlogged model.
 -}
-init : Lang -> String -> Maybe Url -> Model
-init lang serverRoot url =
-    { serverRoot = serverRoot
+init : Lang -> Bool -> String -> Maybe Url -> Model
+init lang hasCookie serverRoot url =
+    { hasCookie = hasCookie
+    , serverRoot = serverRoot
     , lang = lang
     , page = Maybe.map fromUrl url |> Maybe.withDefault Login
     , username = ""
@@ -140,9 +142,14 @@ initStandalone flags =
                 |> Maybe.andThen Lang.fromString
                 |> Maybe.withDefault Lang.default
 
+        hasCookie =
+            Decode.decodeValue (Decode.field "hasCookie" Decode.bool) flags
+                |> Result.toMaybe
+                |> Maybe.withDefault False
+
         model =
             Decode.decodeValue (Decode.field "root" Decode.string) flags
                 |> Result.toMaybe
-                |> Maybe.map (\x -> init lang x Nothing)
+                |> Maybe.map (\x -> init lang hasCookie x Nothing)
     in
     ( model, Cmd.none )

@@ -1235,6 +1235,10 @@ msgstr "Vous pouvez patienter ou raffraîchir la page, ou contacter l'administra
 msgid "Ui.goBackToOldClient"
 msgstr "Retourner à l'ancienne version"
 
+#. Open Polymny.
+msgid "Ui.openPolymny"
+msgstr "Ouvrir Polymny"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Téléversement de l'enregistrement"

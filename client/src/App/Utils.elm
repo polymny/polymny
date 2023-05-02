@@ -20,7 +20,6 @@ import Data.Types as Data
 import Data.User as Data exposing (User)
 import Home.Types as Home
 import Json.Decode as Decode
-import List exposing (product)
 import Options.Types as Options
 import Preparation.Types as Preparation
 import Production.Types as Production
@@ -111,8 +110,8 @@ init flags url key =
                     , Cmd.map App.LoggedMsg cm
                     )
 
-                ( Ok s, Ok c, Ok Nothing ) ->
-                    ( App.Unlogged <| Unlogged.init clientState.lang s.root (Just url)
+                ( Ok s, Ok _, Ok Nothing ) ->
+                    ( App.Unlogged <| Unlogged.init clientState.lang False s.root (Just url)
                     , Cmd.none
                     )
 

@@ -1228,6 +1228,10 @@ msgstr "You can wait or try to refresh the page, or contact the administrator if
 msgid "Ui.goBackToOldClient"
 msgstr "Go back to the old version"
 
+#. Open Polymny.
+msgid "Ui.openPolymny"
+msgstr "Open Polymny"
+
 #. Upload record task.
 msgid "Tasks.uploadRecord"
 msgstr "Upload record"

@@ -52,7 +52,7 @@ unlogged-release: client/src/**
 unlogged-watch:
 	@/bin/echo -e "\033[32;1m    Watching\033[0m unlogged"
 	@mkdir -p $(BUILD_DIR)
-	@cd client && $(ELMLIVE) src/Unlogged.elm -p 7001 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/unlogged.js
+	@cd client && $(ELMLIVE) src/Unlogged.elm -p 7002 -d ../$(BUILD_DIR)/ -- --output ../$(BUILD_DIR)/unlogged.js
 
 server-dev:
 	@cd server && cargo build

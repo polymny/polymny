@@ -12,6 +12,7 @@ import Html.Attributes
 import Http
 import Lang
 import RemoteData
+import Route
 import Strings
 import Ui.Colors as Colors
 import Ui.Elements as Ui
@@ -229,105 +230,117 @@ view model =
 
                 _ ->
                     ( Ui.Msg Unlogged.ButtonClicked, Ui.primary )
+
+        form : Element Unlogged.Msg
+        form =
+            Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
+                [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
+                    [ only [ Unlogged.Login, Unlogged.SignUp ] <|
+                        Input.username [ Ui.cx, Ui.wf ]
+                            { label = Input.labelHidden <| Strings.dataUserUsername lang
+                            , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserUsername lang
+                            , onChange = Unlogged.UsernameChanged
+                            , text = model.username
+                            }
+                    , only [ Unlogged.ForgotPassword, Unlogged.SignUp ] <|
+                        Input.email (Ui.cx :: Ui.wf :: emailAttr)
+                            { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
+                            , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
+                            , onChange = Unlogged.EmailChanged
+                            , text = model.email
+                            }
+                    , only [ Unlogged.SignUp ] emailError
+                    , only [ Unlogged.Login, Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
+                        password (Ui.cx :: Ui.wf :: passwordAttr)
+                            { label = Input.labelHidden <| Strings.dataUserPassword lang
+                            , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
+                            , onChange = Unlogged.PasswordChanged
+                            , text = model.password
+                            , show = False
+                            }
+                    , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <| Utils.passwordStrengthElement model.password
+                    , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordError
+                    , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
+                        Input.newPassword (Ui.cx :: Ui.wf :: repeatAttr)
+                            { label = Input.labelHidden <| Strings.dataUserPassword lang
+                            , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
+                            , onChange = Unlogged.RepeatPasswordChanged
+                            , text = model.repeatPassword
+                            , show = False
+                            }
+                    , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] repeatError
+                    , only [ Unlogged.SignUp ] <|
+                        Input.checkbox []
+                            { label =
+                                Input.labelRight [ Ui.wf ] <|
+                                    Element.paragraph [ Ui.wf ]
+                                        [ Element.text <| Strings.loginAcceptTermsOfServiceBegining lang ++ " "
+                                        , Ui.link []
+                                            { label = Strings.loginTermsOfService lang |> String.toLower
+                                            , action = Ui.NewTab "https://polymny.studio/cgu-consommateurs/"
+                                            }
+                                        ]
+                            , icon = Input.defaultCheckbox
+                            , onChange = Unlogged.AcceptTermsOfServiceChanged
+                            , checked = model.acceptTermsOfService
+                            }
+                    , only [ Unlogged.SignUp ] acceptError
+                    , only [ Unlogged.SignUp ] <|
+                        Input.checkbox []
+                            { label = Input.labelRight [] <| Element.text <| Strings.loginSignUpForTheNewsletter lang
+                            , icon = Input.defaultCheckbox
+                            , onChange = Unlogged.SignUpForNewsletterChanged
+                            , checked = model.signUpForNewsletter
+                            }
+                    , mkButton [ Ui.cx, Ui.wf ]
+                        { action = buttonMsg
+                        , label = buttonText
+                        }
+                    ]
+                , only [ Unlogged.Login ] <|
+                    Element.row [ Ui.s 10, Ui.cx ]
+                        [ Ui.link []
+                            { action =
+                                if model.loginRequest == RemoteData.Loading Nothing then
+                                    Ui.None
+
+                                else
+                                    Ui.Msg <| Unlogged.PageChanged <| Unlogged.ForgotPassword
+                            , label = Lang.question Strings.loginForgottenPassword lang
+                            }
+                        , Ui.link []
+                            { action =
+                                if model.loginRequest == RemoteData.Loading Nothing then
+                                    Ui.None
+
+                                else
+                                    Ui.Msg <| Unlogged.PageChanged <| Unlogged.SignUp
+                            , label = Lang.question Strings.loginNotRegisteredYet lang
+                            }
+                        ]
+                , formatError errorMessage
+                , formatSuccess successMessage
+                , Element.html <|
+                    Html.form
+                        [ Html.Attributes.method "POST"
+                        , Html.Attributes.action (model.serverRoot ++ "/login")
+                        , Html.Attributes.style "display" "none"
+                        , Html.Attributes.id "loginform"
+                        ]
+                        [ Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "username", Html.Attributes.value model.username ] []
+                        , Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "password", Html.Attributes.value model.password ] []
+                        ]
+                ]
     in
-    Element.column [ Ui.p 10, Ui.s 10, Ui.wf ]
-        [ layout [ Ui.s 10, Ui.cx, Ui.wf ]
-            [ only [ Unlogged.Login, Unlogged.SignUp ] <|
-                Input.username [ Ui.cx, Ui.wf ]
-                    { label = Input.labelHidden <| Strings.dataUserUsername lang
-                    , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserUsername lang
-                    , onChange = Unlogged.UsernameChanged
-                    , text = model.username
-                    }
-            , only [ Unlogged.ForgotPassword, Unlogged.SignUp ] <|
-                Input.email (Ui.cx :: Ui.wf :: emailAttr)
-                    { label = Input.labelHidden <| Strings.dataUserEmailAddress lang
-                    , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserEmailAddress lang
-                    , onChange = Unlogged.EmailChanged
-                    , text = model.email
-                    }
-            , only [ Unlogged.SignUp ] emailError
-            , only [ Unlogged.Login, Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
-                password (Ui.cx :: Ui.wf :: passwordAttr)
-                    { label = Input.labelHidden <| Strings.dataUserPassword lang
-                    , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.dataUserPassword lang
-                    , onChange = Unlogged.PasswordChanged
-                    , text = model.password
-                    , show = False
-                    }
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <| Utils.passwordStrengthElement model.password
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] passwordError
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] <|
-                Input.newPassword (Ui.cx :: Ui.wf :: repeatAttr)
-                    { label = Input.labelHidden <| Strings.dataUserPassword lang
-                    , placeholder = Just <| Input.placeholder [] <| Element.text <| Strings.loginRepeatPassword lang
-                    , onChange = Unlogged.RepeatPasswordChanged
-                    , text = model.repeatPassword
-                    , show = False
-                    }
-            , only [ Unlogged.SignUp, Unlogged.ResetPassword "" ] repeatError
-            , only [ Unlogged.SignUp ] <|
-                Input.checkbox []
-                    { label =
-                        Input.labelRight [ Ui.wf ] <|
-                            Element.paragraph [ Ui.wf ]
-                                [ Element.text <| Strings.loginAcceptTermsOfServiceBegining lang ++ " "
-                                , Ui.link []
-                                    { label = Strings.loginTermsOfService lang |> String.toLower
-                                    , action = Ui.NewTab "https://polymny.studio/cgu-consommateurs/"
-                                    }
-                                ]
-                    , icon = Input.defaultCheckbox
-                    , onChange = Unlogged.AcceptTermsOfServiceChanged
-                    , checked = model.acceptTermsOfService
-                    }
-            , only [ Unlogged.SignUp ] acceptError
-            , only [ Unlogged.SignUp ] <|
-                Input.checkbox []
-                    { label = Input.labelRight [] <| Element.text <| Strings.loginSignUpForTheNewsletter lang
-                    , icon = Input.defaultCheckbox
-                    , onChange = Unlogged.SignUpForNewsletterChanged
-                    , checked = model.signUpForNewsletter
-                    }
-            , mkButton [ Ui.cx, Ui.wf ]
-                { action = buttonMsg
-                , label = buttonText
+    if model.hasCookie then
+        Element.el [ Ui.wf ] <|
+            Ui.primary [ Ui.cx ]
+                { label = Element.text <| Strings.uiOpenPolymny lang
+                , action = Ui.Route <| Route.Custom model.serverRoot
                 }
-            ]
-        , only [ Unlogged.Login ] <|
-            Element.row [ Ui.s 10, Ui.cx ]
-                [ Ui.link []
-                    { action =
-                        if model.loginRequest == RemoteData.Loading Nothing then
-                            Ui.None
 
-                        else
-                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.ForgotPassword
-                    , label = Lang.question Strings.loginForgottenPassword lang
-                    }
-                , Ui.link []
-                    { action =
-                        if model.loginRequest == RemoteData.Loading Nothing then
-                            Ui.None
-
-                        else
-                            Ui.Msg <| Unlogged.PageChanged <| Unlogged.SignUp
-                    , label = Lang.question Strings.loginNotRegisteredYet lang
-                    }
-                ]
-        , formatError errorMessage
-        , formatSuccess successMessage
-        , Element.html <|
-            Html.form
-                [ Html.Attributes.method "POST"
-                , Html.Attributes.action (model.serverRoot ++ "/login")
-                , Html.Attributes.style "display" "none"
-                , Html.Attributes.id "loginform"
-                ]
-                [ Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "username", Html.Attributes.value model.username ] []
-                , Html.input [ Html.Attributes.type_ "text", Html.Attributes.name "password", Html.Attributes.value model.password ] []
-                ]
-        ]
+    else
+        form
 
 
 {-| Sup.
