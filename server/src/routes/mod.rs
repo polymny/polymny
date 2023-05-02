@@ -572,10 +572,13 @@ pub async fn tmp<'a>(
 /// The route for static files.
 #[get("/<path..>")]
 pub async fn dist<'a>(
+    config: &S<Config>,
     path: PathBuf,
     partial_content: PartialContent,
-) -> Result<PartialContentResponse<'a>> {
-    partial_content
+) -> Cors<Result<PartialContentResponse<'a>>> {
+    let partial_content = partial_content
         .respond(PathBuf::from("dist").join(path))
-        .await
+        .await;
+
+    Cors::new(&config.home, partial_content)
 }
