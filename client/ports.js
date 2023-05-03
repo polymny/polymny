@@ -903,7 +903,7 @@ function init(node, flags) {
                         // app.ports.capsuleUpdated.send(capsule);
                     } catch (e) {
                         console.log(e)
-                        app.ports.uploadRecordFailed.send(null);
+                        app.ports.uploadRecordFailed.send(taskId);
                     }
                 }
 
@@ -994,7 +994,7 @@ function init(node, flags) {
                 // app.ports.capsuleUpdated.send(capsule);
             } catch (e) {
                 console.log(e)
-                app.ports.uploadRecordFailed.send(null);
+                app.ports.uploadRecordFailed.send(taskId);
             }
 
         }

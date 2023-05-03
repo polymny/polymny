@@ -14,7 +14,7 @@ module App.Types exposing
 
 # Error management
 
-@docs Error, errorToString
+@docs Error, errorToString, unwrapRemoteData, unwrapResult
 
 -}
 

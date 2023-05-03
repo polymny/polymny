@@ -156,7 +156,13 @@ update msg model =
                             Api.updateCapsule newCapsule
                                 (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                     in
-                    ( { model | user = Data.updateUser newCapsule model.user, page = App.Preparation (Preparation.init newCapsule) }, sync )
+                    ( { model
+                        | user = Data.updateUser newCapsule model.user
+                        , page = App.Preparation (Preparation.init newCapsule)
+                        , config = Config.incrementRequest model.config
+                      }
+                    , sync
+                    )
 
                 Preparation.GoToPreviousSlide currentSlideIndex currentSlide ->
                     let
@@ -174,7 +180,8 @@ update msg model =
                                 |> List.head
                     in
                     ( { model
-                        | page =
+                        | config = Config.incrementRequest model.config
+                        , page =
                             App.Preparation <|
                                 case previousSlide of
                                     Just previousSlidee ->
@@ -205,7 +212,8 @@ update msg model =
                                 |> List.head
                     in
                     ( { model
-                        | page =
+                        | config = Config.incrementRequest model.config
+                        , page =
                             App.Preparation <|
                                 case nextSlide of
                                     Just nextSlidee ->
@@ -277,8 +285,9 @@ update msg model =
                     if m.displayPopup then
                         case m.popupType of
                             Preparation.ConfirmUpdateCapsulePopup c ->
-                                ( { model | page = App.Preparation <| Preparation.init c }
-                                , Api.updateCapsule c (\_ -> App.Noop)
+                                ( { model | page = App.Preparation <| Preparation.init c, config = Config.incrementRequest model.config }
+                                , Api.updateCapsule c
+                                    (\x -> App.PreparationMsg (Preparation.CapsuleUpdate model.config.clientState.lastRequest x))
                                 )
 
                             _ ->
@@ -404,9 +413,9 @@ updateExtra user msg model config =
                 cmd : Cmd App.Msg
                 cmd =
                     Api.updateCapsule c
-                        (\_ -> App.Noop)
+                        (\x -> App.PreparationMsg (Preparation.CapsuleUpdate config.clientState.lastRequest x))
             in
-            ( Preparation.init c, cmd, config )
+            ( Preparation.init c, cmd, Config.incrementRequest config )
 
         ( Preparation.ChangeSlideUpdated d, Just _ ) ->
             ( { model | changeSlide = d }, Cmd.none, config )

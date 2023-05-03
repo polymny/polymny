@@ -21,6 +21,7 @@ import Html.Attributes
 import Lang exposing (Lang)
 import Material.Icons as Icons
 import Material.Icons.Types as Icons
+import RemoteData
 import Route exposing (Route)
 import Simple.Animation as Animation exposing (Animation)
 import Simple.Animation.Animated as Animated
@@ -81,6 +82,23 @@ navbar config page user =
 
                 _ ->
                     Ui.logo
+
+        errorMsg =
+            case page of
+                Just (App.Preparation m) ->
+                    case m.capsuleUpdate of
+                        RemoteData.Loading _ ->
+                            Ui.spinningSpinner [] 25
+
+                        RemoteData.Failure _ ->
+                            Ui.icon 25 Icons.error
+                                |> Element.el [ Font.color Colors.red ]
+
+                        _ ->
+                            Element.none
+
+                _ ->
+                    Element.none
 
         taskProgress : Maybe Float
         taskProgress =
@@ -164,7 +182,9 @@ navbar config page user =
                     , Ui.pr 5
                     , Ui.wfp 5
                     ]
-                    [ webSocketStatus
+                    [ Element.el [ Ui.wf ] Element.none
+                    , errorMsg
+                    , webSocketStatus
                     , Element.el
                         [ Ui.hf
                         , Ui.id "task-panel"

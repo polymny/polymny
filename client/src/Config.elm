@@ -381,6 +381,42 @@ type alias TaskStatus =
     }
 
 
+{-| Extracts the task id of a task.
+-}
+getId : Task -> TaskId
+getId task =
+    case task of
+        UploadRecord id _ _ _ ->
+            id
+
+        UploadTrack id _ ->
+            id
+
+        AddSlide id _ ->
+            id
+
+        AddGos id _ ->
+            id
+
+        ReplaceSlide id _ ->
+            id
+
+        Production id _ ->
+            id
+
+        Publication id _ ->
+            id
+
+        ExportCapsule id _ ->
+            id
+
+        ImportCapsule id ->
+            id
+
+        TranscodeExtra id _ _ ->
+            id
+
+
 {-| Decodes a task status.
 -}
 decodeTaskStatus : Decoder TaskStatus
@@ -523,6 +559,7 @@ type Msg
     | AbortTask Task
     | ScrollToGos Float String
     | WebSocketStatus Bool
+    | UploadRecordFailed TaskId
 
 
 {-| This functions updates the config.
@@ -919,6 +956,24 @@ update msg { serverConfig, clientConfig, clientState } =
                     , []
                     )
 
+                UploadRecordFailed taskId ->
+                    let
+                        taskMapper : TaskStatus -> TaskStatus
+                        taskMapper task =
+                            if getId task.task == taskId then
+                                { task | aborted = True }
+
+                            else
+                                task
+                    in
+                    ( { serverConfig = serverConfig
+                      , clientConfig = clientConfig
+                      , clientState = { clientState | tasks = List.map taskMapper clientState.tasks }
+                      }
+                    , False
+                    , []
+                    )
+
         saveCmd : List (Cmd Msg)
         saveCmd =
             if saveRequired then
@@ -968,6 +1023,7 @@ subs config =
                         _ ->
                             Noop
                 )
+            :: uploadRecordFailed UploadRecordFailed
             :: (config.clientState.tasks
                     |> List.filterMap
                         (\x ->
@@ -1082,3 +1138,8 @@ port scrollIntoViewPort : ( Float, String ) -> Cmd msg
 {-| A change in the status of web socket.
 -}
 port webSocketStatus : (Bool -> msg) -> Sub msg
+
+
+{-| A record upload that failed.
+-}
+port uploadRecordFailed : (Int -> msg) -> Sub msg
